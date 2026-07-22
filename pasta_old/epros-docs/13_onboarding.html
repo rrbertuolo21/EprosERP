@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — Guia de Onboarding</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+.subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 22px; }
+.stab { padding: 5px 13px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--b2); border-radius: 20px; background: none; color: var(--t3); transition: all .15s; font-family: var(--sans); }
+.stab:hover { color: var(--t2); }
+.stab.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+.sp { display: none; }
+.sp.on { display: block; }
+.setup-step { display: flex; gap: 14px; margin-bottom: 12px; }
+.setup-num { font-family: var(--mono); font-size: 10px; color: var(--blue); min-width: 32px; padding-top: 3px; }
+.setup-box { flex: 1; background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r); padding: 12px 14px; }
+.setup-box h4 { font-size: 12px; font-weight: 500; margin-bottom: 4px; }
+.setup-box p { font-size: 11px; color: var(--t2); line-height: 1.5; }
+.branch-flow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 0; font-family: var(--mono); font-size: 11px; }
+.branch-box { padding: 4px 8px; border-radius: 4px; border: 1px solid; }
+.branch-main { background: rgba(235,94,85,.1); border-color: rgba(235,94,85,.3); color: #eb5e55; }
+.branch-dev { background: rgba(74,144,232,.1); border-color: rgba(74,144,232,.3); color: var(--blue); }
+.branch-feat { background: var(--s3); border-color: var(--b2); color: var(--t2); }
+.branch-arrow { color: var(--t3); }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+  <a class="nt" href="08_api.html">⑧ API Reference</a>
+  <a class="nt" href="09_runbook.html">⑨ Runbook & DR</a>
+  <a class="nt" href="10_modelo_financeiro.html">⑩ Modelo Financeiro</a>
+  <a class="nt" href="11_integracoes.html">⑪ Integrações</a>
+  <a class="nt" href="12_modelo_dados.html">⑫ Modelo de Dados</a>
+  <a class="nt on" href="13_onboarding.html">⑬ Guia de Onboarding</a>
+  <a class="nt" href="14_disaster_recovery.html">⑭ Disaster Recovery</a>
+  <a class="nt" href="15_glossario.html">⑮ Glossário</a>
+  <a class="nt" href="16_i18n.html">⑯ Internacionalização</a>
+  <a class="nt" href="17_changelog.html">⑰ Changelog</a>
+  <a class="nt" href="18_plano_execucao.html">⑱ Plano de Execução</a>
+  <a class="nt" href="19_operacional.html">⑲ Modelo Operacional</a>
+  <a class="nt" href="20_treinamento.html">⑳ Treinamento por Função</a>
+  <a class="nt" href="21_agentes_prompts.html">㉑ Prompts dos Agentes</a>
+  <a class="nt" href="22_diagnostico.html">㉒ Diagnóstico do Legado</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>Setup de Ambiente · Git Flow · Commit Semântico · Code Formatting</div>
+  <h1>Guia de <em>Onboarding</em></h1>
+  <p class="hero-desc">Documentação passo a passo para preparação do ambiente de desenvolvimento local, inicialização da stack e convenções técnicas de contribuição de código.</p>
+</div>
+
+<div class="page">
+
+<div class="subtabs">
+  <button class="stab on" onclick="st('setup')">Setup de Ambiente</button>
+  <button class="stab" onclick="st('estrutura')">Estrutura & Estilo</button>
+  <button class="stab" onclick="st('commits')">Commit & Branching</button>
+  <button class="stab" onclick="st('pipeline')">Pipeline de CI/CD</button>
+</div>
+
+<!-- ══ SETUP DE AMBIENTE ══ -->
+<div class="sp on" id="sp-setup">
+  <div class="sl">Inicialização do Ambiente Local</div>
+  <p class="lead">Para começar a contribuir com o ecossistema Epros, siga o checklist de instalação de dependências e subida dos serviços Docker locais.</p>
+
+  <div class="setup-step">
+    <div class="setup-num">STEP 1</div>
+    <div class="setup-box">
+      <h4>Instalar Pré-requisitos</h4>
+      <p>Instale as seguintes ferramentas na sua máquina de desenvolvimento local:</p>
+      <ul style="margin-top: 8px; padding-left: 15px; font-size:11px; color: var(--t2); line-height: 1.6;">
+        <li><strong>SDK .NET 8.0</strong> — Necessário para compilar o backend C#.</li>
+        <li><strong>Docker & Docker Desktop</strong> — Gerencia os containers locais da infraestrutura.</li>
+        <li><strong>Node.js 18+ & NPM</strong> — Necessário para o frontend desktop / web `Epros.App` (Nuxt 3).</li>
+        <li><strong>Expo CLI</strong> — Para rodar o aplicativo mobile `/Epros.Mobile` (React Native).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="setup-step">
+    <div class="setup-num">STEP 2</div>
+    <div class="setup-box">
+      <h4>Subir a Infraestrutura (Docker Compose)</h4>
+      <p>Navegue até a raiz do projeto e execute o comando abaixo para iniciar todos os containers de infraestrutura local em background:</p>
+      <div class="code" style="margin: 8px 0;">docker-compose up -d</div>
+      <p>Este comando irá inicializar os serviços:</p>
+      <table class="tbl" style="margin-top: 10px; font-size: 11px;">
+        <tr><td><strong>PostgreSQL 16</strong></td><td>Porta 5432</td><td>epros / epros_dev_password</td></tr>
+        <tr><td><strong>Keycloak 24</strong></td><td>Porta 8080</td><td>admin / admin (auto-importa realm e clients)</td></tr>
+        <tr><td><strong>HashiCorp Vault</strong></td><td>Porta 8200</td><td>Token: epros-dev-token</td></tr>
+        <tr><td><strong>MinIO Storage</strong></td><td>Porta 9000/9001</td><td>epros_minio / epros_minio_password</td></tr>
+        <tr><td><strong>Valkey 7</strong></td><td>Porta 6379</td><td>Sem autenticação por padrão em desenvolvimento</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="setup-step">
+    <div class="setup-num">STEP 3</div>
+    <div class="setup-box">
+      <h4>Inicializar o Backend & Migrations</h4>
+      <p>Para executar o monólito modular C# e aplicar todas as migrações automaticamente no banco PostgreSQL 16 local de desenvolvimento, utilize:</p>
+      <div class="code" style="margin: 8px 0;">dotnet run --project src/API/Epros.API/Epros.API.csproj</div>
+      <p><em>Nota:</em> O projeto está configurado para executar migrações de banco programaticamente em tempo de inicialização em ambiente `Development`. Os logs do console detalham o progresso de migração de cada DbContext.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ESTRUTURA & ESTILO ══ -->
+<div class="sp" id="sp-estrutura">
+  <div class="sl">Estrutura de Pastas e Mapeamento de Repositórios</div>
+  <p class="lead">O projeto Epros ERP está organizado em uma arquitetura monolítica modular no backend e aplicações desacopladas para as superfícies cliente.</p>
+
+  <div class="code">{
+  "EprosERP": {
+    "src": {
+      "API": "Ponto de entrada REST, Middlewares HTTP e Controladores",
+      "Infrastructure": "Implementações físicas, RLS PostgreSQL, Jobs Quartz, Vault e Cache",
+      "Modules": {
+        "Epros.Modules.GestaoClientes": "Clientes SaaS, faturamento e base de pessoas",
+        "Epros.Modules.Estoque": "Catálogo de produtos, compras e movimentos de estoque",
+        "Epros.Modules.Vendas": "Gestão de pedidos, caixas operacionais e PDV",
+        "Epros.Modules.Fiscal": "Documentação fiscal, schemas XML e integrações Hercules.NET"
+      },
+      "Shared": "Objetos comuns, contratos de interfaces e notificações de domínio (Flunt)"
+    },
+    "Epros.App": "Aplicação Desktop e Área do Cliente construída com Electron + Nuxt 3",
+    "Epros.Mobile": "Aplicativo Móvel de Frente de Caixa (PDV) com React Native (Expo) + SQLite",
+    "tests": "Suítes de testes unitários e de integração (xUnit + Testcontainers)"
+  }
+}</div>
+
+  <div class="sl" style="margin-top:30px">Padronização de Código & Formatação</div>
+  <p style="color: var(--t2); font-size:12px; margin-bottom:12px;">Para garantir a consistência do código C#, todas as submissões de Pull Requests passam por verificação automática de estilo. Cumpra os requisitos locais antes de commitar:</p>
+
+  <ul class="steps-list">
+    <li class="step-item">
+      <span class="step-num">1</span>
+      <div class="step-desc"><strong>Verificação de Formatação:</strong> Execute o comando do SDK dotnet para alinhar e indentar automaticamente o código de acordo com o padrão do projeto:
+        <div class="code" style="margin-top: 8px;">dotnet format</div>
+      </div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">2</span>
+      <div class="step-desc"><strong>Warnings as Errors:</strong> O build em Release compila com a tag `-warnaserror` ativada. Códigos contendo avisos do compilador (ex: variáveis não utilizadas ou nulos não tratados) causam falha imediata no CI. Resolva todos os warnings localmente.</div>
+    </li>
+  </ul>
+</div>
+
+<!-- ══ COMMITS & BRANCHING ══ -->
+<div class="sp" id="sp-commits">
+  <div class="sl">Fluxo de Trabalho de Branches (Git Flow)</div>
+  <p class="lead">As ramificações do repositório seguem um fluxo estruturado simplificado para garantir estabilidade contínua nas ramificações principais.</p>
+
+  <div class="branch-flow">
+    <div class="branch-box branch-main">main</div>
+    <div class="branch-arrow">← merge (Release PR) ←</div>
+    <div class="branch-box branch-dev">develop</div>
+    <div class="branch-arrow">← merge (Review PR) ←</div>
+    <div class="branch-box branch-feat">feature/nome-recurso</div>
+  </div>
+
+  <ul style="margin-top: 15px; font-size: 12px; color: var(--t2); line-height: 1.8;">
+    <li><strong>`main`</strong> — Ramo de produção. Protegida contra pushes diretos. Só aceita alterações via PR a partir de `develop`.</li>
+    <li><strong>`develop`</strong> — Ramo de integração. Onde as features concluídas são testadas de forma integrada.</li>
+    <li><strong>`feature/*`</strong> ou <strong>`bugfix/*`</strong> — Ramificações de trabalho criadas a partir de `develop`.</li>
+  </ul>
+
+  <div class="sl" style="margin-top:30px">Convenção de Commit Semântico</div>
+  <p style="color: var(--t2); font-size:12px; margin-bottom:12px;">Os títulos de commit do projeto devem respeitar a especificação do Conventional Commits para permitir a geração de Changelogs automáticos. O formato é:</p>
+  <div class="code" style="margin-bottom: 12px;">&lt;tipo&gt;(&lt;escopo-opcional&gt;): &lt;descrição curta em português&gt;</div>
+
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Tipo de Commit</th>
+        <th>Finalidade</th>
+        <th>Exemplo prático</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>feat</strong></td>
+        <td>Criação de nova funcionalidade ou endpoint.</td>
+        <td><code>feat(vendas): adiciona fechamento de caixa do pdv</code></td>
+      </tr>
+      <tr>
+        <td><strong>fix</strong></td>
+        <td>Correção de bug, falha ou comportamento incorreto.</td>
+        <td><code>fix(estoque): corrige calculo do custo medio ponderado</code></td>
+      </tr>
+      <tr>
+        <td><strong>docs</strong></td>
+        <td>Apenas alterações em documentação (.md, .html).</td>
+        <td><code>docs(onboarding): cria guia de setup do desenvolvedor</code></td>
+      </tr>
+      <tr>
+        <td><strong>refactor</strong></td>
+        <td>Alteração de código que não corrige bug nem adiciona funcionalidade.</td>
+        <td><code>refactor(shared): simplifica estrutura de notificacoes do flunt</code></td>
+      </tr>
+      <tr>
+        <td><strong>test</strong></td>
+        <td>Adição ou correção de testes unitários ou de integração.</td>
+        <td><code>test(financeiro): adiciona testes de outbox do contas a pagar</code></td>
+      </tr>
+      <tr>
+        <td><strong>chore</strong></td>
+        <td>Atualização de dependências, builds ou scripts internos.</td>
+        <td><code>chore(infra): atualiza versao do postgres no docker-compose</code></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══ PIPELINE DE CI/CD ══ -->
+<div class="sp" id="sp-pipeline">
+  <div class="sl">Pipeline Automatizada de CI/CD</div>
+  <p class="lead">Toda submissão de código a ramos remotos (`develop` e `main`) dispara a esteira de validação em segundo plano no GitHub Actions.</p>
+
+  <div class="danger" style="margin-bottom: 15px;"><strong>IMPORTANTE:</strong> O pipeline de CI/CD é bloqueante. Se qualquer um dos passos abaixo falhar, a mesclagem (merge) do Pull Request não será permitida.</div>
+
+  <ul class="steps-list">
+    <li class="step-item">
+      <span class="step-num">1</span>
+      <div class="step-desc"><strong>Restore & Format Check:</strong> O runner faz o download das dependências e executa o validador de estilo `dotnet format --verify-no-changes`. Se o desenvolvedor não formatou o código localmente, o pipeline falha.</div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">2</span>
+      <div class="step-desc"><strong>Compilação Restrita:</strong> A compilação é executada em modo Release (`dotnet build -warnaserror`). Avisos de compilação bloqueiam o deploy.</div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">3</span>
+      <div class="step-desc"><strong>Suíte de Testes:</strong> Executa toda a suíte de testes xUnit, inicializando containers reais via Testcontainers para garantir a integridade das políticas de banco e RLS.</div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">4</span>
+      <div class="step-desc"><strong>Segurança SAST:</strong> Rodam os scanners **Gitleaks** (identificação de segredos e tokens expostos) e **Trivy** (busca por vulnerabilidades de dependências com severidade HIGH e CRITICAL).</div>
+    </li>
+  </ul>
+</div>
+
+</div><!-- /page -->
+
+<script>
+var tabs = ['setup', 'estrutura', 'commits', 'pipeline'];
+function st(id) {
+  document.querySelectorAll('.stab').forEach(function(t, i) {
+    t.classList.toggle('on', tabs[i] === id);
+  });
+  document.querySelectorAll('.sp').forEach(function(p) {
+    p.classList.toggle('on', p.id === 'sp-' + id);
+  });
+}
+</script>
+</body>
+</html>

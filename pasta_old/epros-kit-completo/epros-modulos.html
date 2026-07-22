@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Epros — Módulos & Submódulos</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--az:#0D2B5E;--do:#C9A84C;--dop:#FDF5E0;--cb:#F4F6FA;--cd:#DDE3EF;--ct:#5A6580;--cp:#0A0F1E}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"DM Sans",sans-serif;background:var(--cb);color:var(--cp);font-size:13px;line-height:1.6;min-height:100vh}
+
+/* HEADER */
+.header{background:linear-gradient(135deg,var(--az) 0%,#1A4080 60%,#0a3060 100%);padding:40px 52px;position:relative;overflow:hidden}
+.header::before{content:"";position:absolute;top:-80px;right:-80px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.14) 0%,transparent 70%)}
+.header-badge{font-size:9px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--do);border:1px solid rgba(201,168,76,.3);border-radius:99px;padding:3px 11px;display:inline-block;margin-bottom:14px}
+.header h1{font-family:"Playfair Display",serif;font-size:36px;font-weight:700;color:#fff;margin-bottom:8px}
+.header h1 span{color:var(--do)}
+.header p{font-size:13px;color:rgba(255,255,255,.65);line-height:1.7;max-width:560px;margin-bottom:22px}
+.header-stats{display:flex;gap:28px;flex-wrap:wrap}
+.hs .v{font-family:"Playfair Display",serif;font-size:26px;font-weight:700;color:var(--do)}
+.hs .l{font-size:10px;color:rgba(255,255,255,.4);margin-top:1px}
+
+/* SEARCH & FILTER */
+.controls{background:#fff;border-bottom:1px solid var(--cd);padding:14px 52px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.search-box{flex:1;max-width:340px;position:relative}
+.search-box input{width:100%;padding:8px 12px 8px 34px;border:1px solid var(--cd);border-radius:8px;font-size:12px;font-family:"DM Sans",sans-serif;background:var(--cb);color:var(--cp);outline:none}
+.search-box input:focus{border-color:var(--az)}
+.search-box::before{content:"⌕";position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--ct);font-size:15px}
+.filter-tabs{display:flex;gap:4px;flex-wrap:wrap}
+.ftab{font-size:11px;padding:5px 12px;border-radius:99px;border:1px solid var(--cd);background:var(--cb);color:var(--ct);cursor:pointer;transition:all .15s;font-family:"DM Sans",sans-serif}
+.ftab:hover{border-color:var(--az);color:var(--az)}
+.ftab.active{background:var(--az);color:#fff;border-color:var(--az)}
+.total-count{font-size:11px;color:var(--ct);margin-left:auto;white-space:nowrap}
+
+/* MAIN */
+.main{padding:32px 52px 60px;max-width:1200px}
+
+/* MODULE CARDS */
+.mod-card{background:#fff;border:1px solid var(--cd);border-radius:14px;overflow:hidden;margin-bottom:14px;transition:box-shadow .2s}
+.mod-card:hover{box-shadow:0 4px 20px rgba(13,43,94,.08)}
+.mod-header{display:flex;align-items:center;gap:14px;padding:16px 22px;cursor:pointer;user-select:none}
+.mod-color{width:6px;border-radius:3px;align-self:stretch;min-height:44px;flex-shrink:0}
+.mod-icon{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:"DM Mono",monospace;flex-shrink:0;color:#fff}
+.mod-info{flex:1}
+.mod-name{font-size:15px;font-weight:600;color:var(--cp)}
+.mod-desc{font-size:11px;color:var(--ct);margin-top:2px;line-height:1.5}
+.mod-count{font-size:11px;font-weight:600;background:var(--cb);border:1px solid var(--cd);border-radius:99px;padding:3px 10px;color:var(--ct);white-space:nowrap}
+.mod-arrow{font-size:16px;color:var(--ct);transition:transform .2s;flex-shrink:0}
+.mod-card.open .mod-arrow{transform:rotate(90deg)}
+
+/* SUBMODULE LIST */
+.sub-list{display:none;border-top:1px solid var(--cd)}
+.mod-card.open .sub-list{display:block}
+.sub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0}
+.sub-item{display:flex;gap:10px;padding:11px 22px;border-bottom:1px solid var(--cd);border-right:1px solid var(--cd);transition:background .15s}
+.sub-item:hover{background:var(--cb)}
+.sub-item:last-child{border-bottom:none}
+.sub-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.sub-content{flex:1}
+.sub-name{font-size:12px;font-weight:600;color:var(--cp);margin-bottom:2px}
+.sub-id{font-family:"DM Mono",monospace;font-size:9px;color:var(--do);background:var(--dop);border:1px solid rgba(201,168,76,.25);padding:1px 6px;border-radius:4px;display:inline-block;margin-bottom:3px}
+.sub-desc{font-size:11px;color:var(--ct);line-height:1.5}
+
+/* HIGHLIGHT */
+.hl{background:#FFF3CD;border-radius:2px}
+
+/* EMPTY */
+.empty{text-align:center;padding:48px;color:var(--ct);font-size:14px}
+
+@media(max-width:800px){
+  .header,.main,.controls{padding-left:20px;padding-right:20px}
+  .sub-grid{grid-template-columns:1fr}
+  .controls{flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-badge">Inventário Canônico · 2026-06-04 · 12 legados analisados</div>
+  <h1>Módulos &amp; <span>Submódulos</span></h1>
+  <p>Mapeamento canônico do Epros ERP — extraído e validado contra 12 sistemas reais. Cada submódulo tem conteúdo documentado e regras de negócio levantadas.</p>
+  <div class="header-stats">
+    <div class="hs"><div class="v">17</div><div class="l">Módulos</div></div>
+    <div class="hs"><div class="v">132</div><div class="l">Submódulos</div></div>
+    <div class="hs"><div class="v">12</div><div class="l">Legados analisados</div></div>
+    <div class="hs"><div class="v">10 MB</div><div class="l">Conteúdo documentado</div></div>
+  </div>
+</div>
+<div class="controls">
+  <div class="search-box"><input type="text" id="search" placeholder="Buscar módulo ou submódulo..." oninput="filter()"/></div>
+  <div class="filter-tabs">
+    <button class="ftab active" onclick="filterMod('all',this)">Todos</button>
+    <button class="ftab" onclick="filterMod('APP',this)" style="--mc:#4A90D9">APP</button>
+    <button class="ftab" onclick="filterMod('CAD',this)" style="--mc:#2E7D52">CAD</button>
+    <button class="ftab" onclick="filterMod('FIN',this)" style="--mc:#1565C0">FIN</button>
+    <button class="ftab" onclick="filterMod('VEN',this)" style="--mc:#AD1457">VEN</button>
+    <button class="ftab" onclick="filterMod('EST',this)" style="--mc:#E65100">EST</button>
+    <button class="ftab" onclick="filterMod('COM',this)" style="--mc:#6A1B9A">COM</button>
+    <button class="ftab" onclick="filterMod('PRD',this)" style="--mc:#558B2F">PRD</button>
+    <button class="ftab" onclick="filterMod('RH',this)" style="--mc:#37474F">RH</button>
+    <button class="ftab" onclick="filterMod('MAN',this)" style="--mc:#4E342E">MAN</button>
+    <button class="ftab" onclick="filterMod('QLD',this)" style="--mc:#00695C">QLD</button>
+    <button class="ftab" onclick="filterMod('PRJ',this)" style="--mc:#1A237E">PRJ</button>
+    <button class="ftab" onclick="filterMod('GRC',this)" style="--mc:#B71C1C">GRC</button>
+    <button class="ftab" onclick="filterMod('ESG',this)" style="--mc:#2E7D32">ESG</button>
+    <button class="ftab" onclick="filterMod('CON',this)" style="--mc:#E65100">CON</button>
+    <button class="ftab" onclick="filterMod('IMO',this)" style="--mc:#795548">IMO</button>
+    <button class="ftab" onclick="filterMod('RPT',this)" style="--mc:#546E7A">RPT</button>
+    <button class="ftab" onclick="filterMod('PLT',this)" style="--mc:#263238">PLT</button>
+  </div>
+  <span class="total-count" id="count-label">132 submódulos</span>
+</div>
+<div class="main" id="main-content">
+  <div class="mod-card" id="mod-app" data-code="APP" data-name="aplicativo">
+    <div class="mod-header" onclick="toggle('mod-app')">
+      <div class="mod-color" style="background:#4A90D9"></div>
+      <div class="mod-icon" style="background:#4A90D9">APP</div>
+      <div class="mod-info">
+        <div class="mod-name">APLICATIVO</div>
+        <div class="mod-desc">Infraestrutura SaaS — o que sustenta todos os outros módulos. Multi-tenancy, identidade, planos, permissões e operação do negócio de software.</div>
+      </div>
+      <span class="mod-count">11 submódulos</span>
+      <span class="mod-arrow">›</span>
+    </div>
+    <div class="sub-list">
+      <div class="sub-grid">
+        <div class="sub-item" data-name="identidade e contexto tenant gestão de tenants, contexto de empresa, isolamento de dados por cliente">
+          <div class="sub-dot" style="background:#4A90D9"></div>
+          <div class="sub-content">
+            <div class="sub-name">Identidade e Contexto Tenant</div>
+            <span class="sub-id">APP-TEN-001</span>
+            <div class="sub-desc">Gestão de tenants, contexto de empresa, isolamento de dados por cliente</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="onboarding e empresa cadastro de empresa, configuração inicial, wizard de ativação">
+          <div class="sub-dot" style="background:#4A90D9"></div>
+          <div class="sub-content">
+            <div class="sub-name">Onboarding e Empresa</div>
+            <span class="sub-id">APP-TEN-002</span>
+            <div class="sub-desc">Cadastro de empresa, configuração inicial, wizard de ativação</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="usuários e papéis gestão de usuários, perfis, papéis e controle de acesso">
+          <div class="sub-dot" style="background:#4A90D9"></div>
+          <div class="sub-content">
+            <div class="sub-name">Usuários e Papéis</div>
+            <span class="sub-id">APP-TEN-003</span>
+            <div class="sub-desc">Gestão de usuários, perfis, papéis e controle de acesso</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="assinatura e planos planos saas, ciclo de cobrança, upgrades e downgrades">
+          <div class="sub-dot" style="background:#4A90D9"></div>
+          <div class="sub-content">
+            <div class="sub-name">Assinatura e Planos</div>
+            <span class="sub-id">APP-TEN-004</span>
+            <div class="sub-desc">Planos SaaS, ciclo de cobrança, upgrades e downgrades</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="limites de plano controle de entitlements, quotas e limites por plano">
+          <div class="sub-dot" style="background:#4A90D9"></div>
+          <div class="sub-content">
+            <div class="sub-name">Limites de Plano</div>
+            <span class="sub-id">APP-TEN-005</span>
+            <div class="sub-desc">Controle de entitlements, quotas e limites por plano</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="pedidos e cobrança saas faturamento do saas, cobranças recorrentes, inadimplência">
+          <div class="sub-dot" style="background:#4A90D9"></div>
+          <div class="sub-content">
+            <div class="sub-name">Pedidos e Cobrança SaaS</div>
+            <span class="sub-id">APP-TEN-006</span>
+            <div class="sub-desc">Faturamento do SaaS, cobranças recorrentes, inadimplência</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="permissões de menu controle de navegação e visibilidade por perfil e plano">
+          <div class="sub-dot" style="background:#4A90D9"></div>
+          <div class="sub-content">
+            <div class="sub-name">Permissões de Menu</div>
+            <span class="sub-id">APP-TEN-008</span>
+            <div class="sub-desc">Controle de navegação e visibilidade por perfil e plano</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="isolamento de dados garantias técnicas de separação entre tenants">
+          <div class="sub-dot" style="background:#4A90D9"></div>
+          <div class="sub-content">
+            <div class="sub-name">Isolamento de Dados</div>
+            <span class="sub-id">—</span>
+            <div class="sub-desc">Garantias técnicas de separação entre tenants</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="operação super admin painel de administração global da plataforma">
+          <div class="sub-dot" style="background:#4A90D9"></div>
+          <div class="sub-content">
+            <div class="sub-name">Operação Super Admin</div>
+            <span class="sub-id">APP-TEN-010</span>
+            <div class="sub-desc">Painel de administração global da plataforma</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="dashboard e layout estrutura de dashboards e personalização de interface">
+          <div class="sub-dot" style="background:#4A90D9"></div>
+          <div class="sub-content">
+            <div class="sub-name">Dashboard e Layout</div>
+            <span class="sub-id">—</span>
+            <div class="sub-desc">Estrutura de dashboards e personalização de interface</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="catálogos globais saas tabelas e catálogos compartilhados entre todos os tenants">
+          <div class="sub-dot" style="background:#4A90D9"></div>
+          <div class="sub-content">
+            <div class="sub-name">Catálogos Globais SaaS</div>
+            <span class="sub-id">—</span>
+            <div class="sub-desc">Tabelas e catálogos compartilhados entre todos os tenants</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mod-card" id="mod-cad" data-code="CAD" data-name="cadastros base">
+    <div class="mod-header" onclick="toggle('mod-cad')">
+      <div class="mod-color" style="background:#2E7D52"></div>
+      <div class="mod-icon" style="background:#2E7D52">CAD</div>
+      <div class="mod-info">
+        <div class="mod-name">CADASTROS BASE</div>
+        <div class="mod-desc">Entidades fundamentais compartilhadas por todos os módulos. Pessoa, organização e parâmetros operacionais.</div>
+      </div>
+      <span class="mod-count">3 submódulos</span>
+      <span class="mod-arrow">›</span>
+    </div>
+    <div class="sub-list">
+      <div class="sub-grid">
+        <div class="sub-item" data-name="pessoa e organização cadastro unificado de pessoas físicas, jurídicas, clientes, fornecedores e colaboradores">
+          <div class="sub-dot" style="background:#2E7D52"></div>
+          <div class="sub-content">
+            <div class="sub-name">Pessoa e Organização</div>
+            <span class="sub-id">CAD-PEM-001</span>
+            <div class="sub-desc">Cadastro unificado de pessoas físicas, jurídicas, clientes, fornecedores e colaboradores</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="geografia e localização países, estados, municípios, cep, regiões e territórios">
+          <div class="sub-dot" style="background:#2E7D52"></div>
+          <div class="sub-content">
+            <div class="sub-name">Geografia e Localização</div>
+            <span class="sub-id">CAD-GEO-001</span>
+            <div class="sub-desc">Países, estados, municípios, CEP, regiões e territórios</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="parâmetros operacionais tabelas de domínio, configurações globais e parâmetros do sistema">
+          <div class="sub-dot" style="background:#2E7D52"></div>
+          <div class="sub-content">
+            <div class="sub-name">Parâmetros Operacionais</div>
+            <span class="sub-id">CAD-PRM-001</span>
+            <div class="sub-desc">Tabelas de domínio, configurações globais e parâmetros do sistema</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mod-card" id="mod-fin" data-code="FIN" data-name="financeiro">
+    <div class="mod-header" onclick="toggle('mod-fin')">
+      <div class="mod-color" style="background:#1565C0"></div>
+      <div class="mod-icon" style="background:#1565C0">FIN</div>
+      <div class="mod-info">
+        <div class="mod-name">FINANCEIRO</div>
+        <div class="mod-desc">Hub financeiro central — recebe lançamentos de todos os módulos. Ledger, contas a pagar e receber, tesouraria, contabilidade e planejamento.</div>
+      </div>
+      <span class="mod-count">12 submódulos</span>
+      <span class="mod-arrow">›</span>
+    </div>
+    <div class="sub-list">
+      <div class="sub-grid">
+        <div class="sub-item" data-name="contabilidade geral ledger principal, plano de contas, lançamentos, fechamento de período, balancetes e dre">
+          <div class="sub-dot" style="background:#1565C0"></div>
+          <div class="sub-content">
+            <div class="sub-name">Contabilidade Geral</div>
+            <span class="sub-id">FIN-CGL-001</span>
+            <div class="sub-desc">Ledger principal, plano de contas, lançamentos, fechamento de período, balancetes e DRE</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="contas a pagar títulos a pagar, aprovações por alçada, borderôs, antecipação de fornecedores">
+          <div class="sub-dot" style="background:#1565C0"></div>
+          <div class="sub-content">
+            <div class="sub-name">Contas a Pagar</div>
+            <span class="sub-id">FIN-CP-001</span>
+            <div class="sub-desc">Títulos a pagar, aprovações por alçada, borderôs, antecipação de fornecedores</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="contas a receber títulos a receber, cobrança, aging, conciliação bancária ofx, cnab">
+          <div class="sub-dot" style="background:#1565C0"></div>
+          <div class="sub-content">
+            <div class="sub-name">Contas a Receber</div>
+            <span class="sub-id">FIN-CR-001</span>
+            <div class="sub-desc">Títulos a receber, cobrança, aging, conciliação bancária OFX, CNAB</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="serviços financeiros boletos, pix, tef, gateways de pagamento, conciliação automática">
+          <div class="sub-dot" style="background:#1565C0"></div>
+          <div class="sub-content">
+            <div class="sub-name">Serviços Financeiros</div>
+            <span class="sub-id">FIN-SF-001</span>
+            <div class="sub-desc">Boletos, PIX, TEF, gateways de pagamento, conciliação automática</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="tesouraria e gestão de liquidez cash positioning, fx hedge, cash pooling, gestão de risco de liquidez">
+          <div class="sub-dot" style="background:#1565C0"></div>
+          <div class="sub-content">
+            <div class="sub-name">Tesouraria e Gestão de Liquidez</div>
+            <span class="sub-id">FIN-TS-001</span>
+            <div class="sub-desc">Cash positioning, FX hedge, cash pooling, gestão de risco de liquidez</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="planejamento e orçamento budget anual, forecast rolling, controle de desvios e aprovação de revisões">
+          <div class="sub-dot" style="background:#1565C0"></div>
+          <div class="sub-content">
+            <div class="sub-name">Planejamento e Orçamento</div>
+            <span class="sub-id">FIN-PO-001</span>
+            <div class="sub-desc">Budget anual, forecast rolling, controle de desvios e aprovação de revisões</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="ativos fixos cadastro, depreciação, baixas, transferências e inventário de ativos">
+          <div class="sub-dot" style="background:#1565C0"></div>
+          <div class="sub-content">
+            <div class="sub-name">Ativos Fixos</div>
+            <span class="sub-id">FIN-AFX-001</span>
+            <div class="sub-desc">Cadastro, depreciação, baixas, transferências e inventário de ativos</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="contabilidade gerencial centros de custo, resultado por produto, projeto e unidade de negócio">
+          <div class="sub-dot" style="background:#1565C0"></div>
+          <div class="sub-content">
+            <div class="sub-name">Contabilidade Gerencial</div>
+            <span class="sub-id">FIN-CMG-001</span>
+            <div class="sub-desc">Centros de custo, resultado por produto, projeto e unidade de negócio</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="consolidação e relatórios consolidação multi-empresa, eliminações intercompany, brgaap e ifrs">
+          <div class="sub-dot" style="background:#1565C0"></div>
+          <div class="sub-content">
+            <div class="sub-name">Consolidação e Relatórios</div>
+            <span class="sub-id">FIN-CON-001</span>
+            <div class="sub-desc">Consolidação multi-empresa, eliminações intercompany, BRGAAP e IFRS</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="câmbio e risco de mercado exposures cambiais, forwards, options, var e mark-to-market">
+          <div class="sub-dot" style="background:#1565C0"></div>
+          <div class="sub-content">
+            <div class="sub-name">Câmbio e Risco de Mercado</div>
+            <span class="sub-id">FIN-CAM-001</span>
+            <div class="sub-desc">Exposures cambiais, forwards, options, VaR e mark-to-market</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão de contratos financeiros ifrs 16, leases operacionais e financeiros, dívida estruturada">
+          <div class="sub-dot" style="background:#1565C0"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Contratos Financeiros</div>
+            <span class="sub-id">FIN-GCF-001</span>
+            <div class="sub-desc">IFRS 16, leases operacionais e financeiros, dívida estruturada</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="subsídios e fundos verbas, funding público, finep e prestação de contas por projeto">
+          <div class="sub-dot" style="background:#1565C0"></div>
+          <div class="sub-content">
+            <div class="sub-name">Subsídios e Fundos</div>
+            <span class="sub-id">FIN-SBF-001</span>
+            <div class="sub-desc">Verbas, funding público, FINEP e prestação de contas por projeto</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mod-card" id="mod-ven" data-code="VEN" data-name="vendas">
+    <div class="mod-header" onclick="toggle('mod-ven')">
+      <div class="mod-color" style="background:#AD1457"></div>
+      <div class="mod-icon" style="background:#AD1457">VEN</div>
+      <div class="mod-info">
+        <div class="mod-name">VENDAS</div>
+        <div class="mod-desc">Da oportunidade à entrega. CRM, pedidos, PDV com NFC-e offline, e-commerce, logística de saída e portal do cliente.</div>
+      </div>
+      <span class="mod-count">11 submódulos</span>
+      <span class="mod-arrow">›</span>
+    </div>
+    <div class="sub-list">
+      <div class="sub-grid">
+        <div class="sub-item" data-name="crm funil de vendas, oportunidades, atividades, previsão e segmentação de clientes">
+          <div class="sub-dot" style="background:#AD1457"></div>
+          <div class="sub-content">
+            <div class="sub-name">CRM</div>
+            <span class="sub-id">VEN-CRM-001</span>
+            <div class="sub-desc">Funil de vendas, oportunidades, atividades, previsão e segmentação de clientes</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão de pedidos cotação, pedido, aprovação de crédito, backorder, split de entrega e políticas de preço">
+          <div class="sub-dot" style="background:#AD1457"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Pedidos</div>
+            <span class="sub-id">VEN-GP-001</span>
+            <div class="sub-desc">Cotação, pedido, aprovação de crédito, backorder, split de entrega e políticas de preço</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="ponto de venda pdv nfc-e, abertura/fechamento de caixa, sangria, múltiplos pagamentos, tef, pix, contingência offline">
+          <div class="sub-dot" style="background:#AD1457"></div>
+          <div class="sub-content">
+            <div class="sub-name">Ponto de Venda PDV</div>
+            <span class="sub-id">VEN-PDV-001</span>
+            <div class="sub-desc">NFC-e, abertura/fechamento de caixa, sangria, múltiplos pagamentos, TEF, PIX, contingência offline</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="comércio eletrônico loja virtual b2b/b2c, omnichannel, integrações com marketplaces">
+          <div class="sub-dot" style="background:#AD1457"></div>
+          <div class="sub-content">
+            <div class="sub-name">Comércio Eletrônico</div>
+            <span class="sub-id">VEN-ECM-001</span>
+            <div class="sub-desc">Loja virtual B2B/B2C, omnichannel, integrações com marketplaces</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="logística de saída picking, packing, expedição, romaneio, nf-e e rastreamento de entrega">
+          <div class="sub-dot" style="background:#AD1457"></div>
+          <div class="sub-content">
+            <div class="sub-name">Logística de Saída</div>
+            <span class="sub-id">VEN-LDS-001</span>
+            <div class="sub-desc">Picking, packing, expedição, romaneio, NF-e e rastreamento de entrega</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão de contratos de venda contratos comerciais, versionamento, aprovações eletrônicas e alertas de vencimento">
+          <div class="sub-dot" style="background:#AD1457"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Contratos de Venda</div>
+            <span class="sub-id">VEN-GCV-001</span>
+            <div class="sub-desc">Contratos comerciais, versionamento, aprovações eletrônicas e alertas de vencimento</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="portal do cliente auto-serviço: pedidos online, notas fiscais, boletos, status de entrega e histórico">
+          <div class="sub-dot" style="background:#AD1457"></div>
+          <div class="sub-content">
+            <div class="sub-name">Portal do Cliente</div>
+            <span class="sub-id">VEN-PCL-001</span>
+            <div class="sub-desc">Auto-serviço: pedidos online, notas fiscais, boletos, status de entrega e histórico</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão de serviços ordens de serviço, sla, agenda de técnicos, peças e faturamento de serviço">
+          <div class="sub-dot" style="background:#AD1457"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Serviços</div>
+            <span class="sub-id">VEN-GSV-001</span>
+            <div class="sub-desc">Ordens de serviço, SLA, agenda de técnicos, peças e faturamento de serviço</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="planejamento de demanda previsão estatística, s&op, consenso de demanda e sazonalidade">
+          <div class="sub-dot" style="background:#AD1457"></div>
+          <div class="sub-content">
+            <div class="sub-name">Planejamento de Demanda</div>
+            <span class="sub-id">VEN-PDM-001</span>
+            <div class="sub-desc">Previsão estatística, S&OP, consenso de demanda e sazonalidade</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="garantias acionamento, análise de defeito, reposição e rma">
+          <div class="sub-dot" style="background:#AD1457"></div>
+          <div class="sub-content">
+            <div class="sub-name">Garantias</div>
+            <span class="sub-id">VEN-GAR-001</span>
+            <div class="sub-desc">Acionamento, análise de defeito, reposição e RMA</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="faturamento comercial internacional exportação, incoterms, documentos de comércio exterior e câmbio">
+          <div class="sub-dot" style="background:#AD1457"></div>
+          <div class="sub-content">
+            <div class="sub-name">Faturamento Comercial Internacional</div>
+            <span class="sub-id">VEN-FCI-001</span>
+            <div class="sub-desc">Exportação, incoterms, documentos de comércio exterior e câmbio</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mod-card" id="mod-est" data-code="EST" data-name="estoque">
+    <div class="mod-header" onclick="toggle('mod-est')">
+      <div class="mod-color" style="background:#E65100"></div>
+      <div class="mod-icon" style="background:#E65100">EST</div>
+      <div class="mod-info">
+        <div class="mod-name">ESTOQUE</div>
+        <div class="mod-desc">Da compra à prateleira. WMS, produtos, movimentações, rastreabilidade, TMS e comércio exterior.</div>
+      </div>
+      <span class="mod-count">13 submódulos</span>
+      <span class="mod-arrow">›</span>
+    </div>
+    <div class="sub-list">
+      <div class="sub-grid">
+        <div class="sub-item" data-name="produtos cadastro de produtos, grupos, marcas, ncm, gtin e ficha técnica">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Produtos</div>
+            <span class="sub-id">EST-PR-001</span>
+            <div class="sub-desc">Cadastro de produtos, grupos, marcas, NCM, GTIN e ficha técnica</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="sourcing e compras cotação, pedido de compra, aprovação, follow-up e recebimento">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Sourcing e Compras</div>
+            <span class="sub-id">EST-SC-001</span>
+            <div class="sub-desc">Cotação, pedido de compra, aprovação, follow-up e recebimento</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão de armazém wms endereçamento, picking, packing, inventário e movimentação física">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Armazém WMS</div>
+            <span class="sub-id">EST-WMS-001</span>
+            <div class="sub-desc">Endereçamento, picking, packing, inventário e movimentação física</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="movimentação manual e ajustes entradas, saídas e ajustes manuais de estoque">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Movimentação Manual e Ajustes</div>
+            <span class="sub-id">EST-MVM-001</span>
+            <div class="sub-desc">Entradas, saídas e ajustes manuais de estoque</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="análise e planejamento de estoque ponto de pedido, estoque mínimo, giro e projeção de demanda">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Análise e Planejamento de Estoque</div>
+            <span class="sub-id">EST-APE-001</span>
+            <div class="sub-desc">Ponto de pedido, estoque mínimo, giro e projeção de demanda</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="inventário físico e contagem cíclica inventário geral e contagem cíclica por localização">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Inventário Físico e Contagem Cíclica</div>
+            <span class="sub-id">EST-INV-001</span>
+            <div class="sub-desc">Inventário geral e contagem cíclica por localização</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="rastreabilidade de lote e serialização lote, validade, número de série e rastreabilidade completa">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Rastreabilidade de Lote e Serialização</div>
+            <span class="sub-id">EST-RLT-001</span>
+            <div class="sub-desc">Lote, validade, número de série e rastreabilidade completa</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="logística de entrada recebimento, conferência, inspeção e armazenagem">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Logística de Entrada</div>
+            <span class="sub-id">EST-LDE-001</span>
+            <div class="sub-desc">Recebimento, conferência, inspeção e armazenagem</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="transporte e frete tms ct-e, roteirização, transportadoras e custo de frete">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Transporte e Frete TMS</div>
+            <span class="sub-id">EST-TMS-001</span>
+            <div class="sub-desc">CT-e, roteirização, transportadoras e custo de frete</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="comércio exterior importação, desembaraço aduaneiro e siscomex">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Comércio Exterior</div>
+            <span class="sub-id">EST-CEX-001</span>
+            <div class="sub-desc">Importação, desembaraço aduaneiro e SISCOMEX</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão de contratos de compra contratos com fornecedores, vigência e performance">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Contratos de Compra</div>
+            <span class="sub-id">EST-GCC-001</span>
+            <div class="sub-desc">Contratos com fornecedores, vigência e performance</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="portal do fornecedor auto-serviço do fornecedor: pedidos, nf-e, notas de débito">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Portal do Fornecedor</div>
+            <span class="sub-id">EST-PFO-001</span>
+            <div class="sub-desc">Auto-serviço do fornecedor: pedidos, NF-e, notas de débito</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="subcontratação ordens de beneficiamento, insumos e retorno">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Subcontratação</div>
+            <span class="sub-id">EST-SUB-001</span>
+            <div class="sub-desc">Ordens de beneficiamento, insumos e retorno</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mod-card" id="mod-com" data-code="COM" data-name="compras">
+    <div class="mod-header" onclick="toggle('mod-com')">
+      <div class="mod-color" style="background:#6A1B9A"></div>
+      <div class="mod-icon" style="background:#6A1B9A">COM</div>
+      <div class="mod-info">
+        <div class="mod-name">COMPRAS</div>
+        <div class="mod-desc">Gestão estruturada de compras, do pedido ao recebimento, incluindo operações internacionais.</div>
+      </div>
+      <span class="mod-count">2 submódulos</span>
+      <span class="mod-arrow">›</span>
+    </div>
+    <div class="sub-list">
+      <div class="sub-grid">
+        <div class="sub-item" data-name="gestão de compras ciclo completo de compras: requisição, cotação, aprovação, emissão e recebimento">
+          <div class="sub-dot" style="background:#6A1B9A"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Compras</div>
+            <span class="sub-id">COM-GC-001</span>
+            <div class="sub-desc">Ciclo completo de compras: requisição, cotação, aprovação, emissão e recebimento</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="faturamento compra internacional importação, licenças, câmbio e documentação de comércio exterior">
+          <div class="sub-dot" style="background:#6A1B9A"></div>
+          <div class="sub-content">
+            <div class="sub-name">Faturamento Compra Internacional</div>
+            <span class="sub-id">COM-FCI-001</span>
+            <div class="sub-desc">Importação, licenças, câmbio e documentação de comércio exterior</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mod-card" id="mod-prd" data-code="PRD" data-name="produção">
+    <div class="mod-header" onclick="toggle('mod-prd')">
+      <div class="mod-color" style="background:#558B2F"></div>
+      <div class="mod-icon" style="background:#558B2F">PRD</div>
+      <div class="mod-info">
+        <div class="mod-name">PRODUÇÃO</div>
+        <div class="mod-desc">MES/MRP, BOM, ordens de produção, escalonamento e controle de custos de manufatura.</div>
+      </div>
+      <span class="mod-count">8 submódulos</span>
+      <span class="mod-arrow">›</span>
+    </div>
+    <div class="sub-list">
+      <div class="sub-grid">
+        <div class="sub-item" data-name="planejamento de produção plano mestre de produção e capacidade">
+          <div class="sub-dot" style="background:#558B2F"></div>
+          <div class="sub-content">
+            <div class="sub-name">Planejamento de Produção</div>
+            <span class="sub-id">PRD-PLN-001</span>
+            <div class="sub-desc">Plano mestre de produção e capacidade</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="mrp — planejamento integrado ibp cálculo de necessidades de materiais e capacidade integrada">
+          <div class="sub-dot" style="background:#558B2F"></div>
+          <div class="sub-content">
+            <div class="sub-name">MRP — Planejamento Integrado IBP</div>
+            <span class="sub-id">PRD-MRP-001</span>
+            <div class="sub-desc">Cálculo de necessidades de materiais e capacidade integrada</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="estrutura de produto bom lista de materiais, versões e explosão de bom">
+          <div class="sub-dot" style="background:#558B2F"></div>
+          <div class="sub-content">
+            <div class="sub-name">Estrutura de Produto BOM</div>
+            <span class="sub-id">PRD-BOM-001</span>
+            <div class="sub-desc">Lista de materiais, versões e explosão de BOM</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="execução de manufatura mes ordens de produção, apontamento, eficiência e qualidade no chão de fábrica">
+          <div class="sub-dot" style="background:#558B2F"></div>
+          <div class="sub-content">
+            <div class="sub-name">Execução de Manufatura MES</div>
+            <span class="sub-id">PRD-MES-001</span>
+            <div class="sub-desc">Ordens de produção, apontamento, eficiência e qualidade no chão de fábrica</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="escalonamento e programação sequenciamento de ordens e programação de máquinas">
+          <div class="sub-dot" style="background:#558B2F"></div>
+          <div class="sub-content">
+            <div class="sub-name">Escalonamento e Programação</div>
+            <span class="sub-id">PRD-ESC-001</span>
+            <div class="sub-desc">Sequenciamento de ordens e programação de máquinas</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="estimativa orçamento de produto, simulação de custo e margem">
+          <div class="sub-dot" style="background:#558B2F"></div>
+          <div class="sub-content">
+            <div class="sub-name">Estimativa</div>
+            <span class="sub-id">PRD-EST-001</span>
+            <div class="sub-desc">Orçamento de produto, simulação de custo e margem</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão de ordens de serviço os de manutenção integrada à produção">
+          <div class="sub-dot" style="background:#558B2F"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Ordens de Serviço</div>
+            <span class="sub-id">PRD-GOS-001</span>
+            <div class="sub-desc">OS de manutenção integrada à produção</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="custos de produção apuração de custos, absorção e variações">
+          <div class="sub-dot" style="background:#558B2F"></div>
+          <div class="sub-content">
+            <div class="sub-name">Custos de Produção</div>
+            <span class="sub-id">PRD-CST-001</span>
+            <div class="sub-desc">Apuração de custos, absorção e variações</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mod-card" id="mod-rh" data-code="RH" data-name="rh">
+    <div class="mod-header" onclick="toggle('mod-rh')">
+      <div class="mod-color" style="background:#37474F"></div>
+      <div class="mod-icon" style="background:#37474F">RH</div>
+      <div class="mod-info">
+        <div class="mod-name">RH</div>
+        <div class="mod-desc">Capital humano completo — desde recrutamento e folha até saúde ocupacional, LMS e gestão de talentos.</div>
+      </div>
+      <span class="mod-count">9 submódulos</span>
+      <span class="mod-arrow">›</span>
+    </div>
+    <div class="sub-list">
+      <div class="sub-grid">
+        <div class="sub-item" data-name="folha de pagamento e benefícios processamento de folha, esocial, reinf e gestão de benefícios">
+          <div class="sub-dot" style="background:#37474F"></div>
+          <div class="sub-content">
+            <div class="sub-name">Folha de Pagamento e Benefícios</div>
+            <span class="sub-id">RH-FP-001</span>
+            <div class="sub-desc">Processamento de folha, eSocial, REINF e gestão de benefícios</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="ponto e jornada controle de ponto, banco de horas e jornadas especiais">
+          <div class="sub-dot" style="background:#37474F"></div>
+          <div class="sub-content">
+            <div class="sub-name">Ponto e Jornada</div>
+            <span class="sub-id">RH-PNT-001</span>
+            <div class="sub-desc">Controle de ponto, banco de horas e jornadas especiais</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão da força de trabalho escalonamento, turnos e gestão de equipes por demanda">
+          <div class="sub-dot" style="background:#37474F"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão da Força de Trabalho</div>
+            <span class="sub-id">RH-WFM-001</span>
+            <div class="sub-desc">Escalonamento, turnos e gestão de equipes por demanda</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="recrutamento ats, vagas, triagem, entrevistas e onboarding">
+          <div class="sub-dot" style="background:#37474F"></div>
+          <div class="sub-content">
+            <div class="sub-name">Recrutamento</div>
+            <span class="sub-id">RH-REC-001</span>
+            <div class="sub-desc">ATS, vagas, triagem, entrevistas e onboarding</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="desenvolvimento de funcionários pdi, avaliação de desempenho e plano de carreira">
+          <div class="sub-dot" style="background:#37474F"></div>
+          <div class="sub-content">
+            <div class="sub-name">Desenvolvimento de Funcionários</div>
+            <span class="sub-id">RH-DEV-001</span>
+            <div class="sub-desc">PDI, avaliação de desempenho e plano de carreira</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão de talentos sucessão, retenção e gestão de alta performance">
+          <div class="sub-dot" style="background:#37474F"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Talentos</div>
+            <span class="sub-id">RH-TLT-001</span>
+            <div class="sub-desc">Sucessão, retenção e gestão de alta performance</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="treinamento e certificações lms trilhas de aprendizado, cursos, certificações e compliance de treinamento">
+          <div class="sub-dot" style="background:#37474F"></div>
+          <div class="sub-content">
+            <div class="sub-name">Treinamento e Certificações LMS</div>
+            <span class="sub-id">RH-LMS-001</span>
+            <div class="sub-desc">Trilhas de aprendizado, cursos, certificações e compliance de treinamento</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="planejamento de rh headcount, orçamento de pessoal e workforce planning">
+          <div class="sub-dot" style="background:#37474F"></div>
+          <div class="sub-content">
+            <div class="sub-name">Planejamento de RH</div>
+            <span class="sub-id">RH-PLN-001</span>
+            <div class="sub-desc">Headcount, orçamento de pessoal e workforce planning</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="saúde e segurança ocupacional pcmso, ppra, cat, epi e gestão de saúde do trabalhador">
+          <div class="sub-dot" style="background:#37474F"></div>
+          <div class="sub-content">
+            <div class="sub-name">Saúde e Segurança Ocupacional</div>
+            <span class="sub-id">RH-SSO-001</span>
+            <div class="sub-desc">PCMSO, PPRA, CAT, EPI e gestão de saúde do trabalhador</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mod-card" id="mod-man" data-code="MAN" data-name="manutenção">
+    <div class="mod-header" onclick="toggle('mod-man')">
+      <div class="mod-color" style="background:#4E342E"></div>
+      <div class="mod-icon" style="background:#4E342E">MAN</div>
+      <div class="mod-info">
+        <div class="mod-name">MANUTENÇÃO</div>
+        <div class="mod-desc">EAM completo — manutenção preventiva, preditiva, gestão de equipamentos e paradas programadas.</div>
+      </div>
+      <span class="mod-count">7 submódulos</span>
+      <span class="mod-arrow">›</span>
+    </div>
+    <div class="sub-list">
+      <div class="sub-grid">
+        <div class="sub-item" data-name="manutenção preventiva planos de manutenção, ordens periódicas e checklist">
+          <div class="sub-dot" style="background:#4E342E"></div>
+          <div class="sub-content">
+            <div class="sub-name">Manutenção Preventiva</div>
+            <span class="sub-id">MAN-PRV-001</span>
+            <div class="sub-desc">Planos de manutenção, ordens periódicas e checklist</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="manutenção preditiva monitoramento de condição, iot e análise preditiva">
+          <div class="sub-dot" style="background:#4E342E"></div>
+          <div class="sub-content">
+            <div class="sub-name">Manutenção Preditiva</div>
+            <span class="sub-id">MAN-PDT-001</span>
+            <div class="sub-desc">Monitoramento de condição, IoT e análise preditiva</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão de trabalho ordens de serviço, técnicos, tempo e materiais utilizados">
+          <div class="sub-dot" style="background:#4E342E"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Trabalho</div>
+            <span class="sub-id">MAN-TRB-001</span>
+            <div class="sub-desc">Ordens de serviço, técnicos, tempo e materiais utilizados</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão de peças de reposição estoque de peças, reserva e consumo em manutenção">
+          <div class="sub-dot" style="background:#4E342E"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Peças de Reposição</div>
+            <span class="sub-id">MAN-PEC-001</span>
+            <div class="sub-desc">Estoque de peças, reserva e consumo em manutenção</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão de paradas planejamento de shut-down, cronograma e controle de desvios">
+          <div class="sub-dot" style="background:#4E342E"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Paradas</div>
+            <span class="sub-id">MAN-PAR-001</span>
+            <div class="sub-desc">Planejamento de shut-down, cronograma e controle de desvios</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="indução e configuração de equipamentos cadastro técnico, hierarquia de ativos e configuração">
+          <div class="sub-dot" style="background:#4E342E"></div>
+          <div class="sub-content">
+            <div class="sub-name">Indução e Configuração de Equipamentos</div>
+            <span class="sub-id">MAN-IND-001</span>
+            <div class="sub-desc">Cadastro técnico, hierarquia de ativos e configuração</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="confiabilidade e revisão análise de falhas, mtbf/mttr e melhoria contínua">
+          <div class="sub-dot" style="background:#4E342E"></div>
+          <div class="sub-content">
+            <div class="sub-name">Confiabilidade e Revisão</div>
+            <span class="sub-id">MAN-CRV-001</span>
+            <div class="sub-desc">Análise de falhas, MTBF/MTTR e melhoria contínua</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mod-card" id="mod-qld" data-code="QLD" data-name="qualidade">
+    <div class="mod-header" onclick="toggle('mod-qld')">
+      <div class="mod-color" style="background:#00695C"></div>
+      <div class="mod-icon" style="background:#00695C">QLD</div>
+      <div class="mod-info">
+        <div class="mod-name">QUALIDADE</div>
+        <div class="mod-desc">Gestão da qualidade do produto e do fornecedor — inspeções, não conformidades, rastreabilidade e recall.</div>
+      </div>
+      <span class="mod-count">7 submódulos</span>
+      <span class="mod-arrow">›</span>
+    </div>
+    <div class="sub-list">
+      <div class="sub-grid">
+        <div class="sub-item" data-name="planos de inspeção e amostragem critérios de aceite, planos de amostragem e laudos">
+          <div class="sub-dot" style="background:#00695C"></div>
+          <div class="sub-content">
+            <div class="sub-name">Planos de Inspeção e Amostragem</div>
+            <span class="sub-id">QLD-INS-001</span>
+            <div class="sub-desc">Critérios de aceite, planos de amostragem e laudos</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="análise de aceitação e rejeição inspeção de entrada, aprovação e rejeição de lotes">
+          <div class="sub-dot" style="background:#00695C"></div>
+          <div class="sub-content">
+            <div class="sub-name">Análise de Aceitação e Rejeição</div>
+            <span class="sub-id">QLD-ACR-001</span>
+            <div class="sub-desc">Inspeção de entrada, aprovação e rejeição de lotes</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="não conformidades ncr registro, tratativa, ação corretiva e fechamento de ncrs">
+          <div class="sub-dot" style="background:#00695C"></div>
+          <div class="sub-content">
+            <div class="sub-name">Não Conformidades NCR</div>
+            <span class="sub-id">QLD-NCR-001</span>
+            <div class="sub-desc">Registro, tratativa, ação corretiva e fechamento de NCRs</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="rastreabilidade e recall rastreamento de lote, árvore de rastreabilidade e gestão de recall">
+          <div class="sub-dot" style="background:#00695C"></div>
+          <div class="sub-content">
+            <div class="sub-name">Rastreabilidade e Recall</div>
+            <span class="sub-id">QLD-RST-001</span>
+            <div class="sub-desc">Rastreamento de lote, árvore de rastreabilidade e gestão de recall</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="qualidade de fornecedor qualificação, auditorias e avaliação de performance do fornecedor">
+          <div class="sub-dot" style="background:#00695C"></div>
+          <div class="sub-content">
+            <div class="sub-name">Qualidade de Fornecedor</div>
+            <span class="sub-id">QLD-FOR-001</span>
+            <div class="sub-desc">Qualificação, auditorias e avaliação de performance do fornecedor</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão de atributos características de qualidade, medições e especificações">
+          <div class="sub-dot" style="background:#00695C"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Atributos</div>
+            <span class="sub-id">QLD-ATR-001</span>
+            <div class="sub-desc">Características de qualidade, medições e especificações</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="administração da qualidade políticas, documentos do sistema de qualidade e iso">
+          <div class="sub-dot" style="background:#00695C"></div>
+          <div class="sub-content">
+            <div class="sub-name">Administração da Qualidade</div>
+            <span class="sub-id">QLD-ADM-001</span>
+            <div class="sub-desc">Políticas, documentos do sistema de qualidade e ISO</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mod-card" id="mod-prj" data-code="PRJ" data-name="projetos">
+    <div class="mod-header" onclick="toggle('mod-prj')">
+      <div class="mod-color" style="background:#1A237E"></div>
+      <div class="mod-icon" style="background:#1A237E">PRJ</div>
+      <div class="mod-info">
+        <div class="mod-name">PROJETOS</div>
+        <div class="mod-desc">PPM completo — do portfólio ao encerramento, com gestão de recursos, riscos, orçamento e faturamento por projeto.</div>
+      </div>
+      <span class="mod-count">8 submódulos</span>
+      <span class="mod-arrow">›</span>
+    </div>
+    <div class="sub-list">
+      <div class="sub-grid">
+        <div class="sub-item" data-name="definição de projeto escopo, objetivos, stakeholders, cronograma e linha de base">
+          <div class="sub-dot" style="background:#1A237E"></div>
+          <div class="sub-content">
+            <div class="sub-name">Definição de Projeto</div>
+            <span class="sub-id">PRJ-DEF-001</span>
+            <div class="sub-desc">Escopo, objetivos, stakeholders, cronograma e linha de base</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="planejamento e rastreamento gantt, marcos, dependências e acompanhamento de progresso">
+          <div class="sub-dot" style="background:#1A237E"></div>
+          <div class="sub-content">
+            <div class="sub-name">Planejamento e Rastreamento</div>
+            <span class="sub-id">PRJ-RST-001</span>
+            <div class="sub-desc">Gantt, marcos, dependências e acompanhamento de progresso</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão de recursos alocação de equipe, capacidade e nivelamento de recursos">
+          <div class="sub-dot" style="background:#1A237E"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Recursos</div>
+            <span class="sub-id">PRJ-REC-001</span>
+            <div class="sub-desc">Alocação de equipe, capacidade e nivelamento de recursos</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="planejamento e orçamento budget do projeto, controle de custos e evm">
+          <div class="sub-dot" style="background:#1A237E"></div>
+          <div class="sub-content">
+            <div class="sub-name">Planejamento e Orçamento</div>
+            <span class="sub-id">PRJ-ORC-001</span>
+            <div class="sub-desc">Budget do projeto, controle de custos e EVM</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão de riscos de projeto matriz de riscos, mitigações e plano de contingência">
+          <div class="sub-dot" style="background:#1A237E"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Riscos de Projeto</div>
+            <span class="sub-id">PRJ-RSK-001</span>
+            <div class="sub-desc">Matriz de riscos, mitigações e plano de contingência</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="faturamento de projeto medições, avanço físico e faturamento por etapa">
+          <div class="sub-dot" style="background:#1A237E"></div>
+          <div class="sub-content">
+            <div class="sub-name">Faturamento de Projeto</div>
+            <span class="sub-id">PRJ-FAT-001</span>
+            <div class="sub-desc">Medições, avanço físico e faturamento por etapa</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="portfólio e priorização gestão de portfólio, scoring e priorização estratégica">
+          <div class="sub-dot" style="background:#1A237E"></div>
+          <div class="sub-content">
+            <div class="sub-name">Portfólio e Priorização</div>
+            <span class="sub-id">PRJ-PRT-001</span>
+            <div class="sub-desc">Gestão de portfólio, scoring e priorização estratégica</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="encerramento de projeto lições aprendidas, aceite formal e arquivo do projeto">
+          <div class="sub-dot" style="background:#1A237E"></div>
+          <div class="sub-content">
+            <div class="sub-name">Encerramento de Projeto</div>
+            <span class="sub-id">PRJ-ENC-001</span>
+            <div class="sub-desc">Lições aprendidas, aceite formal e arquivo do projeto</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mod-card" id="mod-grc" data-code="GRC" data-name="grc">
+    <div class="mod-header" onclick="toggle('mod-grc')">
+      <div class="mod-color" style="background:#B71C1C"></div>
+      <div class="mod-icon" style="background:#B71C1C">GRC</div>
+      <div class="mod-info">
+        <div class="mod-name">GRC</div>
+        <div class="mod-desc">Governança, Risco e Compliance — segregação de funções, auditoria, políticas e investigações.</div>
+      </div>
+      <span class="mod-count">6 submódulos</span>
+      <span class="mod-arrow">›</span>
+    </div>
+    <div class="sub-list">
+      <div class="sub-grid">
+        <div class="sub-item" data-name="gestão de riscos corporativos mapa de riscos, avaliação, tratamento e monitoramento">
+          <div class="sub-dot" style="background:#B71C1C"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Riscos Corporativos</div>
+            <span class="sub-id">GRC-RIS-001</span>
+            <div class="sub-desc">Mapa de riscos, avaliação, tratamento e monitoramento</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="controles internos e auditoria controles, testes, evidências e relatórios de auditoria">
+          <div class="sub-dot" style="background:#B71C1C"></div>
+          <div class="sub-content">
+            <div class="sub-name">Controles Internos e Auditoria</div>
+            <span class="sub-id">GRC-CIA-001</span>
+            <div class="sub-desc">Controles, testes, evidências e relatórios de auditoria</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="segregação de funções sod análise de conflitos de acesso, bloqueios automáticos e aprovações compensatórias">
+          <div class="sub-dot" style="background:#B71C1C"></div>
+          <div class="sub-content">
+            <div class="sub-name">Segregação de Funções SoD</div>
+            <span class="sub-id">GRC-SOD-001</span>
+            <div class="sub-desc">Análise de conflitos de acesso, bloqueios automáticos e aprovações compensatórias</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="compliance regulatório gestão de obrigações legais, prazos e evidências de conformidade">
+          <div class="sub-dot" style="background:#B71C1C"></div>
+          <div class="sub-content">
+            <div class="sub-name">Compliance Regulatório</div>
+            <span class="sub-id">GRC-REG-001</span>
+            <div class="sub-desc">Gestão de obrigações legais, prazos e evidências de conformidade</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão de políticas políticas corporativas, ciclo de revisão e confirmação de ciência">
+          <div class="sub-dot" style="background:#B71C1C"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Políticas</div>
+            <span class="sub-id">GRC-POL-001</span>
+            <div class="sub-desc">Políticas corporativas, ciclo de revisão e confirmação de ciência</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="investigações e denúncias canal de denúncias, investigações e whistleblower">
+          <div class="sub-dot" style="background:#B71C1C"></div>
+          <div class="sub-content">
+            <div class="sub-name">Investigações e Denúncias</div>
+            <span class="sub-id">GRC-DEN-001</span>
+            <div class="sub-desc">Canal de denúncias, investigações e whistleblower</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mod-card" id="mod-esg" data-code="ESG" data-name="esg">
+    <div class="mod-header" onclick="toggle('mod-esg')">
+      <div class="mod-color" style="background:#2E7D32"></div>
+      <div class="mod-icon" style="background:#2E7D32">ESG</div>
+      <div class="mod-info">
+        <div class="mod-name">ESG</div>
+        <div class="mod-desc">Sustentabilidade corporativa — pegada de carbono, economia circular, diversidade e relatórios ESRS/GRI.</div>
+      </div>
+      <span class="mod-count">6 submódulos</span>
+      <span class="mod-arrow">›</span>
+    </div>
+    <div class="sub-list">
+      <div class="sub-grid">
+        <div class="sub-item" data-name="pegada de carbono inventário de emissões ghg, escopos 1, 2 e 3, metas e compensações">
+          <div class="sub-dot" style="background:#2E7D32"></div>
+          <div class="sub-content">
+            <div class="sub-name">Pegada de Carbono</div>
+            <span class="sub-id">ESG-GHG-001</span>
+            <div class="sub-desc">Inventário de emissões GHG, escopos 1, 2 e 3, metas e compensações</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão ambiental ehs licenças ambientais, incidentes, resíduos e conformidade ehs">
+          <div class="sub-dot" style="background:#2E7D32"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão Ambiental EHS</div>
+            <span class="sub-id">ESG-EHS-001</span>
+            <div class="sub-desc">Licenças ambientais, incidentes, resíduos e conformidade EHS</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="economia circular reciclagem, reutilização, fim de vida de produto e logística reversa">
+          <div class="sub-dot" style="background:#2E7D32"></div>
+          <div class="sub-content">
+            <div class="sub-name">Economia Circular</div>
+            <span class="sub-id">ESG-ECO-001</span>
+            <div class="sub-desc">Reciclagem, reutilização, fim de vida de produto e logística reversa</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="transporte sustentável frota verde, emissões de transporte e otimização de rotas">
+          <div class="sub-dot" style="background:#2E7D32"></div>
+          <div class="sub-content">
+            <div class="sub-name">Transporte Sustentável</div>
+            <span class="sub-id">ESG-TSU-001</span>
+            <div class="sub-desc">Frota verde, emissões de transporte e otimização de rotas</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="diversidade e responsabilidade social indicadores de diversidade, ações sociais e investimento comunitário">
+          <div class="sub-dot" style="background:#2E7D32"></div>
+          <div class="sub-content">
+            <div class="sub-name">Diversidade e Responsabilidade Social</div>
+            <span class="sub-id">ESG-DIV-001</span>
+            <div class="sub-desc">Indicadores de diversidade, ações sociais e investimento comunitário</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="relatórios esg esrs, gri, sasb e relatório integrado de sustentabilidade">
+          <div class="sub-dot" style="background:#2E7D32"></div>
+          <div class="sub-content">
+            <div class="sub-name">Relatórios ESG</div>
+            <span class="sub-id">ESG-REL-001</span>
+            <div class="sub-desc">ESRS, GRI, SASB e relatório integrado de sustentabilidade</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mod-card" id="mod-con" data-code="CON" data-name="concessionárias">
+    <div class="mod-header" onclick="toggle('mod-con')">
+      <div class="mod-color" style="background:#E65100"></div>
+      <div class="mod-icon" style="background:#E65100">CON</div>
+      <div class="mod-info">
+        <div class="mod-name">CONCESSIONÁRIAS</div>
+        <div class="mod-desc">DMS vertical — módulo especializado para redes de concessionárias e distribuidores autorizados.</div>
+      </div>
+      <span class="mod-count">8 submódulos</span>
+      <span class="mod-arrow">›</span>
+    </div>
+    <div class="sub-list">
+      <div class="sub-grid">
+        <div class="sub-item" data-name="vendas vendas de veículos, f&i, test-drive e delivery">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Vendas</div>
+            <span class="sub-id">CON-VEN-001</span>
+            <div class="sub-desc">Vendas de veículos, F&I, test-drive e delivery</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="crm de concessionária relacionamento com clientes, pós-venda e fidelização">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">CRM de Concessionária</div>
+            <span class="sub-id">CON-CRM-001</span>
+            <div class="sub-desc">Relacionamento com clientes, pós-venda e fidelização</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão de peças de reposição estoque de peças, pedidos ao fabricante e balcão de vendas">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Peças de Reposição</div>
+            <span class="sub-id">CON-PES-001</span>
+            <div class="sub-desc">Estoque de peças, pedidos ao fabricante e balcão de vendas</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão de serviços ordens de serviço, agendamento, técnicos e faturamento de oficina">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão de Serviços</div>
+            <span class="sub-id">CON-SRV-001</span>
+            <div class="sub-desc">Ordens de serviço, agendamento, técnicos e faturamento de oficina</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="garantias gestão de garantias, acionamento junto ao fabricante e peritagem">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Garantias</div>
+            <span class="sub-id">CON-GAR-001</span>
+            <div class="sub-desc">Gestão de garantias, acionamento junto ao fabricante e peritagem</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="manutenção manutenção preventiva da frota demo e veículos internos">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Manutenção</div>
+            <span class="sub-id">CON-MNT-001</span>
+            <div class="sub-desc">Manutenção preventiva da frota demo e veículos internos</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="finanças consórcio, financiamento e gestão financeira da concessionária">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Finanças</div>
+            <span class="sub-id">CON-FIN-001</span>
+            <div class="sub-desc">Consórcio, financiamento e gestão financeira da concessionária</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="desenvolvimento de concessionárias performance da rede, metas, rankings e campanhas do fabricante">
+          <div class="sub-dot" style="background:#E65100"></div>
+          <div class="sub-content">
+            <div class="sub-name">Desenvolvimento de Concessionárias</div>
+            <span class="sub-id">CON-DEV-001</span>
+            <div class="sub-desc">Performance da rede, metas, rankings e campanhas do fabricante</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mod-card" id="mod-imo" data-code="IMO" data-name="imobiliária">
+    <div class="mod-header" onclick="toggle('mod-imo')">
+      <div class="mod-color" style="background:#795548"></div>
+      <div class="mod-icon" style="background:#795548">IMO</div>
+      <div class="mod-info">
+        <div class="mod-name">IMOBILIÁRIA</div>
+        <div class="mod-desc">Gestão de contratos, locação, vendas e manutenção do portfólio imobiliário.</div>
+      </div>
+      <span class="mod-count">1 submódulos</span>
+      <span class="mod-arrow">›</span>
+    </div>
+    <div class="sub-list">
+      <div class="sub-grid">
+        <div class="sub-item" data-name="gestão imobiliária portfólio de imóveis, contratos de locação, vendas e manutenção predial">
+          <div class="sub-dot" style="background:#795548"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão Imobiliária</div>
+            <span class="sub-id">IMO-001</span>
+            <div class="sub-desc">Portfólio de imóveis, contratos de locação, vendas e manutenção predial</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mod-card" id="mod-rpt" data-code="RPT" data-name="relatórios">
+    <div class="mod-header" onclick="toggle('mod-rpt')">
+      <div class="mod-color" style="background:#546E7A"></div>
+      <div class="mod-icon" style="background:#546E7A">RPT</div>
+      <div class="mod-info">
+        <div class="mod-name">RELATÓRIOS</div>
+        <div class="mod-desc">Módulos de BI e relatórios operacionais transversais a todos os domínios.</div>
+      </div>
+      <span class="mod-count">2 submódulos</span>
+      <span class="mod-arrow">›</span>
+    </div>
+    <div class="sub-list">
+      <div class="sub-grid">
+        <div class="sub-item" data-name="bi onemanager dashboards gerenciais, kpis e análises de negócio multi-módulo">
+          <div class="sub-dot" style="background:#546E7A"></div>
+          <div class="sub-content">
+            <div class="sub-name">BI OneManager</div>
+            <span class="sub-id">RPT-ONM-001</span>
+            <div class="sub-desc">Dashboards gerenciais, KPIs e análises de negócio multi-módulo</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="operacionais openbook relatórios operacionais padronizados por domínio">
+          <div class="sub-dot" style="background:#546E7A"></div>
+          <div class="sub-content">
+            <div class="sub-name">Operacionais Openbook</div>
+            <span class="sub-id">RPT-OPB-001</span>
+            <div class="sub-desc">Relatórios operacionais padronizados por domínio</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mod-card" id="mod-plt" data-code="PLT" data-name="plataforma compartilhada">
+    <div class="mod-header" onclick="toggle('mod-plt')">
+      <div class="mod-color" style="background:#263238"></div>
+      <div class="mod-icon" style="background:#263238">PLT</div>
+      <div class="mod-info">
+        <div class="mod-name">PLATAFORMA COMPARTILHADA</div>
+        <div class="mod-desc">A espinha dorsal técnica — fiscal eletrônico, GED, workflow, IA, offline, IoT, SDK e todos os serviços transversais.</div>
+      </div>
+      <span class="mod-count">18 submódulos</span>
+      <span class="mod-arrow">›</span>
+    </div>
+    <div class="sub-list">
+      <div class="sub-grid">
+        <div class="sub-item" data-name="faturamento fiscal eletrônico nf-e, nfc-e, nfs-e, ct-e, contingência offline, sped e esocial">
+          <div class="sub-dot" style="background:#263238"></div>
+          <div class="sub-content">
+            <div class="sub-name">Faturamento Fiscal Eletrônico</div>
+            <span class="sub-id">PLT-DFE-001</span>
+            <div class="sub-desc">NF-e, NFC-e, NFS-e, CT-e, contingência offline, SPED e eSocial</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="gestão eletrônica de documentos ged armazenamento, versionamento, assinatura e gestão de documentos">
+          <div class="sub-dot" style="background:#263238"></div>
+          <div class="sub-content">
+            <div class="sub-name">Gestão Eletrônica de Documentos GED</div>
+            <span class="sub-id">PLT-GED-001</span>
+            <div class="sub-desc">Armazenamento, versionamento, assinatura e gestão de documentos</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="assinatura eletrônica assinatura digital icp-brasil, docusign e validação de autenticidade">
+          <div class="sub-dot" style="background:#263238"></div>
+          <div class="sub-content">
+            <div class="sub-name">Assinatura Eletrônica</div>
+            <span class="sub-id">PLT-ASS-001</span>
+            <div class="sub-desc">Assinatura digital ICP-Brasil, DocuSign e validação de autenticidade</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="workflow motor de fluxos de aprovação, notificações e automação de processos">
+          <div class="sub-dot" style="background:#263238"></div>
+          <div class="sub-content">
+            <div class="sub-name">Workflow</div>
+            <span class="sub-id">PLT-WF-001</span>
+            <div class="sub-desc">Motor de fluxos de aprovação, notificações e automação de processos</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="api gateway e openapi gateway unificado, documentação swagger, webhooks e rate limiting">
+          <div class="sub-dot" style="background:#263238"></div>
+          <div class="sub-content">
+            <div class="sub-name">API Gateway e OpenAPI</div>
+            <span class="sub-id">PLT-API-001</span>
+            <div class="sub-desc">Gateway unificado, documentação Swagger, webhooks e rate limiting</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="analytics e mobilidade relatórios, painéis mobile, exportações e dados em tempo real">
+          <div class="sub-dot" style="background:#263238"></div>
+          <div class="sub-content">
+            <div class="sub-name">Analytics e Mobilidade</div>
+            <span class="sub-id">PLT-ANL-001</span>
+            <div class="sub-desc">Relatórios, painéis mobile, exportações e dados em tempo real</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="compliance lgpd sox ifrs controles técnicos de conformidade, portabilidade e esquecimento">
+          <div class="sub-dot" style="background:#263238"></div>
+          <div class="sub-content">
+            <div class="sub-name">Compliance LGPD SOX IFRS</div>
+            <span class="sub-id">PLT-CMP-001</span>
+            <div class="sub-desc">Controles técnicos de conformidade, portabilidade e esquecimento</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="ia / ml modelos preditivos, sugestões inteligentes e automação por ia">
+          <div class="sub-dot" style="background:#263238"></div>
+          <div class="sub-content">
+            <div class="sub-name">IA / ML</div>
+            <span class="sub-id">PLT-IA-001</span>
+            <div class="sub-desc">Modelos preditivos, sugestões inteligentes e automação por IA</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="integrações e conectores erp-to-erp, marketplaces, bancos, transportadoras e ad/ldap">
+          <div class="sub-dot" style="background:#263238"></div>
+          <div class="sub-content">
+            <div class="sub-name">Integrações e Conectores</div>
+            <span class="sub-id">PLT-INT-001</span>
+            <div class="sub-desc">ERP-to-ERP, marketplaces, bancos, transportadoras e AD/LDAP</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="soa e colaboração mensagens, notificações, e-mail, chat integrado e calendário">
+          <div class="sub-dot" style="background:#263238"></div>
+          <div class="sub-content">
+            <div class="sub-name">SOA e Colaboração</div>
+            <span class="sub-id">PLT-SOA-001</span>
+            <div class="sub-desc">Mensagens, notificações, e-mail, chat integrado e calendário</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="sdk e extensões apis públicas, webhooks, extensões de terceiros e white-label">
+          <div class="sub-dot" style="background:#263238"></div>
+          <div class="sub-content">
+            <div class="sub-name">SDK e Extensões</div>
+            <span class="sub-id">PLT-SDK-001</span>
+            <div class="sub-desc">APIs públicas, webhooks, extensões de terceiros e white-label</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="upload e migração de dados importação em lote, mapeamento de campos e validação de dados">
+          <div class="sub-dot" style="background:#263238"></div>
+          <div class="sub-content">
+            <div class="sub-name">Upload e Migração de Dados</div>
+            <span class="sub-id">PLT-UPL-001</span>
+            <div class="sub-desc">Importação em lote, mapeamento de campos e validação de dados</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="interface assistida wizards guias passo-a-passo, wizards de configuração e onboarding guiado">
+          <div class="sub-dot" style="background:#263238"></div>
+          <div class="sub-content">
+            <div class="sub-name">Interface Assistida Wizards</div>
+            <span class="sub-id">PLT-WIZ-001</span>
+            <div class="sub-desc">Guias passo-a-passo, wizards de configuração e onboarding guiado</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="offline shell capacidade offline do desktop e pdv com sincronização inteligente">
+          <div class="sub-dot" style="background:#263238"></div>
+          <div class="sub-content">
+            <div class="sub-name">Offline Shell</div>
+            <span class="sub-id">PLT-OFF-001</span>
+            <div class="sub-desc">Capacidade offline do Desktop e PDV com sincronização inteligente</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="planejamento in-memory engine de otimização em memória para cenários de planejamento">
+          <div class="sub-dot" style="background:#263238"></div>
+          <div class="sub-content">
+            <div class="sub-name">Planejamento In-Memory</div>
+            <span class="sub-id">PLT-PIM-001</span>
+            <div class="sub-desc">Engine de otimização em memória para cenários de planejamento</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="integração iot conexão com sensores, equipamentos e dispositivos de campo">
+          <div class="sub-dot" style="background:#263238"></div>
+          <div class="sub-content">
+            <div class="sub-name">Integração IoT</div>
+            <span class="sub-id">PLT-IOT-001</span>
+            <div class="sub-desc">Conexão com sensores, equipamentos e dispositivos de campo</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="impressão térmica impressoras térmicas, etiquetas e cupons fiscais">
+          <div class="sub-dot" style="background:#263238"></div>
+          <div class="sub-content">
+            <div class="sub-name">Impressão Térmica</div>
+            <span class="sub-id">PLT-IMP-001</span>
+            <div class="sub-desc">Impressoras térmicas, etiquetas e cupons fiscais</div>
+          </div>
+        </div>
+        <div class="sub-item" data-name="configuração configuração global do sistema, parâmetros por módulo e por tenant">
+          <div class="sub-dot" style="background:#263238"></div>
+          <div class="sub-content">
+            <div class="sub-name">Configuração</div>
+            <span class="sub-id">SER-AUT-001</span>
+            <div class="sub-desc">Configuração global do sistema, parâmetros por módulo e por tenant</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+function toggle(id) {
+  const card = document.getElementById(id);
+  card.classList.toggle('open');
+}
+
+function filterMod(code, btn) {
+  document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.mod-card').forEach(card => {
+    if (code === 'all' || card.dataset.code === code) {
+      card.style.display = '';
+      if (code !== 'all') card.classList.add('open');
+      else card.classList.remove('open');
+    } else {
+      card.style.display = 'none';
+    }
+  });
+  updateCount();
+}
+
+function filter() {
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  let visible = 0;
+  document.querySelectorAll('.mod-card').forEach(card => {
+    const modName = card.dataset.name;
+    const items = card.querySelectorAll('.sub-item');
+    let modMatch = modName.includes(q);
+    let anySubMatch = false;
+    items.forEach(item => {
+      const match = q === '' || item.dataset.name.includes(q) || modMatch;
+      item.style.display = match ? '' : 'none';
+      if (match) anySubMatch = true;
+      // highlight
+      item.querySelectorAll('.sub-name,.sub-desc').forEach(el => {
+        el.innerHTML = el.textContent;
+        if (q && el.textContent.toLowerCase().includes(q)) {
+          el.innerHTML = el.textContent.replace(new RegExp(q, 'gi'), m => `<mark class="hl">${m}</mark>`);
+        }
+      });
+    });
+    const show = q === '' || modMatch || anySubMatch;
+    card.style.display = show ? '' : 'none';
+    if (show) { card.classList.add('open'); visible++; }
+    else card.classList.remove('open');
+  });
+  if (q === '') {
+    document.querySelectorAll('.mod-card').forEach(c => c.classList.remove('open'));
+  }
+  updateCount();
+}
+
+function updateCount() {
+  const visible = [...document.querySelectorAll('.mod-card')].filter(c => c.style.display !== 'none');
+  const subs = visible.reduce((acc, c) => acc + [...c.querySelectorAll('.sub-item')].filter(i => i.style.display !== 'none').length, 0);
+  document.getElementById('count-label').textContent = subs + ' submódulos';
+}
+</script>
+</body></html>

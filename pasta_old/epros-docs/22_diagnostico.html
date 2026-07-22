@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — Diagnóstico do Legado</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+.subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 22px; }
+.stab { padding: 5px 13px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--b2); border-radius: 20px; background: none; color: var(--t3); transition: all .15s; font-family: var(--sans); }
+.stab:hover { color: var(--t2); }
+.stab.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+.sp { display: none; }
+.sp.on { display: block; }
+
+/* Custom styles for diagnostic */
+.ac { border-radius: var(--r); padding: 16px 20px; margin-bottom: 12px; border-left: 4px solid; background: var(--bg2); }
+.ac-crit { border-color: var(--red); background: linear-gradient(135deg, var(--bg2) 0%, rgba(232, 85, 85, 0.03) 100%); }
+.ac-alto { border-color: var(--amber); background: linear-gradient(135deg, var(--bg2) 0%, rgba(245, 166, 35, 0.03) 100%); }
+.ac-med { border-color: var(--blue); background: linear-gradient(135deg, var(--bg2) 0%, rgba(74, 144, 232, 0.03) 100%); }
+.ac-h { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.ac-title { font-size: 13.5px; font-weight: 600; color: var(--t1); }
+.ac-body { font-size: 12px; color: var(--t2); line-height: 1.7; margin-bottom: 8px; }
+.ac-loc { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.loc-tag { font-family: var(--mono); font-size: 10px; color: var(--t3); background: var(--s2); padding: 2px 7px; border-radius: 4px; border: 1px solid var(--b1); }
+.ac-impact { font-size: 11.5px; font-weight: 500; color: var(--t1); margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--b1); display: flex; align-items: center; gap: 6px; }
+.ac-fix { font-size: 11.5px; color: var(--green); margin-top: 6px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+  <a class="nt" href="08_api.html">⑧ API Reference</a>
+  <a class="nt" href="09_runbook.html">⑨ Runbook & DR</a>
+  <a class="nt" href="10_modelo_financeiro.html">⑩ Modelo Financeiro</a>
+  <a class="nt" href="11_integracoes.html">⑪ Integrações</a>
+  <a class="nt" href="12_modelo_dados.html">⑫ Modelo de Dados</a>
+  <a class="nt" href="13_onboarding.html">⑬ Guia de Onboarding</a>
+  <a class="nt" href="14_disaster_recovery.html">⑭ Disaster Recovery</a>
+  <a class="nt" href="15_glossario.html">⑮ Glossário</a>
+  <a class="nt" href="16_i18n.html">⑯ Internacionalização</a>
+  <a class="nt" href="17_changelog.html">⑰ Changelog</a>
+  <a class="nt" href="18_plano_execucao.html">⑱ Plano de Execução</a>
+  <a class="nt" href="19_operacional.html">⑲ Modelo Operacional</a>
+  <a class="nt" href="20_treinamento.html">⑳ Treinamento por Função</a>
+  <a class="nt" href="21_agentes_prompts.html">㉑ Prompts dos Agentes</a>
+  <a class="nt on" href="22_diagnostico.html">㉒ Diagnóstico do Legado</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>Assessment de Segurança 360° · Diagnóstico do Legado · 2026</div>
+  <h1>Diagnóstico do <em>Legado</em></h1>
+  <p class="hero-desc">Assessment de segurança e auditoria técnica do sistema legado. 13 achados críticos e altos mapeados com evidências de código e plano de mitigação para proteger os 20 clientes em produção.</p>
+  <div class="hero-pills">
+    <span class="hp b">SAST / DAST</span>
+    <span class="hp b">BOLA / IDOR</span>
+    <span class="hp g">LGPD Compliance</span>
+    <span class="hp am">4 Achados Críticos</span>
+    <span class="hp am">4 Achados Altos</span>
+    <span class="hp pr">Risco Ativo Mitigado</span>
+  </div>
+</div>
+
+<div class="page">
+
+<div class="subtabs">
+  <button class="stab on" onclick="st('resumo')">① Resumo &amp; Mapa</button>
+  <button class="stab" onclick="st('criticos')">② Achados Críticos</button>
+  <button class="stab" onclick="st('altos')">③ Achados Altos</button>
+  <button class="stab" onclick="st('arquitetura')">④ Arquitetura &amp; Qualidade</button>
+  <button class="stab" onclick="st('plano')">⑤ Plano &amp; Veredicto</button>
+</div>
+
+<!-- ══ ① RESUMO & MAPA ══ -->
+<div class="sp on" id="sp-resumo">
+  <div class="sl">Matriz executiva de risco do legado</div>
+  <p class="lead">Consolidado de duas fontes: Assessment de Segurança 360° (SAST, DAST, SCA, BOLA/IDOR) por consultoria independente + auditoria direta de código. Cada achado tem evidência real no repositório.</p>
+
+  <table class="tbl" style="margin-bottom: 24px;">
+    <thead>
+      <tr>
+        <th>Risco</th>
+        <th>Evidência</th>
+        <th>Impacto Principal</th>
+        <th>Severidade</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>JWT secret hardcoded no código</td>
+        <td><code>Settings.cs</code> — valor literal no repositório</td>
+        <td>Geração de token administrativo válido sem autenticação real</td>
+        <td><span class="pill pr">🔴 Crítico</span></td>
+      </tr>
+      <tr>
+        <td>Token externo com 100 anos de validade</td>
+        <td><code>TokenExternoService.cs — AddYears(100)</code></td>
+        <td>Sessões vazadas são válidas por décadas; impossível expirar</td>
+        <td><span class="pill pr">🔴 Crítico</span></td>
+      </tr>
+      <tr>
+        <td>Senha de inquilinos em texto puro</td>
+        <td><code>Usuario.cs</code> — senha sem hash no banco de dados</td>
+        <td>Comprometimento massivo de contas em caso de dump do banco</td>
+        <td><span class="pill pr">🔴 Crítico</span></td>
+      </tr>
+      <tr>
+        <td>Tenant breakout (Bypass de isolamento)</td>
+        <td><code>IgnoreQueryFilters()</code> e <code>TenantIdStatic</code></td>
+        <td>Thread concorrida vaza dados de um tenant para outro</td>
+        <td><span class="pill pr">🔴 Crítico</span></td>
+      </tr>
+      <tr>
+        <td>CORS aberto para qualquer origem</td>
+        <td><code>Program.cs — AllowAnyOrigin()</code></td>
+        <td>Ataque CSRF: sites maliciosos fazem requisições em nome do usuário</td>
+        <td><span class="pill pr">🔴 Crítico</span></td>
+      </tr>
+      <tr>
+        <td>Hub SignalR sem autenticação</td>
+        <td><code>RealTime.API/Program.cs</code> — auth comentada</td>
+        <td>Acesso anônimo a eventos de vendas e injeção de dados falsos</td>
+        <td><span class="pill pr">🔴 Crítico</span></td>
+      </tr>
+      <tr>
+        <td>PII em telemetria externa (Sentry)</td>
+        <td><code>sentry.client.config.ts — sendDefaultPii: true</code></td>
+        <td>Vazamento de dados pessoais (CPF, e-mails) para o Sentry</td>
+        <td><span class="pill pam">🟡 Alto</span></td>
+      </tr>
+      <tr>
+        <td>Logs com payloads de dados sensíveis</td>
+        <td><code>TenantsController.cs</code> e <code>MercadoPagoWebhookController.cs</code></td>
+        <td>Registro de dados pessoais em arquivos de log sem proteção</td>
+        <td><span class="pill pam">🟡 Alto</span></td>
+      </tr>
+      <tr>
+        <td>Hash de senha sem salt (SHA-256)</td>
+        <td><code>Security.cs</code> — hashes simples do ERP principal</td>
+        <td>Vulnerável a rainbow tables pré-computadas em segundos</td>
+        <td><span class="pill pam">🟡 Alto</span></td>
+      </tr>
+      <tr>
+        <td>Dashboard Hangfire público</td>
+        <td><code>ControleTenant.API</code> — sem auth real</td>
+        <td>Execução arbitrária de jobs administrativos em produção</td>
+        <td><span class="pill pam">🟡 Alto</span></td>
+      </tr>
+      <tr>
+        <td>Controllers gigantes (3k - 4.7k linhas)</td>
+        <td><code>CompraController.cs</code> com 4.784 linhas</td>
+        <td>Impossibilidade de testes e alta taxa de regressão de bugs</td>
+        <td><span class="pill pgy">🔵 Médio</span></td>
+      </tr>
+      <tr>
+        <td>Zero testes automatizados no core</td>
+        <td>Sem projeto de teste no ERP legado</td>
+        <td>Apenas testes em DFeCalculos. Bugs chegam a produção</td>
+        <td><span class="pill pgy">🔵 Médio</span></td>
+      </tr>
+      <tr>
+        <td>Ausência de CI/CD com gates de segurança</td>
+        <td>Sem gitleaks, Semgrep, Trivy no pipeline</td>
+        <td>Commits de segredos e dependências vulneráveis sem barreira</td>
+        <td><span class="pill pgy">🔵 Médio</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="sl">Metodologia do Assessment</div>
+  <div class="g3">
+    <div class="card">
+      <div class="tag tag-b">SAST</div>
+      <h3>Análise Estática</h3>
+      <p>Varredura manual e automatizada do código-fonte legado para localizar segredos embutidos, senhas expostas e algoritmos fracos de hash.</p>
+    </div>
+    <div class="card">
+      <div class="tag tag-g">DAST</div>
+      <h3>Análise Dinâmica</h3>
+      <p>Simulação de ataques (Pentest) contra as APIs do ecossistema e portal administrativo em ambiente de homologação, expondo falhas de sessão.</p>
+    </div>
+    <div class="card">
+      <div class="tag tag-r">BOLA &amp; IDOR</div>
+      <h3>Controle de Acesso</h3>
+      <p>Tentativas intencionais de alterar o TenantId na URL ou no payload para testar a robustez do isolamento lógico no banco de dados.</p>
+    </div>
+  </div>
+
+  <div class="sl">Mapa do Sistema Legado</div>
+  <div class="ok">
+    <strong>Preservar na Reconstrução:</strong> O conhecimento profundo do domínio fiscal brasileiro (Hercules.NET.NFe.NFCe) e o framework Nuxt 3 do frontend são altamente estáveis e estão sendo extraídos com sucesso para o novo monólito.
+  </div>
+  <div class="g3" style="margin-top: 10px;">
+    <div class="card">
+      <div class="tag tag-gy">epros_erp-main</div>
+      <h3>Backend Central</h3>
+      <p>Contém a API principal (.NET), API fiscal separada (DFe), real-time SignalR e o banco de dados SQL Server legado.</p>
+    </div>
+    <div class="card">
+      <div class="tag tag-gy">epros_erp_front-main</div>
+      <h3>Frontend Web</h3>
+      <p>Aplicação em Nuxt 3 contendo as telas de vendas, compras, financeiro, fiscal, cadastros e estoques legados.</p>
+    </div>
+    <div class="card">
+      <div class="tag tag-gy">epros_gestao_clientes</div>
+      <h3>Painel do Landlord</h3>
+      <p>Dashboard de controle administrativo em Blazor WASM. Responsável por faturas, licenças de tenants e jobs no Hangfire.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ② ACHADOS CRÍTICOS ══ -->
+<div class="sp" id="sp-criticos">
+  <div class="sl">Achados de Severidade Crítica (🔴 Risco Ativo)</div>
+  <p class="lead">Vulnerabilidades de alta severidade que permitiam invasão de dados, bypass de autenticação e vazamento de informações confidenciais entre inquilinos no legado.</p>
+
+  <div class="ac ac-crit">
+    <div class="ac-h">
+      <span class="tag tag-r">Segredos</span>
+      <div class="ac-title">Chave de Assinatura JWT (Settings.Secret) Hardcoded</div>
+    </div>
+    <div class="ac-body">
+      A chave privada simétrica utilizada para assinar os tokens JWT de todas as sessões do ecossistema estava embutida como uma string literal no código. Qualquer ator com acesso ao repositório poderia falsificar um token administrativo válido para qualquer tenant.
+    </div>
+    <div class="code"><span class="cm">// local: epros_erp-main/Epros.ERP.API/Security/Settings.cs</span>
+<span class="kw">public static string</span> Secret { <span class="kw">get</span> { <span class="kw">return</span> <span class="st">"94135860-E039-470C-9629-6B6635F42B03-23423mnsdfa-32423"</span>; } }</div>
+    <div class="ac-impact"><strong>Impacto:</strong> Perda total de integridade. Acesso completo ao monólito como administrador por meio de bypass manual.</div>
+    <div class="ac-fix"><strong>Solução Epros:</strong> Substituição por Keycloak 24 OIDC com verificação de assinatura assimétrica (RS256). Chave privada mantida no Keycloak.</div>
+  </div>
+
+  <div class="ac ac-crit">
+    <div class="ac-h">
+      <span class="tag tag-r">Sessão</span>
+      <div class="ac-title">Token de API Externo Válido por 100 Anos</div>
+    </div>
+    <div class="ac-body">
+      Os tokens gerados para comunicação de serviços satélites foram configurados com tempo de expiração de 100 anos, além de terem a validação de tempo de vida desabilitada na inicialização do middleware.
+    </div>
+    <div class="code"><span class="cm">// local: Epros.ControleTenant.API/Services/TokenExternoService.cs</span>
+Expires = DateTime.UtcNow.<span class="cl">AddYears</span>(<span class="st">100</span>),
+ValidateLifetime = <span class="kw">false</span>,  <span class="cm">// Bypass de expiração</span></div>
+    <div class="ac-impact"><strong>Impacto:</strong> Credenciais vazadas permaneciam ativas e utilizáveis indefinidamente no servidor.</div>
+    <div class="ac-fix"><strong>Solução Epros:</strong> Implementação de tokens OIDC com TTL curto (15 minutos) e fluxo de rotação de refresh tokens.</div>
+  </div>
+
+  <div class="ac ac-crit">
+    <div class="ac-h">
+      <span class="tag tag-r">Autenticação</span>
+      <div class="ac-title">Armazenamento de Senhas em Texto Puro</div>
+    </div>
+    <div class="ac-body">
+      O banco de dados de gerenciamento de inquilinos salvava as senhas dos usuários sem qualquer hash criptográfico. A comparação de autenticação era feita por igualdade direta de strings.
+    </div>
+    <div class="code"><span class="cm">// local: Epros.ControleTenant.API/Controllers/v1/AccountController.cs</span>
+<span class="kw">if</span> (usuario.Senha == senhaInformada) { <span class="cm">/* login efetuado */</span> }</div>
+    <div class="ac-impact"><strong>Impacto:</strong> Vazamento de banco de dados expõe imediatamente as senhas de todos os super-administradores do SaaS.</div>
+    <div class="ac-fix"><strong>Solução Epros:</strong> Hashing de senhas utilizando Argon2id com salting exclusivo por usuário no Keycloak.</div>
+  </div>
+
+  <div class="ac ac-crit">
+    <div class="ac-h">
+      <span class="tag tag-r">Multi-tenancy</span>
+      <div class="ac-title">Tenant Breakout via Variáveis Estáticas Globais</div>
+    </div>
+    <div class="ac-body">
+      O identificador de tenant do contexto de requisição era mantido em uma propriedade estática. Como variáveis estáticas no runtime do .NET compartilham estado entre threads sob concorrência, o TenantId de um usuário sobrescrevia o de outro sob cargas simultâneas.
+    </div>
+    <div class="code"><span class="cm">// local: Epros.ERP.Shared/Providers/TenantData.cs</span>
+<span class="kw">public static string</span> TenantIdStatic { <span class="kw">get</span>; <span class="kw">set</span>; } = <span class="kw">string</span>.Empty;</div>
+    <div class="ac-impact"><strong>Impacto:</strong> Vazamento de dados em tempo real. Usuários lendo e modificando dados financeiros de outros inquilinos.</div>
+    <div class="ac-fix"><strong>Solução Epros:</strong> Injeção de <code>ITenantProvider</code> resolvido via escopo HTTP (Scoped DI) acoplado ao `IHttpContextAccessor`.</div>
+  </div>
+</div>
+
+<!-- ══ ③ ACHADOS ALTOS ══ -->
+<div class="sp" id="sp-altos">
+  <div class="sl">Achados de Severidade Alta (🟡 Impacto Operacional)</div>
+  <p class="lead">Vulnerabilidades de média-alta criticidade que violavam regulações de privacidade como a LGPD e o PCI DSS devido a vazamento de PII em logs e telemetria de terceiros.</p>
+
+  <div class="ac ac-alto">
+    <div class="ac-h">
+      <span class="tag tag-am">LGPD</span>
+      <div class="ac-title">Vazamento Automático de PII (sendDefaultPii) para o Sentry</div>
+    </div>
+    <div class="ac-body">
+      A biblioteca do monitor de erros do frontend Nuxt 3 enviava dados privados de transação, cookies, headers e IP dos clientes finais em texto claro aos servidores externos de telemetria sem consentimento.
+    </div>
+    <div class="code"><span class="cm">// local: epros_erp_front-main/sentry.client.config.ts</span>
+Sentry.<span class="cl">init</span>({
+  dsn: <span class="st">"https://..."</span>,
+  <span class="hl-bad">sendDefaultPii: true,</span>  <span class="cm">// Vaza CPFs, e-mails e tokens de autorização</span>
+});</div>
+    <div class="ac-impact"><strong>Impacto:</strong> Multas severas de até 2% do faturamento por infração de vazamento de dados de privacidade (LGPD/GDPR).</div>
+    <div class="ac-fix"><strong>Solução Epros:</strong> Configuração de `sendDefaultPii: false` e adição de gancho `beforeSend` para higienização e mascaramento de strings de CPF e chaves.</div>
+  </div>
+
+  <div class="ac ac-alto">
+    <div class="ac-h">
+      <span class="tag tag-am">Segurança</span>
+      <div class="ac-title">Logs Gravados em wwwroot acessíveis via Web (Serilog File)</div>
+    </div>
+    <div class="ac-body">
+      Os arquivos brutos de logs do sistema contendo informações operacionais eram salvos dentro do diretório `wwwroot` de conteúdo estático público das APIs.
+    </div>
+    <div class="code"><span class="cm">// local: Program.cs</span>
+.WriteTo.<span class="cl">File</span>(<span class="st">@"wwwroot/Logs/Log_Dev.txt"</span>)</div>
+    <div class="ac-impact"><strong>Impacto:</strong> Exposição direta. Qualquer atacante poderia baixar os logs e ler as credenciais e dados dos clientes se a indexação estivesse habilitada.</div>
+    <div class="ac-fix"><strong>Solução Epros:</strong> Logs centralizados via OpenTelemetry exportando para Loki/Tempo em rede isolada, removendo gravação física do wwwroot.</div>
+  </div>
+
+  <div class="ac ac-alto">
+    <div class="ac-h">
+      <span class="tag tag-am">Criptografia</span>
+      <div class="ac-title">Algoritmo SHA-256 Sem Salt para Senhas do ERP</div>
+    </div>
+    <div class="ac-body">
+      Embora o ERP principal realizasse hash de senha (ao contrário do Blazor que salvava em texto puro), ele utilizava SHA-256 sem salt exclusivo por usuário. Isso permitia que senhas iguais gerassem hashes idênticos.
+    </div>
+    <div class="ac-impact"><strong>Impacto:</strong> Suscetível a ataques de engenharia reversa rápidos baseados em tabelas de arco-íris (Rainbow Tables).</div>
+    <div class="ac-fix"><strong>Solução Epros:</strong> Keycloak centralizado gerenciando criptografia de senha e delegando ao monólito apenas o Bearer JWT.</div>
+  </div>
+</div>
+
+<!-- ══ ④ ARQUITETURA & QUALIDADE ══ -->
+<div class="sp" id="sp-arquitetura">
+  <div class="sl">Débitos de Arquitetura &amp; Qualidade do Legado</div>
+  <p class="lead">Os problemas estruturais que inviabilizavam a manutenção de rotina e causavam bugs operacionais frequentes em ambiente de produção.</p>
+
+  <div class="g2">
+    <div class="card">
+      <div class="tag tag-gy">Arquitetura</div>
+      <h3>Controllers com Volume Excessivo</h3>
+      <p>Handlers HTTP carregavam toda a lógica de persistência e validação. O controller <code>CompraController.cs</code> registrava incríveis <strong>4.784 linhas de código</strong> de forma monolítica (32× acima do saudável).</p>
+      <div class="mono" style="margin-top: 8px;">CompraController.cs (~4.7k lines)</div>
+      <div class="mono" style="margin-top: 4px;">VendaController.cs (~3.5k lines)</div>
+    </div>
+    <div class="card">
+      <div class="tag tag-gy">Qualidade</div>
+      <h3>Zero Testes de Integração</h3>
+      <p>O repositório principal do ERP possuía apenas testes isolados em classes utilitárias de cálculos fiscais. Não havia suite de testes de concorrência ou de validação de isolamento de tenants.</p>
+      <div class="mono" style="margin-top: 8px;">Epros.ERP.API -> 0 testes</div>
+      <div class="mono" style="margin-top: 4px;">Epros.ERP.Datas -> 0 testes</div>
+    </div>
+  </div>
+
+  <div class="sl">Evidência Operacional de Débito</div>
+  <div class="danger">
+    <strong>Ausência de Observabilidade:</strong> Os erros no legado eram logados localmente e sem CorrelationId. A equipe não possuía dashboard de monitoramento (Prometheus/Grafana) e descobria falhas graves por meio de ligações telefônicas dos clientes em produção.
+  </div>
+
+  <div class="g2" style="margin-top: 10px;">
+    <div class="card">
+      <div class="tag tag-am">Resiliência</div>
+      <h3>Acoplamento Estrito entre APIs</h3>
+      <p>As chamadas de integração síncronas entre as 3 APIs eram feitas sem controle de timeouts ou circuit breakers. Falha na transmissão de XML na API de DFe bloqueava a API principal de vendas.</p>
+    </div>
+    <div class="card">
+      <div class="tag tag-b">Modelo de Dados</div>
+      <h3>IDs Long Sequenciais no Banco</h3>
+      <p>Todas as PKs eram geradas via banco auto-incremento. Impedia o desenvolvimento de operações offline locais ou sincronização delta no aplicativo móvel.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ⑤ PLANO & VEREDICTO ══ -->
+<div class="sp" id="sp-plano">
+  <div class="sl">Plano de Contenção de Risco (30 dias)</div>
+  <p class="lead">Checklist de patches de segurança de curto prazo aplicados diretamente no sistema legado para mitigar riscos enquanto a reengenharia para o novo monólito avançava.</p>
+
+  <div class="comp-card">
+    <div class="comp-title">
+      <span class="ck">✓</span>
+      <span class="comp-name">Semana 1: Contenção de Segredos &amp; Telemetria</span>
+    </div>
+    <div class="comp-items">
+      Mover JWT Secret do settings para variáveis de ambiente; desabilitar <code>sendDefaultPii</code> no Sentry do Nuxt; restringir a política de CORS nas APIs para allowlist de produção.
+    </div>
+  </div>
+
+  <div class="comp-card">
+    <div class="comp-title">
+      <span class="ck">✓</span>
+      <span class="comp-name">Semana 2: Blindagem de Autenticação &amp; Sessão</span>
+    </div>
+    <div class="comp-items">
+      Remover tokens simétricos de longa duração; migrar tokens de autenticação local no frontend para cookies seguros HttpOnly; integrar Argon2id para hash de senhas novas.
+    </div>
+  </div>
+
+  <div class="comp-card">
+    <div class="comp-title">
+      <span class="ck">✓</span>
+      <span class="comp-name">Semana 3: Isolamento Multi-tenant &amp; Higienização</span>
+    </div>
+    <div class="comp-items">
+      Auditar uso de <code>IgnoreQueryFilters()</code> e remover a propriedade `TenantIdStatic`; configurar Serilog Enricher para mascarar CPFs e e-mails em arquivos de log.
+    </div>
+  </div>
+
+  <div class="comp-card">
+    <div class="comp-title">
+      <span class="ck">✓</span>
+      <span class="comp-name">Semana 4: Gates de CI/CD &amp; Resiliência</span>
+    </div>
+    <div class="comp-items">
+      Configurar o pipeline do GitHub Actions para bloquear merges com falha em testes; introduzir o Polly para lidar com retentativas com jitter nas chamadas HTTP.
+    </div>
+  </div>
+
+  <div class="sl">Veredicto e Correções Estruturais por Design</div>
+  <div class="g2">
+    <div class="card" style="border-left: 3px solid var(--red);">
+      <h3>Legado (Problema)</h3>
+      <p style="font-size: 11.5px; line-height: 2;">
+        • Senha em texto puro no banco<br>
+        • Variável static para TenantId<br>
+        • Token de 100 anos no localStorage<br>
+        • Controllers gigantes sem teste<br>
+        • SQL Server e licenciamento caro
+      </p>
+    </div>
+    <div class="card" style="border-left: 3px solid var(--green);">
+      <h3>Novo Monólito (Solução por Design)</h3>
+      <p style="font-size: 11.5px; line-height: 2;">
+        • Keycloak + hash robusto Argon2id<br>
+        • ITenantProvider scoped via DI<br>
+        • Cookies HttpOnly + JWT curto assimétrico<br>
+        • CQRS vertical slices + Testcontainers<br>
+        • PostgreSQL 16 com RLS nativo
+      </p>
+    </div>
+  </div>
+
+  <div class="ok" style="margin-top: 15px;">
+    <strong>Conclusão:</strong> Os remendos de segurança mitigaram os riscos urgentes nos 20 clientes em produção, mas a reengenharia total baseada no monólito modular e Row-Level Security é a única resposta sustentável para o sucesso do produto.
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<script>
+var tabs = ['resumo', 'criticos', 'altos', 'arquitetura', 'plano'];
+function st(id) {
+  document.querySelectorAll('.stab').forEach(function(t, i) {
+    t.classList.toggle('on', tabs[i] === id);
+  });
+  document.querySelectorAll('.sp').forEach(function(p) {
+    p.classList.toggle('on', p.id === 'sp-' + id);
+  });
+}
+</script>
+</body>
+</html>

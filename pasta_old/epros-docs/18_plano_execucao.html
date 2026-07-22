@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — Plano de Execução</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+.subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 22px; }
+.stab { padding: 5px 13px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--b2); border-radius: 20px; background: none; color: var(--t3); transition: all .15s; font-family: var(--sans); }
+.stab:hover { color: var(--t2); }
+.stab.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+.sp { display: none; }
+.sp.on { display: block; }
+
+/* Progresso */
+.prog-wrap { background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r); padding: 18px; margin-bottom: 25px; }
+.prog-label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 8px; font-family: var(--sans); }
+.prog-bar { background: var(--b2); border-radius: 99px; height: 8px; overflow: hidden; }
+.prog-fill { background: linear-gradient(90deg, var(--blue), var(--green)); height: 100%; border-radius: 99px; width: 100%; transition: width .4s; }
+
+/* Steps */
+.step { display: flex; gap: 14px; background: var(--s1); border: 1px solid var(--b1); border-radius: var(--r); padding: 16px; margin-bottom: 8px; transition: all .15s; cursor: pointer; align-items: flex-start; }
+.step:hover { border-color: var(--blue); }
+.step.done { background: rgba(16, 185, 129, 0.03); border-color: rgba(16, 185, 129, 0.2); }
+.step.done .step-title { text-decoration: line-through; color: var(--t3); }
+.step.urgent { border-left: 4px solid var(--red); }
+.step.warn { border-left: 4px solid var(--yellow); }
+
+.chk { width: 18px; height: 18px; border-radius: 4px; border: 2px solid var(--b2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; transition: all .15s; font-size: 10px; color: transparent; font-family: var(--sans); font-weight: bold; }
+.step.done .chk { background: var(--green); border-color: var(--green); color: #fff; }
+.step-body { flex: 1; }
+.step-title { font-size: 13.5px; font-weight: 600; color: var(--t1); margin-bottom: 4px; font-family: var(--sans); }
+.step-desc { font-size: 11.5px; color: var(--t2); line-height: 1.6; }
+.step-tags { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+.tag-pl { font-size: 9px; font-family: var(--mono); padding: 1px 5px; border-radius: 3px; font-weight: 500; text-transform: uppercase; background: var(--s3); color: var(--t3); border: 1px solid var(--b2); }
+.tag-red { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+.tag-yellow { background: rgba(245,158,11,0.1); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+  <a class="nt" href="08_api.html">⑧ API Reference</a>
+  <a class="nt" href="09_runbook.html">⑨ Runbook & DR</a>
+  <a class="nt" href="10_modelo_financeiro.html">⑩ Modelo Financeiro</a>
+  <a class="nt" href="11_integracoes.html">⑪ Integrações</a>
+  <a class="nt" href="12_modelo_dados.html">⑫ Modelo de Dados</a>
+  <a class="nt" href="13_onboarding.html">⑬ Guia de Onboarding</a>
+  <a class="nt" href="14_disaster_recovery.html">⑭ Disaster Recovery</a>
+  <a class="nt" href="15_glossario.html">⑮ Glossário</a>
+  <a class="nt" href="16_i18n.html">⑯ Internacionalização</a>
+  <a class="nt" href="17_changelog.html">⑰ Changelog</a>
+  <a class="nt on" href="18_plano_execucao.html">⑱ Plano de Execução</a>
+  <a class="nt" href="19_operacional.html">⑲ Modelo Operacional</a>
+  <a class="nt" href="20_treinamento.html">⑳ Treinamento por Função</a>
+  <a class="nt" href="21_agentes_prompts.html">㉑ Prompts dos Agentes</a>
+  <a class="nt" href="22_diagnostico.html">㉒ Diagnóstico do Legado</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>Segurança · Mitigação · DevOps · Evolução Sistêmica</div>
+  <h1>Plano de <em>Execução</em></h1>
+  <p class="hero-desc">Lista sistemática e interativa de tarefas e sprints executados para contenção de riscos, segurança de dados e aceleração do novo monólito.</p>
+</div>
+
+<div class="page">
+
+<div class="prog-wrap">
+  <div class="prog-label"><span>Progresso Geral do Plano</span><span id="prog-pct">100%</span></div>
+  <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+</div>
+
+<div class="subtabs">
+  <button class="stab on" onclick="st('urgente')">🔴 Urgente — Segurança</button>
+  <button class="stab" onclick="st('s1')">Semana 1 — Contenção</button>
+  <button class="stab" onclick="st('s2')">Semana 2 — Autenticação</button>
+  <button class="stab" onclick="st('s3')">Semana 3 — Tenant & LGPD</button>
+  <button class="stab" onclick="st('s4')">Semana 4 — DevSecOps</button>
+  <button class="stab" onclick="st('s31')">Dias 31–60 — Processo</button>
+  <button class="stab" onclick="st('s61')">Dias 61–90 — Aceleração</button>
+</div>
+
+<!-- ══ URGENTE — SEGURANÇA ══ -->
+<div class="sp on" id="sp-urgente">
+  <div class="sl">Ação Imediata — Risco Ativo em Produção</div>
+  <p class="lead">Patches de segurança urgentes aplicados no legado para mitigar vulnerabilidades ativas nos 20 clientes em produção.</p>
+
+  <div class="step urgent done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Mover JWT Secret para variável de ambiente</div>
+      <div class="step-desc">Em <code>Settings.cs</code>: substituir o valor literal por <code>Environment.GetEnvironmentVariable("JWT_SECRET")</code>. Configurar a variável no servidor de produção. Rotacionar a chave — gerar novo valor forte (32+ chars). Todos os tokens existentes ficam inválidos.</div>
+      <div class="step-tags">
+        <span class="tag-pl tag-red">Crítico</span>
+        <span class="tag-pl">Dev Sênior</span>
+        <span class="tag-pl">2h estimado</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step urgent done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Desativar sendDefaultPii no Sentry — violação LGPD ativa</div>
+      <div class="step-desc">Em <code>sentry.client.config.ts</code>: mudar <code>sendDefaultPii: true</code> para <code>false</code>. Adicionar <code>beforeSend</code> que mascara CPF, CNPJ e e-mails antes de enviar. Deploy imediato no frontend.</div>
+      <div class="step-tags">
+        <span class="tag-pl tag-red">Crítico · LGPD</span>
+        <span class="tag-pl">Dev Frontend</span>
+        <span class="tag-pl">1h estimado</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step urgent done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Fechar autenticação do Hub SignalR</div>
+      <div class="step-desc">Em <code>Epros.Erp.RealTime.API/Program.cs</code>: reativar <code>.RequireAuthorization()</code> no <code>app.MapHub&lt;VendaHub&gt;</code>. Verificar que o frontend passa o token JWT na conexão SignalR.</div>
+      <div class="step-tags">
+        <span class="tag-pl tag-red">Crítico</span>
+        <span class="tag-pl">Dev Sênior</span>
+        <span class="tag-pl">2h estimado</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step urgent done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Restringir CORS para domínios oficiais</div>
+      <div class="step-desc">Nas 3 APIs (<code>Epros.ERP.API</code>, <code>Epros.ERP.Dfe.API</code>, <code>Epros.ControleTenant.API</code>): substituir <code>AllowAnyOrigin()</code> por <code>WithOrigins("https://app.epros.com.br", "https://admin.epros.com.br")</code> com as URLs reais de produção.</div>
+      <div class="step-tags">
+        <span class="tag-pl tag-red">Crítico</span>
+        <span class="tag-pl">Dev Sênior</span>
+        <span class="tag-pl">1h estimado</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step urgent done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Proteger dashboard Hangfire com autenticação real</div>
+      <div class="step-desc">Em <code>Epros.ControleTenant.API/Program.cs</code>: implementar <code>HangfireAuthFilter</code> que valida JWT e exige role de admin. Adicionar restrição de IP de origem (só acesso interno). Dashboard não pode ser público.</div>
+      <div class="step-tags">
+        <span class="tag-pl tag-red">Crítico</span>
+        <span class="tag-pl">Dev Backend</span>
+        <span class="tag-pl">3h estimado</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SEMANA 1 — CONTENÇÃO ══ -->
+<div class="sp" id="sp-s1">
+  <div class="sl">Semana 1 — Contenção de Risco</div>
+  <p class="lead">Patches rápidos aplicados no legado e alinhamento de processos operacionais básicos para transição.</p>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Revogar credenciais expostas no histórico do Git</div>
+      <div class="step-desc">Remover chaves expostas no histórico do repositório Git usando ferramentas como BFG Repo Cleaner, solicitando um clone limpo ao time após execução.</div>
+      <div class="step-tags">
+        <span class="tag-pl tag-red">Crítico</span>
+        <span class="tag-pl">Tech Lead</span>
+        <span class="tag-pl">2h estimado</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Comunicar os novos papéis ao time</div>
+      <div class="step-desc">Apresentar as diretrizes operacionais, definindo Guardiões de Domínio e papéis do time durante a reengenharia.</div>
+      <div class="step-tags">
+        <span class="tag-pl">Processo</span>
+        <span class="tag-pl">Rafael + TL</span>
+        <span class="tag-pl">30min</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Definir e documentar DoR (Definition of Ready) e DoD (Definition of Done)</div>
+      <div class="step-desc">Criar cartões e checklists no Jira para aplicação sistemática antes do planning das próximas sprints.</div>
+      <div class="step-tags">
+        <span class="tag-pl">Processo</span>
+        <span class="tag-pl">TL + PO</span>
+        <span class="tag-pl">1h estimado</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Apresentar para os sócios (PPT Executivo)</div>
+      <div class="step-desc">Apresentação focada na decisão estratégica de reconstrução e nas prioridades dos primeiros 90 dias do projeto.</div>
+      <div class="step-tags">
+        <span class="tag-pl">Apresentação</span>
+        <span class="tag-pl">Rafael + Sócios</span>
+        <span class="tag-pl">30-45 min</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SEMANA 2 — AUTENTICAÇÃO ══ -->
+<div class="sp" id="sp-s2">
+  <div class="sl">Semana 2 — Blindagem de Autenticação</div>
+  <p class="lead">Migração da sessão de frontend e backend para modelos modernos e criptografia segura de credenciais.</p>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Implementar Argon2id para novas senhas</div>
+      <div class="step-desc">Substituição do algoritmo simples SHA-256 por hashing seguro Argon2id com salting aleatório.</div>
+      <div class="step-tags">
+        <span class="tag-pl tag-red">Alto</span>
+        <span class="tag-pl">Dev Backend</span>
+        <span class="tag-pl">4h estimado</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Corrigir senha em texto puro no módulo de Tenants</div>
+      <div class="step-desc">Remoção de qualquer validação em texto plano, exigindo hash de comparação no banco.</div>
+      <div class="step-tags">
+        <span class="tag-pl tag-red">Crítico</span>
+        <span class="tag-pl">Dev Backend</span>
+        <span class="tag-pl">3h estimado</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Configurar TTL curto no TokenExternoService</div>
+      <div class="step-desc">Substituição do vencimento abusivo de token por expirações curtas com refresh tokens automáticos.</div>
+      <div class="step-tags">
+        <span class="tag-pl tag-red">Crítico</span>
+        <span class="tag-pl">Dev Backend</span>
+        <span class="tag-pl">2h estimado</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Migrar token do localStorage para cookie HttpOnly</div>
+      <div class="step-desc">Backend emitindo cookies seguros de sessão HttpOnly com flag SameSite=Strict no login do cliente.</div>
+      <div class="step-tags">
+        <span class="tag-pl tag-red">Alto</span>
+        <span class="tag-pl">Dev Fullstack</span>
+        <span class="tag-pl">1 dia estimado</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SEMANA 3 — TENANT & LGPD ══ -->
+<div class="sp" id="sp-s3">
+  <div class="sl">Semana 3 — Isolamento Multi-tenant & LGPD</div>
+  <p class="lead">Auditoria rígida de segurança para evitar vazamento de dados entre inquilinos e vazamento de PII em logs.</p>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Auditar endpoints críticos — TenantId extraído do claim</div>
+      <div class="step-desc">Garantir que todas as APIs extraem o TenantId do token de autenticação e nunca de parâmetros livres na requisição.</div>
+      <div class="step-tags">
+        <span class="tag-pl tag-red">Crítico</span>
+        <span class="tag-pl">Dev Sênior</span>
+        <span class="tag-pl">2 dias</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Auditar usos de IgnoreQueryFilters() no EF Core</div>
+      <div class="step-desc">Verificar cada ponto onde o filtro automático de tenant é ignorado, adicionando testes de segurança específicos.</div>
+      <div class="step-tags">
+        <span class="tag-pl tag-red">Crítico</span>
+        <span class="tag-pl">Dev Sênior</span>
+        <span class="tag-pl">4h estimado</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Implementar mascaramento global de PII nos logs</div>
+      <div class="step-desc">Configuração do Serilog Enricher para remover ou ocultar CPFs, e-mails e CPFs gravados nos logs da aplicação.</div>
+      <div class="step-tags">
+        <span class="tag-pl tag-yellow">Alto · LGPD</span>
+        <span class="tag-pl">Dev Backend</span>
+        <span class="tag-pl">4h estimado</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SEMANA 4 — DEVSECOPS ══ -->
+<div class="sp" id="sp-s4">
+  <div class="sl">Semana 4 — DevSecOps Permanente</div>
+  <p class="lead">Instalação de ganchos automáticos de segurança e gates no pipeline de CI/CD para evitar erros futuros.</p>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Configurar gitleaks no pipeline — bloquear secrets no commit</div>
+      <div class="step-desc">Automação de scan do repositório para evitar commits com tokens e segredos no histórico do Git.</div>
+      <div class="step-tags">
+        <span class="tag-pl">DevSecOps</span>
+        <span class="tag-pl">Tech Lead</span>
+        <span class="tag-pl">2h estimado</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Adicionar dotnet test ao pipeline</div>
+      <div class="step-desc">Processo automático de compilação e execução de testes de segurança obrigatórios para bloqueio de merge.</div>
+      <div class="step-tags">
+        <span class="tag-pl">DevSecOps</span>
+        <span class="tag-pl">Tech Lead</span>
+        <span class="tag-pl">3h estimado</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Polly + HttpClientFactory nas integrações críticas</div>
+      <div class="step-desc">Estruturação de retentativas (retry) com jitter, disjuntores (circuit breakers) e timeouts em chamadas externas.</div>
+      <div class="step-tags">
+        <span class="tag-pl">Resiliência</span>
+        <span class="tag-pl">Dev Backend</span>
+        <span class="tag-pl">4h estimado</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DIAS 31–60 — PROCESSO ══ -->
+<div class="sp" id="sp-s31">
+  <div class="sl">Dias 31–60 — Processo &amp; Qualidade</div>
+  <p class="lead">Consolidação do processo ágil, testes físicos com Testcontainers e documentação de regras de negócio.</p>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Concluir Bloco 6 — Compras com o novo processo</div>
+      <div class="step-desc">Faturamento de compras, Custo Médio Ponderado de produtos em lote, e redução de controllers gigantes do legado.</div>
+      <div class="step-tags">
+        <span class="tag-pl">Reengenharia</span>
+        <span class="tag-pl">Time Dev</span>
+        <span class="tag-pl">4 semanas</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">QA Agent gerando casos de teste de ACs</div>
+      <div class="step-desc">SDET/QAs estruturando testes automáticos com Testcontainers baseados nos critérios de aceitação refinados.</div>
+      <div class="step-tags">
+        <span class="tag-pl">Processo</span>
+        <span class="tag-pl">SDET / QA</span>
+        <span class="tag-pl">Ongoing</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Identificar cliente piloto simples para migração</div>
+      <div class="step-desc">Seleção de inquilino de baixa complexidade (uso restrito de Finanças, Vendas e Estoque) para validação preliminar.</div>
+      <div class="step-tags">
+        <span class="tag-pl">Estratégico</span>
+        <span class="tag-pl">Rafael + TL</span>
+        <span class="tag-pl">Decisão</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DIAS 61–90 — ACELERAÇÃO ══ -->
+<div class="sp" id="sp-s61">
+  <div class="sl">Dias 61–90 — Aceleração &amp; Migração</div>
+  <p class="lead">Gates de homologação finalizados, migração assistida do primeiro inquilino e retrospectiva global.</p>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Migrations EF Core por módulo + Seeders Keycloak</div>
+      <div class="step-desc">Configuração do seed OIDC de perfis, escopos e mapeadores do tenant, e migrações programáticas por schema do PostgreSQL.</div>
+      <div class="step-tags">
+        <span class="tag-pl">Aceleração</span>
+        <span class="tag-pl">Dev Sênior</span>
+        <span class="tag-pl">2 semanas</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Script de migração long → Guid para 20 clientes legados</div>
+      <div class="step-desc">Validação do script SQL transacional para conversão determinística de chaves primárias do banco legado.</div>
+      <div class="step-tags">
+        <span class="tag-pl">Migração</span>
+        <span class="tag-pl">Dev Sênior</span>
+        <span class="tag-pl">2 semanas</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="step done" onclick="toggle(this)">
+    <div class="chk">✓</div>
+    <div class="step-body">
+      <div class="step-title">Executar migração assistida do cliente piloto</div>
+      <div class="step-desc">Deploy do novo sistema em paralelo com legado em modo de leitura para o primeiro inquilino migrado.</div>
+      <div class="step-tags">
+        <span class="tag-pl">Migração</span>
+        <span class="tag-pl">Rafael + Sênior</span>
+        <span class="tag-pl">Marco</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<script>
+var tabs = ['urgente', 's1', 's2', 's3', 's4', 's31', 's61'];
+function st(id) {
+  document.querySelectorAll('.stab').forEach(function(t, i) {
+    t.classList.toggle('on', tabs[i] === id);
+  });
+  document.querySelectorAll('.sp').forEach(function(p) {
+    p.classList.toggle('on', p.id === 'sp-' + id);
+  });
+}
+
+function toggle(el) {
+  el.classList.toggle('done');
+  updateProgress();
+}
+
+function updateProgress() {
+  var all = document.querySelectorAll('.step').length;
+  var done = document.querySelectorAll('.step.done').length;
+  var pct = all ? Math.round(done / all * 100) : 0;
+  document.getElementById('prog-pct').textContent = pct + '%';
+  document.getElementById('prog-fill').style.width = pct + '%';
+}
+</script>
+</body>
+</html>

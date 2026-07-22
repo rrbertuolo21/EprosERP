@@ -1,0 +1,68 @@
+{
+  "id": "epros-tenant",
+  "realm": "epros-tenant",
+  "enabled": true,
+  "displayName": "Epros ERP Tenant",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Administrador geral da plataforma"
+      },
+      {
+        "name": "plataforma.clientes.write",
+        "description": "Permissão para gerenciar clientes e planos"
+      },
+      {
+        "name": "financeiro.contas_pagar.write",
+        "description": "Permissão para gerenciar contas a pagar"
+      },
+      {
+        "name": "financeiro.contas_receber.write",
+        "description": "Permissão para gerenciar contas a receber"
+      },
+      {
+        "name": "estoque.produtos.write",
+        "description": "Permissão para cadastrar e gerenciar estoque de produtos"
+      },
+      {
+        "name": "estoque.compras.write",
+        "description": "Permissão para lançar compras"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "epros-api",
+      "name": "Epros API Backend",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "https://localhost:7000/*",
+        "http://localhost:7000/*"
+      ],
+      "webOrigins": [
+        "*"
+      ],
+      "protocolMappers": [
+        {
+          "name": "tenantId",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-user-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "tenantId",
+            "claim.name": "tenantId",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ]
+}

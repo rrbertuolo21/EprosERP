@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — Painel Completo</title>
+<link rel="stylesheet" href="_shared.css">
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt on" href="index.html">Home</a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+  <a class="nt" href="08_api.html">⑧ API Reference</a>
+  <a class="nt" href="09_runbook.html">⑨ Runbook & DR</a>
+  <a class="nt" href="10_modelo_financeiro.html">⑩ Modelo Financeiro</a>
+  <a class="nt" href="11_integracoes.html">⑪ Integrações</a>
+  <a class="nt" href="12_modelo_dados.html">⑫ Modelo de Dados</a>
+  <a class="nt" href="13_onboarding.html">⑬ Guia de Onboarding</a>
+  <a class="nt" href="14_disaster_recovery.html">⑭ Disaster Recovery</a>
+  <a class="nt" href="15_glossario.html">⑮ Glossário</a>
+  <a class="nt" href="16_i18n.html">⑯ Internacionalização</a>
+  <a class="nt" href="17_changelog.html">⑰ Changelog</a>
+  <a class="nt" href="18_plano_execucao.html">⑱ Plano de Execução</a>
+  <a class="nt" href="19_operacional.html">⑲ Modelo Operacional</a>
+  <a class="nt" href="20_treinamento.html">⑳ Treinamento por Função</a>
+  <a class="nt" href="21_agentes_prompts.html">㉑ Prompts dos Agentes</a>
+  <a class="nt" href="22_diagnostico.html">㉒ Diagnóstico do Legado</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>Epros · Painel de Documentação · Bloco 15 · Junho 2026</div>
+  <h1>Ep<em>ros</em></h1>
+  <p class="hero-desc">ERP SaaS multi-tenant nível SAP, reescrito do zero. Stack 100% open source, cloud-agnostic, compliance nativo com LGPD, GDPR, PCI DSS e mais 9 regulações. 140+ arquivos .cs gerados.</p>
+  <div class="hero-pills">
+    <span class="hp b">.NET 8 / C#</span>
+    <span class="hp b">PostgreSQL 16</span>
+    <span class="hp b">Keycloak 24</span>
+    <span class="hp g">LGPD</span>
+    <span class="hp g">GDPR</span>
+    <span class="hp g">PCI DSS 4.0</span>
+    <span class="hp am">Bloco 15 concluído</span>
+    <span class="hp am">90 testes passando</span>
+    <span class="hp am">20 clientes Epros.ERP em produção</span>
+  </div>
+</div>
+
+<div class="page">
+  <div class="sl">Navegação por seção</div>
+  <div class="g2" style="gap:10px">
+
+    <a href="01_produto.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-b">① Produto</div>
+        <h3>Visão, missão, posicionamento e mercado</h3>
+        <p>Proposta de valor, ICP, comparativo vs SAP / Oracle / TOTVS, modelo comercial, planos SaaS, multi-surface e roadmap de produto.</p>
+      </div>
+    </a>
+
+    <a href="02_modulos.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-g">② Módulos & Planos</div>
+        <h3>11 macrodomínios + plataforma transversal</h3>
+        <p>Núcleo obrigatório, módulos adicionais com pré-requisitos, plataforma transversal sempre ativa e regras de entitlement.</p>
+      </div>
+    </a>
+
+    <a href="03_arquitetura.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-am">③ Arquitetura</div>
+        <h3>Decisão, camadas, pipeline e princípios</h3>
+        <p>Veredicto Monólito Modular vs Microserviços, 6 camadas técnicas, pipeline de middlewares, 7 princípios invioláveis, multi-tenancy e offline.</p>
+      </div>
+    </a>
+
+    <a href="04_stack.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-t">④ Stack Open Source</div>
+        <h3>Cada componente com racional e status</h3>
+        <p>Backend, persistência, segurança, observabilidade, infra e frontend. Comparativo lock-in Azure/AWS vs equivalentes open source.</p>
+      </div>
+    </a>
+
+    <a href="05_compliance.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-r">⑤ Compliance Mundial</div>
+        <h3>12 regulações — LGPD, GDPR, PCI DSS e mais</h3>
+        <p>Mapa regulatório por região, controles técnicos cruzados, filosofia compliance-first e implementação concreta por requisito.</p>
+      </div>
+    </a>
+
+    <a href="06_ddd.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-p">⑥ DDD & Dados</div>
+        <h3>Bounded contexts, domain events e infra</h3>
+        <p>Agregados por macrodomínio, mapa completo de domain events, Outbox Pattern, 12 schemas PostgreSQL e docker-compose.</p>
+      </div>
+    </a>
+
+    <a href="07_tecnico.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-gy">⑦ Técnico & Status</div>
+        <h3>Código, decisões, bugs corrigidos e próximos passos</h3>
+        <p>Módulos implementados, testes, decisões ADR fechadas, regras SEMPRE/NUNCA, bugs do legado corrigidos e próximos blocos.</p>
+      </div>
+    </a>
+
+    <a href="08_api.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-b">⑧ API Reference</div>
+        <h3>Endpoints, payload JSON e autenticação Keycloak</h3>
+        <p>Documentação da API REST v1, convenções de erro RFC 7807, autenticação JWT via OIDC e rotas integradas do ecossistema Epros.</p>
+      </div>
+    </a>
+
+    <a href="09_runbook.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-r">⑨ Runbook & DR</div>
+        <h3>Mitigação de incidentes, DR, SLAs e isolamento de tenants</h3>
+        <p>Planos de contingência para incidentes Sev 1/Sev 2, políticas de backup/restore RTO/RPO e scripts de migração de tier de banco de dados.</p>
+      </div>
+    </a>
+
+    <a href="10_modelo_financeiro.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-g">⑩ Modelo Financeiro</div>
+        <h3>Planos SaaS, métricas unitárias e margem</h3>
+        <p>Precificação Silver/Gold/Platinum, unit economics (LTV/CAC), custos fixos de hospedagem, break-even e projeções de margem.</p>
+      </div>
+    </a>
+
+    <a href="11_integracoes.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-t">⑪ Integrações</div>
+        <h3>SEFAZ, Mercado Pago, OIDC e Marketplaces</h3>
+        <p>Emissão fiscal A1 síncrona/contingência, webhooks de cobrança, federação de identidades AD/LDAP e integrações logísticas.</p>
+      </div>
+    </a>
+
+    <a href="12_modelo_dados.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-p">⑫ Modelo de Dados</div>
+        <h3>PostgreSQL schemas, tabelas, constraints e RLS</h3>
+        <p>Visão física do banco, dicionário de dados detalhado dos schemas plataforma, estoque, vendas e finanças, chaves (PK/FK/Index) e Row-Level Security.</p>
+      </div>
+    </a>
+
+    <a href="13_onboarding.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-b">⑬ Guia de Onboarding</div>
+        <h3>Setup de ambiente local e contribuições</h3>
+        <p>Instalação de pré-requisitos, inicialização com docker-compose, convenções de commits, diretrizes de branching e CI/CD.</p>
+      </div>
+    </a>
+
+    <a href="14_disaster_recovery.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-r">⑭ Disaster Recovery</div>
+        <h3>Plano de recuperação, RTO/RPO e backups</h3>
+        <p>Políticas de backup diário e incremental WAL, comandos CLI de restore do banco de dados, unseal de chaves do Vault e testes de simulação.</p>
+      </div>
+    </a>
+
+    <a href="15_glossario.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-gy">⑮ Glossário</div>
+        <h3>Linguagem Ubíqua e Glossário Canônico</h3>
+        <p>Dicionário de termos técnicos, conceitos de negócios, métricas SaaS e terminologia de domínio adotada no ecossistema Epros.</p>
+      </div>
+    </a>
+
+    <a href="16_i18n.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-b">⑯ Internacionalização</div>
+        <h3>Tradutores, locales e motores fiscais</h3>
+        <p>Tradução dinâmica, locales pt-BR/en-US/es-ES, conversão regional de números, moedas e fusos horários, além de adaptadores de impostos multi-país.</p>
+      </div>
+    </a>
+
+    <a href="17_changelog.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-gy">⑰ Changelog</div>
+        <h3>Notas de lançamento e histórico de blocos</h3>
+        <p>Histórico detalhado e categorizado de entregas de novas APIs, comandos, domínios, correções e melhorias de segurança dos Blocos 5 ao 15.</p>
+      </div>
+    </a>
+
+    <a href="18_plano_execucao.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-r">⑱ Plano de Execução</div>
+        <h3>Checklist de tarefas e fases de contenção</h3>
+        <p>Lista interativa de tarefas do plano de execução do kit, acompanhando o status de segurança, contenção, e migração dos inquilinos.</p>
+      </div>
+    </a>
+
+    <a href="19_operacional.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-am">⑲ Modelo Operacional</div>
+        <h3>Mapeamento de papéis e integração de IA</h3>
+        <p>Diagnóstico do time, redistribuição de papéis, fluxos de agentes de inteligência artificial nas sprints, acordos DoR/DoD e plano de transição de 90 dias.</p>
+      </div>
+    </a>
+
+    <a href="20_treinamento.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-g">⑳ Treinamento por Função</div>
+        <h3>Trilhas de aprendizado e stack técnica</h3>
+        <p>Guias práticos para desenvolvedores backend, frontend, QAs/SDETs e POs, tópicos de aprofundamento tecnológico e checklist do primeiro dia.</p>
+      </div>
+    </a>
+
+    <a href="21_agentes_prompts.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-p">㉑ Prompts dos Agentes</div>
+        <h3>Prompts de sistema e engenharia de instruções</h3>
+        <p>13 prompts de sistema detalhados para orquestração de agentes de inteligência artificial em todas as fases do ciclo de desenvolvimento.</p>
+      </div>
+    </a>
+
+    <a href="22_diagnostico.html" style="text-decoration:none">
+      <div class="card" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--b1)'">
+        <div class="tag tag-r">㉒ Diagnóstico do Legado</div>
+        <h3>Vulnerabilidades, riscos e plano de ação</h3>
+        <p>Assessment de segurança 360° e auditoria técnica do sistema legado. 13 achados críticos e altos mapeados com evidências de código e patches.</p>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="sl">Status geral — Bloco 15 concluído</div>
+  <table class="tbl">
+    <tr><th>Módulo</th><th>Arquivo</th><th>Entidades</th><th>Testes</th><th>Status</th></tr>
+    <tr><td>Shared / Base</td><td>07_tecnico.html</td><td>EntidadeSaaSBase, OutboxMessage, DomainEvent</td><td>—</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>GestaoClientes</td><td>07_tecnico.html</td><td>Plano, Cliente, Fatura</td><td>5</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>Financeiro</td><td>07_tecnico.html</td><td>ContasPagar, ContasReceber</td><td>8</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>Estoque / Produtos</td><td>07_tecnico.html</td><td>Produto, EstoqueProduto</td><td>—</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>Fiscal / DFe</td><td>07_tecnico.html</td><td>DocumentoFiscal, Eventos</td><td>—</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>Vendas + PDV</td><td>07_tecnico.html</td><td>Venda, VendaItem, Caixa</td><td>19</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>Estoque / Compras</td><td>07_tecnico.html</td><td>Compra, CompraItem</td><td>8</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>Modelo Financeiro</td><td>10_modelo_financeiro.html</td><td>SaaS metrics</td><td>—</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>Integrações</td><td>11_integracoes.html</td><td>SOAP, Webhooks, OIDC Claims</td><td>—</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>Modelo de Dados</td><td>12_modelo_dados.html</td><td>Schemas PG, RLS Columns</td><td>—</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>Onboarding Dev</td><td>13_onboarding.html</td><td>Guia Setup, Git & Commits</td><td>—</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>Disaster Recovery</td><td>14_disaster_recovery.html</td><td>RTO, RPO, CLI Restore</td><td>—</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>Glossário Canônico</td><td>15_glossario.html</td><td>Linguagem Ubíqua, SaaS terms</td><td>—</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>Internacionalização</td><td>16_i18n.html</td><td>Locales, dynamic translate, timezone</td><td>—</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>Histórico / Changelog</td><td>17_changelog.html</td><td>Release notes, deliverables by block</td><td>—</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>Plano de Execução</td><td>18_plano_execucao.html</td><td>Fases de contenção, checklist interativo</td><td>—</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>Modelo Operacional</td><td>19_operacional.html</td><td>Mapeamento do time, processos e agentes IA</td><td>—</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>Treinamento por Função</td><td>20_treinamento.html</td><td>Trilhas por papel, stack e guia onboarding</td><td>—</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>Prompts dos Agentes</td><td>21_agentes_prompts.html</td><td>13 prompts de sistema (orquestração IA)</td><td>—</td><td><span class="pill pg">Completo</span></td></tr>
+    <tr><td>Diagnóstico do Legado</td><td>22_diagnostico.html</td><td>Vulnerabilidades, riscos e plano de ação</td><td>—</td><td><span class="pill pg">Completo</span></td></tr>
+  </table>
+</div>
+
+</body>
+</html>

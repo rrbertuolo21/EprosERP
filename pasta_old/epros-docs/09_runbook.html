@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — Runbook & DR</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+.subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 22px; }
+.stab { padding: 5px 13px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--b2); border-radius: 20px; background: none; color: var(--t3); transition: all .15s; font-family: var(--sans); }
+.stab:hover { color: var(--t2); }
+.stab.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+.sp { display: none; }
+.sp.on { display: block; }
+.playbook-card { background: var(--s1); border: 1px solid var(--b1); border-radius: var(--r); margin-bottom: 12px; overflow: hidden; }
+.playbook-head { display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; user-select: none; }
+.playbook-head:hover { background: var(--s2); }
+.playbook-head.open { background: var(--s2); border-bottom: 1px solid var(--b1); }
+.playbook-title { font-size: 13px; font-weight: 600; color: var(--t1); flex: 1; }
+.playbook-severity { font-family: var(--mono); font-size: 9px; padding: 2px 7px; border-radius: 4px; font-weight: 700; }
+.playbook-chev { color: var(--t3); font-size: 11px; transition: transform .2s; }
+.playbook-head.open .playbook-chev { transform: rotate(180deg); }
+.playbook-body { display: none; padding: 16px; }
+.playbook-head.open + .playbook-body { display: block; }
+.steps-list { list-style: none; }
+.step-item { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--b1); font-size: 12px; }
+.step-item:last-child { border-bottom: none; }
+.step-num { font-family: var(--mono); font-size: 11px; color: var(--blue); min-width: 20px; font-weight: 600; }
+.step-desc { color: var(--t2); line-height: 1.6; }
+.step-desc strong { color: var(--t1); }
+.code-inline { font-family: var(--mono); font-size: 11px; background: var(--s3); padding: 1px 5px; border-radius: 4px; color: var(--blue); }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="index.html">Home</a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+  <a class="nt" href="08_api.html">⑧ API Reference</a>
+  <a class="nt on" href="09_runbook.html">⑨ Runbook & DR</a>
+  <a class="nt" href="10_modelo_financeiro.html">⑩ Modelo Financeiro</a>
+  <a class="nt" href="11_integracoes.html">⑪ Integrações</a>
+  <a class="nt" href="12_modelo_dados.html">⑫ Modelo de Dados</a>
+  <a class="nt" href="13_onboarding.html">⑬ Guia de Onboarding</a>
+  <a class="nt" href="14_disaster_recovery.html">⑭ Disaster Recovery</a>
+  <a class="nt" href="15_glossario.html">⑮ Glossário</a>
+  <a class="nt" href="16_i18n.html">⑯ Internacionalização</a>
+  <a class="nt" href="17_changelog.html">⑰ Changelog</a>
+  <a class="nt" href="18_plano_execucao.html">⑱ Plano de Execução</a>
+  <a class="nt" href="19_operacional.html">⑲ Modelo Operacional</a>
+  <a class="nt" href="20_treinamento.html">⑳ Treinamento por Função</a>
+  <a class="nt" href="21_agentes_prompts.html">㉑ Prompts dos Agentes</a>
+  <a class="nt" href="22_diagnostico.html">㉒ Diagnóstico do Legado</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>Operações · Playbooks de Incidente · SLAs · Disaster Recovery · Tiers</div>
+  <h1>Runbook & <em>Disaster Recovery</em></h1>
+  <p class="hero-desc">Diretrizes operacionais e procedimentos técnicos para sustentação do ambiente multi-tenant Epros. Garanta alta disponibilidade, segurança e conformidade regulatória nas operações diárias.</p>
+</div>
+
+<div class="page">
+
+<div class="subtabs">
+  <button class="stab on" onclick="st('playbooks')">Playbooks de Incidente</button>
+  <button class="stab" onclick="st('sla')">SLAs & Acordos de Nível</button>
+  <button class="stab" onclick="st('dr')">Disaster Recovery (DR)</button>
+  <button class="stab" onclick="st('tier')">Migração de Tier/Tenant</button>
+</div>
+
+<!-- ══ PLAYBOOKS ══ -->
+<div class="sp on" id="sp-playbooks">
+  <div class="sl">Manual de Mitigação de Incidentes Críticos</div>
+  <p class="lead">Passo a passo operacional para tratamento de alertas automáticos disparados pelo monitoramento centralizado do Epros (OpenTelemetry + Prometheus + Grafana).</p>
+
+  <div class="playbook-card">
+    <div class="playbook-head" onclick="tog(this)">
+      <span class="playbook-severity tag-r">Sev 1 - Crítica</span>
+      <span class="playbook-title">Detecção de Vazamento de Tenant (TenantLeakDetected)</span>
+      <span class="playbook-chev">▼</span>
+    </div>
+    <div class="playbook-body">
+      <div class="danger"><strong>CRÍTICO:</strong> Indica que uma query interceptada ou processamento tentou acessar dados de um TenantId sem o cabeçalho correto ou com token pertencente a outro inquilino. Risco direto de violação de RLS e conformidade LGPD.</div>
+      <ul class="steps-list">
+        <li class="step-item">
+          <span class="step-num">1</span>
+          <div class="step-desc">Identifique a origem do vazamento via traceId no Grafana Tempo ou Loki com a consulta: <span class="code-inline">{app="epros-api"} |="TenantLeakDetected"</span>.</div>
+        </li>
+        <li class="step-item">
+          <span class="step-num">2</span>
+          <div class="step-desc">Revogue imediatamente a sessão do usuário ou aplicação causadora no painel do Keycloak para cessar requisições.</div>
+        </li>
+        <li class="step-item">
+          <span class="step-num">3</span>
+          <div class="step-desc">Verifique se o interceptor <span class="code-inline">TenantRlsInterceptor</span> está ativo no DbContext envolvido. Rode o script de auditoria no PostgreSQL para garantir que o RLS está ativo para a tabela:
+            <div class="code">SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname = 'vendas';</div>
+          </div>
+        </li>
+        <li class="step-item">
+          <span class="step-num">4</span>
+          <div class="step-desc">Corrija o vazamento no código e registre o incidente na fila de conformidade LGPD/ANPD em menos de 24h.</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="playbook-card">
+    <div class="playbook-head" onclick="tog(this)">
+      <span class="playbook-severity tag-r">Sev 1 - Crítica</span>
+      <span class="playbook-title">Serviço de Autenticação Offline (KeycloakDown)</span>
+      <span class="playbook-chev">▼</span>
+    </div>
+    <div class="playbook-body">
+      <div class="danger"><strong>CRÍTICO:</strong> A API do monólito perdeu conectividade com o cluster Keycloak. Usuários novos não conseguem logar e tokens não podem ser validados.</div>
+      <ul class="steps-list">
+        <li class="step-item">
+          <span class="step-num">1</span>
+          <div class="step-desc">Valide a integridade física do container/cluster Keycloak. Se estiver rodando localmente/Docker, execute: <span class="code-inline">docker compose ps keycloak</span>.</div>
+        </li>
+        <li class="step-item">
+          <span class="step-num">2</span>
+          <div class="step-desc">Verifique os logs do Keycloak para estouro de pool de conexões do PostgreSQL: <span class="code-inline">docker compose logs keycloak --tail=100</span>.</div>
+        </li>
+        <li class="step-item">
+          <span class="step-num">3</span>
+          <div class="step-desc">Caso o Keycloak esteja offline por falha de infraestrutura, os aplicativos clientes (Epros.App e Epros.Mobile) devem ser instruídos a usar as credenciais locais em cache (modo contingência offline) para preservar a operação dos caixas PDV.</div>
+        </li>
+        <li class="step-item">
+          <span class="step-num">4</span>
+          <div class="step-desc">Restaure o serviço e limpe os caches de tokens expirados no Valkey executando: <span class="code-inline">valkey-cli FLUSHDB</span>.</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="playbook-card">
+    <div class="playbook-head" onclick="tog(this)">
+      <span class="playbook-severity tag-am">Sev 2 - Alta</span>
+      <span class="playbook-title">Atraso Crítico no Quartz Outbox Worker (OutboxProcessingDelay)</span>
+      <span class="playbook-chev">▼</span>
+    </div>
+    <div class="playbook-body">
+      <div class="warn"><strong>AVISO:</strong> O tempo médio de processamento de mensagens na tabela <span class="code-inline">outbox_messages</span> superou 5 minutos, gerando delay na faturamento de NF-es e geração de Contas a Receber.</div>
+      <ul class="steps-list">
+        <li class="step-item">
+          <span class="step-num">1</span>
+          <div class="step-desc">Verifique mensagens travadas em falha contínua no PostgreSQL:
+            <div class="code">SELECT id, event_type, tentativas, erro FROM vendas.outbox_messages WHERE processado_em IS NULL AND tentativas >= 5;</div>
+          </div>
+        </li>
+        <li class="step-item">
+          <span class="step-num">2</span>
+          <div class="step-desc">Se houver mensagens com erros de desserialização JSON ou timeouts de comunicação de rede com módulos externos (ex: SEFAZ, MercadoPago), registre o erro e resete temporariamente as tentativas para reprocessar após correção:
+            <div class="code">UPDATE vendas.outbox_messages SET tentativas = 0, erro = NULL WHERE processado_em IS NULL;</div>
+          </div>
+        </li>
+        <li class="step-item">
+          <span class="step-num">3</span>
+          <div class="step-desc">Aumente o número de threads disponíveis no Quartz.NET se a fila estiver crescendo muito rápido devido a pico de vendas.</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLA ══ -->
+<div class="sp" id="sp-sla">
+  <div class="sl">Níveis de Serviço e Severidade</div>
+  <p class="lead">Políticas de Acordo de Nível de Serviço (SLA) para suporte técnico, mitigação de bugs e tempo de resposta operacional da equipe SRE/DevOps.</p>
+
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Severidade</th>
+        <th>Descrição</th>
+        <th>Tempo Limite Resposta</th>
+        <th>Tempo Limite Resolução</th>
+        <th>Meta Mensal SLA</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>S1 - Crítica</strong></td>
+        <td>Plataforma fora do ar, falha de RLS (segurança/vazamento de dados) ou faturamento totalmente paralisado em múltiplos inquilinos.</td>
+        <td>15 minutos</td>
+        <td>2 horas</td>
+        <td>99,99% uptime</td>
+      </tr>
+      <tr>
+        <td><strong>S2 - Alta</strong></td>
+        <td>Funcionalidade principal indisponível para um tenant específico (ex: emissão de notas rejeitando continuamente na SEFAZ), ou atraso severo no outbox.</td>
+        <td>1 hora</td>
+        <td>8 horas</td>
+        <td>99,9% uptime</td>
+      </tr>
+      <tr>
+        <td><strong>S3 - Média</strong></td>
+        <td>Problemas menores que não impedem a operação (ex: erro de layout no dashboard, lentidão pontual em relatórios não críticos).</td>
+        <td>4 horas</td>
+        <td>48 horas</td>
+        <td>99,5% conformidade</td>
+      </tr>
+      <tr>
+        <td><strong>S4 - Baixa</strong></td>
+        <td>Dúvidas operacionais, solicitações de novos relatórios ou sugestões de melhorias na UI.</td>
+        <td>24 horas</td>
+        <td>Planejado em Sprint</td>
+        <td>99% conformidade</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="sl" style="margin-top:40px">SLAs de Performance (Slo de Latência)</div>
+  <div class="g3">
+    <div class="metric">
+      <div class="metric-val">&lt; <em>200ms</em></div>
+      <div class="metric-label">P95 Latência Leitura</div>
+      <div class="metric-sub">Requisições GET em API Gateway e módulos base</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val">&lt; <em>500ms</em></div>
+      <div class="metric-label">P95 Latência Escrita</div>
+      <div class="metric-sub">Requisições POST/PUT de transações de negócio</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val">&lt; <em>30s</em></div>
+      <div class="metric-label">Outbox Sync Delay</div>
+      <div class="metric-sub">Tempo entre salvar no banco e processar a integração</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DISASTER RECOVERY ══ -->
+<div class="sp" id="sp-dr">
+  <div class="sl">Política e Procedimento de Disaster Recovery</div>
+  <p class="lead">Planos de Contingência e Recuperação de Desastres para os dados armazenados nos schemas do PostgreSQL 16 e nos buckets do MinIO S3.</p>
+
+  <div class="g2">
+    <div class="card">
+      <div class="tag tag-b">RTO (Recovery Time Objective)</div>
+      <h3>Tempo máximo tolerado offline: <strong>4 horas</strong></h3>
+      <p>Em caso de desastre físico no datacenter principal, o ambiente deve ser provisionado em zona alternativa e restabelecido com base nos backups em até 4 horas.</p>
+    </div>
+    <div class="card">
+      <div class="tag tag-g">RPO (Recovery Point Objective)</div>
+      <h3>Perda de dados tolerada: <strong>10 minutos</strong></h3>
+      <p>A perda de transações comerciais não pode ultrapassar 10 minutos. Isso é mantido via Write-Ahead Log (WAL) archiving a cada 5 minutos.</p>
+    </div>
+  </div>
+
+  <div class="sl" style="margin-top:30px">Procedimento de Backup Automático</div>
+  <div class="row"><span class="rl">PostgreSQL</span><span class="rv">Backup diário completo (pg_dumpall) comprimido e criptografado com GPG, enviado para MinIO S3 externo. Envio de WAL archives a cada 5 minutos para replicação incremental.</span></div>
+  <div class="row"><span class="rl">Vault Secrets</span><span class="rv">Backup periódico do storage backend do HashiCorp Vault. As chaves de decodificação Unseal Keys são armazenadas separadamente por 3 administradores diferentes de acordo com o Shamir's Secret Sharing.</span></div>
+  <div class="row"><span class="rl">Arquivos GED (MinIO)</span><span class="rv">Bucket replication em tempo real para cluster de redundância localizado em região geográfica distinta. Retenção fiscal de 5 anos ativada por política no S3.</span></div>
+
+  <div class="sl" style="margin-top:30px">Procedimento Passo a Passo de Restore em Caso de Desastre</div>
+  <ul class="steps-list">
+    <li class="step-item">
+      <span class="step-num">1</span>
+      <div class="step-desc">Provisione uma nova instância de banco de dados PostgreSQL 16 limpa usando as receitas do Terraform/OpenTofu.</div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">2</span>
+      <div class="step-desc">Recupere o backup base diário mais recente do S3 seguro executando:
+        <div class="code">aws s3 cp s3://epros-backups/postgres/base-latest.sql.gz /tmp/base.sql.gz</div>
+      </div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">3</span>
+      <div class="step-desc">Descomprima e aplique o backup base no banco recém-criado:
+        <div class="code">gunzip -c /tmp/base.sql.gz | psql -U epros -d epros_prod</div>
+      </div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">4</span>
+      <div class="step-desc">Aplique a sequência de logs transacionais (WAL archives) acumulados desde o backup diário para atingir o RPO de 10 minutos (Point-in-Time Recovery):
+        <div class="code">pg_recvlogical --start -f /var/lib/postgresql/wal_archive/...</div>
+      </div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">5</span>
+      <div class="step-desc">Suba os containers da API Gateway. O bootstrap automático (<span class="code-inline">Program.cs</span>) validará a integridade do banco e aplicará quaisquer migrations pendentes que não estavam no backup base.</div>
+    </li>
+  </ul>
+</div>
+
+<!-- ══ TIER MIGRATION ══ -->
+<div class="sp" id="sp-tier">
+  <div class="sl">Estratégias de Migração de Tier de Inquilinos</div>
+  <p class="lead">Procedimentos seguros para evolução e isolamento físico de inquilinos de acordo com o crescimento volumétrico e plano SaaS contratado.</p>
+
+  <div class="g3">
+    <div class="tier">
+      <h4>Nível 1 - Shared</h4>
+      <p>Múltiplos inquilinos residem no mesmo cluster de banco de dados compartilhando recursos e hardware. O isolamento lógico é garantido via RLS (Row-Level Security) no PostgreSQL.</p>
+      <div class="tplan">Silver / Gold</div>
+    </div>
+    <div class="tier">
+      <h4>Nível 2 - Dedicated</h4>
+      <p>Tenant evolui para um banco de dados / schema exclusivo em cluster apartado para evitar o efeito "noisy neighbor" de outros inquilinos. Maior performance de IOPS.</p>
+      <div class="tplan">Platinum / Enterprise</div>
+    </div>
+    <div class="tier">
+      <h4>Nível 3 - Private</h4>
+      <p>Migração física completa para ambiente exclusivo em nuvem privada ou infraestrutura on-premises de clientes corporativos com fortes requisitos regulatórios.</p>
+      <div class="tplan">Custom / Corporativo</div>
+    </div>
+  </div>
+
+  <div class="sl" style="margin-top:30px">Roteiro de Migração: Nível 1 (Shared) para Nível 2 (Dedicated DB)</div>
+  <ul class="steps-list">
+    <li class="step-item">
+      <span class="step-num">1</span>
+      <div class="step-desc">Agende a janela de manutenção e ative o modo de suspensão temporária do tenant via Painel SaaS Super Admin (altera status para <span class="code-inline">Suspenso</span> e impede escritas).</div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">2</span>
+      <div class="step-desc">Extraia de forma isolada os dados do tenant de todos os schemas usando filtros de <span class="code-inline">tenant_id</span>. Exemplo de extração de vendas:
+        <div class="code">pg_dump -U epros -d epros_prod -t 'vendas.vendas' --data-only --inserts --extra-float-digits=0 --where="tenant_id='tenant-exemplo'" > /tmp/tenant-vendas.sql</div>
+      </div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">3</span>
+      <div class="step-desc">Crie a nova base de dados PostgreSQL dedicada para o tenant e execute a criação de tabelas rodando a API apontando para a nova string de conexão.</div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">4</span>
+      <div class="step-desc">Importe os dados extraídos na nova base de dados.</div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">5</span>
+      <div class="step-desc">No banco de catálogo global (Catalog Database), atualize a string de conexão (<span class="code-inline">ConnectionString</span>) e o tipo de infraestrutura do inquilino para dedicada.</div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">6</span>
+      <div class="step-desc">Reative o inquilino no painel SaaS. O roteador dinâmico de conexões redirecionará todas as novas requisições daquele tenant para a nova base dedicada sem interrupção de serviço geral.</div>
+    </li>
+  </ul>
+</div>
+
+</div><!-- /page -->
+
+<script>
+var tabs = ['playbooks', 'sla', 'dr', 'tier'];
+function st(id) {
+  document.querySelectorAll('.stab').forEach(function(t, i) {
+    t.classList.toggle('on', tabs[i] === id);
+  });
+  document.querySelectorAll('.sp').forEach(function(p) {
+    p.classList.toggle('on', p.id === 'sp-' + id);
+  });
+}
+function tog(hdr) {
+  hdr.classList.toggle('open');
+}
+</script>
+</body>
+</html>

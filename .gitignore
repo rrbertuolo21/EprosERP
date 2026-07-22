@@ -1,0 +1,74 @@
+# ==============================================================
+# .gitignore - EprosERP (.NET 8 + Nuxt 3 + Expo/React Native)
+# ==============================================================
+
+# ---------- Sistema Operacional ----------
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# ---------- .NET / C# ----------
+bin/
+obj/
+out/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+.vs/
+artifacts/
+*.dll
+*.pdb
+*.cache
+TestResults/
+[Cc]overage*/
+*.trx
+*.coverage
+*.coveragexml
+
+# ---------- Node / Nuxt / Frontend ----------
+node_modules/
+.nuxt/
+.output/
+.nitro/
+.cache/
+dist/
+.data/
+.pnpm-store/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---------- Expo / React Native (Mobile) ----------
+.expo/
+.expo-shared/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+# ---------- Ambiente / Segredos ----------
+.env
+.env.*
+!.env.example
+*.pfx
+appsettings.*.local.json
+secrets.json
+
+# ---------- IDE ----------
+.idea/
+*.sln.docstates
+
+# ---------- Docker / Temporários ----------
+*.tmp
+*.temp

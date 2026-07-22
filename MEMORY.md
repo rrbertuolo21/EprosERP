@@ -1,0 +1,5 @@
+# Memory Index
+
+- [Migração Epros → EprosERP](migracao-epros-eproserp.md) — **ESTADO (07-jul): FASE DE FECHAMENTO pós-auditoria. 14 módulos no padrão hexagonal (257 entidades, 90 controllers), núcleo legado ~93-95% portado, arquitetura conforme. Rodada 1 do fechamento feita (F1 segurança/API fechada, F3 fiscal QR+IBPT+salvar-xml, F5 enums, F6 validações, F7 quarentena) = 381 testes. AO REINICIAR LER `EprosERP/MEMORIA_SESSAO_EQUALIZACAO.md §0` + `EprosERP/docs/migracao/LOG_COMPLETUDE.md` + `EprosERP/PLANO_FECHAMENTO_FINAL.md`. GAP crítico que o "99,3%" escondia: VISUAL ~0% de paridade (rebrand) — em correção agora (F2). Falta: F2 visual, F4 endpoints, F8 qualidade, F9 gate final + ETL/homologação. Usuário quer ACABAR ASAP; decisões: clone-core visual + quarentena dos 8 módulos novos.**
+- [Preferência: paralelismo máximo](preferencia-paralelismo-maximo.md) — usuário quer ~20 agentes, mapa-primeiro, fix-later; reduzir erro na estrutura
+- [Feedback: não pedir permissão](feedback-nao-pedir-permissao.md) — autonomia total no projeto; executar e relatar, nunca perguntar "quer que eu...?"

@@ -1,0 +1,113 @@
+using System;
+using Epros.Shared.Domain.Entities;
+using Flunt.Validations;
+
+namespace Epros.Modules.GestaoClientes.Domain.Entities
+{
+    public enum AssinaturaStatus
+    {
+        Aprovada = 1,
+        Aguardando = 2,
+        Recusada = 3,
+        Futura = 4,
+        Expirada = 5
+    }
+
+    public class AssinaturaCliente : EntidadeSaaSBase
+    {
+        public Guid ClienteId { get; private set; }
+        public Guid PlanoId { get; private set; }
+        public AssinaturaStatus Status { get; private set; }
+        public DateTime? DataInicio { get; private set; }
+        public DateTime? DataFim { get; private set; }
+        public DateTime? TrialAte { get; private set; }
+        public string MetodoPagamento { get; private set; } = string.Empty;
+        public string? TransacaoId { get; private set; }
+        public string? DetalhesPacoteJson { get; private set; }
+        public bool Arquivada { get; private set; }
+        public string? OperadorAprovacao { get; private set; }
+        public string? JustificativaAprovacao { get; private set; }
+
+        protected AssinaturaCliente() { } // EF Core
+
+        public AssinaturaCliente(
+            Guid clienteId,
+            Guid planoId,
+            AssinaturaStatus status,
+            DateTime? dataInicio,
+            DateTime? dataFim,
+            DateTime? trialAte,
+            string metodoPagamento,
+            string? transacaoId,
+            string? detalhesPacoteJson,
+            string tenantId,
+            string criadoPor)
+            : base(tenantId, criadoPor)
+        {
+            AddNotifications(new Contract<AssinaturaCliente>()
+                .Requires()
+                .AreNotEquals(clienteId, Guid.Empty, nameof(ClienteId), "Cliente é obrigatório")
+                .AreNotEquals(planoId, Guid.Empty, nameof(PlanoId), "Plano é obrigatório")
+                .IsNotNullOrEmpty(metodoPagamento, nameof(MetodoPagamento), "Método de pagamento é obrigatório")
+            );
+
+            ClienteId = clienteId;
+            PlanoId = planoId;
+            Status = status;
+            DataInicio = dataInicio;
+            DataFim = dataFim;
+            TrialAte = trialAte;
+            MetodoPagamento = metodoPagamento;
+            TransacaoId = transacaoId;
+            DetalhesPacoteJson = detalhesPacoteJson;
+            Arquivada = false;
+        }
+
+        public void Ativar(string alteradoPor)
+        {
+            Status = AssinaturaStatus.Aprovada;
+            MarcarAlterado(alteradoPor);
+        }
+
+        public void AprovarManualmente(string operador, string justificativa, string alteradoPor)
+        {
+            Status = AssinaturaStatus.Aprovada;
+            OperadorAprovacao = operador;
+            JustificativaAprovacao = justificativa;
+            
+            // REG-008: Alinha as datas de início e fim da vigência com base na data de aprovação
+            DataInicio = DateTime.UtcNow;
+            if (DataFim.HasValue)
+            {
+                DataFim = DateTime.UtcNow.AddDays(30);
+            }
+            
+            MarcarAlterado(alteradoPor);
+        }
+
+        public void Expirar(string alteradoPor)
+        {
+            Status = AssinaturaStatus.Expirada;
+            MarcarAlterado(alteradoPor);
+        }
+
+        public void Rejeitar(string alteradoPor)
+        {
+            Status = AssinaturaStatus.Recusada;
+            MarcarAlterado(alteradoPor);
+        }
+
+        public void Arquivar(string alteradoPor)
+        {
+            Arquivada = true;
+            MarcarAlterado(alteradoPor);
+        }
+
+        public void AtualizarDatas(DateTime? inicio, DateTime? fim, string alteradoPor)
+        {
+            DataInicio = inicio;
+            DataFim = fim;
+            MarcarAlterado(alteradoPor);
+        }
+    }
+}

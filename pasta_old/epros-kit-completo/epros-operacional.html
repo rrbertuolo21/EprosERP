@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Epros — Modelo Operacional</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--az:#0D2B5E;--az2:#1A4080;--do:#C9A84C;--dop:#FDF5E0;--cb:#F4F6FA;--cd:#DDE3EF;--ct:#5A6580;--cp:#0A0F1E;--vd:#2d6a4f;--vdl:#edf7f0;--vdb:#c3e6cb;--red:#C0392B;--redl:#FDEDEC;--am:#7A4F00;--aml:#FEF3CD}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"DM Sans",sans-serif;background:var(--cb);color:var(--cp);font-size:13px;line-height:1.6;min-height:100vh}
+#sb{position:fixed;left:0;top:0;bottom:0;width:236px;background:var(--az);display:flex;flex-direction:column;z-index:100;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(201,168,76,.25) transparent}
+.sbl{padding:22px 18px 15px;border-bottom:1px solid rgba(201,168,76,.18)}
+.sbl .lm{font-family:"Playfair Display",serif;font-size:20px;font-weight:700;color:var(--do)}
+.sbl .ls{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.sbs{padding:13px 15px 3px;font-size:9px;font-weight:600;color:rgba(201,168,76,.45);letter-spacing:2px;text-transform:uppercase}
+.nb{display:flex;align-items:center;gap:8px;padding:7px 17px;cursor:pointer;font-size:12px;color:rgba(255,255,255,.55);transition:all .15s;border-left:3px solid transparent;text-decoration:none}
+.nb:hover{color:#fff;background:rgba(255,255,255,.05)}
+.nb.active{color:var(--do);background:rgba(201,168,76,.1);border-left-color:var(--do);font-weight:500}
+.nn{width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.08);font-size:9px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.3);flex-shrink:0}
+.nb.active .nn{background:var(--do);color:var(--az)}
+#main{margin-left:236px}
+.pg{display:none;padding:38px 50px;max-width:1060px}
+.pg.active{display:block}
+.hero{background:linear-gradient(135deg,#0a1628 0%,var(--az) 55%,#0d2040 100%);border-radius:14px;padding:44px 50px;position:relative;overflow:hidden;margin-bottom:28px}
+.hero::before{content:"";position:absolute;top:-80px;right:-80px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.12) 0%,transparent 70%)}
+.hbadge{font-size:9px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--do);border:1px solid rgba(201,168,76,.3);border-radius:99px;padding:3px 11px;display:inline-block;margin-bottom:13px}
+.hero h1{font-family:"Playfair Display",serif;font-size:34px;font-weight:700;color:#fff;line-height:1.15;margin-bottom:9px}
+.hero h1 span{color:var(--do)}
+.hero p{font-size:13px;color:rgba(255,255,255,.65);line-height:1.75;max-width:540px}
+.st{font-family:"Playfair Display",serif;font-size:22px;font-weight:600;color:var(--az);margin-bottom:5px}
+.ss{font-size:13px;color:var(--ct);margin-bottom:20px;line-height:1.6}
+.sl{font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--ct);margin:22px 0 9px;display:flex;align-items:center;gap:8px}
+.sl::after{content:"";flex:1;height:1px;background:var(--cd)}
+.bc{font-size:11px;color:var(--ct);margin-bottom:20px}
+.bc span{color:var(--az);font-weight:500}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.card{background:#fff;border:1px solid var(--cd);border-radius:11px;padding:18px 22px;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}
+th{background:var(--az);color:#fff;font-size:9px;font-weight:500;letter-spacing:1px;text-transform:uppercase;padding:8px 11px;text-align:left}
+td{padding:9px 11px;border-bottom:1px solid var(--cd);color:var(--ct);vertical-align:top;line-height:1.5}
+tr:last-child td{border-bottom:none}
+tr:nth-child(even) td{background:#fafbfd}
+td:first-child{color:var(--cp);font-weight:500}
+code{background:rgba(0,0,0,.07);padding:1px 5px;border-radius:3px;font-family:"DM Mono",monospace;font-size:11px}
+.okb{background:var(--vdl);border:1px solid var(--vdb);border-radius:8px;padding:9px 13px;font-size:12px;color:var(--vd);margin-bottom:9px;line-height:1.55}
+.wb{background:var(--aml);border:1px solid rgba(212,160,23,.35);border-radius:8px;padding:9px 13px;font-size:12px;color:var(--am);margin-bottom:9px;line-height:1.55}
+.rb{background:var(--redl);border:1px solid rgba(192,57,43,.22);border-radius:8px;padding:9px 13px;font-size:12px;color:var(--red);margin-bottom:9px;line-height:1.55}
+/* PAPEL CARD */
+.papel{background:#fff;border:1px solid var(--cd);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.papel-h{padding:16px 20px;display:flex;align-items:center;gap:12px}
+.papel-icon{width:42px;height:42px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.papel-title{font-size:14px;font-weight:600;color:var(--cp)}
+.papel-sub{font-size:11px;color:var(--ct);margin-top:1px}
+.papel-body{padding:0 20px 16px;border-top:1px solid var(--cd)}
+.papel-row{padding:9px 0;border-bottom:1px solid var(--cd);display:flex;gap:10px;font-size:12px}
+.papel-row:last-child{border-bottom:none}
+.papel-label{font-weight:600;color:var(--cp);min-width:100px;flex-shrink:0}
+.papel-val{color:var(--ct);line-height:1.55}
+/* CERIMÔNIA */
+.cer{background:#fff;border:1px solid var(--cd);border-radius:10px;padding:14px 18px;margin-bottom:8px;display:flex;gap:14px}
+.cer-dia{font-family:"DM Mono",monospace;font-size:10px;font-weight:600;color:var(--do);background:var(--dop);border:1px solid rgba(201,168,76,.25);border-radius:5px;padding:3px 8px;height:fit-content;white-space:nowrap;flex-shrink:0}
+.cer-title{font-size:13px;font-weight:600;color:var(--cp);margin-bottom:3px}
+.cer-body{font-size:12px;color:var(--ct);line-height:1.6}
+/* AGENTE WORKFLOW */
+.aw{background:#fff;border:1px solid var(--cd);border-radius:10px;padding:13px 17px;margin-bottom:7px;display:flex;gap:12px;align-items:flex-start}
+.aw-icon{width:34px;height:34px;border-radius:7px;background:var(--az);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.aw-title{font-size:12px;font-weight:600;color:var(--cp);margin-bottom:3px}
+.aw-desc{font-size:11px;color:var(--ct);line-height:1.6}
+.aw-quem{font-size:10px;font-weight:500;color:var(--do);margin-top:4px}
+/* POLÍTICA */
+.pol{display:flex;gap:14px;background:#fff;border:1px solid var(--cd);border-radius:10px;padding:13px 17px;margin-bottom:7px}
+.pol-num{width:28px;height:28px;border-radius:50%;background:var(--az);color:var(--do);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pol-title{font-size:12px;font-weight:600;color:var(--cp);margin-bottom:3px}
+.pol-desc{font-size:11px;color:var(--ct);line-height:1.6}
+/* TIMELINE 90 DIAS */
+.tl{display:flex;gap:0;margin-bottom:6px}
+.tl-line{display:flex;flex-direction:column;align-items:center;margin-right:14px}
+.tl-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.tl-track{width:2px;flex:1;min-height:24px;margin-top:3px;background:var(--cd)}
+.tl:last-child .tl-track{display:none}
+.tl-body{flex:1;background:#fff;border:1px solid var(--cd);border-radius:10px;padding:12px 16px;margin-bottom:6px}
+.tl-phase{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px}
+.tl-title{font-size:13px;font-weight:600;color:var(--cp);margin-bottom:4px}
+.tl-items{font-size:12px;color:var(--ct);line-height:1.8}
+/* KPI */
+.kpi{background:#fff;border:1px solid var(--cd);border-radius:11px;padding:16px;border-top:3px solid var(--do);text-align:center}
+.kpi .v{font-family:"Playfair Display",serif;font-size:26px;font-weight:700;color:var(--az)}
+.kpi .l{font-size:11px;color:var(--ct);margin-top:3px;line-height:1.4}
+.kpi .f{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--do);margin-top:7px}
+@media(max-width:860px){#sb{width:200px}#main{margin-left:200px}.pg{padding:24px 20px}.g2,.g3{grid-template-columns:1fr}}
+</style></head><body>
+<nav id="sb">
+  <div class="sbl"><div class="lm">Epros</div><div class="ls">Modelo Operacional</div></div>
+  <div class="sbs">Diagnóstico do Time</div>
+  <a class="nb active" onclick="show('p-hoje',this)" href="#"><span class="nn">①</span>O Time Hoje</a>
+  <a class="nb" onclick="show('p-gaps',this)" href="#"><span class="nn">②</span>Gaps &amp; Riscos</a>
+  <div class="sbs">Novo Modelo</div>
+  <a class="nb" onclick="show('p-papeis',this)" href="#"><span class="nn">③</span>Papéis &amp; Responsabilidades</a>
+  <a class="nb" onclick="show('p-ia',this)" href="#"><span class="nn">④</span>IA no Dia a Dia</a>
+  <a class="nb" onclick="show('p-cerimonias',this)" href="#"><span class="nn">⑤</span>Cerimônias</a>
+  <div class="sbs">Execução</div>
+  <a class="nb" onclick="show('p-legado',this)" href="#"><span class="nn">⑥</span>Política Legado vs Novo</a>
+  <a class="nb" onclick="show('p-transicao',this)" href="#"><span class="nn">⑦</span>Transição em 90 dias</a>
+  <a class="nb" onclick="show('p-metricas',this)" href="#"><span class="nn">⑧</span>Métricas do Time</a>
+</nav>
+<div id="main">
+<div class="pg active" id="p-hoje">
+  <div class="hero">
+    <div class="hbadge">Modelo Operacional · Interno · 2026</div>
+    <h1>Como o Time<br/><span>Opera</span></h1>
+    <p>Diagnóstico honesto do modelo atual, o que precisa mudar e como chegar no novo modelo de trabalho com IA integrada ao processo.</p>
+  </div>
+  <div class="st">O time hoje — 7 pessoas</div>
+  <div class="ss">Mapeamento real dos papéis, funções acumuladas e o que cada pessoa faz de fato.</div>
+  <table>
+    <thead><tr><th>Pessoa</th><th>Título</th><th>O que faz de fato</th><th>Acúmulo</th></tr></thead>
+    <tbody>
+      <tr><td>Dev Sênior</td><td>Backend Sênior</td><td>Arquitetura, decisões técnicas, revisão de PR, organização do Jira, planning, coding</td><td style="color:var(--red);font-weight:600">Tech Lead + PO + Dev</td></tr>
+      <tr><td>Dev Pleno-Sênior</td><td>Backend Pleno</td><td>Features complexas de backend, suporte ao sênior em decisões técnicas</td><td>—</td></tr>
+      <tr><td>Dev Pleno 1</td><td>Backend Pleno</td><td>Features de backend, manutenção do legado</td><td>—</td></tr>
+      <tr><td>Dev Pleno 2</td><td>Backend Pleno</td><td>Features de backend, manutenção do legado</td><td>—</td></tr>
+      <tr><td>Dev Pleno 3 (10 anos)</td><td>Backend Pleno</td><td>Features e manutenção — conhecimento profundo do domínio fiscal e de negócio</td><td>Guardião do conhecimento de domínio</td></tr>
+      <tr><td>Dev Frontend 1</td><td>Frontend Pleno</td><td>Nuxt 3, telas, integração com API</td><td>—</td></tr>
+      <tr><td>Dev Frontend 2</td><td>Frontend Pleno</td><td>Nuxt 3, telas, integração com API</td><td>—</td></tr>
+      <tr><td>QA / PO</td><td>QA não-técnico</td><td>Testa negócio manualmente no final do sprint. Não escreve casos de teste automatizados.</td><td>QA + validação de negócio</td></tr>
+    </tbody>
+  </table>
+  <div class="sl">Como um sprint funciona hoje</div>
+  <div class="g3">
+    <div class="card">
+      <div style="font-size:10px;font-weight:600;color:var(--do);letter-spacing:1px;margin-bottom:5px">PLANNING</div>
+      <p style="font-size:12px;color:var(--ct);line-height:1.65">Sênior organiza o Jira com o que será feito. Estimativas informais. Sem DoR definido — item entra no sprint se o sênior decidir que está pronto.</p>
+    </div>
+    <div class="card">
+      <div style="font-size:10px;font-weight:600;color:var(--do);letter-spacing:1px;margin-bottom:5px">DESENVOLVIMENTO</div>
+      <p style="font-size:12px;color:var(--ct);line-height:1.65">Cada dev pega sua task e resolve. PR aberto, sênior revisa quando consegue. Sem critério objetivo de "pronto". QA testa no final.</p>
+    </div>
+    <div class="card">
+      <div style="font-size:10px;font-weight:600;color:var(--do);letter-spacing:1px;margin-bottom:5px">ENTREGA</div>
+      <p style="font-size:12px;color:var(--ct);line-height:1.65">QA testa fluxos de negócio manualmente. Se passou, deploy. Sem testes automatizados, sem gate de segurança, sem métricas de qualidade.</p>
+    </div>
+  </div>
+</div>
+<div class="pg" id="p-gaps">
+  <div class="bc">Diagnóstico <span>› Gaps &amp; Riscos</span></div>
+  <div class="st">Gaps e Riscos do Modelo Atual</div>
+  <div class="ss">O que o modelo atual não tem — e o custo real de cada gap para o projeto e para o negócio.</div>
+  <div class="rb"><strong>Risco central:</strong> o Sênior é o único ponto de falha para decisões técnicas E priorização. Se ele sair ou ficar indisponível, o time perde direção em ambas as frentes simultaneamente.</div>
+  <div class="sl">Gaps identificados</div>
+  <table>
+    <thead><tr><th>Gap</th><th>Impacto hoje</th><th>Risco em escala</th></tr></thead>
+    <tbody>
+      <tr><td>Sênior acumula Tech Lead + PO</td><td>Sobrecarga, gargalo em decisões, burnout latente</td><td>Saída do sênior = crise dupla (técnica + produto)</td></tr>
+      <tr><td>Sem PO técnico real</td><td>Requisitos chegam vagos para os devs, retrabalho frequente</td><td>Com mais módulos, o volume de ambiguidade escala junto</td></tr>
+      <tr><td>QA só no final, só manual</td><td>Bugs de regressão chegam em produção, ciclo lento</td><td>Com 17 módulos, teste manual completo vira inviável</td></tr>
+      <tr><td>Dev de 10 anos sem papel formal</td><td>Conhecimento de domínio não documentado, não transferido</td><td>Se sair, leva consigo anos de contexto fiscal e de negócio</td></tr>
+      <tr><td>Sem critério de DoR / DoD</td><td>Cada dev define "pronto" do seu jeito</td><td>Qualidade inconsistente por módulo e por sprint</td></tr>
+      <tr><td>Sem agentes IA configurados</td><td>Produtividade abaixo do potencial do time</td><td>Concorrentes que adotam IA aceleram enquanto este time não</td></tr>
+      <tr><td>Sem métricas de processo</td><td>Impossível saber se o time está melhorando ou piorando</td><td>Decisões de contratação e priorização sem base objetiva</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="pg" id="p-papeis">
+  <div class="bc">Novo Modelo <span>› Papéis &amp; Responsabilidades</span></div>
+  <div class="st">Novo Modelo de Papéis</div>
+  <div class="ss">Sem contratar ninguém novo — redistribuição de responsabilidades com suporte dos agentes IA para cobrir os gaps.</div>
+  <div class="okb"><strong>Princípio:</strong> cada pessoa tem um papel principal claro. O Sênior para de ser PO. O dev de 10 anos vira Guardião de Domínio. Os agentes IA cobrem o que falta de capacidade — não substituem pessoas, amplificam.</div>
+  <div class="sl">Papéis no novo modelo</div>
+  <div class="papel">
+    <div class="papel-h" style="background:rgba(13,43,94,.06);border-bottom:1px solid var(--cd)">
+      <div class="papel-icon" style="background:#0D2B5E">🏗️</div>
+      <div><div class="papel-title">Tech Lead</div><div class="papel-sub">Dev Sênior</div></div>
+    </div>
+    <div class="papel-body"><div class="papel-row"><span class="papel-label">Foco</span><span class="papel-val">Arquitetura, padrões, qualidade técnica — não mais priorização de produto</span></div><div class="papel-row"><span class="papel-label">Decisões</span><span class="papel-val">ADRs, design técnico, aprovação de PR de alto risco</span></div><div class="papel-row"><span class="papel-label">Agentes IA</span><span class="papel-val">Architect Agent + Code Review Agent + Security Agent</span></div><div class="papel-row"><span class="papel-label">Não faz mais</span><span class="papel-val">Organizar Jira, definir prioridade de backlog, fazer planning sozinho</span></div><div class="papel-row"><span class="papel-label">Métrica</span><span class="papel-val">Lead time de PR, cobertura de código, zero P0 em produção</span></div></div>
+  </div>
+  <div class="papel">
+    <div class="papel-h" style="background:rgba(46,125,82,.06);border-bottom:1px solid var(--cd)">
+      <div class="papel-icon" style="background:#2E7D52">🧠</div>
+      <div><div class="papel-title">Guardião de Domínio</div><div class="papel-sub">Dev Pleno (10 anos)</div></div>
+    </div>
+    <div class="papel-body"><div class="papel-row"><span class="papel-label">Foco</span><span class="papel-val">Documentar e transferir o conhecimento de domínio fiscal e de negócio acumulado</span></div><div class="papel-row"><span class="papel-label">Responsabilidade</span><span class="papel-val">Validar regras de negócio em cada novo módulo antes do merge</span></div><div class="papel-row"><span class="papel-label">Agentes IA</span><span class="papel-val">Requirements Agent + Docs Agent — para capturar e documentar o que sabe</span></div><div class="papel-row"><span class="papel-label">Entrega</span><span class="papel-val">Glossário de domínio, regras de negócio documentadas por módulo, revisão de ACs</span></div><div class="papel-row"><span class="papel-label">Por que importante</span><span class="papel-val">Se esse conhecimento não for transferido agora, fica refém de uma pessoa</span></div></div>
+  </div>
+  <div class="papel">
+    <div class="papel-h" style="background:rgba(173,20,87,.06);border-bottom:1px solid var(--cd)">
+      <div class="papel-icon" style="background:#AD1457">📋</div>
+      <div><div class="papel-title">PO / Facilitador</div><div class="papel-sub">QA atual + suporte do sênior</div></div>
+    </div>
+    <div class="papel-body"><div class="papel-row"><span class="papel-label">Foco</span><span class="papel-val">Requisitos claros com ACs, priorização do backlog, comunicação com stakeholders</span></div><div class="papel-row"><span class="papel-label">Transição</span><span class="papel-val">Começa com suporte do sênior nas primeiras sprints. Agentes IA reduzem a curva.</span></div><div class="papel-row"><span class="papel-label">Agentes IA</span><span class="papel-val">Requirements Agent + Planning Agent + Discovery Agent</span></div><div class="papel-row"><span class="papel-label">Não precisa ser técnico</span><span class="papel-val">ACs em Given/When/Then com o Requirements Agent são acessíveis</span></div><div class="papel-row"><span class="papel-label">Métrica</span><span class="papel-val">100% das US com AC, zero item sem DoR aprovado entrando no sprint</span></div></div>
+  </div>
+  <div class="papel">
+    <div class="papel-h" style="background:rgba(21,101,192,.06);border-bottom:1px solid var(--cd)">
+      <div class="papel-icon" style="background:#1565C0">🧪</div>
+      <div><div class="papel-title">QA / SDET</div><div class="papel-sub">Dev Pleno (um deles evolui para esse papel)</div></div>
+    </div>
+    <div class="papel-body"><div class="papel-row"><span class="papel-label">Foco</span><span class="papel-val">Casos de teste automatizados, Testcontainers, cobertura mínima de 70%</span></div><div class="papel-row"><span class="papel-label">Transição</span><span class="papel-val">Começa com os 8 testes obrigatórios já definidos. QA Agent gera casos a partir dos ACs.</span></div><div class="papel-row"><span class="papel-label">Agentes IA</span><span class="papel-val">QA Agent — gera plano de testes a partir dos ACs da US automaticamente</span></div><div class="papel-row"><span class="papel-label">Entrega</span><span class="papel-val">Suite automatizada por módulo, relatório de cobertura, zero P0/P1 no merge</span></div><div class="papel-row"><span class="papel-label">Por que agora</span><span class="papel-val">Com 17 módulos, teste manual no final é inviável. Automação é sobrevivência.</span></div></div>
+  </div>
+  <div class="papel">
+    <div class="papel-h" style="background:rgba(85,139,47,.06);border-bottom:1px solid var(--cd)">
+      <div class="papel-icon" style="background:#558B2F">💻</div>
+      <div><div class="papel-title">Dev Backend</div><div class="papel-sub">3 Devs Backend restantes</div></div>
+    </div>
+    <div class="papel-body"><div class="papel-row"><span class="papel-label">Foco</span><span class="papel-val">Features novas no novo sistema, seguindo padrões CQRS e EntidadeSaaSBase</span></div><div class="papel-row"><span class="papel-label">Agentes IA</span><span class="papel-val">Dev Agent (Cursor nativo) + Context Agent (.cursorrules) + Code Review Agent</span></div><div class="papel-row"><span class="papel-label">Gate</span><span class="papel-val">Nenhum PR sem Code Review Agent executado e output incluso no comentário</span></div><div class="papel-row"><span class="papel-label">Legado</span><span class="papel-val">Apenas patches críticos de segurança (S1-S4). Novas features só no novo sistema.</span></div><div class="papel-row"><span class="papel-label">Crescimento</span><span class="papel-val">Pleno para sênior tem trilha de treinamento definida — ver epros-treinamento.html</span></div></div>
+  </div>
+  <div class="papel">
+    <div class="papel-h" style="background:rgba(106,27,154,.06);border-bottom:1px solid var(--cd)">
+      <div class="papel-icon" style="background:#6A1B9A">🎨</div>
+      <div><div class="papel-title">Dev Frontend</div><div class="papel-sub">2 Devs Frontend</div></div>
+    </div>
+    <div class="papel-body"><div class="papel-row"><span class="papel-label">Foco</span><span class="papel-val">Nuxt 3, integração com API, components, UX do novo sistema</span></div><div class="papel-row"><span class="papel-label">Agentes IA</span><span class="papel-val">Dev Agent + UX Agent + Code Review Agent</span></div><div class="papel-row"><span class="papel-label">Gate</span><span class="papel-val">Mesmos critérios do backend — PR sem Code Review Agent não é aprovado</span></div><div class="papel-row"><span class="papel-label">Responsabilidade adicional</span><span class="papel-val">Nuxt 3 do Desktop (Electron) quando Bloco 9 iniciar</span></div><div class="papel-row"><span class="papel-label">Padrão</span><span class="papel-val">Composables, Pinia, design system consistente com os 4 surfaces</span></div></div>
+  </div>
+</div>
+<div class="pg" id="p-ia">
+  <div class="bc">Novo Modelo <span>› IA no Dia a Dia</span></div>
+  <div class="st">Como a IA Entra no Trabalho</div>
+  <div class="ss">Não é sobre substituir — é sobre amplificar. Cada função usa o agente certo no momento certo. O Context Agent é a base de tudo.</div>
+  <div class="okb"><strong>Passo zero (antes de qualquer outra coisa):</strong> configurar o arquivo <code>.cursorrules</code> na raiz do repositório <code>PlataformaSaaS/</code> com o prompt do Context Agent. Isso injeta todo o domain knowledge do Epros em cada agente automaticamente. Prompts completos em <code>epros-agentes-prompts.md</code>.</div>
+  <div class="sl">Fluxo por função — quem usa o quê e quando</div>
+  <div class="aw">
+    <div class="aw-icon">📋</div>
+    <div style="flex:1">
+      <div class="aw-title">Requirements Agent</div>
+      <div class="aw-desc"><strong>Quando:</strong> Antes do planning<br/>Cola o rascunho de requisito ou a descrição do problema. Agente retorna US com ACs em Given/When/Then, riscos e dependências. Revisa, ajusta, apresenta para o time.</div>
+      <div class="aw-quem">→ PO / Facilitador</div>
+    </div>
+  </div>
+  <div class="aw">
+    <div class="aw-icon">📋</div>
+    <div style="flex:1">
+      <div class="aw-title">Planning Agent</div>
+      <div class="aw-desc"><strong>Quando:</strong> Durante o planning<br/>Cola a US finalizada. Agente quebra em tasks técnicas estimáveis, mapeia dependências e identifica impactos em multi-tenancy ou fiscal. Time valida.</div>
+      <div class="aw-quem">→ PO / Facilitador</div>
+    </div>
+  </div>
+  <div class="aw">
+    <div class="aw-icon">🏗️</div>
+    <div style="flex:1">
+      <div class="aw-title">Architect Agent</div>
+      <div class="aw-desc"><strong>Quando:</strong> Antes de qualquer feature nova<br/>Cola a proposta técnica ou o problema a resolver. Agente revisa contra os padrões Epros (.NET, CQRS, DDD, PostgreSQL) e retorna análise com alternativas e ADR sugerido.</div>
+      <div class="aw-quem">→ Tech Lead</div>
+    </div>
+  </div>
+  <div class="aw">
+    <div class="aw-icon">💻</div>
+    <div style="flex:1">
+      <div class="aw-title">Dev Agent (Cursor nativo)</div>
+      <div class="aw-desc"><strong>Quando:</strong> Durante o coding<br/>Context Agent via .cursorrules está sempre ativo. Cursor Tab autocompleta respeitando EntidadeSaaSBase, snake_case, Guid. Cursor Chat para dúvidas específicas de padrão.</div>
+      <div class="aw-quem">→ Dev Backend</div>
+    </div>
+  </div>
+  <div class="aw">
+    <div class="aw-icon">💻🎨</div>
+    <div style="flex:1">
+      <div class="aw-title">Code Review Agent</div>
+      <div class="aw-desc"><strong>Quando:</strong> Antes de abrir o PR<br/>Cola o diff completo. Agente retorna review com severidades: 🔴 bloqueante / 🟡 aviso / 🔵 sugestão. Output vai no comentário do PR — obrigatório.</div>
+      <div class="aw-quem">→ Todo dev</div>
+    </div>
+  </div>
+  <div class="aw">
+    <div class="aw-icon">🧪</div>
+    <div style="flex:1">
+      <div class="aw-title">QA Agent</div>
+      <div class="aw-desc"><strong>Quando:</strong> Após a US ser desenvolvida<br/>Cola os ACs da US. Agente gera plano de testes com casos manuais e automatizáveis, edge cases fiscais e de multi-tenancy. Equipe implementa os automatizáveis.</div>
+      <div class="aw-quem">→ QA / SDET</div>
+    </div>
+  </div>
+  <div class="aw">
+    <div class="aw-icon">🔒</div>
+    <div style="flex:1">
+      <div class="aw-title">Security Agent</div>
+      <div class="aw-desc"><strong>Quando:</strong> A qualquer momento<br/>Cola código, endpoint ou configuração suspeita. Agente retorna checklist de segurança categorizado. Útil especialmente em código fiscal e de autenticação.</div>
+      <div class="aw-quem">→ Qualquer pessoa</div>
+    </div>
+  </div>
+  <div class="aw">
+    <div class="aw-icon">🧠</div>
+    <div style="flex:1">
+      <div class="aw-title">Docs Agent</div>
+      <div class="aw-desc"><strong>Quando:</strong> Após decisões de negócio<br/>Cola a decisão técnica ou a regra de negócio que foi discutida. Agente gera documento canônico, ADR ou glossário de domínio pronto para revisão.</div>
+      <div class="aw-quem">→ Guardião de Domínio</div>
+    </div>
+  </div>
+  <div class="sl">Adoção em 4 semanas</div>
+  <table>
+    <thead><tr><th>Semana</th><th>O que fazer</th><th>Resultado esperado</th></tr></thead>
+    <tbody>
+      <tr><td>Semana 1</td><td>Configurar .cursorrules com Context Agent · Cada dev cria perfis no Cursor (Settings → Rules)</td><td>Todos os devs com o domain knowledge Epros injetado</td></tr>
+      <tr><td>Semana 2</td><td>Requirements Agent no próximo ciclo de requisitos · Medir tempo de aprovação de US antes e depois</td><td>ACs mais claros, menos retrabalho</td></tr>
+      <tr><td>Semana 3</td><td>Code Review Agent obrigatório em todo PR · Output incluso no comentário</td><td>Padrão de qualidade objetivo em todos os PRs</td></tr>
+      <tr><td>Semana 4</td><td>DoR e DoD nas cerimônias · QA Agent gerando casos a partir dos ACs</td><td>Critério claro de "pronto" por item</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="pg" id="p-cerimonias">
+  <div class="bc">Novo Modelo <span>› Cerimônias</span></div>
+  <div class="st">Cerimônias do Sprint</div>
+  <div class="ss">O que muda nas cerimônias existentes. A estrutura de sprints do Jira continua — o que muda é quem faz o quê e com quais critérios.</div>
+  <div class="sl">Calendário semanal</div>
+  <div class="cer">
+    <div><div class="cer-dia">SEG · 10h</div><div style="font-size:9px;color:var(--ct);margin-top:3px;font-family:'DM Mono',monospace">60–90 min</div></div>
+    <div style="flex:1">
+      <div class="cer-title">Sprint Planning</div>
+      <div class="cer-body">PO apresenta US com ACs (geradas com Requirements Agent). Tech Lead avalia impacto técnico. Time estima (Fibonacci). DoR checklist: toda US com AC? Dependências mapeadas? Se não, item fica para próximo sprint.</div>
+      <div style="font-size:10px;color:var(--do);margin-top:5px;font-weight:600">PO · Tech Lead · Time</div>
+    </div>
+  </div>
+  <div class="cer">
+    <div><div class="cer-dia">TER–QUI</div><div style="font-size:9px;color:var(--ct);margin-top:3px;font-family:'DM Mono',monospace">Assíncrono</div></div>
+    <div style="flex:1">
+      <div class="cer-title">Desenvolvimento</div>
+      <div class="cer-body">Devs trabalham nas tasks. Cursor com agentes ativos. PR aberto → Code Review Agent executado → output no comentário → Tech Lead revisa → merge. Sem PR sem Code Review Agent.</div>
+      <div style="font-size:10px;color:var(--do);margin-top:5px;font-weight:600">Devs · Tech Lead</div>
+    </div>
+  </div>
+  <div class="cer">
+    <div><div class="cer-dia">QUI · 16h</div><div style="font-size:9px;color:var(--ct);margin-top:3px;font-family:'DM Mono',monospace">45 min</div></div>
+    <div style="flex:1">
+      <div class="cer-title">Refinamento</div>
+      <div class="cer-body">PO + Tech Lead + Dev Sênior. Planning Agent quebra épicos em tasks estimáveis para o próximo sprint. Garante 2 sprints de buffer no backlog refinado.</div>
+      <div style="font-size:10px;color:var(--do);margin-top:5px;font-weight:600">PO · Tech Lead · Dev Sênior</div>
+    </div>
+  </div>
+  <div class="cer">
+    <div><div class="cer-dia">SEX · 15h</div><div style="font-size:9px;color:var(--ct);margin-top:3px;font-family:'DM Mono',monospace">30 min</div></div>
+    <div style="flex:1">
+      <div class="cer-title">Sprint Review</div>
+      <div class="cer-body">Demo do que foi entregue. QA confirma que passou nos critérios de DoD. Sócios participam quando relevante para decisão de produto.</div>
+      <div style="font-size:10px;color:var(--do);margin-top:5px;font-weight:600">Time · Stakeholders</div>
+    </div>
+  </div>
+  <div class="cer">
+    <div><div class="cer-dia">SEX · 16h</div><div style="font-size:9px;color:var(--ct);margin-top:3px;font-family:'DM Mono',monospace">30 min</div></div>
+    <div style="flex:1">
+      <div class="cer-title">Retrospectiva</div>
+      <div class="cer-body">O que foi bem? O que travar? Uma ação concreta para o próximo sprint. 1ª sexta do mês: retrospectiva do framework (métricas, prompts dos agentes, DoR/DoD).</div>
+      <div style="font-size:10px;color:var(--do);margin-top:5px;font-weight:600">Time</div>
+    </div>
+  </div>
+  <div class="sl">DoR — Definition of Ready (item entra no sprint)</div>
+  <div class="card" style="background:var(--vdl);border-color:var(--vdb)">
+    <div style="font-size:12px;line-height:2.1">
+      ✓ User Story com critérios de aceite em Given/When/Then<br/>
+      ✓ Sem ambiguidade — todos do time entendem o que fazer<br/>
+      ✓ Dependências mapeadas e resolvidas (ou aceitas com risco)<br/>
+      ✓ Estimativa dada pelo time (Fibonacci: 1, 2, 3, 5, 8, 13)<br/>
+      ✓ Impacto em multi-tenancy ou fiscal avaliado pelo Tech Lead<br/>
+      ✓ Design / wireframe disponível (se houver interface nova)
+    </div>
+  </div>
+  <div class="sl">DoD — Definition of Done (item sai do sprint)</div>
+  <div class="card" style="background:var(--vdl);border-color:var(--vdb)">
+    <div style="font-size:12px;line-height:2.1">
+      ✓ Código revisado pelo Code Review Agent (output no PR)<br/>
+      ✓ Tech Lead aprovou o PR<br/>
+      ✓ Cobertura de testes ≥ 70% nos arquivos alterados<br/>
+      ✓ CI verde (build + testes + 8 testes de segurança)<br/>
+      ✓ Sem violação de multi-tenancy (TenantLeakTest passou)<br/>
+      ✓ QA validou o fluxo de negócio (mesmo que manualmente por ora)<br/>
+      ✓ OpenAPI atualizado se endpoint novo ou modificado<br/>
+      ✓ Changelog atualizado (Docs Agent gera o entry)
+    </div>
+  </div>
+</div>
+<div class="pg" id="p-legado">
+  <div class="bc">Execução <span>› Política Legado vs Novo</span></div>
+  <div class="st">Política: Legado vs Novo Sistema</div>
+  <div class="ss">A linha divisória que libera o time do legado progressivamente. Sem uma política clara, o legado sempre vai parecer mais urgente que o novo.</div>
+  <div class="wb"><strong>O problema sem política:</strong> um bug em produção no legado sempre vai parecer mais urgente que uma feature no novo sistema. Sem regra clara, o time vai ser eternamente puxado para o passado.</div>
+  <div class="sl">A política — 3 regras simples</div>
+  <div class="pol">
+    <div class="pol-num">1</div>
+    <div><div class="pol-title">Novas features vão apenas para o novo sistema</div><div class="pol-desc">Qualquer funcionalidade nova que um cliente solicitar será implementada no novo sistema — nunca no legado. Se o cliente ainda não migrou, ele espera ou migra para ter acesso.</div></div>
+  </div>
+  <div class="pol">
+    <div class="pol-num">2</div>
+    <div><div class="pol-title">Bugs no legado recebem patch só se forem críticos (P0)</div><div class="pol-desc">Bug que causa perda de dados, vazamento de informação ou indisponibilidade total: patch no legado. Bug de comportamento incorreto mas não crítico: fica na fila de migração.</div></div>
+  </div>
+  <div class="pol">
+    <div class="pol-num">3</div>
+    <div><div class="pol-title">Cada semana o time dedica 70% ao novo e 30% ao legado</div><div class="pol-desc">Os 30% cobrem suporte, patches críticos e ajuda na migração dos clientes. Se não houver demanda de legado, os 30% vão para o novo. Nunca o contrário.</div></div>
+  </div>
+  <div class="sl">Critério de migração dos 20 clientes</div>
+  <table>
+    <thead><tr><th>Fase</th><th>Critério</th><th>Ação</th></tr></thead>
+    <tbody>
+      <tr><td>Módulo pronto no novo</td><td>O módulo equivalente ao que o cliente usa foi implementado e testado</td><td>Cliente entra na fila de migração</td></tr>
+      <tr><td>Migração assistida</td><td>Script de migração de dados (long→Guid) disponível e testado</td><td>Dev acompanha a migração do cliente por 1 sprint</td></tr>
+      <tr><td>Período de rollback</td><td>30 dias com acesso ao legado como contingência</td><td>Legado em modo leitura — sem novas gravações</td></tr>
+      <tr><td>Confirmação de migração</td><td>Cliente operando no novo sistema por 30 dias sem incidente crítico</td><td>Legado descomissionado para aquele cliente</td></tr>
+    </tbody>
+  </table>
+  <div class="okb"><strong>Prioridade de migração:</strong> clientes que usam apenas FIN + VEN + EST migram primeiro — são os módulos mais completos. Clientes com necessidades específicas de módulos ainda em desenvolvimento ficam por último.</div>
+</div>
+<div class="pg" id="p-transicao">
+  <div class="bc">Execução <span>› Transição em 90 Dias</span></div>
+  <div class="st">Plano de Transição — 90 Dias</div>
+  <div class="ss">Do modelo atual para o novo sem parar o que existe. Três fases de 30 dias, cada uma com entregas concretas.</div>
+  <div class="sl">As 3 fases</div>
+  <div class="tl">
+    <div class="tl-line">
+      <div class="tl-dot" style="background:#C0392B"></div>
+      <div class="tl-track" style="background:linear-gradient(to bottom,#C0392B,rgba(0,0,0,.05))"></div>
+    </div>
+    <div class="tl-body">
+      <div class="tl-phase" style="color:#C0392B">FASE 1 — Dias 1 a 30</div>
+      <div class="tl-title">Contenção e fundação</div>
+      <div class="tl-items"><div>✓ Patches de segurança S1-S4 do Assessment (JWT, CORS, Sentry, Hangfire)</div><div>✓ Configurar .cursorrules com Context Agent no repositório</div><div>✓ Cada dev cria seus perfis de agente no Cursor</div><div>✓ Papéis comunicados ao time — sênior para de organizar o Jira sozinho</div><div>✓ PO começa a usar Requirements Agent nas próximas US</div><div>✓ DoR e DoD definidos e apresentados ao time</div></div>
+    </div>
+  </div>
+  <div class="tl">
+    <div class="tl-line">
+      <div class="tl-dot" style="background:#E65100"></div>
+      <div class="tl-track" style="background:linear-gradient(to bottom,#E65100,rgba(0,0,0,.05))"></div>
+    </div>
+    <div class="tl-body">
+      <div class="tl-phase" style="color:#E65100">FASE 2 — Dias 31 a 60</div>
+      <div class="tl-title">Processo e qualidade</div>
+      <div class="tl-items"><div>✓ Code Review Agent obrigatório em todo PR (sem exceção)</div><div>✓ QA Agent gerando casos de teste a partir dos ACs</div><div>✓ Dev de 10 anos documentando regras de negócio com Docs Agent</div><div>✓ Planning Agent no refinamento semanal</div><div>✓ Primeira sprint com métricas medidas (lead time, cobertura)</div><div>✓ Bloco 6 (Compras) em andamento com o novo processo</div></div>
+    </div>
+  </div>
+  <div class="tl">
+    <div class="tl-line">
+      <div class="tl-dot" style="background:#2E7D52"></div>
+      <div class="tl-track" style="background:linear-gradient(to bottom,#2E7D52,rgba(0,0,0,.05))"></div>
+    </div>
+    <div class="tl-body">
+      <div class="tl-phase" style="color:#2E7D52">FASE 3 — Dias 61 a 90</div>
+      <div class="tl-title">Aceleração e migração</div>
+      <div class="tl-items"><div>✓ Retrospectiva do framework — ajustar prompts com base nos dados</div><div>✓ Primeiro cliente legado em migração assistida para o novo sistema</div><div>✓ Trilha de treinamento iniciada (ver epros-treinamento.html)</div><div>✓ Script long→Guid validado e documentado</div><div>✓ Métricas de 60 dias analisadas — o que funcionou, o que ajustar</div><div>✓ Bloco 7 (Infraestrutura / CI-CD) iniciado</div></div>
+    </div>
+  </div>
+</div>
+<div class="pg" id="p-metricas">
+  <div class="bc">Execução <span>› Métricas do Time</span></div>
+  <div class="st">Métricas de Time</div>
+  <div class="ss">O que medir, quem olha e com qual frequência. Revisadas pelo Tech Lead na primeira sexta de cada mês.</div>
+  <div class="sl">KPIs por dimensão</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
+    <div class="kpi"><div class="v">&lt;24h</div><div class="l">Lead time de PR</div><div class="f">Velocidade</div></div>
+    <div class="kpi"><div class="v">≥70%</div><div class="l">Cobertura de código</div><div class="f">Qualidade</div></div>
+    <div class="kpi"><div class="v">0 P0</div><div class="l">Bugs críticos/sprint</div><div class="f">Qualidade</div></div>
+    <div class="kpi"><div class="v">&lt;30m</div><div class="l">MTTR produção</div><div class="f">Operacional</div></div>
+    <div class="kpi"><div class="v">&gt;85%</div><div class="l">Precisão de estimativa</div><div class="f">Processo</div></div>
+    <div class="kpi"><div class="v">&lt;10%</div><div class="l">Carryover por sprint</div><div class="f">Processo</div></div>
+    <div class="kpi"><div class="v">100%</div><div class="l">US com critério de aceite</div><div class="f">Processo</div></div>
+    <div class="kpi"><div class="v">0</div><div class="l">PRs sem Code Review Agent</div><div class="f">Qualidade</div></div>
+    <div class="kpi"><div class="v">100%</div><div class="l">Decisões com ADR</div><div class="f">Arquitetura</div></div>
+  </div>
+  <div class="sl">Como funciona a revisão mensal</div>
+  <div class="card">
+    <div style="font-size:13px;font-weight:600;color:var(--cp);margin-bottom:10px">1ª sexta de cada mês — Retrospectiva do Framework (30 min)</div>
+    <div style="font-size:12px;color:var(--ct);line-height:2.1">
+      <div>1. Tech Lead apresenta as métricas do mês</div>
+      <div>2. Time identifica o que funcionou e o que travou</div>
+      <div>3. Uma ação concreta: ajustar um prompt de agente, mudar critério de DoR, etc.</div>
+      <div>4. Registro no Docs Agent → entry no changelog do processo</div>
+      <div>5. Próxima reunião começa com o resultado da ação anterior</div>
+    </div>
+  </div>
+  <div class="okb">O framework é vivo. Os prompts dos agentes melhoram com o uso. O DoR e DoD evoluem com o time. O objetivo não é ter um processo perfeito desde o primeiro dia — é ter um processo que melhora toda semana.</div>
+</div>
+
+</div>
+<script>
+function show(id, el) {
+  document.querySelectorAll('.pg').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(n => n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (el) el.classList.add('active');
+  window.scrollTo(0,0);
+  return false;
+}
+</script>
+</body></html>

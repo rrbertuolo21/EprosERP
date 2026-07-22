@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Epros — Treinamento por Função</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--az:#0D2B5E;--az2:#1A4080;--do:#C9A84C;--dop:#FDF5E0;--cb:#F4F6FA;--cd:#DDE3EF;--ct:#5A6580;--cp:#0A0F1E;--vd:#2d6a4f;--vdl:#edf7f0;--vdb:#c3e6cb}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"DM Sans",sans-serif;background:var(--cb);color:var(--cp);font-size:13px;line-height:1.6;min-height:100vh}
+#sb{position:fixed;left:0;top:0;bottom:0;width:236px;background:var(--az);display:flex;flex-direction:column;z-index:100;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(201,168,76,.25) transparent}
+.sbl{padding:22px 18px 15px;border-bottom:1px solid rgba(201,168,76,.18)}
+.sbl .lm{font-family:"Playfair Display",serif;font-size:20px;font-weight:700;color:var(--do)}
+.sbl .ls{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.sbs{padding:13px 15px 3px;font-size:9px;font-weight:600;color:rgba(201,168,76,.45);letter-spacing:2px;text-transform:uppercase}
+.nb{display:flex;align-items:center;gap:8px;padding:7px 17px;cursor:pointer;font-size:12px;color:rgba(255,255,255,.55);transition:all .15s;border-left:3px solid transparent;text-decoration:none}
+.nb:hover{color:#fff;background:rgba(255,255,255,.05)}
+.nb.active{color:var(--do);background:rgba(201,168,76,.1);border-left-color:var(--do);font-weight:500}
+.nn{width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.08);font-size:9px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.3);flex-shrink:0}
+.nb.active .nn{background:var(--do);color:var(--az)}
+#main{margin-left:236px}
+.pg{display:none;padding:38px 50px;max-width:1060px}
+.pg.active{display:block}
+.hero{background:linear-gradient(135deg,#0a1628 0%,var(--az) 55%,#0d2040 100%);border-radius:14px;padding:44px 50px;position:relative;overflow:hidden;margin-bottom:28px}
+.hero::before{content:"";position:absolute;top:-80px;right:-80px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.12) 0%,transparent 70%)}
+.hbadge{font-size:9px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--do);border:1px solid rgba(201,168,76,.3);border-radius:99px;padding:3px 11px;display:inline-block;margin-bottom:13px}
+.hero h1{font-family:"Playfair Display",serif;font-size:34px;font-weight:700;color:#fff;line-height:1.15;margin-bottom:9px}
+.hero h1 span{color:var(--do)}
+.hero p{font-size:13px;color:rgba(255,255,255,.65);line-height:1.75;max-width:540px}
+.st{font-family:"Playfair Display",serif;font-size:22px;font-weight:600;color:var(--az);margin-bottom:5px}
+.ss{font-size:13px;color:var(--ct);margin-bottom:20px;line-height:1.6}
+.sl{font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--ct);margin:22px 0 9px;display:flex;align-items:center;gap:8px}
+.sl::after{content:"";flex:1;height:1px;background:var(--cd)}
+.bc{font-size:11px;color:var(--ct);margin-bottom:20px}
+.bc span{color:var(--az);font-weight:500}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.card{background:#fff;border:1px solid var(--cd);border-radius:11px;padding:18px 22px;margin-bottom:10px}
+code{background:rgba(0,0,0,.07);padding:1px 5px;border-radius:3px;font-family:"DM Mono",monospace;font-size:11px}
+.okb{background:var(--vdl);border:1px solid var(--vdb);border-radius:8px;padding:9px 13px;font-size:12px;color:var(--vd);margin-bottom:9px;line-height:1.55}
+/* TRILHA CARD */
+.trilha{background:#fff;border:1px solid var(--cd);border-radius:13px;overflow:hidden;cursor:pointer;margin-bottom:10px;transition:box-shadow .15s,transform .12s}
+.trilha:hover{box-shadow:0 4px 18px rgba(13,43,94,.09);transform:translateY(-1px)}
+.trilha-h{padding:18px 22px;display:flex;align-items:center;gap:14px}
+.trilha-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;color:#fff}
+.trilha-title{font-size:15px;font-weight:600;color:var(--cp)}
+.trilha-sub{font-size:11px;color:var(--ct);margin-top:1px}
+.trilha-stack{font-size:10px;color:var(--ct);margin-top:4px;font-family:"DM Mono",monospace}
+.trilha-body{display:none;border-top:1px solid var(--cd);padding:0 22px 20px}
+.trilha.open .trilha-body{display:block}
+.trilha-arrow{margin-left:auto;font-size:16px;color:var(--ct);transition:transform .2s;flex-shrink:0}
+.trilha.open .trilha-arrow{transform:rotate(90deg)}
+/* SEMANA */
+.sem{margin-top:16px}
+.sem-h{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.sem-tag{font-family:"DM Mono",monospace;font-size:10px;font-weight:600;padding:3px 9px;border-radius:5px;color:#fff;flex-shrink:0}
+.sem-title{font-size:13px;font-weight:600;color:var(--cp)}
+.sem-items{font-size:12px;color:var(--ct);line-height:2;padding-left:14px}
+.sem-items li{list-style:none;position:relative;padding-left:14px}
+.sem-items li::before{content:"·";position:absolute;left:0;color:var(--do);font-size:14px;line-height:1.6}
+.sem-ex{background:rgba(13,43,94,.04);border:1px solid var(--cd);border-radius:7px;padding:8px 12px;margin-top:8px;font-size:11px;color:var(--ct)}
+.sem-ex::before{content:"⌥ Exercício: ";font-weight:600;color:var(--az)}
+/* COMPONENTE CARD */
+.comp{background:#fff;border:1px solid var(--cd);border-radius:11px;overflow:hidden;margin-bottom:8px}
+.comp-h{padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--cd)}
+.comp-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.comp-title{font-size:13px;font-weight:600;color:var(--cp)}
+.comp-sub{font-size:11px;color:var(--ct)}
+.comp-body{padding:11px 16px}
+.comp-items{font-size:12px;color:var(--ct);line-height:1.9}
+.comp-items li{list-style:none;position:relative;padding-left:14px;margin-bottom:1px}
+.comp-items li::before{content:"→";position:absolute;left:0;color:var(--do);font-size:11px}
+.comp-link{font-family:"DM Mono",monospace;font-size:10px;color:var(--az);margin-top:7px;display:block}
+/* ONBOARDING */
+.ob-step{display:flex;gap:14px;background:#fff;border:1px solid var(--cd);border-radius:10px;padding:13px 17px;margin-bottom:7px}
+.ob-num{width:30px;height:30px;border-radius:50%;background:var(--az);color:var(--do);font-family:"Playfair Display",serif;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ob-title{font-size:13px;font-weight:600;color:var(--cp);margin-bottom:3px}
+.ob-desc{font-size:12px;color:var(--ct);line-height:1.6}
+.ob-cmd{display:inline-block;margin-top:5px;background:var(--az);color:var(--do);font-family:"DM Mono",monospace;font-size:10px;padding:3px 9px;border-radius:5px}
+@media(max-width:860px){#sb{width:200px}#main{margin-left:200px}.pg{padding:24px 20px}.g2,.g4{grid-template-columns:1fr}}
+</style></head><body>
+<nav id="sb">
+  <div class="sbl"><div class="lm">Epros</div><div class="ls">Treinamento por Função</div></div>
+  <div class="sbs">Trilhas por Função</div>
+  <a class="nb active" onclick="show('p-trilhas',this)" href="#"><span class="nn">①</span>Trilhas de Aprendizado</a>
+  <div class="sbs">Por Componente</div>
+  <a class="nb" onclick="show('p-componentes',this)" href="#"><span class="nn">②</span>Stack Técnica</a>
+  <div class="sbs">Novo no Time</div>
+  <a class="nb" onclick="show('p-onboarding',this)" href="#"><span class="nn">③</span>Onboarding — Primeiro Dia</a>
+</nav>
+<div id="main">
+<div class="pg active" id="p-trilhas">
+  <div class="hero">
+    <div class="hbadge">Treinamento por Função · Dev Team · 2026</div>
+    <h1>Trilhas de<br/><span>Aprendizado</span></h1>
+    <p>Uma trilha por função, baseada nos componentes reais do Epros. Exercícios práticos no contexto do projeto — não tutoriais genéricos.</p>
+  </div>
+  <div class="st">4 trilhas — clique para expandir</div>
+  <div class="ss">Cada trilha tem 8 semanas. Pode ser seguida em paralelo com o trabalho — 2–3 horas por semana. Os exercícios usam o código real do repositório <code>PlataformaSaaS/</code>.</div>
+  <div class="okb"><strong>Como usar:</strong> abra o Cursor com os agentes configurados. A maioria dos exercícios começa com "Cole no Cursor Chat" e termina com "faça o PR". O aprendizado acontece no contexto real do projeto.</div>
+  <div class="trilha" id="t-backend-developer">
+    <div class="trilha-h" onclick="toggleTrilha(this.parentElement)">
+      <div class="trilha-icon" style="background:#0D2B5E">💻</div>
+      <div>
+        <div class="trilha-title">Backend Developer</div>
+        <div class="trilha-sub">Dev Backend Pleno</div>
+        <div class="trilha-stack">ASP.NET Core 8 · CQRS · DDD · PostgreSQL · EF Core · Keycloak · Testcontainers · Observabilidade</div>
+      </div>
+      <span class="trilha-arrow">›</span>
+    </div>
+    <div class="trilha-body"><div class="sem">
+  <div class="sem-h"><span class="sem-tag" style="background:#0D2B5E">Semana 1–2</span><span class="sem-title">Fundação .NET 8 e CQRS</span></div>
+  <ul class="sem-items"><li>ASP.NET Core 8 Minimal APIs vs Controllers — quando usar cada um</li><li>MediatR 12: IRequest, IRequestHandler, Behaviors — como funciona internamente</li><li>FluentValidation 11 no pipeline MediatR — validation antes do handler</li></ul>
+  <div class="sem-ex">Exercício: criar um handler completo para CriarFornecedor com validação</div>
+</div><div class="sem">
+  <div class="sem-h"><span class="sem-tag" style="background:#1565C0">Semana 3–4</span><span class="sem-title">DDD na prática Epros</span></div>
+  <ul class="sem-items"><li>EntidadeSaaSBase — ler o código, entender cada campo e por quê</li><li>Agregados, Value Objects e Domain Events no contexto Epros</li><li>Outbox Pattern — como o Quartz.NET processa os eventos</li></ul>
+  <div class="sem-ex">Exercício: criar agregado FornecedorPrincipal com 2 Value Objects e 1 Domain Event</div>
+</div><div class="sem">
+  <div class="sem-h"><span class="sem-tag" style="background:#2E7D52">Semana 5–6</span><span class="sem-title">PostgreSQL e EF Core 8</span></div>
+  <ul class="sem-items"><li>Schemas por módulo — por que e como configurar no IEntityTypeConfiguration</li><li>QueryFilter automático por reflection — ler o ContextBase, entender o mecanismo</li><li>snake_case global com NamingConvention — configuração e convenção</li><li>Migrations por módulo — como criar, aplicar e reverter com segurança</li></ul>
+  <div class="sem-ex">Exercício: criar migration para o FornecedorPrincipal no schema estoque.*</div>
+</div><div class="sem">
+  <div class="sem-h"><span class="sem-tag" style="background:#6A1B9A">Semana 7–8</span><span class="sem-title">Segurança e Multi-tenancy</span></div>
+  <ul class="sem-items"><li>Keycloak 24 OIDC — fluxo completo de autenticação e claims</li><li>InquilinoSaaSMiddleware — ler o código, entender como o tenantId é resolvido</li><li>TenantLeakTest — escrever o teste e entender o que ele protege</li><li>DataMaskingMiddleware — como [Sensitive] funciona e onde usar</li></ul>
+  <div class="sem-ex">Exercício: escrever os 8 testes de segurança obrigatórios para um módulo novo</div>
+</div><div class="sem">
+  <div class="sem-h"><span class="sem-tag" style="background:#AD1457">Semana 9–10</span><span class="sem-title">Observabilidade e Testes</span></div>
+  <ul class="sem-items"><li>Serilog 3 — enrichers de tenantId, mascaramento de PII, sinks</li><li>OpenTelemetry — traces, métricas e como correlacionar com Grafana</li><li>Testcontainers — PostgreSQL real nos testes, ciclo de vida do container</li><li>xUnit com Testcontainers — estrutura do teste de integração padrão Epros</li></ul>
+  <div class="sem-ex">Exercício: criar suite de integração para o módulo Compras (Bloco 6)</div>
+</div></div>
+  </div>
+  <div class="trilha" id="t-frontend-developer">
+    <div class="trilha-h" onclick="toggleTrilha(this.parentElement)">
+      <div class="trilha-icon" style="background:#AD1457">🎨</div>
+      <div>
+        <div class="trilha-title">Frontend Developer</div>
+        <div class="trilha-sub">Dev Frontend Pleno</div>
+        <div class="trilha-stack">Nuxt 3 · Pinia · TypeScript · API REST Epros · Composables · Design System</div>
+      </div>
+      <span class="trilha-arrow">›</span>
+    </div>
+    <div class="trilha-body"><div class="sem">
+  <div class="sem-h"><span class="sem-tag" style="background:#0D2B5E">Semana 1–2</span><span class="sem-title">Nuxt 3 na prática</span></div>
+  <ul class="sem-items"><li>SSR vs SPA vs SSG — quando usar cada modo e por que Epros usa SSR</li><li>Pages, layouts e components — convenções de nomenclatura e organização</li><li>Auto-imports do Nuxt — como funcionam e por que não precisamos de imports explícitos</li></ul>
+  <div class="sem-ex">Exercício: criar página de listagem de fornecedores com paginação</div>
+</div><div class="sem">
+  <div class="sem-h"><span class="sem-tag" style="background:#1565C0">Semana 3–4</span><span class="sem-title">Estado e API</span></div>
+  <ul class="sem-items"><li>Pinia — stores por domínio, actions assíncronas, persistência seletiva</li><li>useFetch vs $fetch — quando usar cada um, tratamento de erro</li><li>Autenticação com Keycloak — como o token JWT flui do authStore para cada request</li><li>Interceptors e headers — como o tenantId vai automaticamente em toda requisição</li></ul>
+  <div class="sem-ex">Exercício: criar store de autenticação com refresh token automático</div>
+</div><div class="sem">
+  <div class="sem-h"><span class="sem-tag" style="background:#2E7D52">Semana 5–6</span><span class="sem-title">Padrões Epros Frontend</span></div>
+  <ul class="sem-items"><li>Composables — extrair lógica reutilizável, nomear com use*, testar isoladamente</li><li>Design system — tipografia, cores, componentes base — consistência entre as 4 surfaces</li><li>Formulários com validação — VeeValidate ou nativo, padrão de error handling</li></ul>
+  <div class="sem-ex">Exercício: criar formulário de cadastro de fornecedor com validação e feedback visual</div>
+</div><div class="sem">
+  <div class="sem-h"><span class="sem-tag" style="background:#6A1B9A">Semana 7–8</span><span class="sem-title">Qualidade e Performance</span></div>
+  <ul class="sem-items"><li>TypeScript strict — tipos para DTOs da API, inferência, evitar any</li><li>Testes com Vitest — testes de composables, testes de renderização de componente</li><li>Performance: lazy loading de páginas, imagens, como o Nuxt otimiza automaticamente</li></ul>
+  <div class="sem-ex">Exercício: escrever testes para o composable useFornecedores</div>
+</div></div>
+  </div>
+  <div class="trilha" id="t-qa-/-sdet">
+    <div class="trilha-h" onclick="toggleTrilha(this.parentElement)">
+      <div class="trilha-icon" style="background:#2E7D52">🧪</div>
+      <div>
+        <div class="trilha-title">QA / SDET</div>
+        <div class="trilha-sub">QA ou Dev evoluindo para SDET</div>
+        <div class="trilha-stack">Testcontainers · xUnit · Casos de teste · QA Agent · Análise de ACs</div>
+      </div>
+      <span class="trilha-arrow">›</span>
+    </div>
+    <div class="trilha-body"><div class="sem">
+  <div class="sem-h"><span class="sem-tag" style="background:#0D2B5E">Semana 1–2</span><span class="sem-title">Fundação de testes</span></div>
+  <ul class="sem-items"><li>Por que testes automatizados existem — o custo do teste manual em escala</li><li>xUnit — estrutura de teste, Arrange/Act/Assert, nomenclatura descritiva</li><li>Tipos de teste — unitário, integração, e2e — o que cada um protege</li></ul>
+  <div class="sem-ex">Os 8 testes obrigatórios Epros — ler, entender, reproduzir em módulo novo</div>
+</div><div class="sem">
+  <div class="sem-h"><span class="sem-tag" style="background:#1565C0">Semana 3–4</span><span class="sem-title">Testcontainers na prática</span></div>
+  <ul class="sem-items"><li>Testcontainers para .NET — como o PostgreSQL real sobe e desce nos testes</li><li>Fixtures de banco — criar, popular e limpar dados por teste</li><li>TenantLeakTest — o teste mais importante: como garantir isolamento real</li></ul>
+  <div class="sem-ex">Exercício: escrever TenantLeakTest para o módulo Vendas</div>
+</div><div class="sem">
+  <div class="sem-h"><span class="sem-tag" style="background:#2E7D52">Semana 5–6</span><span class="sem-title">QA Agent e análise de ACs</span></div>
+  <ul class="sem-items"><li>Como usar o QA Agent no Cursor — input de ACs, output de plano de testes</li><li>Identificar edge cases fiscais — NF-e em contingência, decimal precision, fuso horário</li><li>Critério de aceite em Given/When/Then — ler, entender, transformar em teste</li></ul>
+  <div class="sem-ex">Exercício: pegar os ACs do Bloco 6 (Compras) e gerar plano de testes com QA Agent</div>
+</div><div class="sem">
+  <div class="sem-h"><span class="sem-tag" style="background:#6A1B9A">Semana 7–8</span><span class="sem-title">Performance e regressão</span></div>
+  <ul class="sem-items"><li>PerformanceSLOTest — P95 leitura <200ms, como medir e garantir</li><li>Suite de regressão — o que automatizar primeiro, cobertura mínima de 80%</li><li>CI/CD e testes — como os testes bloqueiam o deploy, gates no GitHub Actions</li></ul>
+  <div class="sem-ex">Exercício: configurar a suite de testes do Bloco 6 para rodar no CI</div>
+</div></div>
+  </div>
+  <div class="trilha" id="t-po-/-facilitador">
+    <div class="trilha-h" onclick="toggleTrilha(this.parentElement)">
+      <div class="trilha-icon" style="background:#6A1B9A">📋</div>
+      <div>
+        <div class="trilha-title">PO / Facilitador</div>
+        <div class="trilha-sub">QA atual assumindo papel de PO</div>
+        <div class="trilha-stack">Requirements Agent · Planning Agent · Given/When/Then · Jira · DoR/DoD</div>
+      </div>
+      <span class="trilha-arrow">›</span>
+    </div>
+    <div class="trilha-body"><div class="sem">
+  <div class="sem-h"><span class="sem-tag" style="background:#0D2B5E">Semana 1–2</span><span class="sem-title">Fundação de produto</span></div>
+  <ul class="sem-items"><li>O que é um bom requisito — características, por que Given/When/Then funciona</li><li>User Story vs tarefa técnica — diferença e quando usar cada um</li><li>Critérios de aceite — como escrever cenários que o dev consegue implementar e o QA testar</li></ul>
+  <div class="sem-ex">Exercício: pegar uma funcionalidade existente e reescrever como US com ACs</div>
+</div><div class="sem">
+  <div class="sem-h"><span class="sem-tag" style="background:#1565C0">Semana 3–4</span><span class="sem-title">Requirements Agent na prática</span></div>
+  <ul class="sem-items"><li>Como usar o Requirements Agent no Cursor — input rascunho, output US formatada</li><li>Revisar o output do agente — o que aceitar, o que ajustar, o que questionar</li><li>Detectar ambiguidade — perguntas que o agente faz e por que são importantes</li></ul>
+  <div class="sem-ex">Exercício: escrever 3 US para o módulo Compras usando o Requirements Agent</div>
+</div><div class="sem">
+  <div class="sem-h"><span class="sem-tag" style="background:#2E7D52">Semana 5–6</span><span class="sem-title">Planning e backlog</span></div>
+  <ul class="sem-items"><li>Planning Agent — quebrar épico em tasks estimáveis com dependências</li><li>Fibonacci para estimativas — o que cada número significa, quando usar</li><li>Dependências entre módulos — como o FIN depende do VEN, impacto na priorização</li><li>Priorização — MoSCoW, valor de negócio vs esforço técnico, decisão baseada em dados</li></ul>
+  <div class="sem-ex">Exercício: refinar o backlog do Bloco 7 com Planning Agent</div>
+</div><div class="sem">
+  <div class="sem-h"><span class="sem-tag" style="background:#6A1B9A">Semana 7–8</span><span class="sem-title">Processo e métricas</span></div>
+  <ul class="sem-items"><li>DoR e DoD na prática — aplicar nas cerimônias, treinar o time</li><li>Métricas de produto — velocidade, carryover, taxa de bug por feature</li><li>Como apresentar para sócios — o que mostrar, o que não mostrar</li></ul>
+  <div class="sem-ex">Exercício: preparar a Sprint Review do próximo sprint como apresentação para sócio</div>
+</div></div>
+  </div>
+</div>
+<div class="pg" id="p-componentes">
+  <div class="bc">Treinamento <span>› Stack Técnica por Componente</span></div>
+  <div class="st">Aprendizado por Componente</div>
+  <div class="ss">Para quem quer aprofundar em um componente específico, independente da trilha de função. Cada bloco tem o que saber, por que importa e onde encontrar mais.</div>
+  <div class="comp">
+    <div class="comp-h">
+      <div class="comp-dot" style="background:#0D2B5E"></div>
+      <div><div class="comp-title">.NET 8 / C#</div><div class="comp-sub">Fundação da linguagem e runtime</div></div>
+    </div>
+    <div class="comp-body">
+      <ul class="comp-items"><li>ASP.NET Core 8 — middleware pipeline, Minimal APIs, Controllers</li><li>Records e types — imutabilidade por design em Commands e Queries</li><li>Async/await — quando usar, como evitar deadlocks, CancellationToken</li><li>Nullable reference types — null safety no domínio</li></ul>
+      <span class="comp-link">📖 Documentação: docs.microsoft.com/aspnet/core</span>
+    </div>
+  </div>
+  <div class="comp">
+    <div class="comp-h">
+      <div class="comp-dot" style="background:#1565C0"></div>
+      <div><div class="comp-title">MediatR + CQRS</div><div class="comp-sub">O padrão central de todo handler Epros</div></div>
+    </div>
+    <div class="comp-body">
+      <ul class="comp-items"><li>IRequest<T> e IRequestHandler<T,R> — tipagem completa</li><li>Behaviors — pipeline: logging → validation → auditoria → handler</li><li>Separação Commands (escrita) vs Queries (leitura) — por que importa</li><li>NotificationHandler — para Domain Events via Outbox</li></ul>
+      <span class="comp-link">📖 Repositório: github.com/jbogard/MediatR</span>
+    </div>
+  </div>
+  <div class="comp">
+    <div class="comp-h">
+      <div class="comp-dot" style="background:#2E7D52"></div>
+      <div><div class="comp-title">EF Core 8 + PostgreSQL</div><div class="comp-sub">Persistência e multi-tenancy</div></div>
+    </div>
+    <div class="comp-body">
+      <ul class="comp-items"><li>IEntityTypeConfiguration — mapeamento com snake_case e schema</li><li>QueryFilter por reflection — ler ContextBase.cs, entender o mecanismo</li><li>Migrations — como criar por módulo, como aplicar sem downtime</li><li>Split queries e Compile models — otimizações de produção</li></ul>
+      <span class="comp-link">📖 Documentação: learn.microsoft.com/ef/core</span>
+    </div>
+  </div>
+  <div class="comp">
+    <div class="comp-h">
+      <div class="comp-dot" style="background:#AD1457"></div>
+      <div><div class="comp-title">Keycloak 24</div><div class="comp-sub">Identidade e autenticação</div></div>
+    </div>
+    <div class="comp-body">
+      <ul class="comp-items"><li>Realm, Client, Roles — como o Epros está estruturado</li><li>OIDC Authorization Code Flow + PKCE — o fluxo correto em produção</li><li>Claims customizadas — como tenantId chega no JWT</li><li>Token introspection vs JWT local validation</li></ul>
+      <span class="comp-link">📖 Docs: keycloak.org/documentation</span>
+    </div>
+  </div>
+  <div class="comp">
+    <div class="comp-h">
+      <div class="comp-dot" style="background:#558B2F"></div>
+      <div><div class="comp-title">DDD com Flunt</div><div class="comp-sub">Domain-Driven Design na prática</div></div>
+    </div>
+    <div class="comp-body">
+      <ul class="comp-items"><li>Notifiable<Notification> — acumulação de erros sem exceção</li><li>Agregados e Aggregate Roots — regras de invariância no domínio</li><li>Value Objects imutáveis — Moeda, Periodo, ContaContabil</li><li>Domain Events — quando criar, como nomear, o que colocar no payload</li></ul>
+      <span class="comp-link">📖 Livro referência: Implementing Domain-Driven Design — Vaughn Vernon</span>
+    </div>
+  </div>
+  <div class="comp">
+    <div class="comp-h">
+      <div class="comp-dot" style="background:#6A1B9A"></div>
+      <div><div class="comp-title">Nuxt 3 + Pinia</div><div class="comp-sub">Frontend web e desktop</div></div>
+    </div>
+    <div class="comp-body">
+      <ul class="comp-items"><li>Composables — use* pattern, reatividade, lifecycle</li><li>Pinia stores — por domínio, actions assíncronas, DevTools</li><li>Auto-imports e convenções — como o Nuxt organiza o projeto</li><li>Server-side rendering — como afeta o estado e a autenticação</li></ul>
+      <span class="comp-link">📖 Docs: nuxt.com/docs · pinia.vuejs.org</span>
+    </div>
+  </div>
+  <div class="comp">
+    <div class="comp-h">
+      <div class="comp-dot" style="background:#37474F"></div>
+      <div><div class="comp-title">Testcontainers</div><div class="comp-sub">Testes com banco real</div></div>
+    </div>
+    <div class="comp-body">
+      <ul class="comp-items"><li>PostgreSQL em container — start, stop, lifecycle</li><li>Fixtures e seeders — como popular e limpar por teste</li><li>Integração com xUnit — IAsyncLifetime, shared fixtures</li><li>Como os 8 testes obrigatórios usam Testcontainers</li></ul>
+      <span class="comp-link">📖 Docs: testcontainers.com/guides/getting-started-with-testcontainers-for-dotnet</span>
+    </div>
+  </div>
+  <div class="comp">
+    <div class="comp-h">
+      <div class="comp-dot" style="background:#C9A84C"></div>
+      <div><div class="comp-title">Cursor + Agentes IA</div><div class="comp-sub">Produtividade com IA</div></div>
+    </div>
+    <div class="comp-body">
+      <ul class="comp-items"><li>Settings → Rules — como criar perfis de agente por função</li><li>.cursorrules — o que o Context Agent injeta e por que</li><li>Cursor Tab vs Chat vs Composer — quando usar cada modo</li><li>Como revisar o output do agente — o que aceitar, o que questionar</li></ul>
+      <span class="comp-link">📖 Referência: epros-agentes-prompts.md (os 13 prompts completos)</span>
+    </div>
+  </div>
+</div>
+<div class="pg" id="p-onboarding">
+  <div class="bc">Treinamento <span>› Onboarding — Primeiro Dia</span></div>
+  <div class="st">Primeiro Dia no Time</div>
+  <div class="ss">O que um novo membro precisa fazer nos primeiros dias para estar operacional. Sequência obrigatória — não pular etapas.</div>
+  <div class="sl">Checklist de setup — Dia 1</div>
+  <div class="ob-step">
+    <div class="ob-num">1</div>
+    <div>
+      <div class="ob-title">Ler os 4 documentos base</div>
+      <div class="ob-desc">Antes de qualquer setup técnico, leia na ordem: epros-diagnostico.html → epros-estrategico.html → epros-modulos.html → epros-tecnico.html. Você vai entender o que foi, o que é e o que será.</div>
+      <span class="ob-cmd">Leitura: ~2 horas</span>
+    </div>
+  </div>
+  <div class="ob-step">
+    <div class="ob-num">2</div>
+    <div>
+      <div class="ob-title">Clonar os repositórios</div>
+      <div class="ob-desc">PlataformaSaaS/ (backend), epros_erp_front-main/ (frontend). Solicitar acesso ao Tech Lead no primeiro dia.</div>
+      <span class="ob-cmd">git clone git@github.com:epros/PlataformaSaaS.git</span>
+    </div>
+  </div>
+  <div class="ob-step">
+    <div class="ob-num">3</div>
+    <div>
+      <div class="ob-title">Subir o ambiente local</div>
+      <div class="ob-desc">docker compose up -d na raiz do PlataformaSaaS/. Verificar que todos os 9 serviços sobem com healthcheck verde. Ver epros-tecnico.html → Infra Local para credenciais.</div>
+      <span class="ob-cmd">docker compose up -d && docker compose ps</span>
+    </div>
+  </div>
+  <div class="ob-step">
+    <div class="ob-num">4</div>
+    <div>
+      <div class="ob-title">Configurar o Cursor</div>
+      <div class="ob-desc">Instalar o Cursor. Settings → Rules → criar perfis de agente baseados na sua função (ver epros-agentes-prompts.md). Verificar que o .cursorrules está sendo reconhecido.</div>
+      <span class="ob-cmd">Cursor → Settings → Rules → New Rule</span>
+    </div>
+  </div>
+  <div class="ob-step">
+    <div class="ob-num">5</div>
+    <div>
+      <div class="ob-title">Rodar os testes locais</div>
+      <div class="ob-desc">dotnet test na raiz do projeto. Os 8 testes obrigatórios precisam passar. Se algum falhar, chamar o Tech Lead antes de qualquer commit.</div>
+      <span class="ob-cmd">cd PlataformaSaaS && dotnet test</span>
+    </div>
+  </div>
+  <div class="ob-step">
+    <div class="ob-num">6</div>
+    <div>
+      <div class="ob-title">Primeiro PR — tarefa de onboarding</div>
+      <div class="ob-desc">Tech Lead vai ter uma task de onboarding preparada. Pequena, bem definida, com ACs claros. Usar o fluxo completo: Code Review Agent → PR → aguardar aprovação.</div>
+      <span class="ob-cmd">Tech Lead define a task de onboarding</span>
+    </div>
+  </div>
+  <div class="ob-step">
+    <div class="ob-num">7</div>
+    <div>
+      <div class="ob-title">Reunião com o Guardião de Domínio</div>
+      <div class="ob-desc">Marcar 1h com o Dev de 10 anos para entender o contexto de negócio do módulo em que vai trabalhar. Ele conhece as regras fiscais, os fluxos críticos e por que certas decisões foram tomadas.</div>
+      <span class="ob-cmd">30–60 minutos de conversa</span>
+    </div>
+  </div>
+  <div class="ob-step">
+    <div class="ob-num">8</div>
+    <div>
+      <div class="ob-title">Começar a trilha de função</div>
+      <div class="ob-desc">Abrir o epros-treinamento.html e iniciar a semana 1 da trilha correspondente à função. As trilhas são para rodar em paralelo com o trabalho — não bloqueia.</div>
+      <span class="ob-cmd">epros-treinamento.html → sua função</span>
+    </div>
+  </div>
+  <div class="sl">O que perguntar vs o que pesquisar</div>
+  <div class="g2">
+    <div class="card" style="border-left:4px solid var(--vd)">
+      <div style="font-size:12px;font-weight:600;color:var(--vd);margin-bottom:7px">✓ Pergunte para o time</div>
+      <div style="font-size:12px;color:var(--ct);line-height:2">
+        Regras de negócio que não estão documentadas<br/>
+        Por que uma decisão arquitetural foi tomada<br/>
+        Contexto de um cliente específico<br/>
+        Qualquer dúvida sobre multi-tenancy e isolamento<br/>
+        Se um padrão no legado deve ser seguido ou ignorado
+      </div>
+    </div>
+    <div class="card" style="border-left:4px solid var(--az)">
+      <div style="font-size:12px;font-weight:600;color:var(--az);margin-bottom:7px">⌕ Pesquise primeiro (Cursor + docs)</div>
+      <div style="font-size:12px;color:var(--ct);line-height:2">
+        Como funciona um componente da stack (EF Core, Keycloak…)<br/>
+        Erro de compilação ou de runtime<br/>
+        Sintaxe de C#, Nuxt ou SQL<br/>
+        Como configurar algo no Docker Compose<br/>
+        Dúvidas que o Cursor Chat consegue responder
+      </div>
+    </div>
+  </div>
+  <div class="okb"><strong>Regra de ouro:</strong> se você ficou travado por mais de 30 minutos em algo, chame alguém. Não é fraqueza — é eficiência. O tempo do time é mais valioso que qualquer orgulho de resolver sozinho.</div>
+</div>
+
+</div>
+<script>
+function show(id, el) {
+  document.querySelectorAll('.pg').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(n => n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (el) el.classList.add('active');
+  window.scrollTo(0,0);
+  return false;
+}
+function toggleTrilha(card) {
+  card.classList.toggle('open');
+}
+</script>
+</body></html>

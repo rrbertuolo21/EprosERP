@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — Modelo Financeiro</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+.subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 22px; }
+.stab { padding: 5px 13px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--b2); border-radius: 20px; background: none; color: var(--t3); transition: all .15s; font-family: var(--sans); }
+.stab:hover { color: var(--t2); }
+.stab.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+.sp { display: none; }
+.sp.on { display: block; }
+.chart-box { background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r); padding: 20px; margin-bottom: 14px; }
+.bar-chart { display: flex; align-items: flex-end; justify-content: space-between; height: 160px; padding-top: 20px; border-bottom: 1px solid var(--b2); margin-bottom: 10px; }
+.bar-col { display: flex; flex-direction: column; align-items: center; flex: 1; }
+.bar { width: 45px; background: var(--blue-d); border: 1px solid var(--blue); border-radius: 4px 4px 0 0; transition: height .3s; position: relative; }
+.bar.highlight { background: var(--green-d); border-color: var(--green); }
+.bar-label { font-family: var(--mono); font-size: 9px; color: var(--t3); margin-top: 6px; }
+.bar-value { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-family: var(--mono); font-size: 9px; color: var(--t1); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+  <a class="nt" href="08_api.html">⑧ API Reference</a>
+  <a class="nt" href="09_runbook.html">⑨ Runbook & DR</a>
+  <a class="nt on" href="10_modelo_financeiro.html">⑩ Modelo Financeiro</a>
+  <a class="nt" href="11_integracoes.html">⑪ Integrações</a>
+  <a class="nt" href="12_modelo_dados.html">⑫ Modelo de Dados</a>
+  <a class="nt" href="13_onboarding.html">⑬ Guia de Onboarding</a>
+  <a class="nt" href="14_disaster_recovery.html">⑭ Disaster Recovery</a>
+  <a class="nt" href="15_glossario.html">⑮ Glossário</a>
+  <a class="nt" href="16_i18n.html">⑯ Internacionalização</a>
+  <a class="nt" href="17_changelog.html">⑰ Changelog</a>
+  <a class="nt" href="18_plano_execucao.html">⑱ Plano de Execução</a>
+  <a class="nt" href="19_operacional.html">⑲ Modelo Operacional</a>
+  <a class="nt" href="20_treinamento.html">⑳ Treinamento por Função</a>
+  <a class="nt" href="21_agentes_prompts.html">㉑ Prompts dos Agentes</a>
+  <a class="nt" href="22_diagnostico.html">㉒ Diagnóstico do Legado</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>Modelo de Negócios · Pricing · Unit Economics · Projeções Financeiras</div>
+  <h1>Modelo <em>Financeiro</em></h1>
+  <p class="hero-desc">Viabilidade comercial, economia de escala do ecossistema ERP SaaS Epros e métricas de rentabilidade operacional baseadas na conversão de legados.</p>
+</div>
+
+<div class="page">
+
+<div class="subtabs">
+  <button class="stab on" onclick="st('pricing')">Planos & Precificação</button>
+  <button class="stab" onclick="st('unit')">Unit Economics</button>
+  <button class="stab" onclick="st('breakeven')">Break-Even & Infra</button>
+  <button class="stab" onclick="st('margin')">Margens & Projeções</button>
+</div>
+
+<!-- ══ PRICING ══ -->
+<div class="sp on" id="sp-pricing">
+  <div class="sl">Estrutura de Planos e Precificação Dinâmica</div>
+  <p class="lead">O Epros ERP opera em modelo de assinatura recorrente (SaaS) com 3 planos base. Os preços, limites de usuários e cota de faturamento fiscal de cada plano são parametrizados dinamicamente no painel Super Admin (Landlord) e aplicados em tempo de execução via regras de Entitlement.</p>
+
+  <div class="g3">
+    <div class="card">
+      <div class="tag tag-b">Plano Silver</div>
+      <h3 style="font-size: 16px; margin: 5px 0 10px;">R$ <em>199,00</em> /mês</h3>
+      <p style="margin-bottom: 12px;">Solução de entrada para micro e pequenas empresas comerciais.</p>
+      <div class="csm">
+        <h4>Usuários: <strong>Até 3</strong></h4>
+      </div>
+      <div class="csm">
+        <h4>Limite DFe: <strong>50/mês</strong></h4>
+      </div>
+      <div class="csm">
+        <h4>Infraestrutura: <strong>Shared DB</strong></h4>
+      </div>
+    </div>
+    
+    <div class="card" style="border-color: var(--blue);">
+      <div class="tag tag-g">Plano Gold (Recomendado)</div>
+      <h3 style="font-size: 16px; margin: 5px 0 10px;">R$ <em>399,00</em> /mês</h3>
+      <p style="margin-bottom: 12px;">Plano ideal para empresas em expansão com múltiplas filiais.</p>
+      <div class="csm">
+        <h4>Usuários: <strong>Até 10</strong></h4>
+      </div>
+      <div class="csm">
+        <h4>Limite DFe: <strong>300/mês</strong></h4>
+      </div>
+      <div class="csm">
+        <h4>Infraestrutura: <strong>Shared DB (Redundante)</strong></h4>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="tag tag-p">Plano Platinum</div>
+      <h3 style="font-size: 16px; margin: 5px 0 10px;">R$ <em>799,00</em> /mês</h3>
+      <p style="margin-bottom: 12px;">Máxima performance e isolamento para empresas consolidadas.</p>
+      <div class="csm">
+        <h4>Usuários: <strong>Ilimitados</strong></h4>
+      </div>
+      <div class="csm">
+        <h4>Limite DFe: <strong>Ilimitado</strong></h4>
+      </div>
+      <div class="csm">
+        <h4>Infraestrutura: <strong>Dedicated DB Schema</strong></h4>
+      </div>
+    </div>
+  </div>
+
+  <div class="sl" style="margin-top:40px">Regras de Entitlement & Bloqueio Financeiro</div>
+  <ul class="steps-list">
+    <li class="step-item">
+      <span class="step-num">1</span>
+      <div class="step-desc"><strong>Verificação Ativa de Limites:</strong> No pipeline do monólito, o middleware `InquilinoSaaSMiddleware` verifica o plano e bloqueia requisições caso a cota do inquilino seja atingida ou o status da conta esteja irregular.</div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">2</span>
+      <div class="step-desc"><strong>Bloqueio de Inadimplência:</strong> Inquilinos com faturas em atraso há mais de <strong>15 dias</strong> são direcionados para modo restrito de leitura de faturas, impossibilitando qualquer nova transação operacional (venda, emissão fiscal ou movimentação de estoque).</div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">3</span>
+      <div class="step-desc"><strong>Parametrização Landlord:</strong> O administrador da plataforma pode aplicar descontos, alterar limites dinamicamente ou forçar a suspensão de qualquer tenant através do painel `/plataforma/admin` no frontend `Epros.App`.</div>
+    </li>
+  </ul>
+</div>
+
+<!-- ══ UNIT ECONOMICS ══ -->
+<div class="sp" id="sp-unit">
+  <div class="sl">Métricas Unitárias SaaS (Unit Economics)</div>
+  <p class="lead">Estudo de viabilidade focado no custo de aquisição e retorno de margem do ecossistema ERP Epros, impulsionado pela migração dos 20 clientes ativos na carteira legada.</p>
+
+  <div class="g4">
+    <div class="metric">
+      <div class="metric-val">R$ <em>350</em></div>
+      <div class="metric-label">ARPU</div>
+      <div class="metric-sub">Receita média mensal por inquilino</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val">R$ <em>2.100</em></div>
+      <div class="metric-label">CAC</div>
+      <div class="metric-sub">Custo médio de aquisição por cliente</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val"><em>&lt; 2%</em></div>
+      <div class="metric-label">Churn Rate</div>
+      <div class="metric-sub">Cancelamento mensal projetado</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val"><em>1:6</em></div>
+      <div class="metric-label">LTV / CAC</div>
+      <div class="metric-sub">Relação de valor vs custo de aquisição</div>
+    </div>
+  </div>
+
+  <div class="sl" style="margin-top:30px">Análise Detalhada de Viabilidade</div>
+  <div class="row">
+    <span class="rl">LTV (Lifetime Value)</span>
+    <span class="rv">Calculado com base no ARPU de R$ 350,00 e taxa de cancelamento de 1.8% ao mês, gerando um valor de tempo de vida estimado de <strong>R$ 19.444,00</strong> por cliente.</span>
+  </div>
+  <div class="row">
+    <span class="rl">Payback Period</span>
+    <span class="rv">O custo de aquisição (CAC) é amortizado em **6 meses** de recorrência. A partir do 7º mês, a contribuição de margem líquida do cliente é convertida em lucro líquido de operação.</span>
+  </div>
+  <div class="row">
+    <span class="rl">Vantagem do Legado</span>
+    <span class="rv">A migração inicial dos 20 clientes existentes na carteira do ERP legado reduz o CAC real para **quase zero** no primeiro trimestre, assegurando caixa operacional imediato para sustentação da infraestrutura centralizada.</span>
+  </div>
+</div>
+
+<!-- ══ BREAKEVEN ══ -->
+<div class="sp" id="sp-breakeven">
+  <div class="sl">Análise de Break-Even & Custo de Infraestrutura</div>
+  <p class="lead">Ponto de equilíbrio estimado baseado na projeção de custos fixos de servidores e recursos necessários para suportar os tenants na nuvem de forma resiliente.</p>
+
+  <div class="g2">
+    <div class="card">
+      <div class="tag tag-r">Custos Fixos Mensais (Hospedagem)</div>
+      <table class="tbl" style="margin-top: 8px;">
+        <tr><td>PostgreSQL Redundante</td><td>R$ 1.200,00</td></tr>
+        <tr><td>Keycloak Cluster</td><td>R$ 800,00</td></tr>
+        <tr><td>Valkey Cache & Lock</td><td>R$ 400,00</td></tr>
+        <tr><td>MinIO Storage & CDN</td><td>R$ 600,00</td></tr>
+        <tr><td>HashiCorp Vault & API Nodes</td><td>R$ 1.500,00</td></tr>
+        <tr style="font-weight: 600; color: var(--t1);"><td>TOTAL INFRAESTRUTURA</td><td>R$ 4.500,00</td></tr>
+      </table>
+    </div>
+
+    <div class="card" style="border-color: var(--green);">
+      <div class="tag tag-g">Ponto de Equilíbrio (Break-Even)</div>
+      <div style="padding: 20px 0; text-align: center;">
+        <h2 style="font-family: var(--display); font-size: 48px; font-weight: 400; color: var(--green);">13 <em>Clientes</em></h2>
+        <p style="color: var(--t2); font-size: 13px; margin-top: 10px;">Necessários para cobrir 100% dos custos fixos de hosting.</p>
+        <div class="ok" style="margin-top: 15px; font-size: 11px; padding: 8px;">
+          A carteira de 20 clientes legados garante o break-even desde o primeiro dia de rollout!
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sl" style="margin-top:30px">Escalabilidade de Infraestrutura (Custo Marginal)</div>
+  <p style="color: var(--t2); font-size: 12px; margin-bottom: 20px;">À medida que novos inquilinos são adicionados, os custos de infraestrutura crescem de forma não linear devido ao modelo multi-tenant. O custo marginal por novo cliente é inferior a <strong>5% do preço médio da assinatura</strong>.</p>
+</div>
+
+<!-- ══ MARGIN ══ -->
+<div class="sp" id="sp-margin">
+  <div class="sl">Margens e Projeções Financeiras (3 Anos)</div>
+  <p class="lead">Simulação do crescimento financeiro da plataforma SaaS com base nas metas de conversão de clientes legados e aquisição de novos inquilinos comerciais no mercado nacional.</p>
+
+  <div class="chart-box">
+    <div class="bar-chart">
+      <div class="bar-col">
+        <div class="bar" style="height: 30px;"><span class="bar-value">R$ 7K</span></div>
+        <div class="bar-label">Mês 1 (Setup)</div>
+      </div>
+      <div class="bar-col">
+        <div class="bar" style="height: 60px;"><span class="bar-value">R$ 21K</span></div>
+        <div class="bar-label">Ano 1 (Fim)</div>
+      </div>
+      <div class="bar-col">
+        <div class="bar highlight" style="height: 110px;"><span class="bar-value">R$ 52K</span></div>
+        <div class="bar-label">Ano 2 (Fim)</div>
+      </div>
+      <div class="bar-col">
+        <div class="bar highlight" style="height: 150px;"><span class="bar-value">R$ 105K</span></div>
+        <div class="bar-label">Ano 3 (Fim)</div>
+      </div>
+    </div>
+    <div style="text-align: center; font-size: 11px; color: var(--t3); font-family: var(--mono);">Projeção de Receita Mensal Recorrente (MRR)</div>
+  </div>
+
+  <table class="tbl" style="margin-top: 24px;">
+    <thead>
+      <tr>
+        <th>Métrica / Período</th>
+        <th>Mês 1</th>
+        <th>Ano 1 (Consolidação)</th>
+        <th>Ano 2 (Crescimento)</th>
+        <th>Ano 3 (Escala)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Clientes Ativos</strong></td>
+        <td>20 (Legado)</td>
+        <td>60</td>
+        <td>150</td>
+        <td>300</td>
+      </tr>
+      <tr>
+        <td><strong>Receita Recorrente (MRR)</strong></td>
+        <td>R$ 7.000,00</td>
+        <td>R$ 21.000,00</td>
+        <td>R$ 52.500,00</td>
+        <td>R$ 105.000,00</td>
+      </tr>
+      <tr>
+        <td><strong>Custo de Infraestrutura</strong></td>
+        <td>R$ 4.500,00</td>
+        <td>R$ 5.500,00</td>
+        <td>R$ 8.000,00</td>
+        <td>R$ 12.000,00</td>
+      </tr>
+      <tr>
+        <td><strong>Custos Operacionais / Suporte</strong></td>
+        <td>R$ 1.500,00</td>
+        <td>R$ 6.000,00</td>
+        <td>R$ 15.000,00</td>
+        <td>R$ 25.000,00</td>
+      </tr>
+      <tr style="font-weight: 600; color: var(--green);">
+        <td><strong>EBITDA Mensal</strong></td>
+        <td>R$ 1.000,00</td>
+        <td>R$ 9.500,00</td>
+        <td>R$ 29.500,00</td>
+        <td>R$ 68.000,00</td>
+      </tr>
+      <tr style="font-weight: 500;">
+        <td><strong>Margem EBITDA</strong></td>
+        <td>14,2%</td>
+        <td>45,2%</td>
+        <td>56,1%</td>
+        <td>64,7%</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="sl" style="margin-top:40px">Decisões de Engenharia Financeira (ADR Financeira)</div>
+  <div class="drow">
+    <div class="odot"></div>
+    <div class="dq">Gateways de Pagamento Integrados</div>
+    <div class="da">Uso inicial do Mercado Pago devido às taxas competitivas de Pix e Boleto (1,2% por Pix liquidado contra média de 2,5% do mercado), otimizando a margem de contribuição.</div>
+  </div>
+  <div class="drow">
+    <div class="odot"></div>
+    <div class="dq">Otimização de Custos de Storage</div>
+    <div class="da">Cópia e compactação de XMLs fiscais comprimidos em lote no MinIO reduzem o consumo de disco em 60% comparado a salvar arquivos raw. Retenção de 5 anos via tiering de storage frio (arquivamento de logs históricos).</div>
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<script>
+var tabs = ['pricing', 'unit', 'breakeven', 'margin'];
+function st(id) {
+  document.querySelectorAll('.stab').forEach(function(t, i) {
+    t.classList.toggle('on', tabs[i] === id);
+  });
+  document.querySelectorAll('.sp').forEach(function(p) {
+    p.classList.toggle('on', p.id === 'sp-' + id);
+  });
+}
+</script>
+</body>
+</html>

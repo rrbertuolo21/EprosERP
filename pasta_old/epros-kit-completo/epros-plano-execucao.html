@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Epros — Plano de Execução</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--az:#0D2B5E;--do:#C9A84C;--dop:#FDF5E0;--cb:#F4F6FA;--cd:#DDE3EF;--ct:#5A6580;--cp:#0A0F1E;--vd:#2d6a4f;--vdl:#edf7f0;--vdb:#c3e6cb;--red:#C0392B;--redl:#FDEDEC;--am:#7A4F00;--aml:#FEF3CD}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"DM Sans",sans-serif;background:var(--cb);color:var(--cp);font-size:13px;line-height:1.6}
+#sb{position:fixed;left:0;top:0;bottom:0;width:236px;background:var(--az);display:flex;flex-direction:column;z-index:100;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(201,168,76,.25) transparent}
+.sbl{padding:22px 18px 15px;border-bottom:1px solid rgba(201,168,76,.18)}
+.sbl .lm{font-family:"Playfair Display",serif;font-size:18px;font-weight:700;color:var(--do)}
+.sbl .ls{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.sbs{padding:13px 15px 3px;font-size:9px;font-weight:600;color:rgba(201,168,76,.45);letter-spacing:2px;text-transform:uppercase}
+.nb{display:flex;align-items:center;gap:8px;padding:7px 17px;cursor:pointer;font-size:12px;color:rgba(255,255,255,.55);transition:all .15s;border-left:3px solid transparent;text-decoration:none}
+.nb:hover{color:#fff;background:rgba(255,255,255,.05)}
+.nb.active{color:var(--do);background:rgba(201,168,76,.1);border-left-color:var(--do);font-weight:500}
+.nn{width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.08);font-size:9px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.3);flex-shrink:0}
+.nb.active .nn{background:var(--do);color:var(--az)}
+#main{margin-left:236px}
+.pg{display:none;padding:38px 50px;max-width:980px}
+.pg.active{display:block}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,#0a1628 0%,var(--az) 55%,#0d2040 100%);border-radius:14px;padding:44px 50px;position:relative;overflow:hidden;margin-bottom:28px}
+.hero::before{content:"";position:absolute;top:-80px;right:-80px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.12) 0%,transparent 70%)}
+.hbadge{font-size:9px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--do);border:1px solid rgba(201,168,76,.3);border-radius:99px;padding:3px 11px;display:inline-block;margin-bottom:13px}
+.hero h1{font-family:"Playfair Display",serif;font-size:32px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:9px}
+.hero h1 span{color:var(--do)}
+.hero p{font-size:13px;color:rgba(255,255,255,.65);line-height:1.75;max-width:560px}
+.st{font-family:"Playfair Display",serif;font-size:21px;font-weight:600;color:var(--az);margin-bottom:5px}
+.ss{font-size:13px;color:var(--ct);margin-bottom:20px;line-height:1.6}
+.sl{font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--ct);margin:22px 0 9px;display:flex;align-items:center;gap:8px}
+.sl::after{content:"";flex:1;height:1px;background:var(--cd)}
+.bc{font-size:11px;color:var(--ct);margin-bottom:20px}
+.bc span{color:var(--az);font-weight:500}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+code{background:rgba(0,0,0,.07);padding:1px 5px;border-radius:3px;font-family:"DM Mono",monospace;font-size:11px}
+
+/* STEP — checklist interativo */
+.step-group{margin-bottom:24px}
+.sg-title{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--ct);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.sg-title::after{content:"";flex:1;height:1px;background:var(--cd)}
+
+.step{display:flex;gap:12px;background:#fff;border:1px solid var(--cd);border-radius:10px;padding:13px 16px;margin-bottom:6px;transition:all .15s;cursor:pointer;align-items:flex-start}
+.step:hover{border-color:var(--az);box-shadow:0 2px 10px rgba(13,43,94,.07)}
+.step.done{background:var(--vdl);border-color:var(--vdb)}
+.step.done .step-title{text-decoration:line-through;color:var(--ct)}
+.step.urgent{border-left:4px solid var(--red)}
+.step.warn{border-left:4px solid var(--do)}
+
+.chk{width:20px;height:20px;border-radius:5px;border:2px solid var(--cd);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .15s;font-size:11px;color:transparent}
+.step.done .chk{background:var(--vd);border-color:var(--vd);color:#fff}
+.step-body{flex:1}
+.step-title{font-size:13px;font-weight:600;color:var(--cp);margin-bottom:3px}
+.step-desc{font-size:12px;color:var(--ct);line-height:1.6}
+.step-tags{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.tag{font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:4px}
+.tag-red{background:var(--redl);color:var(--red)}
+.tag-am{background:var(--aml);color:var(--am)}
+.tag-vd{background:var(--vdl);color:var(--vd)}
+.tag-az{background:#E6EEF8;color:var(--az)}
+.tag-do{background:var(--dop);color:#7A5500}
+
+/* PROGRESSO */
+.prog-wrap{background:#fff;border:1px solid var(--cd);border-radius:10px;padding:14px 18px;margin-bottom:20px}
+.prog-label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--cp);margin-bottom:8px}
+.prog-bar{background:var(--cd);border-radius:99px;height:8px;overflow:hidden}
+.prog-fill{background:linear-gradient(90deg,var(--vd),var(--do));height:100%;border-radius:99px;width:0%;transition:width .4s}
+
+/* ENTREGÁVEIS */
+.doc-card{background:#fff;border:1px solid var(--cd);border-radius:10px;padding:14px 18px;margin-bottom:7px;display:flex;gap:12px;align-items:center}
+.doc-icon{font-size:20px;flex-shrink:0}
+.doc-name{font-size:13px;font-weight:600;color:var(--cp);margin-bottom:2px}
+.doc-desc{font-size:11px;color:var(--ct)}
+.doc-tag{margin-left:auto;font-size:9px;font-weight:600;padding:3px 9px;border-radius:99px}
+
+/* ALERTAS */
+.rb{background:var(--redl);border:1px solid rgba(192,57,43,.22);border-radius:8px;padding:9px 13px;font-size:12px;color:var(--red);margin-bottom:9px;line-height:1.55}
+.okb{background:var(--vdl);border:1px solid var(--vdb);border-radius:8px;padding:9px 13px;font-size:12px;color:var(--vd);margin-bottom:9px;line-height:1.55}
+.wb{background:var(--aml);border:1px solid rgba(212,160,23,.35);border-radius:8px;padding:9px 13px;font-size:12px;color:var(--am);margin-bottom:9px;line-height:1.55}
+
+@media(max-width:860px){#sb{width:200px}#main{margin-left:200px}.pg{padding:24px 20px}.g2{grid-template-columns:1fr}}
+</style></head><body>
+<nav id="sb">
+  <div class="sbl"><div class="lm">Epros</div><div class="ls">Plano de Execução</div></div>
+  <div class="sbs">Esta Semana</div>
+  <a class="nb active" onclick="show('p-agora',this)" href="#"><span class="nn">🔴</span>Urgente — Segurança</a>
+  <div class="sbs">30 Dias</div>
+  <a class="nb" onclick="show('p-s1',this)" href="#"><span class="nn">①</span>Semana 1 — Contenção</a>
+  <a class="nb" onclick="show('p-s2',this)" href="#"><span class="nn">②</span>Semana 2 — Autenticação</a>
+  <a class="nb" onclick="show('p-s3',this)" href="#"><span class="nn">③</span>Semana 3 — Tenant & LGPD</a>
+  <a class="nb" onclick="show('p-s4',this)" href="#"><span class="nn">④</span>Semana 4 — DevSecOps</a>
+  <div class="sbs">90 Dias</div>
+  <a class="nb" onclick="show('p-30-60',this)" href="#"><span class="nn">⑤</span>Dias 31–60 — Processo</a>
+  <a class="nb" onclick="show('p-60-90',this)" href="#"><span class="nn">⑥</span>Dias 61–90 — Aceleração</a>
+  <div class="sbs">Organização</div>
+  <a class="nb" onclick="show('p-entregaveis',this)" href="#"><span class="nn">📁</span>Entregáveis Criados</a>
+  <a class="nb" onclick="show('p-apresentacoes',this)" href="#"><span class="nn">📊</span>Apresentações</a>
+</nav>
+<div id="main">
+<div class="pg active" id="p-agora">
+  <div class="hero">
+    <div class="hbadge">Plano de Execução · Rafael · 2026</div>
+    <h1>O que fazer<br/><span>agora</span></h1>
+    <p>Tudo organizado em ordem de prioridade. Os itens marcados como urgente afetam os 20 clientes em produção hoje — não podem esperar.</p>
+  </div>
+
+  <div class="rb"><strong>⚠️ Ação imediata:</strong> os itens abaixo são riscos ativos em produção. Não precisam de aprovação para executar — são patches de segurança, não features novas.</div>
+
+  <div class="prog-wrap">
+    <div class="prog-label"><span>Progresso geral do plano</span><span id="prog-pct">0%</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+  </div>
+
+  <div class="step-group">
+    <div class="sg-title">🔴 Hoje ou amanhã — risco ativo em produção</div>
+
+    <div class="step urgent" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Mover JWT Secret para variável de ambiente</div>
+        <div class="step-desc">Em <code>Settings.cs</code>: substituir o valor literal por <code>Environment.GetEnvironmentVariable("JWT_SECRET")</code>. Configurar a variável no servidor de produção. Rotacionar a chave — gerar novo valor forte (32+ chars). <strong>Todos os tokens existentes ficam inválidos — usuários precisam fazer login novamente.</strong></div>
+        <div class="step-tags"><span class="tag tag-red">Crítico</span><span class="tag tag-am">Dev Sênior</span><span class="tag tag-az">2h estimado</span></div>
+      </div>
+    </div>
+
+    <div class="step urgent" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Desativar sendDefaultPii no Sentry — violação LGPD ativa</div>
+        <div class="step-desc">Em <code>sentry.client.config.ts</code>: mudar <code>sendDefaultPii: true</code> para <code>false</code>. Adicionar <code>beforeSend</code> que mascara CPF, CNPJ e e-mails antes de enviar. Deploy imediato no frontend.</div>
+        <div class="step-tags"><span class="tag tag-red">Crítico · LGPD</span><span class="tag tag-am">Dev Frontend</span><span class="tag tag-az">1h estimado</span></div>
+      </div>
+    </div>
+
+    <div class="step urgent" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Fechar autenticação do Hub SignalR</div>
+        <div class="step-desc">Em <code>Epros.Erp.RealTime.API/Program.cs</code>: reativar <code>.RequireAuthorization()</code> no <code>app.MapHub&lt;VendaHub&gt;</code>. Verificar que o frontend passa o token JWT na conexão SignalR.</div>
+        <div class="step-tags"><span class="tag tag-red">Crítico</span><span class="tag tag-am">Dev Sênior</span><span class="tag tag-az">2h estimado</span></div>
+      </div>
+    </div>
+
+    <div class="step urgent" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Restringir CORS para domínios oficiais</div>
+        <div class="step-desc">Nas 3 APIs (<code>Epros.ERP.API</code>, <code>Epros.ERP.Dfe.API</code>, <code>Epros.ControleTenant.API</code>): substituir <code>AllowAnyOrigin()</code> por <code>WithOrigins("https://app.epros.com.br", "https://admin.epros.com.br")</code> com as URLs reais de produção.</div>
+        <div class="step-tags"><span class="tag tag-red">Crítico</span><span class="tag tag-am">Dev Sênior</span><span class="tag tag-az">1h estimado</span></div>
+      </div>
+    </div>
+
+    <div class="step urgent" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Proteger dashboard Hangfire com autenticação real</div>
+        <div class="step-desc">Em <code>Epros.ControleTenant.API/Program.cs</code>: implementar <code>HangfireAuthFilter</code> que valida JWT e exige role de admin. Adicionar restrição de IP de origem (só acesso interno). Dashboard não pode ser público.</div>
+        <div class="step-tags"><span class="tag tag-red">Crítico</span><span class="tag tag-am">Dev Backend</span><span class="tag tag-az">3h estimado</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-group">
+    <div class="sg-title">🟡 Esta semana — fechar ainda na S1</div>
+
+    <div class="step warn" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Mover logs para fora do wwwroot</div>
+        <div class="step-desc">Em <code>Program.cs</code> (Serilog): mudar o path de <code>wwwroot/Logs/</code> para um diretório fora da raiz web, como <code>/var/log/epros/</code> no servidor. Adicionar enricher que mascara CPF/CNPJ antes de qualquer sink.</div>
+        <div class="step-tags"><span class="tag tag-am">Alto</span><span class="tag tag-am">Dev Sênior</span><span class="tag tag-az">2h estimado</span></div>
+      </div>
+    </div>
+
+    <div class="step warn" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Adicionar rate limit no endpoint de login</div>
+        <div class="step-desc">Usar <code>AspNetCoreRateLimit</code> ou o middleware nativo do .NET 8: limitar tentativas de login a 10/minuto por IP. Retornar 429 Too Many Requests com header <code>Retry-After</code>.</div>
+        <div class="step-tags"><span class="tag tag-am">Alto</span><span class="tag tag-am">Dev Backend</span><span class="tag tag-az">3h estimado</span></div>
+      </div>
+    </div>
+
+    <div class="step warn" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Configurar agentes IA no Cursor — .cursorrules</div>
+        <div class="step-desc">Copiar o prompt do Context Agent de <code>epros-agentes-prompts.md</code> para <code>PlataformaSaaS/.cursorrules</code>. Cada dev do time cria seus perfis de agente em Settings → Rules no Cursor. Verificar que o domain knowledge está ativo.</div>
+        <div class="step-tags"><span class="tag tag-vd">Processo</span><span class="tag tag-am">Tech Lead</span><span class="tag tag-az">2h estimado</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="pg" id="p-s1">
+  <div class="bc">Plano <span>› Semana 1 — Contenção de Risco</span></div>
+  <div class="st">Semana 1 — Contenção</div>
+  <div class="ss">Foco: eliminar os riscos críticos de segurança. Todos os itens desta semana são patches no legado — não tocam no novo sistema.</div>
+  <div class="okb"><strong>Regra da semana 1:</strong> zero features novas. Zero refatoração. Só patches de segurança. O objetivo é que os 20 clientes terminem a semana com os riscos críticos mitigados.</div>
+  <div class="step-group">
+    <div class="sg-title">Segunda e Terça — patches críticos</div>
+    <div class="step urgent" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">JWT Secret + CORS + SignalR + Hangfire</div>
+        <div class="step-desc">Os 5 itens da página anterior. Fazer em PRs separados — um por problema. Cada PR tem o Code Review Agent no comentário. Tech Lead aprova antes do deploy.</div>
+        <div class="step-tags"><span class="tag tag-red">Crítico</span><span class="tag tag-az">Ver página anterior</span></div>
+      </div>
+    </div>
+    <div class="step urgent" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Revogar credenciais expostas no histórico do Git</div>
+        <div class="step-desc">A chave JWT estava no repositório — mesmo após remoção, está no histórico. Usar <code>git filter-branch</code> ou BFG Repo Cleaner para remover do histórico. Avisar o time para fazer novo clone depois. Revogar qualquer token ativo que tenha sido gerado com a chave antiga.</div>
+        <div class="step-tags"><span class="tag tag-red">Crítico</span><span class="tag tag-am">Tech Lead</span><span class="tag tag-az">2h estimado</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="step-group">
+    <div class="sg-title">Quarta e Quinta — comunicação e processo</div>
+    <div class="step warn" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Comunicar os novos papéis ao time</div>
+        <div class="step-desc">Reunião de 30 minutos. Apresentar o <code>epros-operacional.html</code>. Explicar que o sênior para de organizar o Jira sozinho. O QA começa a transição para PO. O dev de 10 anos vira Guardião de Domínio. Sem pressão — é processo gradual.</div>
+        <div class="step-tags"><span class="tag tag-vd">Processo</span><span class="tag tag-am">Rafael + Tech Lead</span><span class="tag tag-az">30min</span></div>
+      </div>
+    </div>
+    <div class="step warn" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Definir e documentar DoR e DoD</div>
+        <div class="step-desc">Usar os critérios do <code>epros-operacional.html → Cerimônias</code>. Criar um card no Jira como referência fixa. No próximo planning, aplicar o checklist pela primeira vez — mesmo que parcialmente.</div>
+        <div class="step-tags"><span class="tag tag-vd">Processo</span><span class="tag tag-am">Tech Lead + PO</span><span class="tag tag-az">1h</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="step-group">
+    <div class="sg-title">Sexta — apresentações</div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Apresentar para os sócios — PPT Executivo</div>
+        <div class="step-desc">Usar <code>epros-apresentacao-socios.pptx</code>. 8 slides, ~30 minutos. Foco: o diagnóstico, a decisão de reconstruir, o produto que estamos construindo e os próximos 90 dias. Levar o <code>epros-socios.html</code> aberto para navegar ao vivo se surgirem perguntas.</div>
+        <div class="step-tags"><span class="tag tag-do">Apresentação</span><span class="tag tag-am">Rafael + Sócios</span><span class="tag tag-az">30–45 min</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="pg" id="p-s2">
+  <div class="bc">Plano <span>› Semana 2 — Blindagem de Autenticação</span></div>
+  <div class="st">Semana 2 — Autenticação</div>
+  <div class="ss">Foco: migrar a sessão do frontend para padrão seguro e implementar hash de senha correto.</div>
+  <div class="step-group">
+    <div class="sg-title">Backend — hash de senha</div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Implementar Argon2id para novas senhas</div>
+        <div class="step-desc">Instalar <code>Konscious.Security.Cryptography</code> (NuGet). Substituir <code>SHA256.ComputeHash</code> em <code>Security.cs</code> por Argon2id com salt único gerado por <code>RandomNumberGenerator</code>. Novas senhas já usam o algoritmo novo. Senhas antigas fazem rehash no próximo login.</div>
+        <div class="step-tags"><span class="tag tag-red">Alto</span><span class="tag tag-am">Dev Backend</span><span class="tag tag-az">4h estimado</span></div>
+      </div>
+    </div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Corrigir senha em texto puro no ControleTenant</div>
+        <div class="step-desc">Em <code>Usuario.cs</code>: remover atribuição direta de senha. Em <code>AccountController.cs</code>: substituir comparação em texto puro por verificação do hash. Migração: no próximo login, re-hash automático se hash antigo detectado.</div>
+        <div class="step-tags"><span class="tag tag-red">Crítico</span><span class="tag tag-am">Dev Backend</span><span class="tag tag-az">3h estimado</span></div>
+      </div>
+    </div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Configurar TTL curto no TokenExternoService</div>
+        <div class="step-desc">Em <code>TokenExternoService.cs</code>: substituir <code>AddYears(100)</code> por <code>AddMinutes(60)</code> ou <code>AddHours(1)</code>. Habilitar <code>ValidateLifetime = true</code>. Implementar refresh token para renovação automática.</div>
+        <div class="step-tags"><span class="tag tag-red">Crítico</span><span class="tag tag-am">Dev Backend</span><span class="tag tag-az">2h estimado</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="step-group">
+    <div class="sg-title">Frontend — sessão segura</div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Migrar token do localStorage para cookie HttpOnly</div>
+        <div class="step-desc">Em <code>authStore.ts</code>: remover <code>localStorage.setItem('authToken')</code> e equivalentes. Backend precisa emitir o token via <code>Set-Cookie</code> com flags <code>HttpOnly</code>, <code>Secure</code> e <code>SameSite=Strict</code>. Frontend para de ler o token — vai automaticamente no cookie.</div>
+        <div class="step-tags"><span class="tag tag-red">Alto</span><span class="tag tag-am">Dev Frontend + Backend</span><span class="tag tag-az">1 dia estimado</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="step-group">
+    <div class="sg-title">Processo — agentes IA em uso</div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Requirements Agent no próximo ciclo de US</div>
+        <div class="step-desc">PO (QA em transição) usa o Requirements Agent para as próximas User Stories antes do planning. Comparar tempo de aprovação e clareza das ACs com o ciclo anterior. Registrar a diferença.</div>
+        <div class="step-tags"><span class="tag tag-vd">Processo</span><span class="tag tag-am">PO + Tech Lead</span><span class="tag tag-az">Medir resultado</span></div>
+      </div>
+    </div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Evento da empresa — PPT Completo</div>
+        <div class="step-desc">Usar <code>epros-apresentacao-empresa.pptx</code>. 15 slides, 60–90 minutos. Apresentar para todos. Abrir o <code>epros-devs.html</code> ao vivo durante a apresentação para mostrar os documentos. Distribuir o link dos portais para cada pessoa.</div>
+        <div class="step-tags"><span class="tag tag-do">Apresentação</span><span class="tag tag-am">Rafael + Time</span><span class="tag tag-az">60–90 min</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="pg" id="p-s3">
+  <div class="bc">Plano <span>› Semana 3 — Tenant & LGPD</span></div>
+  <div class="st">Semana 3 — Isolamento Multi-tenant & LGPD</div>
+  <div class="ss">Foco: garantir que os dados de um cliente nunca vazam para outro, e que a LGPD está operacionalmente atendida.</div>
+  <div class="step-group">
+    <div class="sg-title">Multi-tenancy — enforcement obrigatório</div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Auditar todos os endpoints críticos — TenantId do claim</div>
+        <div class="step-desc">Listar todos os endpoints que recebem IDs de recursos. Para cada um: verificar se o backend extrai o TenantId do claim JWT (não do payload da requisição). Endpoints que confiam no TenantId vindo do cliente precisam ser corrigidos.</div>
+        <div class="step-tags"><span class="tag tag-red">Crítico</span><span class="tag tag-am">Dev Sênior + Security Agent</span><span class="tag tag-az">2 dias</span></div>
+      </div>
+    </div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Auditar usos de IgnoreQueryFilters()</div>
+        <div class="step-desc">Buscar <code>IgnoreQueryFilters()</code> em toda a codebase. Para cada uso: justificativa está documentada? Tem teste específico de isolamento? Se não — ou justificar e adicionar teste, ou remover o bypass.</div>
+        <div class="step-tags"><span class="tag tag-red">Crítico</span><span class="tag tag-am">Dev Sênior</span><span class="tag tag-az">4h estimado</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="step-group">
+    <div class="sg-title">LGPD — PII em logs</div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Implementar mascaramento global de PII nos logs</div>
+        <div class="step-desc">Criar Serilog Enricher que detecta e mascara CPF, CNPJ, e-mails e PAN antes de qualquer sink. Aplicar em todas as 3 APIs. Validar com amostragem de logs reais após deploy.</div>
+        <div class="step-tags"><span class="tag tag-am">Alto · LGPD</span><span class="tag tag-am">Dev Backend</span><span class="tag tag-az">4h estimado</span></div>
+      </div>
+    </div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Remover log de payload completo no TenantsController e MercadoPago</div>
+        <div class="step-desc">Em <code>TenantsController.cs</code>: remover <code>_logger.LogInformation(jsonRecebido)</code> e equivalentes. Em <code>MercadoPagoWebhookController.cs</code>: remover log do body completo. Logar apenas o ID da operação, não o conteúdo.</div>
+        <div class="step-tags"><span class="tag tag-am">Alto · LGPD</span><span class="tag tag-am">Dev Backend</span><span class="tag tag-az">2h estimado</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="step-group">
+    <div class="sg-title">Trilhas de treinamento — iniciar</div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Cada pessoa inicia sua trilha de treinamento</div>
+        <div class="step-desc">Abrir <code>epros-treinamento.html</code> com o time. Cada pessoa se compromete com 2–3 horas/semana para a trilha. Semana 1 das trilhas começa agora — em paralelo com o trabalho, sem impacto no sprint.</div>
+        <div class="step-tags"><span class="tag tag-vd">Treinamento</span><span class="tag tag-am">Todo o time</span><span class="tag tag-az">Ongoing</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="pg" id="p-s4">
+  <div class="bc">Plano <span>› Semana 4 — DevSecOps Permanente</span></div>
+  <div class="st">Semana 4 — DevSecOps</div>
+  <div class="ss">Foco: automatizar o que foi feito manualmente nas últimas 3 semanas. Nunca mais depender de disciplina humana para garantir segurança.</div>
+  <div class="step-group">
+    <div class="sg-title">CI/CD — gates automáticos</div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Configurar gitleaks no pipeline — bloquear secrets no commit</div>
+        <div class="step-desc">Adicionar <code>gitleaks</code> como step no GitHub Actions. Configurar para bloquear push se detectar padrões de secret (API keys, JWTs, passwords). Rodar também como pre-commit hook local.</div>
+        <div class="step-tags"><span class="tag tag-vd">DevSecOps</span><span class="tag tag-am">Tech Lead</span><span class="tag tag-az">2h estimado</span></div>
+      </div>
+    </div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Adicionar dotnet test ao pipeline — bloquear merge em falha</div>
+        <div class="step-desc">GitHub Actions: adicionar step <code>dotnet test --no-build</code> que bloqueia o merge se qualquer teste falhar. Incluir os 8 testes de segurança obrigatórios. Cobertura mínima de 70% nos arquivos alterados.</div>
+        <div class="step-tags"><span class="tag tag-vd">DevSecOps</span><span class="tag tag-am">Tech Lead</span><span class="tag tag-az">3h estimado</span></div>
+      </div>
+    </div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Code Review Agent obrigatório em todo PR</div>
+        <div class="step-desc">Regra de time: nenhum PR é aprovado pelo Tech Lead sem o output do Code Review Agent no comentário. Criar template de PR no GitHub com o lembrete. Fazer isso nos próximos PRs como exemplo para o time.</div>
+        <div class="step-tags"><span class="tag tag-vd">Processo</span><span class="tag tag-am">Tech Lead</span><span class="tag tag-az">Implementar agora</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="step-group">
+    <div class="sg-title">Resiliência — integrações entre APIs</div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">HttpClientFactory + Polly nas integrações críticas</div>
+        <div class="step-desc">Instalar <code>Microsoft.Extensions.Http.Polly</code>. Configurar retry com jitter (3 tentativas), circuit breaker (5 falhas → abrir por 30s) e timeout (10s) nas chamadas entre API principal ↔ DFe API ↔ GestaoClientes API.</div>
+        <div class="step-tags"><span class="tag tag-am">Médio</span><span class="tag tag-am">Dev Backend</span><span class="tag tag-az">4h estimado</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="step-group">
+    <div class="sg-title">Retrospectiva do mês</div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Retrospectiva: o que os 30 dias ensinaram</div>
+        <div class="step-desc">Reunião de 45 minutos. Revisar: quantos itens do plano foram executados? O que travou? O que foi mais fácil que o esperado? Definir 1 ação para o próximo mês. Ajustar prompts dos agentes com base nos aprendizados.</div>
+        <div class="step-tags"><span class="tag tag-vd">Processo</span><span class="tag tag-am">Todo o time</span><span class="tag tag-az">45min</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="pg" id="p-30-60">
+  <div class="bc">Plano <span>› Dias 31–60 — Processo & Qualidade</span></div>
+  <div class="st">Dias 31–60 — Processo & Qualidade</div>
+  <div class="ss">Com a segurança estabilizada, o foco muda para o processo de desenvolvimento e a aceleração do novo sistema.</div>
+  <div class="step-group">
+    <div class="sg-title">Desenvolvimento — Bloco 6</div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Concluir Bloco 6 — Compras com o novo processo</div>
+        <div class="step-desc">Agregado Compra + CompraItem (impostos). <code>LancarCompraCommand</code> orquestrando Compra + NF-e entrada + ContaPagar + EntradaEstoque. Reengenharia completa do <code>CompraController.cs</code> (4.784 linhas → handlers CQRS de 50–150 linhas cada). Usar Dev Agent + Code Review Agent em todos os PRs.</div>
+        <div class="step-tags"><span class="tag tag-az">Bloco 6</span><span class="tag tag-am">Dev Backend + Sênior</span><span class="tag tag-az">4–6 semanas</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="step-group">
+    <div class="sg-title">Processo — consolidar o novo modelo</div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">QA Agent gerando casos de teste dos ACs</div>
+        <div class="step-desc">Para cada US do Bloco 6: QA/SDET usa o QA Agent para gerar plano de testes a partir dos ACs. Implementar os casos automatizáveis com Testcontainers. Medir cobertura resultante vs sprint anterior.</div>
+        <div class="step-tags"><span class="tag tag-vd">Processo</span><span class="tag tag-am">QA / SDET</span><span class="tag tag-az">Medir cobertura</span></div>
+      </div>
+    </div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Guardião de Domínio documentando com Docs Agent</div>
+        <div class="step-desc">Dev de 10 anos: 2h/semana com o Docs Agent documentando regras de negócio — especialmente fiscal (CFOP, NCM, CST, alíquotas) e fluxos críticos de venda e compra. Cada documento vai para o repositório como referência canônica.</div>
+        <div class="step-tags"><span class="tag tag-vd">Conhecimento</span><span class="tag tag-am">Dev 10 anos</span><span class="tag tag-az">Ongoing</span></div>
+      </div>
+    </div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Primeiras métricas medidas — lead time, cobertura, carryover</div>
+        <div class="step-desc">Configurar dashboard no Jira com: lead time de PR, carryover por sprint, bugs P0 em produção. Apresentar na retrospectiva do dia 60. Não para pressionar o time — para ter baseline de onde partimos.</div>
+        <div class="step-tags"><span class="tag tag-vd">Métricas</span><span class="tag tag-am">Tech Lead</span><span class="tag tag-az">Configurar no Jira</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="step-group">
+    <div class="sg-title">Migração — primeiro cliente</div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Identificar o cliente mais simples para migração piloto</div>
+        <div class="step-desc">Critério: cliente que usa apenas FIN + VEN + EST (módulos completos no novo sistema). Menor volume de dados. Mais tolerante a instabilidade. Conversar com ele sobre o processo antes de qualquer ação técnica.</div>
+        <div class="step-tags"><span class="tag tag-az">Migração</span><span class="tag tag-am">Rafael + Tech Lead</span><span class="tag tag-az">Decisão estratégica</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="pg" id="p-60-90">
+  <div class="bc">Plano <span>› Dias 61–90 — Aceleração & Migração</span></div>
+  <div class="st">Dias 61–90 — Aceleração & Migração</div>
+  <div class="ss">Com processo estabelecido e segurança resolvida, o foco vira acelerar o novo sistema e iniciar a migração real dos clientes.</div>
+  <div class="step-group">
+    <div class="sg-title">Infraestrutura — Bloco 7</div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Migrations EF Core por módulo + Seeders Keycloak</div>
+        <div class="step-desc">Migrations por schema (financas.*, vendas.*, estoque.*). Seeders do Keycloak: realm epros, client plataforma-saas-api, roles por módulo, mapper de claim tenantId. Ambiente de staging idêntico à produção.</div>
+        <div class="step-tags"><span class="tag tag-az">Bloco 7</span><span class="tag tag-am">Dev Sênior + Backend</span><span class="tag tag-az">2 semanas</span></div>
+      </div>
+    </div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">CI/CD completo no GitHub Actions</div>
+        <div class="step-desc">Pipeline: build → testes unitários → Testcontainers → SAST Semgrep → Trivy CVE scan → deploy staging → aprovação manual → deploy produção. Cada etapa como gate — falha bloqueia o restante.</div>
+        <div class="step-tags"><span class="tag tag-vd">DevSecOps</span><span class="tag tag-am">Tech Lead</span><span class="tag tag-az">1 semana</span></div>
+      </div>
+    </div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Script de migração long → Guid para os 20 clientes</div>
+        <div class="step-desc">Script que lê cada tabela do SQL Server legado, gera Guids determinísticos para os IDs existentes (baseado em hash do long original), mantém o mapeamento em tabela auxiliar e exporta para o formato do PostgreSQL novo. Testar com dados reais de 1 cliente antes de escalar.</div>
+        <div class="step-tags"><span class="tag tag-az">Migração</span><span class="tag tag-am">Dev Sênior</span><span class="tag tag-az">2 semanas</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="step-group">
+    <div class="sg-title">Migração — primeiro cliente em produção</div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Executar migração assistida do cliente piloto</div>
+        <div class="step-desc">Dev acompanha o cliente por 1 sprint completo. Legado em modo leitura (sem novas gravações). Novo sistema ativo. Rollback disponível se cliente reportar problema crítico. Meta: 30 dias estável no novo antes de descomissionar o legado para aquele cliente.</div>
+        <div class="step-tags"><span class="tag tag-az">Migração</span><span class="tag tag-am">Dev Sênior + Rafael</span><span class="tag tag-az">Marco importante</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="step-group">
+    <div class="sg-title">Retrospectiva dos 90 dias</div>
+    <div class="step" onclick="toggle(this)">
+      <div class="chk">✓</div>
+      <div class="step-body">
+        <div class="step-title">Revisão geral — o que o plano entregou</div>
+        <div class="step-desc">Comparar métricas do dia 0 com o dia 90. Apresentar para os sócios: patches de segurança executados, processo estabelecido, primeiro cliente migrado, Blocos 6 e 7 concluídos. Definir o plano para os próximos 90 dias (Blocos 8–10).</div>
+        <div class="step-tags"><span class="tag tag-do">Marco</span><span class="tag tag-am">Rafael + Time + Sócios</span><span class="tag tag-az">Reunião estratégica</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="pg" id="p-entregaveis">
+  <div class="bc">Organização <span>› Entregáveis Criados</span></div>
+  <div class="st">Tudo que foi criado</div>
+  <div class="ss">Todos os arquivos estão no mesmo diretório. Guardar em local seguro — esses documentos contêm informação estratégica interna.</div>
+  <div class="sl">Portais de navegação</div>
+  <div class="doc-card">
+    <div class="doc-icon">🏛️</div>
+    <div style="flex:1">
+      <div class="doc-name">Portal dos Sócios</div>
+      <div class="doc-desc"><code>epros-socios.html</code> — Hub com 3 abas: Diagnóstico → Estratégico → Módulos. Abrir para reuniões com sócios.</div>
+    </div>
+    <span class="doc-tag" style="background:#E6EEF8;color:var(--az);font-size:9px;font-weight:600;padding:3px 9px;border-radius:99px">Para sócios</span>
+  </div>
+  <div class="doc-card">
+    <div class="doc-icon">💻</div>
+    <div style="flex:1">
+      <div class="doc-name">Dev Hub</div>
+      <div class="doc-desc"><code>epros-devs.html</code> — Hub com 5 abas: Arquitetura → Operacional → Treinamento → Módulos → Diagnóstico.</div>
+    </div>
+    <span class="doc-tag" style="background:#E6EEF8;color:var(--az);font-size:9px;font-weight:600;padding:3px 9px;border-radius:99px">Para o time</span>
+  </div>
+  <div class="sl">Documentos específicos</div>
+  <div class="doc-card">
+    <div class="doc-icon">🔍</div>
+    <div style="flex:1">
+      <div class="doc-name">Diagnóstico do Legado</div>
+      <div class="doc-desc"><code>epros-diagnostico.html</code> — 13 seções — evidências do código + Assessment 360°. Base de qualquer argumento de mudança.</div>
+    </div>
+    <span class="doc-tag" style="background:#E6EEF8;color:var(--az);font-size:9px;font-weight:600;padding:3px 9px;border-radius:99px">Todos</span>
+  </div>
+  <div class="doc-card">
+    <div class="doc-icon">🎯</div>
+    <div style="flex:1">
+      <div class="doc-name">Visão Estratégica</div>
+      <div class="doc-desc"><code>epros-estrategico.html</code> — 10 seções — produto, mercado, diferenciais, compliance, roadmap. Para sócios e decisões comerciais.</div>
+    </div>
+    <span class="doc-tag" style="background:#E6EEF8;color:var(--az);font-size:9px;font-weight:600;padding:3px 9px;border-radius:99px">Sócios</span>
+  </div>
+  <div class="doc-card">
+    <div class="doc-icon">⊞</div>
+    <div style="flex:1">
+      <div class="doc-name">Módulos & Submódulos</div>
+      <div class="doc-desc"><code>epros-modulos.html</code> — 17 módulos · 132 submódulos interativos com busca. Referência canônica do produto.</div>
+    </div>
+    <span class="doc-tag" style="background:#E6EEF8;color:var(--az);font-size:9px;font-weight:600;padding:3px 9px;border-radius:99px">Todos</span>
+  </div>
+  <div class="doc-card">
+    <div class="doc-icon">🏗️</div>
+    <div style="flex:1">
+      <div class="doc-name">Portal Técnico</div>
+      <div class="doc-desc"><code>epros-tecnico.html</code> — 11 seções — arquitetura, stack, ADRs, DDD, API, fases, agentes. A bíblia técnica do projeto.</div>
+    </div>
+    <span class="doc-tag" style="background:#E6EEF8;color:var(--az);font-size:9px;font-weight:600;padding:3px 9px;border-radius:99px">Devs</span>
+  </div>
+  <div class="doc-card">
+    <div class="doc-icon">⚙️</div>
+    <div style="flex:1">
+      <div class="doc-name">Modelo Operacional</div>
+      <div class="doc-desc"><code>epros-operacional.html</code> — 8 seções — papéis, IA no dia a dia, cerimônias, política legado/novo, transição 90 dias.</div>
+    </div>
+    <span class="doc-tag" style="background:#E6EEF8;color:var(--az);font-size:9px;font-weight:600;padding:3px 9px;border-radius:99px">Devs + Rafael</span>
+  </div>
+  <div class="doc-card">
+    <div class="doc-icon">📚</div>
+    <div style="flex:1">
+      <div class="doc-name">Treinamento por Função</div>
+      <div class="doc-desc"><code>epros-treinamento.html</code> — Trilhas BE, FE, QA, PO. Componentes por tecnologia. Onboarding do primeiro dia.</div>
+    </div>
+    <span class="doc-tag" style="background:#E6EEF8;color:var(--az);font-size:9px;font-weight:600;padding:3px 9px;border-radius:99px">Devs</span>
+  </div>
+  <div class="doc-card">
+    <div class="doc-icon">⬡</div>
+    <div style="flex:1">
+      <div class="doc-name">Prompts dos 13 Agentes</div>
+      <div class="doc-desc"><code>epros-agentes-prompts.md</code> — Context Agent + 8 por fase + 4 transversais. Configurar no Cursor de cada dev.</div>
+    </div>
+    <span class="doc-tag" style="background:#E6EEF8;color:var(--az);font-size:9px;font-weight:600;padding:3px 9px;border-radius:99px">Devs</span>
+  </div>
+  <div class="sl">Arquivos auxiliares</div>
+  <div class="doc-card">
+    <div class="doc-icon">📦</div>
+    <div style="flex:1"><div class="doc-name">epros-documentacao.zip</div>
+    <div class="doc-desc">Todos os arquivos acima em um único ZIP · 98KB · Descompactar na mesma pasta</div></div>
+    <span class="doc-tag" style="background:var(--vdl);color:var(--vd);font-size:9px;font-weight:600;padding:3px 9px;border-radius:99px">Backup</span>
+  </div>
+  <div class="okb"><strong>Importante:</strong> todos os arquivos precisam estar na mesma pasta para a navegação funcionar. O .zip já está organizado assim — basta descompactar.</div>
+</div>
+<div class="pg" id="p-apresentacoes">
+  <div class="bc">Organização <span>› Apresentações</span></div>
+  <div class="st">As 2 Apresentações</div>
+  <div class="ss">Uma para cada audiência. Diferentes em profundidade, mesmos fatos.</div>
+
+  <div class="card" style="border-top:4px solid var(--do);margin-bottom:14px">
+    <div style="display:flex;gap:14px;align-items:flex-start">
+      <div style="font-size:32px">📊</div>
+      <div style="flex:1">
+        <div style="font-size:16px;font-weight:600;color:var(--az);margin-bottom:4px">PPT Executivo — Para os Sócios</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--do);margin-bottom:8px">epros-apresentacao-socios.pptx · 8 slides · ~30–40 minutos</div>
+        <div style="font-size:12px;color:var(--ct);line-height:1.7">
+          <strong>Slide 1</strong> — Capa com os 4 números principais<br/>
+          <strong>Slide 2</strong> — O sistema que tínhamos — o problema<br/>
+          <strong>Slide 3</strong> — A decisão — por que reconstruir<br/>
+          <strong>Slide 4</strong> — O que estamos construindo — 6 diferenciais<br/>
+          <strong>Slide 5</strong> — 17 módulos, 132 submódulos e os 4 planos<br/>
+          <strong>Slide 6</strong> — Roadmap — blocos 1 a 10<br/>
+          <strong>Slide 7</strong> — Strangler Fig — a estratégia de migração<br/>
+          <strong>Slide 8</strong> — Próximos passos em 90 dias
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:var(--vd);font-weight:500">✓ Usar na reunião de aprovação dos sócios. Levar o epros-socios.html aberto para navegar ao vivo.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="border-top:4px solid var(--az);margin-bottom:14px">
+    <div style="display:flex;gap:14px;align-items:flex-start">
+      <div style="font-size:32px">🎤</div>
+      <div style="flex:1">
+        <div style="font-size:16px;font-weight:600;color:var(--az);margin-bottom:4px">PPT Evento da Empresa — Para Todos</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--do);margin-bottom:8px">epros-apresentacao-empresa.pptx · 15 slides · ~60–90 minutos</div>
+        <div style="font-size:12px;color:var(--ct);line-height:1.7">
+          <strong>Slide 1</strong> — Capa<br/>
+          <strong>Slide 2</strong> — Agenda do evento<br/>
+          <strong>Slide 3</strong> — O sistema que tínhamos — 6 problemas<br/>
+          <strong>Slide 4</strong> — Assessment 360° — as 5 metodologias<br/>
+          <strong>Slide 5</strong> — Por que reconstruir — patches vs reescrita<br/>
+          <strong>Slide 6</strong> — O que estamos construindo — 6 diferenciais<br/>
+          <strong>Slide 7</strong> — Como a arquitetura mudou — antes vs depois<br/>
+          <strong>Slide 8</strong> — 17 módulos e 132 submódulos<br/>
+          <strong>Slide 9</strong> — Como o time vai trabalhar — 6 papéis<br/>
+          <strong>Slide 10</strong> — 13 agentes de IA no dia a dia<br/>
+          <strong>Slide 11</strong> — Como funciona um sprint<br/>
+          <strong>Slide 12</strong> — Trilhas de treinamento por função<br/>
+          <strong>Slide 13</strong> — Roadmap — o que acontece a seguir<br/>
+          <strong>Slide 14</strong> — Os próximos 90 dias — as 3 fases<br/>
+          <strong>Slide 15</strong> — Encerramento
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:var(--vd);font-weight:500">✓ Usar no evento com todos. Abrir o epros-devs.html ao vivo durante a apresentação. Distribuir os links no final.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sl">Sequência recomendada de apresentações</div>
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 16px;font-size:12px">
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--do);background:var(--dop);padding:2px 8px;border-radius:4px;white-space:nowrap">Passo 1</span>
+      <span><strong>Aprovação dos sócios</strong> — PPT Executivo (8 slides, 30 min) + epros-socios.html ao vivo</span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 16px;font-size:12px">
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--do);background:var(--dop);padding:2px 8px;border-radius:4px;white-space:nowrap">Passo 2</span>
+      <span><strong>Evento da empresa</strong> — PPT Completo (15 slides, 90 min) + epros-devs.html ao vivo</span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 16px;font-size:12px">
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--do);background:var(--dop);padding:2px 8px;border-radius:4px;white-space:nowrap">Passo 3</span>
+      <span><strong>Distribuir os portais</strong> — cada pessoa com o link do seu portal (socios.html ou devs.html)</span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 16px;font-size:12px">
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--do);background:var(--dop);padding:2px 8px;border-radius:4px;white-space:nowrap">Passo 4</span>
+      <span><strong>Execução do plano</strong> — usar este epros-plano-execucao.html como guia semana a semana</span>
+    </div>
+  </div>
+</div>
+
+</div>
+<script>
+function show(id, el) {
+  document.querySelectorAll('.pg').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(n => n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (el) el.classList.add('active');
+  window.scrollTo(0,0);
+  updateProgress();
+  return false;
+}
+
+function toggle(el) {
+  el.classList.toggle('done');
+  updateProgress();
+}
+
+function updateProgress() {
+  const all = document.querySelectorAll('.step').length;
+  const done = document.querySelectorAll('.step.done').length;
+  const pct = all ? Math.round(done/all*100) : 0;
+  document.getElementById('prog-pct').textContent = pct + '%';
+  document.getElementById('prog-fill').style.width = pct + '%';
+}
+</script>
+</body></html>

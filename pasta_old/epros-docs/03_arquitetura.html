@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — Arquitetura</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px}
+.stab{padding:5px 13px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--b2);border-radius:20px;background:none;color:var(--t3);transition:all .15s;font-family:var(--sans)}
+.stab:hover{color:var(--t2)}.stab.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.sp{display:none}.sp.on{display:block}
+
+.mw{display:flex;align-items:flex-start;gap:0;margin-bottom:4px}
+.mw-num{font-family:var(--mono);font-size:10px;color:var(--t3);min-width:24px;padding-top:4px}
+.mw-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);border:2px solid var(--bg);flex-shrink:0;margin-top:4px}
+.mw-body{flex:1;background:var(--s1);border:1px solid var(--b1);border-radius:6px;padding:8px 12px;margin-left:8px;margin-bottom:4px}
+.mw-title{font-size:12px;font-weight:500;margin-bottom:2px}
+.mw-desc{font-size:11px;color:var(--t2)}
+.mw-badge{font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:3px;float:right;margin-top:1px}
+
+.princ{display:flex;gap:14px;padding:12px 16px;border-radius:var(--r);background:var(--s1);border:1px solid var(--b1);margin-bottom:8px}
+.princ-num{font-family:var(--mono);font-size:11px;color:var(--blue);min-width:20px;padding-top:1px;flex-shrink:0}
+.princ-body h4{font-size:12px;font-weight:500;margin-bottom:3px}
+.princ-body p{font-size:11px;color:var(--t2);line-height:1.5}
+
+.prompt-box{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:20px 24px;margin-bottom:16px;position:relative}
+.prompt-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.prompt-label::after{content:'';flex:1;height:1px;background:var(--b1)}
+.prompt-text{font-family:var(--mono);font-size:11px;color:var(--t2);line-height:1.85;white-space:pre-wrap;word-break:break-word}
+.prompt-text strong{color:var(--t1);font-weight:500}
+.prompt-text em{color:var(--blue);font-style:normal}
+.copy-btn{position:absolute;top:16px;right:16px;font-family:var(--mono);font-size:10px;padding:4px 12px;border-radius:4px;border:1px solid var(--b2);background:var(--s2);color:var(--t3);cursor:pointer;transition:all .15s}
+.copy-btn:hover{border-color:var(--blue);color:var(--blue)}
+.copy-btn.copied{border-color:var(--green);color:var(--green)}
+.prompt-tip{background:var(--s2);border-radius:6px;padding:10px 14px;font-size:11px;color:var(--t2);margin-bottom:10px;line-height:1.6}
+.prompt-tip strong{color:var(--t1)}
+
+/* testes */
+.pyr{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.pyr-layer{border-radius:6px;padding:10px 16px;display:flex;align-items:center;gap:12px}
+.pyr-label{font-size:12px;font-weight:500;min-width:120px}
+.pyr-detail{font-size:11px;color:var(--t2);flex:1}
+.pyr-count{font-family:var(--mono);font-size:11px;font-weight:500;white-space:nowrap}
+
+/* secdevops pipeline */
+.sdo-pipe{display:flex;flex-direction:column;gap:6px}
+.sdo-stage{display:flex;align-items:flex-start;gap:12px;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:12px 16px}
+.sdo-num{font-family:var(--mono);font-size:10px;color:var(--blue);min-width:28px;flex-shrink:0;padding-top:2px}
+.sdo-name{font-size:12px;font-weight:500;margin-bottom:3px}
+.sdo-desc{font-size:11px;color:var(--t2);line-height:1.5}
+.sdo-tools{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.sdo-tool{font-family:var(--mono);font-size:9px;padding:1px 7px;border-radius:3px;background:var(--s2);border:1px solid var(--b2);color:var(--t3)}
+.sdo-arrow{text-align:center;color:var(--t3);font-size:13px;line-height:1}
+
+/* frameworks govti */
+.fw-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px 18px;margin-bottom:10px}
+.fw-head{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+.fw-name{font-size:14px;font-weight:500}
+.fw-sub{font-size:11px;color:var(--t3)}
+.fw-body{font-size:11px;color:var(--t2);line-height:1.8}
+.fw-map{margin-top:10px;padding-top:10px;border-top:1px solid var(--b1)}
+.fw-map-title{font-family:var(--mono);font-size:10px;color:var(--t3);margin-bottom:6px;letter-spacing:.06em;text-transform:uppercase}
+.fw-map-row{display:flex;gap:8px;margin-bottom:4px;font-size:11px}
+.fw-map-domain{color:var(--blue);min-width:140px;font-family:var(--mono)}
+.fw-map-impl{color:var(--t2)}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="index.html">Home</a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt on" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+  <a class="nt" href="08_api.html">⑧ API Reference</a>
+  <a class="nt" href="09_runbook.html">⑨ Runbook & DR</a>
+  <a class="nt" href="10_modelo_financeiro.html">⑩ Modelo Financeiro</a>
+  <a class="nt" href="11_integracoes.html">⑪ Integrações</a>
+  <a class="nt" href="12_modelo_dados.html">⑫ Modelo de Dados</a>
+  <a class="nt" href="13_onboarding.html">⑬ Guia de Onboarding</a>
+  <a class="nt" href="14_disaster_recovery.html">⑭ Disaster Recovery</a>
+  <a class="nt" href="15_glossario.html">⑮ Glossário</a>
+  <a class="nt" href="16_i18n.html">⑯ Internacionalização</a>
+  <a class="nt" href="17_changelog.html">⑰ Changelog</a>
+  <a class="nt" href="18_plano_execucao.html">⑱ Plano de Execução</a>
+  <a class="nt" href="19_operacional.html">⑲ Modelo Operacional</a>
+  <a class="nt" href="20_treinamento.html">⑳ Treinamento por Função</a>
+  <a class="nt" href="21_agentes_prompts.html">㉑ Prompts dos Agentes</a>
+  <a class="nt" href="22_diagnostico.html">㉒ Diagnóstico do Legado</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>Decisão · Camadas · Pipeline · Princípios · Tenant · Desenvolvimento · Testes · SecDevOps · Governança TI</div>
+  <h1>Arquitetura <em>técnica</em></h1>
+  <p class="hero-desc">Tudo que define como o Epros é construído, operado e evoluído — da decisão de monólito modular ao pipeline SecDevOps, passando por testes, padrões de desenvolvimento e frameworks de governança de TI.</p>
+</div>
+
+<div class="page">
+
+<div class="subtabs">
+  <button class="stab on"  onclick="st('decisao')">Decisão</button>
+  <button class="stab" onclick="st('camadas')">Camadas & Fluxos</button>
+  <button class="stab" onclick="st('pipeline')">Pipeline HTTP</button>
+  <button class="stab" onclick="st('principios')">Princípios</button>
+  <button class="stab" onclick="st('tenant')">Multi-tenancy</button>
+  <button class="stab" onclick="st('desenvolvimento')">Desenvolvimento</button>
+  <button class="stab" onclick="st('testes')">Testes</button>
+  <button class="stab" onclick="st('secdevops')">SecDevOps</button>
+  <button class="stab" onclick="st('governanca')">Governança TI</button>
+  <button class="stab" onclick="st('prompt')" style="border-color:var(--blue);color:var(--blue)">⚡ Prompt IA</button>
+</div>
+
+<!-- ══ DECISÃO ══ -->
+<div class="sp on" id="sp-decisao">
+  <div class="sl">Veredicto — Monólito Modular vs Microserviços</div>
+  <div class="ok"><strong>Escolha: Monólito Modular + Hexagonal por bounded context.</strong> Transações ACID nativas (PCI), audit log centralizado (LGPD), time pequeno foca em produto. Microserviços na fase 2 via extração cirúrgica — sem reescrever nada.</div>
+  <table class="tbl">
+    <tr><th>Requisito</th><th>Microserviços</th><th>Monólito Modular</th><th>Vencedor</th></tr>
+    <tr><td>Transações ACID (PCI obrigatório)</td><td>Sagas distribuídas — eventual consistency, complexas</td><td>Transação de banco nativa, rollback garantido</td><td><span class="pill pg">Monólito</span></td></tr>
+    <tr><td>Trilha de auditoria completa (LGPD)</td><td>Distributed tracing — correlação manual</td><td>Audit log centralizado por tenant</td><td><span class="pill pg">Monólito</span></td></tr>
+    <tr><td>Time 4–10 devs</td><td>DevOps dedicado + 2–3 devs por serviço</td><td>Time inteiro foca em produto</td><td><span class="pill pg">Monólito</span></td></tr>
+    <tr><td>Custo de infra inicial</td><td>K8s + service mesh + N bancos desde dia 1</td><td>1 cluster Postgres + 1 API + Valkey</td><td><span class="pill pg">Monólito</span></td></tr>
+    <tr><td>Debugging e observabilidade</td><td>Distributed tracing obrigatório</td><td>Stack trace local, um processo</td><td><span class="pill pg">Monólito</span></td></tr>
+    <tr><td>Escala futura (1000+ tenants)</td><td>Scale out independente por serviço</td><td>Scale up + Read replicas + extração incremental</td><td><span class="pill pam">Ambos</span></td></tr>
+  </table>
+  <div class="sl">Por que não é um monólito comum</div>
+  <div class="g3">
+    <div class="csm"><h4>Schema próprio por macrodomínio</h4><p>Cada módulo tem schema PostgreSQL próprio (<span class="mono">financas.*</span>, <span class="mono">vendas.*</span>…). Extração futura em microserviço não move dados — a fronteira lógica de hoje é a física de amanhã.</p></div>
+    <div class="csm"><h4>Interfaces públicas explícitas</h4><p>Módulos expõem apenas Application interfaces. Nenhum handler de Vendas acessa repositório de Estoque. Violação bloqueia o PR.</p></div>
+    <div class="csm"><h4>Comunicação só via Domain Events</h4><p>Contratos de evento idênticos aos que Kafka/RabbitMQ usariam. Migração na fase 2 sem reescrever nada — só troca o transporte.</p></div>
+  </div>
+</div>
+
+<!-- ══ CAMADAS ══ -->
+<div class="sp" id="sp-camadas">
+  <div class="sl">6 camadas técnicas</div>
+  <div class="row" style="border-left:3px solid var(--blue)"><span class="rl">1 — Apresentação</span><span class="rv">Nuxt 3 (web SaaS) · Electron + Nuxt 3 (Epros.App desktop) · React Native (Epros.Mobile/PDV) · Portal Cliente · Portal Fornecedor</span></div>
+  <div class="row" style="border-left:3px solid var(--blue)"><span class="rl">2 — API Gateway</span><span class="rv">Keycloak 24 OIDC · TenantProvider · Entitlement check · Rate limit · Audit log · WAF · Swagger v1 · ProblemDetails RFC 7807</span></div>
+  <div class="row" style="border-left:3px solid var(--green)"><span class="rl">3 — Application</span><span class="rv">MediatR CQRS — Commands + Queries + Handlers. Zero lógica no Controller. FluentValidation por command. Behaviors para cross-cutting.</span></div>
+  <div class="row" style="border-left:3px solid var(--green)"><span class="rl">4 — Domain</span><span class="rv">Entidades ricas herdando <span class="mono">EntidadeSaaSBase</span> (Flunt). Regras no agregado. Domain Events via OutboxMessage. Value Objects imutáveis.</span></div>
+  <div class="row" style="border-left:3px solid var(--amber)"><span class="rl">5 — Infra / Data</span><span class="rv">EF Core 8 + PostgreSQL 16 · ContextBase com QueryFilter por reflection · IEntityTypeConfiguration · snake_case · schema por módulo</span></div>
+  <div class="row" style="border-left:3px solid var(--b3)"><span class="rl">6 — Shared</span><span class="rv"><span class="mono">EntidadeSaaSBase · ITenantProvider · ICurrentUser · ICommand/IQuery · ISyncable · CommandResult · OutboxMessage</span></span></div>
+
+  <div class="sl">Fluxo de escrita — Command</div>
+  <div class="flow"><div class="fb fi">HTTP POST</div><div class="fa">→</div><div class="fb">Controller</div><div class="fa">→</div><div class="fb">MediatR.Send()</div><div class="fa">→</div><div class="fb fi">Handler</div><div class="fa">→</div><div class="fb">new Entidade()</div><div class="fa">→</div><div class="fb">Flunt validate</div><div class="fa">→</div><div class="fb fg">Repo + Outbox</div><div class="fa">→</div><div class="fb fg">SaveChanges atômico</div><div class="fa">→</div><div class="fb fi">CommandResult.Ok()</div></div>
+
+  <div class="sl">Fluxo de leitura — Query</div>
+  <div class="flow"><div class="fb fi">HTTP GET</div><div class="fa">→</div><div class="fb">Controller</div><div class="fa">→</div><div class="fb">MediatR.Send()</div><div class="fa">→</div><div class="fb fi">QueryHandler</div><div class="fa">→</div><div class="fb">Repository</div><div class="fa">→</div><div class="fb fg">EF + QueryFilter auto</div><div class="fa">→</div><div class="fb fi">DTO response</div></div>
+  <div class="info">QueryFilter garante <span class="mono">WHERE tenant_id = ? AND deletado_em IS NULL</span> automaticamente por reflection — nunca esquece.</div>
+
+  <div class="sl">Estrutura de pastas por módulo</div>
+  <div class="code">src/Modules/<span class="cl">{Modulo}</span>/<span class="cl">{SubModulo}</span>/
+├── Domain/
+│   ├── Entities/        <span class="cm">← agregados (herdam EntidadeSaaSBase + Flunt)</span>
+│   └── ValueObjects/    <span class="cm">← objetos de valor imutáveis</span>
+├── Application/
+│   ├── Commands/        <span class="cm">← records imutáveis : ICommand</span>
+│   ├── Queries/         <span class="cm">← records : IQuery&lt;T&gt;</span>
+│   └── Handlers/        <span class="cm">← ICommandHandler / IQueryHandler</span>
+└── Infrastructure/
+    ├── Data/
+    │   ├── Mappings/    <span class="cm">← IEntityTypeConfiguration (snake_case, schema)</span>
+    │   └── Context.cs   <span class="cm">← DbContext herdando ContextBase</span>
+    └── Repositories/    <span class="cm">← interface + implementação</span></div>
+</div>
+
+<!-- ══ PIPELINE ══ -->
+<div class="sp" id="sp-pipeline">
+  <div class="sl">7 middlewares — ordem de execução</div>
+  <div class="mw"><span class="mw-num">1</span><div class="mw-dot"></div><div class="mw-body"><div class="mw-title">UseAuthentication / UseAuthorization <span class="mw-badge" style="background:var(--blue-l);color:var(--blue)">Auth</span></div><div class="mw-desc">JWT Bearer via Keycloak 24. Valida token, injeta claims. 401 se inválido ou expirado.</div></div></div>
+  <div class="mw"><span class="mw-num">2</span><div class="mw-dot"></div><div class="mw-body"><div class="mw-title">ExcecaoGlobalMiddleware <span class="mw-badge" style="background:var(--amber-l);color:var(--amber)">PX-003</span></div><div class="mw-desc">Captura todas as exceções. Retorna ProblemDetails (RFC 7807) com TraceId. Nunca expõe stack trace em produção.</div></div></div>
+  <div class="mw"><span class="mw-num">3</span><div class="mw-dot"></div><div class="mw-body"><div class="mw-title">InquilinoSaaSMiddleware <span class="mw-badge" style="background:var(--teal-l);color:var(--teal)">Multi-tenant</span></div><div class="mw-desc">Resolve tenant via claim JWT. Valida no Catalog DB (cache Valkey 5min). Enriquece Serilog com tenantId para correlação total dos logs.</div></div></div>
+  <div class="mw"><span class="mw-num">4</span><div class="mw-dot"></div><div class="mw-body"><div class="mw-title">ModuloTenantMiddleware <span class="mw-badge" style="background:var(--purple-l);color:var(--purple)">Entitlement</span></div><div class="mw-desc">Verifica macrodomínio + submódulo ativo para o tenant. 403 Forbidden se inativo. Zero custo para módulos desabilitados.</div></div></div>
+  <div class="mw"><span class="mw-num">5</span><div class="mw-dot"></div><div class="mw-body"><div class="mw-title">DataMaskingMiddleware <span class="mw-badge" style="background:var(--red-l);color:var(--red)">PCI</span></div><div class="mw-desc">Mascara CPF, CNPJ, PAN, dados bancários antes de qualquer Serilog sink. Atributo [Sensitive] nas entidades. PCI DSS Req. 3.</div></div></div>
+  <div class="mw"><span class="mw-num">6</span><div class="mw-dot"></div><div class="mw-body"><div class="mw-title">AuditMiddleware <span class="mw-badge" style="background:var(--green-l);color:var(--green)">LGPD</span></div><div class="mw-desc">Persiste quem, o quê, quando, IP e tenant em tabela <span class="mono">audit_trail</span> append-only. Triggers PG bloqueiam UPDATE/DELETE. LGPD art. 37 + PCI DSS Req. 10.</div></div></div>
+  <div class="mw"><span class="mw-num">7</span><div class="mw-dot"></div><div class="mw-body"><div class="mw-title">Controllers <span class="mw-badge" style="background:var(--blue-l);color:var(--blue)">Business</span></div><div class="mw-desc">Executa via <span class="mono">MediatR.Send(command)</span>. Zero lógica de negócio — apenas serialização e roteamento.</div></div></div>
+
+  <div class="sl">Convenções REST</div>
+  <div class="row"><span class="rl">GET lista</span><span class="rv"><span class="mono">/api/v1/{modulo}/{recurso}</span> — filtros via query string</span></div>
+  <div class="row"><span class="rl">GET item</span><span class="rv"><span class="mono">/api/v1/{modulo}/{recurso}/{id}</span></span></div>
+  <div class="row"><span class="rl">POST criar</span><span class="rv"><span class="mono">/api/v1/{modulo}/{recurso}</span></span></div>
+  <div class="row"><span class="rl">PUT alterar</span><span class="rv"><span class="mono">/api/v1/{modulo}/{recurso}/{id}</span></span></div>
+  <div class="row"><span class="rl">DELETE soft</span><span class="rv"><span class="mono">/api/v1/{modulo}/{recurso}/{id}</span> — seta DeletadoEm</span></div>
+  <div class="row"><span class="rl">POST ação</span><span class="rv"><span class="mono">/api/v1/{modulo}/{recurso}/{id}/{verbo}</span> — ex: <span class="mono">/baixar</span>, <span class="mono">/cancelar</span></span></div>
+  <div class="row"><span class="rl">GET sync</span><span class="rv"><span class="mono">/api/v1/{modulo}/sync/delta?since={timestamp}</span> — delta para offline</span></div>
+</div>
+
+<!-- ══ PRINCÍPIOS ══ -->
+<div class="sp" id="sp-principios">
+  <div class="sl">7 princípios invioláveis</div>
+  <div class="princ"><span class="princ-num">01</span><div class="princ-body"><h4>Fronteiras de módulo são técnicas, não organizacionais</h4><p>Módulos expõem apenas interfaces públicas. Nenhum handler acessa DbContext de outro módulo. Cross-schema queries explícitas e documentadas. Violação = bloqueio de merge.</p></div></div>
+  <div class="princ"><span class="princ-num">02</span><div class="princ-body"><h4>Schema próprio por macrodomínio no PostgreSQL</h4><p>Tabelas vivem em <span class="mono">financas.*</span>, <span class="mono">estoque.*</span>, <span class="mono">vendas.*</span>… A fronteira lógica de hoje é a fronteira física de quando extrairmos em microserviços — sem migração de dados.</p></div></div>
+  <div class="princ"><span class="princ-num">03</span><div class="princ-body"><h4>Outbox Pattern para todos os Domain Events</h4><p>Nenhum evento via fire-and-forget. Persistido em <span class="mono">outbox_events</span> na mesma transação. Worker Quartz.NET com retry exponencial. Zero perda de evento mesmo com falha de infra após SaveChanges.</p></div></div>
+  <div class="princ"><span class="princ-num">04</span><div class="princ-body"><h4>Dados sensíveis nunca em texto livre no log</h4><p>CPF, CNPJ, PAN, dados bancários passam pelo DataMaskingMiddleware antes de qualquer Serilog sink. Atributo <span class="mono">[Sensitive]</span> nas propriedades. PCI DSS Req. 3 — inegociável.</p></div></div>
+  <div class="princ"><span class="princ-num">05</span><div class="princ-body"><h4>Toda ação sensível gera trilha imutável</h4><p>AuditMiddleware persiste quem, o quê, quando, IP, tenant em <span class="mono">audit_trail</span> append-only. Triggers PG bloqueiam UPDATE e DELETE — imutabilidade no banco, não só na aplicação.</p></div></div>
+  <div class="princ"><span class="princ-num">06</span><div class="princ-body"><h4>Multi-tenancy validado em três camadas independentes</h4><p>Middleware (resolve) → QueryFilter EF Core (filtra) → Testcontainers (cenário A/B tenant leak é suite obrigatória no CI). Falha em qualquer camada = deploy bloqueado.</p></div></div>
+  <div class="princ"><span class="princ-num">07</span><div class="princ-body"><h4>Secrets nunca no código ou appsettings de produção</h4><p>JWT keys, connection strings, certificados — todos em HashiCorp Vault com dynamic secrets. Secret commitado = alerta automático no CI com bloqueio de merge.</p></div></div>
+
+  <div class="sl">Regras SEMPRE e NUNCA</div>
+  <div class="g2">
+    <div class="card">
+      <p style="font-size:11px;font-weight:500;color:var(--green);margin-bottom:10px;font-family:var(--mono)">✅ SEMPRE</p>
+      <div style="font-size:11px;color:var(--t2);line-height:2.2">
+        ✓ Herdar <span class="mono">EntidadeSaaSBase</span> em toda entidade<br>
+        ✓ <span class="mono">DateTime.UtcNow</span> — nunca DateTime.Now<br>
+        ✓ <span class="mono">Guid</span> para IDs — nunca long sequencial<br>
+        ✓ Soft delete via <span class="mono">entidade.Deletar(userId)</span><br>
+        ✓ <span class="mono">ITenantProvider</span> via DI — nunca estático<br>
+        ✓ Schema por macrodomínio no mapping EF Core<br>
+        ✓ <span class="mono">snake_case</span> nas colunas PostgreSQL<br>
+        ✓ CQRS — zero lógica no Controller<br>
+        ✓ Outbox Pattern para todo Domain Event<br>
+        ✓ <span class="mono">MarcarAlterado(userId)</span> ao mudar estado
+      </div>
+    </div>
+    <div class="card">
+      <p style="font-size:11px;font-weight:500;color:var(--red);margin-bottom:10px;font-family:var(--mono)">❌ NUNCA</p>
+      <div style="font-size:11px;color:var(--t2);line-height:2.2">
+        ✗ <span class="mono">context.Remove()</span> — soft delete apenas<br>
+        ✗ Lógica de negócio no Controller<br>
+        ✗ Acessar DbContext de outro módulo<br>
+        ✗ Variável estática de TenantId<br>
+        ✗ JWT ou secret hardcoded<br>
+        ✗ Connection string em código ou appsettings prod<br>
+        ✗ Criar entidade sem herdar EntidadeSaaSBase<br>
+        ✗ <span class="mono">long</span> como ID de entidade<br>
+        ✗ <span class="mono">DateTime.Now</span> em qualquer lugar<br>
+        ✗ Publicar Domain Event direto — usar Outbox
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TENANT ══ -->
+<div class="sp" id="sp-tenant">
+  <div class="sl">3 níveis de isolamento — mesmo binário, deploy diferente</div>
+  <div class="g3">
+    <div class="tier"><div class="tag tag-gy">Nível 1 — Shared</div><h4>Schema por tenant</h4><p>PostgreSQL compartilhado. Schema <span class="mono">tenant_{uuid_short}</span>. RLS como segunda barreira. <span class="mono">search_path</span> via PgBouncer por conexão.</p><div class="tplan">Micro · Essencial</div></div>
+    <div class="tier"><div class="tag tag-b">Nível 2 — Dedicated</div><h4>Cluster exclusivo</h4><p>Cluster PostgreSQL próprio por tenant. Mesmo código. Sem noisy neighbor. Backup e manutenção independentes.</p><div class="tplan">Avançado · Enterprise</div></div>
+    <div class="tier"><div class="tag tag-am">Nível 3 — Private</div><h4>On-premise / cloud própria</h4><p>Deploy no ambiente do cliente. Mesmo binário. BYOK. Regulados: BACEN, ANVISA, bancos. Data localization por exigência regulatória.</p><div class="tplan">Enterprise+ / regulados</div></div>
+  </div>
+  <div class="ok"><strong>Código idêntico nos 3 níveis.</strong> A diferença está inteiramente no Catalog Database + Connection Router. Migração shared→dedicated com downtime ~10s via pglogical.</div>
+
+  <div class="sl">Connection Router — resolução por request</div>
+  <div class="flow"><div class="fb fi">JWT claim: tenantId</div><div class="fa">→</div><div class="fb">TenantProvider</div><div class="fa">→</div><div class="fb fam">Valkey cache 5min</div><div class="fa">→</div><div class="fb">Catalog DB lookup</div><div class="fa">→</div><div class="fb">Vault: credentials</div><div class="fa">→</div><div class="fb fi">PgBouncer search_path</div><div class="fa">→</div><div class="fb fg">ContextBase executa</div></div>
+
+  <div class="sl">Decisões abertas — registrar no ADR quando resolvidas</div>
+  <div class="drow"><div class="odot"></div><span class="dq">Desktop: offline completo ou tolerância?</span><span class="da">Dias sem internet (SQLite full) vs. minutos de instabilidade? Define escopo do runtime local.</span></div>
+  <div class="drow"><div class="odot"></div><span class="dq">PDV: mesmo binário do Mobile?</span><span class="da">Modo do app mobile vs. produto separado com drivers de hardware (pinpad, impressora)?</span></div>
+  <div class="drow"><div class="odot"></div><span class="dq">Conflict resolution offline</span><span class="da">Last Write Wins · CRDT · Fila de reconciliação manual? SyncVersion já preparado.</span></div>
+  <div class="drow"><div class="odot"></div><span class="dq">Catalog Database</span><span class="da">Banco global de metadados especificado — ainda não implementado. Conexão atual via appsettings.</span></div>
+  <div class="drow"><div class="odot"></div><span class="dq">RLS no PostgreSQL</span><span class="da">QueryFilter EF é barreira primária ativa. RLS como segunda barreira especificado mas não implementado.</span></div>
+</div>
+
+<!-- ══ DESENVOLVIMENTO ══ -->
+<div class="sp" id="sp-desenvolvimento">
+  <div class="sl">Paradigmas e padrões adotados</div>
+  <div class="g2">
+    <div class="card"><div class="tag tag-b">DDD — Domain-Driven Design</div><h3>Linguagem ubíqua por bounded context</h3><p>Cada macrodomínio tem seu próprio modelo de domínio e linguagem. Entidades ricas com regras encapsuladas — sem anemic domain model. Aggregates, Value Objects e Domain Events como cidadãos de primeira classe.</p></div>
+    <div class="card"><div class="tag tag-g">CQRS — Command Query Responsibility Segregation</div><h3>Escrita e leitura completamente separadas</h3><p>Commands mudam estado e retornam CommandResult. Queries nunca mudam estado e retornam DTOs. Handlers são a única unidade testável de lógica. Controllers são roteadores puros.</p></div>
+    <div class="card"><div class="tag tag-am">TDD — Test-Driven Development</div><h3>Testes antes do código de produção</h3><p>Red → Green → Refactor. Testes unitários de domínio escritos antes da implementação. Facilita design emergente — código difícil de testar indica design ruim. Cobertura mínima 80% em lógica de negócio.</p></div>
+    <div class="card"><div class="tag tag-p">Hexagonal Architecture (Ports & Adapters)</div><h3>Core isolado de infra e apresentação</h3><p>Domain e Application nunca dependem de EF Core, HTTP ou banco. Adapters (Infrastructure) implementam as Ports (Interfaces) definidas pelo Application. Permite trocar banco ou framework sem mudar regras de negócio.</p></div>
+  </div>
+
+  <div class="sl">Estratégia de branches — Git Flow adaptado</div>
+  <table class="tbl">
+    <tr><th>Branch</th><th>Propósito</th><th>Regras</th></tr>
+    <tr><td class="mono">main</td><td>Produção — sempre deployável</td><td>Protegida. Merge apenas via PR aprovado + CI verde + coverage ok</td></tr>
+    <tr><td class="mono">develop</td><td>Integração contínua</td><td>Base para features. CI roda a cada push. Deploy automático em homolog.</td></tr>
+    <tr><td class="mono">feature/epros-{N}-{desc}</td><td>Nova funcionalidade</td><td>Parte de develop. PR com description preenchida. Squash merge.</td></tr>
+    <tr><td class="mono">fix/epros-{N}-{desc}</td><td>Correção de bug</td><td>Parte de develop ou main (hotfix). Review obrigatório.</td></tr>
+    <tr><td class="mono">release/v{major}.{minor}</td><td>Preparação de release</td><td>Apenas bugfixes e docs. Sem features novas. Tag semântica ao mergear.</td></tr>
+  </table>
+
+  <div class="sl">Code review — checklist obrigatório</div>
+  <div class="g2">
+    <div class="csm"><h4>Antes de abrir o PR</h4><p>✓ Testes unitários cobrindo regras novas · ✓ Sem DateTime.Now ou IDs long · ✓ Sem lógica no Controller · ✓ Mapping snake_case com schema correto · ✓ QueryFilter não bypassado · ✓ Sem secret no código</p></div>
+    <div class="csm"><h4>Durante o review</h4><p>✓ Regra de negócio no agregado, não no Handler · ✓ Soft delete via Deletar() · ✓ Todos os campos de EntidadeSaaSBase mapeados · ✓ Índice composto por tenant_id · ✓ sync_id com índice único · ✓ Precision(18,2) em decimais</p></div>
+  </div>
+
+  <div class="sl">ADR — Architecture Decision Records</div>
+  <div class="csm"><h4>Como documentar uma decisão</h4><p>Toda decisão arquitetural relevante deve ser documentada em <span class="mono">docs/adr/ADR-{N}-{titulo}.md</span> com: contexto, opções avaliadas, decisão tomada, racional, consequências e data. Vive no repositório junto ao código. Nunca retroativo em batch — máximo 48h após a decisão.</p></div>
+</div>
+
+<!-- ══ TESTES ══ -->
+<div class="sp" id="sp-testes">
+  <div class="sl">Pirâmide de testes</div>
+  <div class="pyr">
+    <div class="pyr-layer" style="background:var(--green-l);border:1px solid rgba(61,214,140,.2)">
+      <span class="pyr-label" style="color:var(--green)">① Unit Tests</span>
+      <span class="pyr-detail">Regras de negócio no domínio — EntidadeSaaSBase, agregados, Value Objects, CommandResult. Sem banco, sem HTTP, sem DI. Rápidos: &lt;1ms por teste. xUnit puro.</span>
+      <span class="pyr-count" style="color:var(--green)">~70% da cobertura</span>
+    </div>
+    <div class="pyr-layer" style="background:var(--blue-l);border:1px solid rgba(74,144,232,.2)">
+      <span class="pyr-label" style="color:var(--blue)">② Integration Tests</span>
+      <span class="pyr-detail">Handlers + Repositories + banco PostgreSQL real via Testcontainers. Valida QueryFilter multi-tenant, soft delete, OutboxMessage, migrations. &lt;5s por teste.</span>
+      <span class="pyr-count" style="color:var(--blue)">~25% da cobertura</span>
+    </div>
+    <div class="pyr-layer" style="background:var(--amber-l);border:1px solid rgba(245,166,35,.2)">
+      <span class="pyr-label" style="color:var(--amber)">③ E2E Tests</span>
+      <span class="pyr-detail">Fluxos críticos de negócio completos — Playwright rodando contra a API real com banco Testcontainers. Ex: venda → NF-e → ContaReceber. Cenários de tenant leak.</span>
+      <span class="pyr-count" style="color:var(--amber)">~5% da cobertura</span>
+    </div>
+    <div class="pyr-layer" style="background:var(--red-l);border:1px solid rgba(232,85,85,.2)">
+      <span class="pyr-label" style="color:var(--red)">④ Performance</span>
+      <span class="pyr-detail">k6 contra ambiente de staging com dados reais de volume. SLOs definidos: P95 &lt;200ms para leitura, &lt;500ms para escrita. Regressão de performance bloqueia deploy.</span>
+      <span class="pyr-count" style="color:var(--red)">SLO gates</span>
+    </div>
+  </div>
+
+  <div class="sl">Testes críticos obrigatórios — nunca podem falhar</div>
+  <table class="tbl">
+    <tr><th>Suite</th><th>O que testa</th><th>Ferramenta</th><th>Bloqueia</th></tr>
+    <tr><td>Tenant Leak A/B</td><td>Tenant A não acessa dados do Tenant B — QueryFilter e RLS</td><td>Testcontainers + xUnit</td><td><span class="pill pr">Deploy</span></td></tr>
+    <tr><td>Soft Delete Filter</td><td>Entidades deletadas não aparecem em nenhuma query</td><td>xUnit</td><td><span class="pill pr">Deploy</span></td></tr>
+    <tr><td>Ledger Append-Only</td><td>Lançamentos contábeis não podem ser editados ou deletados</td><td>Testcontainers</td><td><span class="pill pr">Deploy</span></td></tr>
+    <tr><td>Audit Trail</td><td>Toda ação sensível gera registro imutável em audit_trail</td><td>Testcontainers</td><td><span class="pill pr">Deploy</span></td></tr>
+    <tr><td>Outbox Delivery</td><td>Domain Events são entregues mesmo com falha após SaveChanges</td><td>xUnit (mock worker)</td><td><span class="pill pr">Deploy</span></td></tr>
+    <tr><td>PCI Data Masking</td><td>CPF, PAN, dados bancários nunca aparecem em logs</td><td>xUnit + Serilog sink mock</td><td><span class="pill pr">Deploy</span></td></tr>
+    <tr><td>Entitlement Gate</td><td>Módulo desabilitado retorna 403 em qualquer endpoint</td><td>Playwright / xUnit</td><td><span class="pill pr">Deploy</span></td></tr>
+    <tr><td>Performance SLO</td><td>P95 leitura &lt;200ms, escrita &lt;500ms sob 100 req/s</td><td>k6</td><td><span class="pill pam">Release</span></td></tr>
+  </table>
+
+  <div class="sl">Testcontainers — banco real nos testes de integração</div>
+  <div class="code"><span class="cm">// Exemplo — contexto PostgreSQL real por teste</span>
+<span class="kw">public class</span> <span class="cl">EprosIntegrationTest</span> : IAsyncLifetime
+{
+    <span class="kw">private readonly</span> PostgreSqlContainer _pg = <span class="kw">new</span> PostgreSqlBuilder()
+        .WithImage(<span class="st">"postgres:16-alpine"</span>)
+        .WithDatabase(<span class="st">"epros_test"</span>)
+        .Build();
+
+    <span class="kw">public async</span> Task InitializeAsync()
+    {
+        <span class="kw">await</span> _pg.StartAsync();
+        <span class="cm">// Aplicar migrations + seed</span>
+        <span class="kw">await</span> AplicarMigrationsAsync(_pg.GetConnectionString());
+    }
+
+    [Fact]
+    <span class="kw">public async</span> Task TenantA_NaoAcessa_DadosTenantB()
+    {
+        <span class="cm">// Arrange: criar dados em dois tenants diferentes</span>
+        <span class="cm">// Act: query com TenantProvider mockado para Tenant A</span>
+        <span class="cm">// Assert: resultado vazio — QueryFilter bloqueou</span>
+    }
+}</div>
+</div>
+
+<!-- ══ SECDEVOPS ══ -->
+<div class="sp" id="sp-secdevops">
+  <div class="sl">O que é SecDevOps no Epros</div>
+  <div class="info"><strong>SecDevOps = Security + Dev + Ops integrados.</strong> Segurança não é uma fase separada no final — é parte de cada commit, cada PR, cada deploy. Shift-left: quanto mais cedo detectar uma vulnerabilidade, menor o custo de correção.</div>
+
+  <div class="sl">Pipeline SecDevOps — do commit ao deploy</div>
+  <div class="sdo-pipe">
+    <div class="sdo-stage"><span class="sdo-num">DEV</span><div><div class="sdo-name">Pre-commit hooks — segurança local</div><div class="sdo-desc">Antes de qualquer commit, hooks verificam secrets hardcoded, padrões proibidos (DateTime.Now, IDs long, context.Remove) e formatação de código.</div><div class="sdo-tools"><span class="sdo-tool">Husky / lefthook</span><span class="sdo-tool">gitleaks</span><span class="sdo-tool">dotnet-format</span></div></div></div>
+    <div class="sdo-arrow">↓</div>
+    <div class="sdo-stage"><span class="sdo-num">CI①</span><div><div class="sdo-name">Build + Testes unitários + SAST</div><div class="sdo-desc">Build do projeto, execução de todos os testes unitários, análise estática de segurança do código-fonte. Falha = PR bloqueado imediatamente.</div><div class="sdo-tools"><span class="sdo-tool">GitHub Actions</span><span class="sdo-tool">dotnet test</span><span class="sdo-tool">Semgrep / SonarCloud</span><span class="sdo-tool">security-code-scan</span></div></div></div>
+    <div class="sdo-arrow">↓</div>
+    <div class="sdo-stage"><span class="sdo-num">CI②</span><div><div class="sdo-name">Testes de integração + Suites de segurança obrigatórias</div><div class="sdo-desc">Testcontainers com banco real. Execução das suites críticas: tenant leak, audit trail, soft delete, entitlement gate, PCI data masking. Todos os 8 testes obrigatórios.</div><div class="sdo-tools"><span class="sdo-tool">Testcontainers</span><span class="sdo-tool">xUnit</span><span class="sdo-tool">Playwright</span></div></div></div>
+    <div class="sdo-arrow">↓</div>
+    <div class="sdo-stage"><span class="sdo-num">CI③</span><div><div class="sdo-name">Scan de dependências + SBOM + CVE check</div><div class="sdo-desc">Análise de todas as dependências NuGet e npm em busca de CVEs conhecidas. Geração do Software Bill of Materials. CVE crítico ou alto = bloqueio de deploy.</div><div class="sdo-tools"><span class="sdo-tool">Trivy</span><span class="sdo-tool">Grype</span><span class="sdo-tool">CycloneDX (SBOM)</span><span class="sdo-tool">OWASP Dependency-Check</span></div></div></div>
+    <div class="sdo-arrow">↓</div>
+    <div class="sdo-stage"><span class="sdo-num">CI④</span><div><div class="sdo-name">Container scan + IaC scan</div><div class="sdo-desc">Imagem Docker final escaneada por vulnerabilidades. Dockerfiles e manifests Kubernetes/Compose verificados por misconfigurations (ex: root user, capabilities desnecessárias).</div><div class="sdo-tools"><span class="sdo-tool">Trivy (image)</span><span class="sdo-tool">Checkov</span><span class="sdo-tool">Hadolint</span></div></div></div>
+    <div class="sdo-arrow">↓</div>
+    <div class="sdo-stage"><span class="sdo-num">STAGE</span><div><div class="sdo-name">DAST — Teste dinâmico de segurança em staging</div><div class="sdo-desc">Varredura ativa da API em ambiente de staging. Detecta XSS, SQL injection, SSRF, autenticação fraca, endpoints expostos não documentados, rate limit bypassável.</div><div class="sdo-tools"><span class="sdo-tool">OWASP ZAP</span><span class="sdo-tool">Nuclei</span><span class="sdo-tool">42Crunch API Security</span></div></div></div>
+    <div class="sdo-arrow">↓</div>
+    <div class="sdo-stage"><span class="sdo-num">PROD</span><div><div class="sdo-name">Deploy + Runtime security + monitoramento contínuo</div><div class="sdo-desc">Deploy com health check obrigatório. Runtime protection ativo. Alertas de anomalia em produção. Rotação automática de secrets via Vault. Pentest trimestral por empresa especializada.</div><div class="sdo-tools"><span class="sdo-tool">Vault dynamic secrets</span><span class="sdo-tool">Falco (runtime)</span><span class="sdo-tool">Grafana alerts</span><span class="sdo-tool">Pentest trimestral</span></div></div></div>
+  </div>
+
+  <div class="sl">OWASP Top 10 — controles implementados</div>
+  <table class="tbl">
+    <tr><th>#</th><th>Vulnerabilidade</th><th>Controle no Epros</th></tr>
+    <tr><td class="mono">A01</td><td>Broken Access Control</td><td>Keycloak RBAC + ModuloTenantMiddleware + QueryFilter multi-tenant + suites de teste tenant leak</td></tr>
+    <tr><td class="mono">A02</td><td>Cryptographic Failures</td><td>TLS 1.3 obrigatório (Caddy) + colunas PII criptografadas + Vault para keys + AES-256 at rest</td></tr>
+    <tr><td class="mono">A03</td><td>Injection (SQL, NoSQL, LDAP)</td><td>EF Core com parâmetros — nunca SQL raw · FluentValidation em todos os inputs</td></tr>
+    <tr><td class="mono">A05</td><td>Security Misconfiguration</td><td>Checkov no CI · Hardening de Dockerfile · Sem credenciais default em produção · Vault obrigatório</td></tr>
+    <tr><td class="mono">A06</td><td>Vulnerable Components</td><td>Trivy + Grype + SBOM em todo CI · CVE crítico bloqueia deploy automaticamente</td></tr>
+    <tr><td class="mono">A07</td><td>Auth Failures</td><td>Keycloak MFA + refresh token rotation + token curto (15min) + revogação imediata</td></tr>
+    <tr><td class="mono">A09</td><td>Security Logging Failures</td><td>AuditMiddleware append-only + DataMasking + correlação por traceId + Loki centralizado</td></tr>
+  </table>
+</div>
+
+<!-- ══ GOVERNANÇA TI ══ -->
+<div class="sp" id="sp-governanca">
+  <div class="sl">Por que aqui e não na página de Compliance</div>
+  <div class="info"><strong>Distinção importante:</strong> a página ⑤ Compliance trata de regulações de proteção de dados e privacidade (LGPD, GDPR, PCI DSS…). Esta aba trata de <strong>frameworks de governança de TI</strong> — padrões que definem como a área de tecnologia é gerida, auditada e opera em continuidade. São complementares, não redundantes.</div>
+
+  <div class="sl">3 frameworks de governança de TI</div>
+
+  <div class="fw-card">
+    <div class="fw-head"><span class="fw-name">ISO/IEC 27001:2022</span><span class="fw-sub">Information Security Management System (ISMS)</span></div>
+    <div class="fw-body">
+      Framework internacional de gestão de segurança da informação. Define 93 controles organizados em 4 temas: organizacional, pessoas, físico e tecnológico. Certificação auditada por terceiros.<br><br>
+      <strong>Por que é relevante para o Epros:</strong> clientes Enterprise e regulados (BACEN, ANVISA) frequentemente exigem ISO 27001 como pré-requisito de contratação. A certificação valida que todo o processo — não apenas o código — é seguro.
+    </div>
+    <div class="fw-map">
+      <div class="fw-map-title">Como o Epros implementa os controles críticos</div>
+      <div class="fw-map-row"><span class="fw-map-domain">A.5 — Políticas</span><span class="fw-map-impl">Módulo GRC / Gestão de Políticas — publicação, aceite e versionamento</span></div>
+      <div class="fw-map-row"><span class="fw-map-domain">A.8 — Controle de ativos</span><span class="fw-map-impl">Inventário de serviços via docker-compose + SBOM gerado no CI</span></div>
+      <div class="fw-map-row"><span class="fw-map-domain">A.9 — Controle de acesso</span><span class="fw-map-impl">Keycloak RBAC/ABAC + MFA + EntitlementEngine + SoD via GRC</span></div>
+      <div class="fw-map-row"><span class="fw-map-domain">A.10 — Criptografia</span><span class="fw-map-impl">TLS 1.3 (Caddy) + AES-256 at rest + Vault + colunas PII criptografadas</span></div>
+      <div class="fw-map-row"><span class="fw-map-domain">A.12 — Segurança operacional</span><span class="fw-map-impl">Pipeline SecDevOps + Trivy + DAST + Falco runtime + monitoramento Grafana</span></div>
+      <div class="fw-map-row"><span class="fw-map-domain">A.16 — Incidentes</span><span class="fw-map-impl">Módulo GRC / Whistleblower + runbook de resposta a incidentes</span></div>
+      <div class="fw-map-row"><span class="fw-map-domain">A.17 — Continuidade</span><span class="fw-map-impl">Backup por tenant + DR documentado + migração shared→dedicated sem downtime</span></div>
+      <div class="fw-map-row"><span class="fw-map-domain">A.18 — Compliance</span><span class="fw-map-impl">Audit trail imutável + relatórios GRC + mapeamento para LGPD/GDPR/PCI</span></div>
+    </div>
+  </div>
+
+  <div class="fw-card">
+    <div class="fw-head"><span class="fw-name">ITIL 4</span><span class="fw-sub">IT Infrastructure Library — gestão de serviços de TI</span></div>
+    <div class="fw-body">
+      Framework de boas práticas para gestão de serviços de TI. Foca no ciclo de vida do serviço: estratégia, design, transição, operação e melhoria contínua. ITIL 4 introduz o conceito de SVS (Service Value System) e as 4 dimensões.
+      <br><br>
+      <strong>Por que é relevante:</strong> define como entregar e operar o Epros como serviço gerenciado para clientes Enterprise — SLAs, gestão de incidentes, mudanças e capacidade.
+    </div>
+    <div class="fw-map">
+      <div class="fw-map-title">Práticas ITIL implementadas no Epros</div>
+      <div class="fw-map-row"><span class="fw-map-domain">Incident Management</span><span class="fw-map-impl">Runbook operacional + alertas Grafana por severidade + on-call rotation</span></div>
+      <div class="fw-map-row"><span class="fw-map-domain">Change Management</span><span class="fw-map-impl">Pipeline CI/CD com aprovação para produção + ADR para mudanças arquiteturais</span></div>
+      <div class="fw-map-row"><span class="fw-map-domain">Problem Management</span><span class="fw-map-impl">Post-mortem obrigatório após incidente P1/P2 + análise de causa raiz</span></div>
+      <div class="fw-map-row"><span class="fw-map-domain">Release Management</span><span class="fw-map-impl">Git Flow + semantic versioning + blue-green deploy para zero downtime</span></div>
+      <div class="fw-map-row"><span class="fw-map-domain">Capacity Management</span><span class="fw-map-impl">Dashboards Grafana de utilização + alertas de capacidade por tenant</span></div>
+      <div class="fw-map-row"><span class="fw-map-domain">SLA Management</span><span class="fw-map-impl">SLOs definidos por módulo e plano + SLI medidos via Prometheus + alertas de breach</span></div>
+    </div>
+  </div>
+
+  <div class="fw-card">
+    <div class="fw-head"><span class="fw-name">COBIT 2019</span><span class="fw-sub">Control Objectives for Information and Related Technologies</span></div>
+    <div class="fw-body">
+      Framework de governança de TI corporativa. Foca em alinhar TI com os objetivos de negócio, garantir valor e gerenciar riscos de TI. Usado por auditores e conselheiros para avaliar maturidade de governança de TI.
+      <br><br>
+      <strong>Por que é relevante:</strong> clientes Enterprise com estrutura de GRC maduro (bancos, seguradoras, grupos industriais) avaliamos maturidade COBIT. O módulo GRC do Epros suporta diretamente esse processo.
+    </div>
+    <div class="fw-map">
+      <div class="fw-map-title">Domínios COBIT e implementação no Epros</div>
+      <div class="fw-map-row"><span class="fw-map-domain">EDM — Evaluate</span><span class="fw-map-impl">GRC / Riscos Corporativos — risk register, heat maps, scoring e KRIs</span></div>
+      <div class="fw-map-row"><span class="fw-map-domain">APO — Align & Plan</span><span class="fw-map-impl">ADR + roadmap documentado + alinhamento de TI com OKRs de produto</span></div>
+      <div class="fw-map-row"><span class="fw-map-domain">BAI — Build & Implement</span><span class="fw-map-impl">Pipeline SecDevOps + code review + testes obrigatórios + migrations versionadas</span></div>
+      <div class="fw-map-row"><span class="fw-map-domain">DSS — Deliver & Support</span><span class="fw-map-impl">ITIL practices + runbook + SLA por módulo + backup/DR por tenant</span></div>
+      <div class="fw-map-row"><span class="fw-map-domain">MEA — Monitor & Evaluate</span><span class="fw-map-impl">GRC / Controles Internos e Auditoria + Grafana + audit trail imutável</span></div>
+    </div>
+  </div>
+
+  <div class="sl">Como os 3 frameworks se complementam</div>
+  <div class="g3">
+    <div class="csm"><h4>ISO 27001 → O QUE proteger</h4><p>Define os controles de segurança que devem existir. Responde: "Nossos ativos de informação estão protegidos corretamente?"</p></div>
+    <div class="csm"><h4>ITIL 4 → COMO operar</h4><p>Define como entregar e operar os serviços de TI com qualidade. Responde: "Estamos entregando valor de TI de forma consistente e previsível?"</p></div>
+    <div class="csm"><h4>COBIT 2019 → POR QUÊ e para QUEM</h4><p>Define como a TI se alinha ao negócio e é governada. Responde: "A TI está entregando o valor que o negócio precisa com risco aceitável?"</p></div>
+  </div>
+</div>
+
+<!-- ══ PROMPT ══ -->
+<div class="sp" id="sp-prompt">
+  <div class="sl">Prompt para geração de estrutura via IA</div>
+  <p style="font-size:12px;color:var(--t2);margin-bottom:16px">Use nos chats do Claude, ChatGPT ou Cursor. Clique em <strong style="color:var(--t1)">Copiar</strong> e cole diretamente.</p>
+
+  <div class="prompt-box">
+    <div class="prompt-label">Prompt 1 — Estrutura completa do projeto</div>
+    <button class="copy-btn" onclick="copyPrompt(this,'p1')">Copiar</button>
+    <div class="prompt-text" id="p1">Crie a estrutura completa de um projeto .NET 8 chamado <strong>Epros</strong> — ERP SaaS multi-tenant com Arquitetura Hexagonal por bounded context (Monólito Modular).
+
+<strong>Stack obrigatória:</strong>
+- ASP.NET Core 8 / C# · EF Core 8 + Npgsql (PostgreSQL 16) · MediatR 12 (CQRS)
+- Flunt (validação domínio) · FluentValidation 11 (validação commands)
+- Serilog + Loki sink · OpenTelemetry .NET · Keycloak 24 JWT Bearer
+- HashiCorp Vault · Valkey 7 · MinIO · Quartz.NET · xUnit + Testcontainers
+
+<strong>Estrutura de solução:</strong>
+<em>src/</em>
+  Epros.API/                    → Controllers, Middlewares, Program.cs
+  Epros.Shared/                 → EntidadeSaaSBase, ITenantProvider, ISyncable, CommandResult, OutboxMessage
+  Epros.Infrastructure/         → ContextBase com QueryFilter por reflection
+  Epros.Modules.Financeiro/     → bounded context FIN
+  Epros.Modules.Vendas/         → bounded context VEN
+  Epros.Modules.Estoque/        → bounded context EST
+  Epros.Modules.GestaoClientes/ → plataforma (Planos, Clientes, Faturas)
+  Epros.Modules.Fiscal/         → DocumentoFiscal NF-e/NFC-e/NFS-e
+<em>tests/</em>
+  Epros.Modules.Financeiro.Tests/
+  Epros.Modules.Vendas.Tests/
+
+<strong>Regras obrigatórias:</strong>
+1. Toda entidade herda EntidadeSaaSBase (ISyncable + Notifiable&lt;Notification&gt;)
+2. EntidadeSaaSBase: Id(Guid), SyncId(Guid), TenantId(string), SyncVersion(int), CriadoEm(UTC), AlteradoEm?, DeletadoEm?, CriadoPor?, AlteradoPor?
+3. ContextBase: QueryFilter WHERE tenant_id=? AND deletado_em IS NULL via reflection — NUNCA manual
+4. ITenantProvider: scoped via IHttpContextAccessor — NUNCA estático
+5. IDs sempre Guid · DateTime sempre UtcNow · Soft delete via Deletar(userId) · Nunca context.Remove()
+6. CQRS: Commands e Queries são records, Handlers implementam ICommandHandler/IQueryHandler
+7. Módulos comunicam APENAS via Domain Events (Outbox Pattern) ou interfaces Application
+8. DbContext por módulo herdando ContextBase, schema PostgreSQL separado por módulo
+9. Mappings: snake_case + schema: builder.ToTable("tabela", "schema") · Precision(18,2) em decimais
+10. Secrets via HashiCorp Vault — nunca em appsettings produção
+
+<strong>Gere:</strong>
+- .sln com todos os projetos referenciados
+- Program.cs: pipeline Auth → ExcecaoGlobal → InquilinoSaaS → ModuloTenant → DataMasking → Audit → Controllers
+- Shared completo: EntidadeSaaSBase, ISyncable, OutboxMessage, DomainEvent, CommandResult, todas interfaces, TenantProvider, CurrentUser
+- ContextBase com QueryFilter automático por reflection
+- Módulo Financeiro completo: ContaPagar (entidade, command, handler, query, repository, mapping, context, controller, testes)
+- docker-compose.yml: PostgreSQL 16, Keycloak 24, Vault, MinIO, Valkey 7, Grafana, Prometheus, Loki, Tempo
+- init.sql: schemas plataforma, financas, vendas, estoque, producao, qualidade, projetos, manutencao, rh, concessionarias, grc, esg</div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label">Prompt 2 — Scaffolding de novo módulo</div>
+    <button class="copy-btn" onclick="copyPrompt(this,'p2')">Copiar</button>
+    <div class="prompt-text" id="p2">No projeto Epros (.NET 8 / Hexagonal / CQRS / Flunt / EF Core 8 / PostgreSQL 16), crie o scaffolding completo do módulo <strong>[NOME_MODULO]</strong>, submódulo <strong>[NOME_SUBMODULO]</strong>, schema PostgreSQL: <strong>[SCHEMA]</strong>.
+
+EntidadeSaaSBase, ContextBase, TenantProvider e CommandResult já existem em Epros.Shared e Epros.Infrastructure.
+
+<strong>Gere os 10 arquivos:</strong>
+1. Domain/Entities/<strong>[Entidade]</strong>.cs — agregado rico, regras encapsuladas, enum Status, construtor validado com Flunt, MarcarAlterado(), Deletar(), EstaAtivo()
+2. Application/Commands/[Acao][Entidade]Command.cs — record imutável
+3. Application/Handlers/[Acao][Entidade]Handler.cs — ICommandHandler, orquestra domínio + repo + OutboxMessage
+4. Application/Queries/Listar[Entidade]Query.cs + Handler — retorna IEnumerable&lt;[Entidade]Dto&gt;
+5. Infrastructure/Repositories/I[Entidade]Repository.cs — AdicionarAsync, ObterPorIdAsync, SalvarAsync + específicos
+6. Infrastructure/Repositories/[Entidade]Repository.cs — implementação com DbContext correto
+7. Infrastructure/Data/Mappings/[Entidade]Mapping.cs — snake_case, schema, índices (tenant_id composto, sync_id único), Precision(18,2)
+8. Infrastructure/Data/Context[Modulo].cs — herda ContextBase, ApplyConfigurationsFromAssembly
+9. API/Controllers/V1/[Modulo]/[Entidade]Controller.cs — GET lista, GET/{id}, POST, PUT/{id}, DELETE/{id} + verbos de negócio. Zero lógica.
+10. Tests/[Entidade]Tests.cs — xUnit: criação válida, inválida, transições de estado, regras críticas, tenant isolation</div>
+  </div>
+
+  <div class="prompt-box">
+    <div class="prompt-label">Prompt 3 — Suite de testes de segurança obrigatórios</div>
+    <button class="copy-btn" onclick="copyPrompt(this,'p3')">Copiar</button>
+    <div class="prompt-text" id="p3">No projeto Epros (.NET 8 / EF Core 8 / PostgreSQL 16 / xUnit / Testcontainers), crie a suite completa de testes de segurança obrigatórios que devem passar em todo CI antes de qualquer deploy.
+
+<strong>Contexto:</strong> EntidadeSaaSBase tem TenantId + DeletadoEm. ContextBase aplica QueryFilter WHERE tenant_id=? AND deletado_em IS NULL. audit_trail é append-only com triggers PG bloqueando UPDATE/DELETE.
+
+<strong>Crie os testes para os 7 cenários críticos:</strong>
+
+1. <strong>TenantLeakTest</strong> — Tenant A não acessa dados do Tenant B
+   - Criar ContaPagar no Tenant "A" e outra no Tenant "B"
+   - Executar query com TenantProvider mockado para "A"
+   - Assert: resultado contém apenas dados do Tenant "A"
+
+2. <strong>SoftDeleteFilterTest</strong> — entidades deletadas não aparecem em nenhuma query
+   - Criar entidade, chamar Deletar(userId), salvar
+   - Executar ListarQuery
+   - Assert: lista vazia — DeletadoEm != null filtrado
+
+3. <strong>LedgerAppendOnlyTest</strong> — lançamentos contábeis são imutáveis
+   - Inserir LancamentoContabil via SQL direto
+   - Tentar UPDATE e DELETE via SQL direto
+   - Assert: exceção lançada pelo trigger PostgreSQL
+
+4. <strong>AuditTrailTest</strong> — toda ação sensível gera registro
+   - Executar CriarContaPagarCommand via Handler
+   - Consultar tabela audit_trail
+   - Assert: registro existe com userId, tenantId, timestamp, operação
+
+5. <strong>OutboxDeliveryTest</strong> — Domain Events entregues mesmo com falha após SaveChanges
+   - Executar command que gera Domain Event
+   - Simular falha no worker após SaveChanges
+   - Assert: OutboxMessage persiste com Tentativas++ após retry
+
+6. <strong>PCIDataMaskingTest</strong> — CPF e dados sensíveis nunca aparecem em logs
+   - Configurar Serilog com sink de captura em memória
+   - Executar request com CPF no payload
+   - Assert: CPF não aparece em nenhuma mensagem de log capturada
+
+7. <strong>EntitlementGateTest</strong> — módulo desabilitado retorna 403
+   - Configurar tenant sem módulo FINANCEIRO ativo
+   - Executar GET /api/v1/financeiro/contas-pagar com token válido do tenant
+   - Assert: 403 Forbidden antes de chegar no Handler
+
+Use Testcontainers (PostgreSQL 16-alpine) para os testes que precisam de banco real. Cada teste deve ser independente — sem estado compartilhado entre testes.</div>
+  </div>
+
+  <div class="sl">Dicas de uso</div>
+  <div class="prompt-tip"><strong>Cursor:</strong> Cole o Prompt 1 como primeira mensagem. Use o CURSOR_MEMORY_v2.md como contexto permanente. Para módulos novos, use o Prompt 2 preenchendo os 3 campos em negrito.</div>
+  <div class="prompt-tip"><strong>Claude:</strong> Comece sempre com o CURSOR_MEMORY_v2.md colado. O Prompt 3 pode ser usado diretamente após ter um módulo implementado — gera a suite de segurança para ele.</div>
+  <div class="prompt-tip"><strong>ChatGPT:</strong> Use o Prompt 1 por partes se for muito longo. Valide que o código gerado usa Flunt (não DataAnnotations), Guid (não long) e datetime UtcNow antes de aceitar.</div>
+</div>
+
+</div><!-- /page -->
+
+<script>
+var tabs=['decisao','camadas','pipeline','principios','tenant','desenvolvimento','testes','secdevops','governanca','prompt'];
+function st(id){
+  document.querySelectorAll('.stab').forEach(function(t,i){t.classList.toggle('on',tabs[i]===id)});
+  document.querySelectorAll('.sp').forEach(function(p){p.classList.toggle('on',p.id==='sp-'+id)});
+}
+function copyPrompt(btn,id){
+  var el=document.getElementById(id);
+  var text=el.innerText||el.textContent;
+  navigator.clipboard.writeText(text).then(function(){
+    btn.textContent='Copiado ✓';btn.classList.add('copied');
+    setTimeout(function(){btn.textContent='Copiar';btn.classList.remove('copied')},2000);
+  });
+}
+</script>
+</body>
+</html>

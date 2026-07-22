@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Epros — Dev Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--az:#0D2B5E;--az2:#1A4080;--do:#C9A84C;--cp:#0A0F1E;--ct:#5A6580;--cb:#F4F6FA;--cd:#DDE3EF}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:"DM Sans",sans-serif;background:var(--az);display:flex;flex-direction:column}
+.topbar{background:#0a1628;border-bottom:1px solid rgba(201,168,76,.15);display:flex;align-items:center;padding:0 28px;height:54px;flex-shrink:0;gap:0;position:relative;z-index:10}
+.logo{font-family:"Playfair Display",serif;font-size:18px;font-weight:700;color:var(--do);margin-right:28px;white-space:nowrap;flex-shrink:0}
+.logo em{font-style:italic;color:rgba(201,168,76,.45)}
+.logo-sub{font-size:9px;font-family:"DM Mono",monospace;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase;margin-left:8px;align-self:flex-end;padding-bottom:3px}
+.tabs{display:flex;align-items:stretch;gap:0;flex:1;height:100%;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:7px;padding:0 16px;font-size:12px;font-weight:400;color:rgba(255,255,255,.5);cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;user-select:none;flex-shrink:0}
+.tab:hover{color:rgba(255,255,255,.82);background:rgba(255,255,255,.04)}
+.tab.active{color:var(--do);border-bottom-color:var(--do);font-weight:500}
+.tab-icon{font-size:13px;opacity:.65}
+.tab.active .tab-icon{opacity:1}
+.tab-num{font-family:"DM Mono",monospace;font-size:9px;font-weight:600;background:rgba(201,168,76,.12);color:var(--do);border:1px solid rgba(201,168,76,.2);border-radius:4px;padding:1px 5px}
+.tab.active .tab-num{background:var(--do);color:var(--az)}
+.loading{position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--do),transparent);background-size:200% 100%;animation:shimmer 1.2s infinite;opacity:0;transition:opacity .2s}
+.loading.active{opacity:1}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.frame-wrap{flex:1;position:relative;overflow:hidden}
+iframe{position:absolute;inset:0;width:100%;height:100%;border:none;background:var(--cb);transition:opacity .25s}
+iframe.hidden{opacity:0;pointer-events:none}
+.splash{position:absolute;inset:0;background:linear-gradient(160deg,#060d1a 0%,#0a1628 40%,#071022 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .4s;z-index:5}
+.splash.gone{opacity:0;pointer-events:none}
+.splash h1{font-family:"Playfair Display",serif;font-size:46px;font-weight:700;color:#fff;line-height:1.1;margin-bottom:8px;text-align:center}
+.splash h1 span{color:var(--do)}
+.splash p{font-size:13px;color:rgba(255,255,255,.5);margin-bottom:32px;text-align:center;max-width:460px;line-height:1.7}
+.splash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:700px;width:100%;padding:0 24px}
+.sc{background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.15);border-radius:11px;padding:18px 16px;cursor:pointer;transition:all .18s;text-align:center}
+.sc:hover{background:rgba(201,168,76,.1);border-color:rgba(201,168,76,.4);transform:translateY(-2px)}
+.sc-icon{font-size:22px;margin-bottom:7px}
+.sc-title{font-size:12px;font-weight:600;color:#fff;margin-bottom:2px}
+.sc-sub{font-size:10px;color:rgba(255,255,255,.38)}
+.splash-hint{margin-top:28px;font-size:10px;color:rgba(255,255,255,.2);letter-spacing:1.5px;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Ep<em>ros</em></div>
+  <div class="logo-sub">Dev Hub</div>
+
+  <div class="tabs" id="tabs">
+    <div class="tab" onclick="load('tecnico')" id="tab-tecnico">
+      <span class="tab-icon">🏗️</span>
+      <span class="tab-num">01</span>
+      Arquitetura &amp; Stack
+    </div>
+    <div class="tab" onclick="load('operacional')" id="tab-operacional">
+      <span class="tab-icon">⚙️</span>
+      <span class="tab-num">02</span>
+      Modelo Operacional
+    </div>
+    <div class="tab" onclick="load('treinamento')" id="tab-treinamento">
+      <span class="tab-icon">📚</span>
+      <span class="tab-num">03</span>
+      Treinamento
+    </div>
+    <div class="tab" onclick="load('modulos')" id="tab-modulos">
+      <span class="tab-icon">⊞</span>
+      <span class="tab-num">04</span>
+      Módulos
+    </div>
+    <div class="tab" onclick="load('diagnostico')" id="tab-diagnostico">
+      <span class="tab-icon">🔍</span>
+      <span class="tab-num">05</span>
+      Diagnóstico
+    </div>
+  </div>
+
+  <div class="loading" id="loader"></div>
+</div>
+
+<div class="frame-wrap">
+  <div class="splash" id="splash">
+    <h1>Dev<br/><span>Hub</span></h1>
+    <p>Tudo que o time precisa — arquitetura, modelo operacional, treinamento, módulos e o diagnóstico do legado.</p>
+    <div class="splash-grid">
+      <div class="sc" onclick="load('tecnico')">
+        <div class="sc-icon">🏗️</div>
+        <div class="sc-title">Arquitetura</div>
+        <div class="sc-sub">Stack · ADRs · DDD · API</div>
+      </div>
+      <div class="sc" onclick="load('operacional')">
+        <div class="sc-icon">⚙️</div>
+        <div class="sc-title">Operacional</div>
+        <div class="sc-sub">Papéis · IA · Cerimônias</div>
+      </div>
+      <div class="sc" onclick="load('treinamento')">
+        <div class="sc-icon">📚</div>
+        <div class="sc-title">Treinamento</div>
+        <div class="sc-sub">Trilhas por função</div>
+      </div>
+      <div class="sc" onclick="load('modulos')">
+        <div class="sc-icon">⊞</div>
+        <div class="sc-title">Módulos</div>
+        <div class="sc-sub">132 submódulos</div>
+      </div>
+      <div class="sc" onclick="load('diagnostico')">
+        <div class="sc-icon">🔍</div>
+        <div class="sc-title">Diagnóstico</div>
+        <div class="sc-sub">Legado · Evidências</div>
+      </div>
+      <div class="sc" onclick="window.open('epros-agentes-prompts.md')">
+        <div class="sc-icon">⬡</div>
+        <div class="sc-title">Agentes IA</div>
+        <div class="sc-sub">13 prompts · .cursorrules</div>
+      </div>
+    </div>
+    <div class="splash-hint">Selecione uma seção para começar</div>
+  </div>
+
+  <iframe id="frame-tecnico"      class="hidden" src=""></iframe>
+  <iframe id="frame-operacional"  class="hidden" src=""></iframe>
+  <iframe id="frame-treinamento"  class="hidden" src=""></iframe>
+  <iframe id="frame-modulos"      class="hidden" src=""></iframe>
+  <iframe id="frame-diagnostico"  class="hidden" src=""></iframe>
+</div>
+
+<script>
+const PAGES = {
+  tecnico:     'epros-tecnico.html',
+  operacional: 'epros-operacional.html',
+  treinamento: 'epros-treinamento.html',
+  modulos:     'epros-modulos.html',
+  diagnostico: 'epros-diagnostico.html',
+};
+let current = null;
+function load(key) {
+  document.getElementById('splash').classList.add('gone');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + key).classList.add('active');
+  if (current === key) return;
+  if (current) document.getElementById('frame-' + current).classList.add('hidden');
+  const frame = document.getElementById('frame-' + key);
+  if (!frame.src || frame.src === window.location.href) {
+    const loader = document.getElementById('loader');
+    loader.classList.add('active');
+    frame.src = PAGES[key];
+    frame.onload = () => { loader.classList.remove('active'); frame.classList.remove('hidden'); };
+  } else {
+    frame.classList.remove('hidden');
+  }
+  current = key;
+}
+</script>
+</body></html>

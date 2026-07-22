@@ -1,0 +1,78 @@
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using MediatR;
+using Epros.Modules.GestaoClientes.Application.Queries;
+using Epros.Modules.Estoque.Application.Queries;
+using Epros.Modules.Fiscal.Application.Queries;
+using Epros.Shared.Application.Models;
+
+namespace Epros.API.Controllers
+{
+    /// <summary>
+    /// Dados auxiliares para a tela de venda (emitente/cliente/produtos/CFOPs/transportadora).
+    /// Controller fino: cada action delega a uma query MediatR no módulo dono (GestaoClientes/Estoque/Fiscal).
+    /// Compatível com o legado <c>api/v1/vendas-dados</c>.
+    /// </summary>
+    [ApiController]
+    [Route("api/v1/vendas-dados")]
+    [Produces("application/json")]
+    public class VendaDadosController : ControllerBase
+    {
+        private readonly IMediator _mediator;
+
+        public VendaDadosController(IMediator mediator) => _mediator = mediator;
+
+        /// <summary>Dados do emitente (empresa) para a venda.</summary>
+        [HttpGet("obter-emitente-por-id/{id:guid}")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ObterEmitente(Guid id, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new ObterDadosEmitentePorIdQuery(id), cancellationToken);
+            return result.Sucesso ? Ok(result) : NotFound(result);
+        }
+
+        /// <summary>Dados do destinatário (cliente) para a venda.</summary>
+        [HttpGet("obter-destinatario-por-id/{id:guid}")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ObterDestinatario(Guid id, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new ObterDadosPessoaPorIdQuery(id), cancellationToken);
+            return result.Sucesso ? Ok(result) : NotFound(result);
+        }
+
+        /// <summary>Dados da transportadora para a venda.</summary>
+        [HttpGet("obter-transportadora-por-id/{id:guid}")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ObterTransportadora(Guid id, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new ObterDadosPessoaPorIdQuery(id), cancellationToken);
+            return result.Sucesso ? Ok(result) : NotFound(result);
+        }
+
+        /// <summary>Produtos por lista de Ids para a venda.</summary>
+        [HttpGet("obter-produtos-por-ids")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> ObterProdutos([FromQuery] Guid[] idsProdutos, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new ObterDadosProdutosPorIdsQuery(idsProdutos ?? Array.Empty<Guid>()), cancellationToken);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        /// <summary>CFOPs de saída (ou entrada) para a venda.</summary>
+        [HttpGet("obter-cfops")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ObterCfops([FromQuery] int tipoOperacao = 1, CancellationToken cancellationToken = default)
+        {
+            var result = await _mediator.Send(new ListarCfopsPorTipoOperacaoQuery(tipoOperacao), cancellationToken);
+            return Ok(result);
+        }
+    }
+}

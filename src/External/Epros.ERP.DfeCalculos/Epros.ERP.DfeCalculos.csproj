@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);RCS1003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Enums\**" />
+    <EmbeddedResource Remove="Enums\**" />
+    <None Remove="Enums\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Flunt.Br" Version="2.0.0" />
+    <PackageReference Include="Hercules.NET.NFe.NFCe" Version="2026.3.15.14" />
+    <PackageReference Include="System.Runtime" Version="4.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Impostos\IssQns\" />
+    <Folder Include="Impostos\NFses\Cofins\" />
+    <Folder Include="Impostos\NFses\Irrf\" />
+    <Folder Include="Impostos\NFses\Csll\" />
+    <Folder Include="Impostos\NFses\Cbs\" />
+    <Folder Include="Impostos\NFses\Pis\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Epros.ERP.Shared\Epros.ERP.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

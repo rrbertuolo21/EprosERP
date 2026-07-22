@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Epros — Portal Técnico</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--az:#0D2B5E;--az2:#1A4080;--do:#C9A84C;--dop:#FDF5E0;--cb:#F4F6FA;--cd:#DDE3EF;--ct:#5A6580;--cp:#0A0F1E;--vd:#2d6a4f;--vdl:#edf7f0;--vdb:#c3e6cb;--red:#C0392B;--redl:#FDEDEC}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"DM Sans",sans-serif;background:var(--cb);color:var(--cp);font-size:13px;line-height:1.6;min-height:100vh}
+#sb{position:fixed;left:0;top:0;bottom:0;width:236px;background:var(--az);display:flex;flex-direction:column;z-index:100;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(201,168,76,.25) transparent}
+.sbl{padding:22px 18px 15px;border-bottom:1px solid rgba(201,168,76,.18)}
+.sbl .lm{font-family:"Playfair Display",serif;font-size:20px;font-weight:700;color:var(--do)}
+.sbl .ls{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.sbs{padding:13px 15px 3px;font-size:9px;font-weight:600;color:rgba(201,168,76,.45);letter-spacing:2px;text-transform:uppercase}
+.nb{display:flex;align-items:center;gap:8px;padding:7px 17px;cursor:pointer;font-size:12px;color:rgba(255,255,255,.55);transition:all .15s;border-left:3px solid transparent;text-decoration:none}
+.nb:hover{color:#fff;background:rgba(255,255,255,.05)}
+.nb.active{color:var(--do);background:rgba(201,168,76,.1);border-left-color:var(--do);font-weight:500}
+.nn{width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.08);font-size:9px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.3);flex-shrink:0}
+.nb.active .nn{background:var(--do);color:var(--az)}
+#main{margin-left:236px}
+.pg{display:none;padding:38px 50px;max-width:1060px}
+.pg.active{display:block}
+.hero{background:linear-gradient(135deg,#0a1a3a 0%,var(--az) 55%,#0a2550 100%);border-radius:14px;padding:44px 50px;position:relative;overflow:hidden;margin-bottom:28px}
+.hero::before{content:"";position:absolute;top:-80px;right:-80px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.12) 0%,transparent 70%)}
+.hbadge{font-size:9px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--do);border:1px solid rgba(201,168,76,.3);border-radius:99px;padding:3px 11px;display:inline-block;margin-bottom:13px}
+.hero h1{font-family:"Playfair Display",serif;font-size:34px;font-weight:700;color:#fff;line-height:1.15;margin-bottom:9px}
+.hero h1 span{color:var(--do)}
+.hero p{font-size:13px;color:rgba(255,255,255,.65);line-height:1.75;max-width:540px}
+.hstats{display:flex;gap:22px;margin-top:22px;flex-wrap:wrap}
+.hs .v{font-family:"Playfair Display",serif;font-size:24px;font-weight:700;color:var(--do)}
+.hs .l{font-size:10px;color:rgba(255,255,255,.38);margin-top:1px}
+.st{font-family:"Playfair Display",serif;font-size:22px;font-weight:600;color:var(--az);margin-bottom:5px}
+.ss{font-size:13px;color:var(--ct);margin-bottom:20px;line-height:1.6}
+.sl{font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--ct);margin:22px 0 9px;display:flex;align-items:center;gap:8px}
+.sl::after{content:"";flex:1;height:1px;background:var(--cd)}
+.bc{font-size:11px;color:var(--ct);margin-bottom:20px}
+.bc span{color:var(--az);font-weight:500}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.card{background:#fff;border:1px solid var(--cd);border-radius:11px;padding:18px 22px;margin-bottom:10px}
+code{background:rgba(0,0,0,.07);padding:1px 5px;border-radius:3px;font-family:"DM Mono",monospace;font-size:11px}
+.code{background:#0a1220;border-radius:10px;padding:14px 18px;font-family:"DM Mono",monospace;font-size:11px;color:rgba(180,210,255,.85);line-height:1.8;margin:10px 0;overflow-x:auto;white-space:pre;border:1px solid rgba(74,144,232,.2)}
+.hl-kw{color:#93C5FD}.hl-cl{color:#6EE7B7}.hl-st{color:#FCD34D}.hl-cm{color:rgba(255,255,255,.3)}.hl-bad{color:#FF7070;font-weight:600}.hl-good{color:#70E070}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}
+th{background:var(--az);color:#fff;font-size:9px;font-weight:500;letter-spacing:1px;text-transform:uppercase;padding:8px 11px;text-align:left}
+td{padding:9px 11px;border-bottom:1px solid var(--cd);color:var(--ct);vertical-align:top;line-height:1.5}
+tr:last-child td{border-bottom:none}
+tr:nth-child(even) td{background:#fafbfd}
+td:first-child{color:var(--cp);font-weight:500}
+.stack-sec{background:#fff;border:1px solid var(--cd);border-radius:11px;overflow:hidden;margin-bottom:12px}
+.stack-h{padding:10px 16px;border-bottom:1px solid var(--cd);font-family:"DM Mono",monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#fff;display:flex;align-items:center;gap:8px}
+.si{display:flex;align-items:flex-start;gap:14px;padding:11px 16px;border-bottom:1px solid var(--cd)}
+.si:last-child{border-bottom:none}
+.si-name{font-weight:600;min-width:170px;color:var(--cp);font-size:12px;flex-shrink:0}
+.si-ver{font-family:"DM Mono",monospace;font-size:10px;color:var(--ct);min-width:90px;flex-shrink:0}
+.si-desc{flex:1;font-size:12px;color:var(--ct);line-height:1.5}
+.si-tag{font-family:"DM Mono",monospace;font-size:9px;padding:2px 7px;border-radius:3px;white-space:nowrap;flex-shrink:0}
+.tag-manter{background:var(--vdl);color:var(--vd)}.tag-critico{background:var(--redl);color:var(--red)}.tag-fase2{background:#EDE7F6;color:#6A1B9A}.tag-nao{background:#FFF3E0;color:#E65100}
+.adr{background:#fff;border:1px solid var(--cd);border-radius:10px;padding:13px 17px;margin-bottom:7px}
+.adh{display:flex;align-items:center;gap:9px;margin-bottom:4px;flex-wrap:wrap}
+.adid{font-family:"DM Mono",monospace;font-size:10px;font-weight:600;color:var(--do);background:var(--dop);border:1px solid rgba(201,168,76,.28);padding:2px 7px;border-radius:4px;white-space:nowrap}
+.adtitle{font-size:13px;font-weight:600;color:var(--az)}
+.adesc{font-size:12px;color:var(--ct);line-height:1.55}
+.advs{display:flex;gap:7px;margin-top:6px;flex-wrap:wrap}
+.adw{font-size:11px;padding:2px 8px;border-radius:5px;background:var(--vdl);border:1px solid var(--vdb);color:var(--vd);font-weight:500}
+.adl{font-size:11px;padding:2px 8px;border-radius:5px;background:var(--cb);border:1px solid var(--cd);color:var(--ct);text-decoration:line-through}
+.mw{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:7px;margin-bottom:5px}
+.fase-card{background:#fff;border:1px solid var(--cd);border-radius:11px;overflow:hidden;margin-bottom:9px;cursor:pointer;transition:box-shadow .15s}
+.fase-card:hover{box-shadow:0 4px 16px rgba(13,43,94,.09)}
+.fch{padding:13px 18px;display:flex;align-items:center;gap:11px;border-bottom:1px solid var(--cd)}
+.fcn{width:30px;height:30px;border-radius:50%;background:var(--az);color:var(--do);font-family:"Playfair Display",serif;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.fct{font-size:13px;font-weight:600;color:var(--az)}
+.fcs{font-size:11px;color:var(--ct)}
+.fcb{padding:10px 18px 13px;font-size:12px;color:var(--ct)}
+.tc{background:#fff;border:1px solid var(--cd);border-left:4px solid var(--do);border-radius:11px;padding:15px 19px;margin-bottom:10px}
+.tc h3{font-size:13px;font-weight:600;color:var(--az);margin-bottom:5px}
+.tc p{font-size:12px;color:var(--ct);line-height:1.65}
+.tag-user{font-size:10px;background:var(--cb);border:1px solid var(--cd);border-radius:99px;padding:2px 8px;color:var(--ct);display:inline-block;margin:2px}
+.okb{background:var(--vdl);border:1px solid var(--vdb);border-radius:8px;padding:9px 13px;font-size:12px;color:var(--vd);margin-bottom:9px;line-height:1.55}
+.rb{background:var(--redl);border:1px solid rgba(192,57,43,.22);border-radius:8px;padding:9px 13px;font-size:12px;color:var(--red);margin-bottom:9px;line-height:1.55}
+.status-ok{background:#edf7f0;border:1px solid #c3e6cb;color:var(--vd);font-size:10px;padding:2px 7px;border-radius:99px;font-weight:500}
+.status-wip{background:#FEF3CD;border:1px solid #D4A017;color:#7A4F00;font-size:10px;padding:2px 7px;border-radius:99px;font-weight:500}
+.status-pend{background:var(--cb);border:1px solid var(--cd);color:var(--ct);font-size:10px;padding:2px 7px;border-radius:99px;font-weight:500}
+@media(max-width:860px){#sb{width:200px}#main{margin-left:200px}.pg{padding:24px 20px}.g2,.g3,.g4{grid-template-columns:1fr}}
+</style></head><body>
+<nav id="sb">
+  <div class="sbl"><div class="lm">Epros</div><div class="ls">Portal Técnico</div></div>
+  <div class="sbs">Arquitetura</div>
+  <a class="nb active" onclick="show('p-arq',this)" href="#"><span class="nn">①</span>Nova Arquitetura</a>
+  <a class="nb" onclick="show('p-stack',this)" href="#"><span class="nn">②</span>Stack &amp; Versões</a>
+  <a class="nb" onclick="show('p-adrs',this)" href="#"><span class="nn">③</span>Decisões ADR</a>
+  <a class="nb" onclick="show('p-ddd',this)" href="#"><span class="nn">④</span>DDD &amp; Dados</a>
+  <a class="nb" onclick="show('p-api',this)" href="#"><span class="nn">⑤</span>API Reference</a>
+  <div class="sbs">Desenvolvimento</div>
+  <a class="nb" onclick="show('p-status',this)" href="#"><span class="nn">⑥</span>Status de Implementação</a>
+  <a class="nb" onclick="show('p-fases',this)" href="#"><span class="nn">⑦</span>As 9 Fases</a>
+  <a class="nb" onclick="show('p-agentes',this)" href="#"><span class="nn">⑧</span>Agentes IA no Cursor</a>
+  <a class="nb" onclick="show('p-padroes',this)" href="#"><span class="nn">⑨</span>Padrões de Código</a>
+  <div class="sbs">Qualidade</div>
+  <a class="nb" onclick="show('p-testes',this)" href="#"><span class="nn">⑩</span>Testes Obrigatórios</a>
+  <a class="nb" onclick="show('p-infra',this)" href="#"><span class="nn">⑪</span>Infra Local</a>
+</nav>
+<div id="main">
+<div class="pg active" id="p-arq">
+  <div class="hero">
+    <div class="hbadge">Portal Técnico · Dev Team · 2026</div>
+    <h1>Epros<br/><span>Nova Arquitetura</span></h1>
+    <p>Monólito Modular com Hexagonal por bounded context. Decisões fechadas com 15 ADRs. Stack 100% open source. Preparado para extração em microserviços sem reescrever nada.</p>
+    <div class="hstats">
+      <div class="hs"><div class="v">15</div><div class="l">ADRs fechadas</div></div>
+      <div class="hs"><div class="v">92+</div><div class="l">Arquivos .cs</div></div>
+      <div class="hs"><div class="v">12</div><div class="l">Schemas PostgreSQL</div></div>
+      <div class="hs"><div class="v">32</div><div class="l">Testes unitários</div></div>
+    </div>
+  </div>
+  <div class="st">Veredicto — Monólito Modular</div>
+  <div class="ss">A decisão foi tomada com critérios objetivos. Microserviços serão a fase 2 — extração cirúrgica dos schemas já isolados.</div>
+  <div class="okb"><strong>Monólito Modular venceu em 5 de 6 critérios vs Microserviços:</strong> transações ACID (PCI obrigatório), audit log centralizado (LGPD), custo de infra inicial (1 cluster vs N), debugging (stack trace local) e tamanho do time. A fronteira lógica de hoje (schemas PG por módulo) é a fronteira física do microserviço de amanhã.</div>
+  <div class="sl">6 camadas técnicas</div>
+  <table><thead><tr><th>#</th><th>Camada</th><th>Responsabilidade</th><th>Tecnologias</th></tr></thead><tbody>
+    <tr><td>1</td><td>Apresentação</td><td>Interfaces por surface</td><td>Nuxt 3 · Electron+Nuxt · React Native · Portais</td></tr>
+    <tr><td>2</td><td>API Gateway</td><td>Auth, entitlement, rate limit, audit</td><td>Keycloak 24 · TenantProvider · Swagger · RFC 7807</td></tr>
+    <tr><td>3</td><td>Application</td><td>CQRS — Commands, Queries, Handlers</td><td>MediatR 12 · FluentValidation · Behaviors</td></tr>
+    <tr><td>4</td><td>Domain</td><td>Entidades ricas, regras de negócio, eventos</td><td>EntidadeSaaSBase · Flunt · Domain Events · Value Objects</td></tr>
+    <tr><td>5</td><td>Infra / Data</td><td>Persistência, repositórios, mapeamentos</td><td>EF Core 8 · PostgreSQL 16 · QueryFilter · snake_case</td></tr>
+    <tr><td>6</td><td>Shared</td><td>Contratos, interfaces, primitivos</td><td>ITenantProvider · ICurrentUser · CommandResult · ISyncable</td></tr>
+  </tbody></table>
+  <div class="sl">Pipeline HTTP — 7 middlewares, ordem obrigatória</div>
+  <div class="card">
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <div style="display:flex;align-items:center;gap:9px;padding:7px 12px;border-radius:7px;background:#0D2B5E"><span style="font-family:'DM Mono',monospace;font-size:10px;color:#C9A84C;min-width:16px">1</span><strong style="color:#fff;font-size:12px">UseAuthentication / UseAuthorization</strong><span style="color:rgba(255,255,255,.5);font-size:11px;margin-left:auto;text-align:right">Auth JWT Bearer via Keycloak 24 · 401 se inválido</span></div>
+      <div style="display:flex;align-items:center;gap:9px;padding:7px 12px;border-radius:7px;background:#F4F6FA"><span style="font-family:'DM Mono',monospace;font-size:10px;color:#C9A84C;min-width:16px">2</span><strong style="color:#0A0F1E;font-size:12px">ExcecaoGlobalMiddleware</strong><span style="color:#5A6580;font-size:11px;margin-left:auto;text-align:right">ProblemDetails RFC 7807 · TraceId · sem stacktrace em prod</span></div>
+      <div style="display:flex;align-items:center;gap:9px;padding:7px 12px;border-radius:7px;background:#F4F6FA"><span style="font-family:'DM Mono',monospace;font-size:10px;color:#C9A84C;min-width:16px">3</span><strong style="color:#0A0F1E;font-size:12px">InquilinoSaaSMiddleware</strong><span style="color:#5A6580;font-size:11px;margin-left:auto;text-align:right">Resolve tenant via claim JWT · valida Catalog DB (Valkey 5min) · enriquece Serilog</span></div>
+      <div style="display:flex;align-items:center;gap:9px;padding:7px 12px;border-radius:7px;background:#F4F6FA"><span style="font-family:'DM Mono',monospace;font-size:10px;color:#C9A84C;min-width:16px">4</span><strong style="color:#0A0F1E;font-size:12px">ModuloTenantMiddleware</strong><span style="color:#5A6580;font-size:11px;margin-left:auto;text-align:right">Verifica macrodomínio ativo para o tenant · 403 Forbidden se inativo</span></div>
+      <div style="display:flex;align-items:center;gap:9px;padding:7px 12px;border-radius:7px;background:#F4F6FA"><span style="font-family:'DM Mono',monospace;font-size:10px;color:#C9A84C;min-width:16px">5</span><strong style="color:#0A0F1E;font-size:12px">DataMaskingMiddleware</strong><span style="color:#5A6580;font-size:11px;margin-left:auto;text-align:right">Mascara CPF/CNPJ/PAN antes de qualquer Serilog sink · PCI DSS Req. 3</span></div>
+      <div style="display:flex;align-items:center;gap:9px;padding:7px 12px;border-radius:7px;background:#F4F6FA"><span style="font-family:'DM Mono',monospace;font-size:10px;color:#C9A84C;min-width:16px">6</span><strong style="color:#0A0F1E;font-size:12px">AuditMiddleware</strong><span style="color:#5A6580;font-size:11px;margin-left:auto;text-align:right">audit_trail append-only · triggers PG bloqueiam UPDATE/DELETE · LGPD</span></div>
+      <div style="display:flex;align-items:center;gap:9px;padding:7px 12px;border-radius:7px;background:#edf7f0;border:1px solid #c3e6cb"><span style="font-family:'DM Mono',monospace;font-size:10px;color:#C9A84C;min-width:16px">7</span><strong style="color:#0A0F1E;font-size:12px">Controllers (Business)</strong><span style="color:#5A6580;font-size:11px;margin-left:auto;text-align:right">MediatR.Send(command) — zero lógica de negócio aqui</span></div>
+    </div>
+  </div>
+  <div class="sl">Estrutura de pastas por módulo</div>
+  <div class="code"><span class="hl-cm">// src/Modules/{Modulo}/{SubModulo}/</span>
+├── Domain/
+│   ├── Entities/        <span class="hl-cm">← agregados (herdam EntidadeSaaSBase + Flunt)</span>
+│   └── ValueObjects/    <span class="hl-cm">← objetos de valor imutáveis</span>
+├── Application/
+│   ├── Commands/        <span class="hl-cm">← records imutáveis : ICommand</span>
+│   ├── Queries/         <span class="hl-cm">← records : IQuery&lt;T&gt;</span>
+│   └── Handlers/        <span class="hl-cm">← ICommandHandler / IQueryHandler</span>
+└── Infrastructure/
+    ├── Data/
+    │   ├── Mappings/    <span class="hl-cm">← IEntityTypeConfiguration (snake_case, schema)</span>
+    │   └── Context.cs   <span class="hl-cm">← DbContext herdando ContextBase</span>
+    └── Repositories/    <span class="hl-cm">← interface + implementação</span></div>
+</div>
+<div class="pg" id="p-stack">
+  <div class="bc">Arquitetura <span>› Stack &amp; Versões</span></div>
+  <div class="st">Stack Técnica</div>
+  <div class="ss">100% open source — MIT ou Apache 2.0. Versões fixadas. Alterar qualquer componente exige ADR aprovada.</div>
+  <div class="stack-sec"><div class="stack-h" style="background:#0D2B5E">Runtime & Framework</div>
+    <div class="si"><span class="si-name">ASP.NET Core 8</span><span class="si-ver">8.0 LTS</span><div class="si-desc">Performance #1 TechEmpower. MIT. LTS até Nov 2026. Roda em Alpine Linux 80MB.</div><span class="si-tag tag-manter">MANTER</span></div>
+    <div class="si"><span class="si-name">MediatR</span><span class="si-ver">12.x</span><div class="si-desc">CQRS + Behaviors. IRequest<TResponse> com tipagem completa. Zero reflexão em runtime crítico.</div><span class="si-tag tag-manter">MANTER</span></div>
+    <div class="si"><span class="si-name">Flunt</span><span class="si-ver">2.x</span><div class="si-desc">Validação de domínio. Notifiable<Notification> acumula erros sem exceção — retorna lista completa.</div><span class="si-tag tag-manter">MANTER</span></div>
+    <div class="si"><span class="si-name">FluentValidation</span><span class="si-ver">11.x</span><div class="si-desc">Validação de Commands no pipeline MediatR. Retorna 422 com lista de erros antes do Handler.</div><span class="si-tag tag-manter">MANTER</span></div>
+    <div class="si"><span class="si-name">Quartz.NET</span><span class="si-ver">3.x</span><div class="si-desc">Jobs: Outbox processor, vencimento de títulos, migração de dados. Clustering com PostgreSQL.</div><span class="si-tag tag-manter">MANTER</span></div>
+  </div>
+  <div class="stack-sec"><div class="stack-h" style="background:#1565C0">Persistência & Cache</div>
+    <div class="si"><span class="si-name">PostgreSQL</span><span class="si-ver">16.x</span><div class="si-desc">12 schemas separados. pgvector, pgcrypto, pg_trgm, uuid-ossp. Open source MIT.</div><span class="si-tag tag-critico">CRÍTICO</span></div>
+    <div class="si"><span class="si-name">EF Core + Npgsql</span><span class="si-ver">8.0.x</span><div class="si-desc">QueryFilter automático. snake_case global. Compile models em produção. Split queries.</div><span class="si-tag tag-critico">CRÍTICO</span></div>
+    <div class="si"><span class="si-name">Valkey</span><span class="si-ver">7.x</span><div class="si-desc">Fork OSS do Redis (BSL 2024). Cache de sessions, locks distribuídos, Catalog DB.</div><span class="si-tag tag-manter">MANTER</span></div>
+    <div class="si"><span class="si-name">MinIO</span><span class="si-ver">RELEASE.2024</span><div class="si-desc">S3-compatible. XMLs NF-e, PDFs DANFE, GED, imagens de produto.</div><span class="si-tag tag-manter">MANTER</span></div>
+  </div>
+  <div class="stack-sec"><div class="stack-h" style="background:#B71C1C">Segurança</div>
+    <div class="si"><span class="si-name">Keycloak</span><span class="si-ver">24.0</span><div class="si-desc">OIDC + MFA + SSO. Claim tenantId no JWT. Rotação automática de chaves. On-premise.</div><span class="si-tag tag-critico">CRÍTICO</span></div>
+    <div class="si"><span class="si-name">HashiCorp Vault</span><span class="si-ver">1.16.x</span><div class="si-desc">Dynamic secrets. Audit log nativo. Connection strings nunca em appsettings de produção.</div><span class="si-tag tag-critico">CRÍTICO</span></div>
+    <div class="si"><span class="si-name">Hercules.NET NFe</span><span class="si-ver">2026.3.15.14</span><div class="si-desc">Em produção nos 20 clientes. NF-e, NFC-e, NFS-e. Homologada com todas as UFs.</div><span class="si-tag tag-nao">NÃO SUBSTITUIR</span></div>
+    <div class="si"><span class="si-name">Caddy</span><span class="si-ver">2.x</span><div class="si-desc">Reverse proxy. HTTPS automático (Let's Encrypt). HTTP/3. Configuração declarativa simples.</div><span class="si-tag tag-manter">MANTER</span></div>
+  </div>
+  <div class="stack-sec"><div class="stack-h" style="background:#2E7D52">Observabilidade</div>
+    <div class="si"><span class="si-name">Serilog</span><span class="si-ver">3.x</span><div class="si-desc">Logs estruturados JSON. Enrichers de tenantId. Sink para Loki. DataMasking de PII antes de logar.</div><span class="si-tag tag-manter">MANTER</span></div>
+    <div class="si"><span class="si-name">OpenTelemetry .NET</span><span class="si-ver">latest</span><div class="si-desc">Traces → Tempo. Métricas → Prometheus. Padrão W3C TraceContext para correlação.</div><span class="si-tag tag-manter">MANTER</span></div>
+    <div class="si"><span class="si-name">Grafana</span><span class="si-ver">10.x</span><div class="si-desc">Dashboards. Fonte de métricas (Prometheus), logs (Loki) e traces (Tempo).</div><span class="si-tag tag-manter">MANTER</span></div>
+    <div class="si"><span class="si-name">Prometheus</span><span class="si-ver">2.x</span><div class="si-desc">Scraping. SLOs e alertas. P95 leitura <200ms e escrita <500ms bloqueiam release.</div><span class="si-tag tag-manter">MANTER</span></div>
+    <div class="si"><span class="si-name">Loki</span><span class="si-ver">2.x</span><div class="si-desc">Log aggregation. Serilog sink. Correlação por tenantId e traceId.</div><span class="si-tag tag-manter">MANTER</span></div>
+    <div class="si"><span class="si-name">Tempo</span><span class="si-ver">2.x</span><div class="si-desc">Distributed tracing. OTLP gRPC+HTTP. Integrado com Grafana para drill-down.</div><span class="si-tag tag-manter">MANTER</span></div>
+  </div>
+  <div class="stack-sec"><div class="stack-h" style="background:#AD1457">Frontend & Mobile</div>
+    <div class="si"><span class="si-name">Nuxt 3</span><span class="si-ver">3.x</span><div class="si-desc">SSR. Web SaaS + Desktop (via Electron). Pinia para state. Um time, uma stack.</div><span class="si-tag tag-manter">MANTER</span></div>
+    <div class="si"><span class="si-name">React Native + Expo</span><span class="si-ver">0.74+</span><div class="si-desc">Mobile + PDV. iOS e Android. Aproveita devs JavaScript do time atual.</div><span class="si-tag tag-fase2">FASE 2</span></div>
+    <div class="si"><span class="si-name">Electron</span><span class="si-ver">latest</span><div class="si-desc">Shell do Epros.App Desktop. SQLite local + motor fiscal edge para offline-first.</div><span class="si-tag tag-fase2">FASE 2</span></div>
+  </div>
+  <div class="stack-sec"><div class="stack-h" style="background:#37474F">Testes & Infra</div>
+    <div class="si"><span class="si-name">Testcontainers</span><span class="si-ver">3.x (.NET)</span><div class="si-desc">PostgreSQL real nos testes de integração. 8 testes de segurança obrigatórios bloqueiam deploy.</div><span class="si-tag tag-manter">MANTER</span></div>
+    <div class="si"><span class="si-name">xUnit</span><span class="si-ver">latest</span><div class="si-desc">Framework de testes. 32 testes unitários no Bloco 5. Crescendo a cada bloco.</div><span class="si-tag tag-manter">MANTER</span></div>
+    <div class="si"><span class="si-name">OpenTofu</span><span class="si-ver">1.7+</span><div class="si-desc">IaC. Fork OSS do Terraform (BSL 2023). Provisionamento de infra cloud-agnostic.</div><span class="si-tag tag-manter">MANTER</span></div>
+    <div class="si"><span class="si-name">Docker Compose</span><span class="si-ver">v2</span><div class="si-desc">Fase 1. 9 serviços com healthchecks. K3s planejado para Fase 2.</div><span class="si-tag tag-manter">MANTER</span></div>
+    <div class="si"><span class="si-name">Trivy</span><span class="si-ver">latest</span><div class="si-desc">CVE scan no CI. SBOM CycloneDX. Container scan. Bloqueia deploy em vulnerabilidades críticas.</div><span class="si-tag tag-manter">MANTER</span></div>
+  </div>
+</div>
+<div class="pg" id="p-adrs">
+  <div class="bc">Arquitetura <span>› Decisões ADR</span></div>
+  <div class="st">15 Decisões Arquiteturais</div>
+  <div class="ss">Cada decisão tem escolha, alternativas descartadas e motivo. Nada existe só na cabeça de alguém. Reverter qualquer ADR exige nova ADR aprovada pelo Tech Lead.</div>
+  <div class="adr">
+    <div class="adh"><span class="adid">ADR-001</span><span class="adtitle">ORM: EF Core 8 vs Dapper</span></div>
+    <div class="adesc">QueryFilter multi-tenant automático por reflection — Dapper exige WHERE manual em toda query. Esquecer = vazamento de dados entre tenants.</div>
+    <div class="advs"><span class="adw">✓ EF Core 8</span><span class="adl">Dapper</span></div>
+  </div>
+  <div class="adr">
+    <div class="adh"><span class="adid">ADR-002</span><span class="adtitle">Identity: Keycloak 24 vs JWT hardcoded vs Auth0</span></div>
+    <div class="adesc">JWT hardcoded foi o bug crítico do legado. Auth0: $250+/mês a escala + lock-in. Keycloak: open source, OIDC, MFA, SSO, on-premise.</div>
+    <div class="advs"><span class="adw">✓ Keycloak 24</span><span class="adl">JWT hardcoded</span> <span class="adl">Auth0</span></div>
+  </div>
+  <div class="adr">
+    <div class="adh"><span class="adid">ADR-003</span><span class="adtitle">Cache: Valkey 7 vs Redis 7</span></div>
+    <div class="adesc">Redis mudou para BSL em 2024 — risco comercial para SaaS. Valkey é o fork OSS pela Linux Foundation com paridade total.</div>
+    <div class="advs"><span class="adw">✓ Valkey 7</span><span class="adl">Redis 7</span></div>
+  </div>
+  <div class="adr">
+    <div class="adh"><span class="adid">ADR-004</span><span class="adtitle">Secrets: HashiCorp Vault vs Azure Key Vault</span></div>
+    <div class="adesc">Cloud-agnostic. Dynamic secrets. On-premise. Zero custo. Azure Key Vault: lock-in e custo por operação.</div>
+    <div class="advs"><span class="adw">✓ HashiCorp Vault OSS</span><span class="adl">Azure Key Vault</span></div>
+  </div>
+  <div class="adr">
+    <div class="adh"><span class="adid">ADR-005</span><span class="adtitle">IaC: OpenTofu vs Terraform</span></div>
+    <div class="adesc">HashiCorp mudou Terraform para BSL em 2023 — mesmo risco do Redis. OpenTofu é o fork OSS com paridade total.</div>
+    <div class="advs"><span class="adw">✓ OpenTofu 1.7+</span><span class="adl">Terraform</span></div>
+  </div>
+  <div class="adr">
+    <div class="adh"><span class="adid">ADR-006</span><span class="adtitle">Banco: PostgreSQL 16 vs SQL Server</span></div>
+    <div class="adesc">Open source, zero licença. RLS nativo. pgvector, pgcrypto, pg_trgm. SQL Server: licença comercial crescente com escala.</div>
+    <div class="advs"><span class="adw">✓ PostgreSQL 16</span><span class="adl">SQL Server</span></div>
+  </div>
+  <div class="adr">
+    <div class="adh"><span class="adid">ADR-007</span><span class="adtitle">Frontend: Nuxt 3 vs Blazor WASM vs Next.js</span></div>
+    <div class="adesc">Blazor: stack diferente, time dividido, incompatível com Electron. Nuxt 3 reutiliza 100% no Desktop via Electron.</div>
+    <div class="advs"><span class="adw">✓ Nuxt 3</span><span class="adl">Blazor WASM</span> <span class="adl">Next.js</span></div>
+  </div>
+  <div class="adr">
+    <div class="adh"><span class="adid">ADR-008</span><span class="adtitle">Desktop: Electron + Nuxt 3 vs Tauri</span></div>
+    <div class="adesc">Reutiliza 100% do código Nuxt sem reescrita. Tauri: revisitar Bloco 9 quando o time tiver expertise Rust.</div>
+    <div class="advs"><span class="adw">✓ Electron + Nuxt 3</span><span class="adl">Tauri (Rust)</span></div>
+  </div>
+  <div class="adr">
+    <div class="adh"><span class="adid">ADR-009</span><span class="adtitle">Mobile/PDV: React Native vs Flutter</span></div>
+    <div class="adesc">Flutter requer Dart — stack separada. React Native aproveita os devs JavaScript já no time.</div>
+    <div class="advs"><span class="adw">✓ React Native + Expo</span><span class="adl">Flutter</span></div>
+  </div>
+  <div class="adr">
+    <div class="adh"><span class="adid">ADR-010</span><span class="adtitle">IDs: Guid vs long sequencial</span></div>
+    <div class="adesc">Offline-first: geração local sem banco, sem colisão em merge. Long expõe volume e não funciona offline.</div>
+    <div class="advs"><span class="adw">✓ Guid</span><span class="adl">long sequencial</span></div>
+  </div>
+  <div class="adr">
+    <div class="adh"><span class="adid">ADR-011</span><span class="adtitle">Sync offline: SyncId+SyncVersion vs timestamp</span></div>
+    <div class="adesc">Detecção de conflito robusta. Timestamp tem clock skew entre dispositivos — gera conflitos fantasma.</div>
+    <div class="advs"><span class="adw">✓ SyncId + SyncVersion</span><span class="adl">timestamp puro</span></div>
+  </div>
+  <div class="adr">
+    <div class="adh"><span class="adid">ADR-012</span><span class="adtitle">Multi-tenancy: QueryFilter ContextBase vs RLS puro</span></div>
+    <div class="adesc">Flexibilidade de troca de estratégia sem mudar queries. RLS como segunda barreira adicional.</div>
+    <div class="advs"><span class="adw">✓ QueryFilter via ContextBase</span><span class="adl">RLS puro</span></div>
+  </div>
+  <div class="adr">
+    <div class="adh"><span class="adid">ADR-013</span><span class="adtitle">Proxy: Caddy 2 vs Nginx</span></div>
+    <div class="adesc">HTTPS automático, HTTP/3, configuração 6x mais simples. Nginx: renovação de certificados manual.</div>
+    <div class="advs"><span class="adw">✓ Caddy 2</span><span class="adl">Nginx</span></div>
+  </div>
+  <div class="adr">
+    <div class="adh"><span class="adid">ADR-014</span><span class="adtitle">Lib NF-e: Hercules.NET vs alternativas</span></div>
+    <div class="adesc">Em produção nos 20 clientes. Homologada com todas as UFs. Substituição exige ADR + 90 dias de testes mínimos.</div>
+    <div class="advs"><span class="adw">✓ Hercules.NET.NFe.NFCe</span><span class="adl">nfce-lib</span> <span class="adl">DFe.NET</span></div>
+  </div>
+  <div class="adr">
+    <div class="adh"><span class="adid">ADR-015</span><span class="adtitle">Jobs: Quartz.NET vs Hangfire</span></div>
+    <div class="adesc">Clustering nativo com PostgreSQL. Hangfire requer banco separado ou SQL Server.</div>
+    <div class="advs"><span class="adw">✓ Quartz.NET 3.x</span><span class="adl">Hangfire</span></div>
+  </div>
+</div>
+<div class="pg" id="p-ddd">
+  <div class="bc">Arquitetura <span>› DDD &amp; Dados</span></div>
+  <div class="st">DDD &amp; Modelo de Dados</div>
+  <div class="ss">Bounded contexts com EntidadeSaaSBase, Value Objects e Domain Events. Outbox Pattern para toda comunicação entre módulos. Sem DbContext cruzado.</div>
+  <div class="sl">EntidadeSaaSBase — herdada por toda entidade</div>
+  <div class="code"><span class="hl-kw">public abstract class</span> <span class="hl-cl">EntidadeSaaSBase</span> : <span class="hl-cl">Notifiable</span>&lt;<span class="hl-cl">Notification</span>&gt;, <span class="hl-cl">ISyncable</span>
+{
+    <span class="hl-kw">public</span> Guid Id { get; private set; }            <span class="hl-cm">// PK — gerado localmente, offline-safe. Nunca long.</span>
+    <span class="hl-kw">public</span> Guid SyncId { get; private set; }        <span class="hl-cm">// chave estável para sync — nunca muda</span>
+    <span class="hl-kw">public</span> string TenantId { get; private set; }    <span class="hl-cm">// QueryFilter automático por reflection</span>
+    <span class="hl-kw">public</span> int SyncVersion { get; private set; }    <span class="hl-cm">// detecta conflitos offline</span>
+    <span class="hl-kw">public</span> DateTime CriadoEm { get; private set; }  <span class="hl-cm">// DateTime.UtcNow — nunca .Now</span>
+    <span class="hl-kw">public</span> DateTime? AlteradoEm { get; private set; }
+    <span class="hl-kw">public</span> DateTime? DeletadoEm { get; private set; } <span class="hl-cm">// soft delete — nunca context.Remove()</span>
+    <span class="hl-kw">public</span> string? CriadoPor { get; private set; }    <span class="hl-cm">// userId Keycloak</span>
+
+    <span class="hl-kw">public void</span> MarcarAlterado(string alteradoPor) { AlteradoEm = DateTime.UtcNow; SyncVersion++; }
+    <span class="hl-kw">public void</span> Deletar(string deletadoPor) { DeletadoEm = DateTime.UtcNow; }
+    <span class="hl-kw">public bool</span> EstaAtivo() =&gt; DeletadoEm == null;
+    <span class="hl-kw">public bool</span> IsValid =&gt; !Notifications.Any();
+}
+
+<span class="hl-cm">// ContextBase aplica por reflection para TODAS as entidades automaticamente:</span>
+<span class="hl-cm">// WHERE tenant_id = {TenantProvider.GetTenantId()} AND deletado_em IS NULL</span></div>
+  <div class="sl">Domain Events principais — Outbox Pattern</div>
+  <table><thead><tr><th>Evento</th><th>Produtor</th><th>Consumidores</th><th>Efeito</th></tr></thead><tbody>
+    <tr><td>VendaFaturada</td><td>VENDAS</td><td>FINANCEIRO · FISCAL</td><td>Cria ContaReceber + autoriza NF-e/NFC-e</td></tr>
+    <tr><td>VendaCancelada</td><td>VENDAS</td><td>FINANCEIRO · FISCAL · ESTOQUE</td><td>Estorna CR + cancela DFe + devolve estoque</td></tr>
+    <tr><td>CompraLancada</td><td>ESTOQUE</td><td>FINANCEIRO · FISCAL</td><td>Cria ContaPagar + NF-e entrada</td></tr>
+    <tr><td>FolhaProcessada</td><td>HCM</td><td>FINANCEIRO</td><td>Provisão salarial no GL</td></tr>
+    <tr><td>ColaboradorDesligado</td><td>HCM</td><td>GRC · KEYCLOAK</td><td>Revoga todos os acessos imediatamente</td></tr>
+    <tr><td>CaixaFechado</td><td>VENDAS/PDV</td><td>FINANCEIRO</td><td>Lança resumo caixa no fluxo</td></tr>
+    <tr><td>ViolacaoSoDDetectada</td><td>GRC</td><td>GRC · KEYCLOAK</td><td>Bloqueia acesso + abre incidente</td></tr>
+  </tbody></table>
+  <div class="sl">12 Schemas PostgreSQL por macrodomínio</div>
+  <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px">
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:8px;padding:8px 13px;font-family:'DM Mono',monospace;font-size:11px"><strong style="color:#C9A84C">plataforma.*</strong><br/><span style="font-size:10px;color:var(--ct)">GestaoClientes, DFe, Auditoria</span></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:8px;padding:8px 13px;font-family:'DM Mono',monospace;font-size:11px"><strong style="color:#C9A84C">financas.*</strong><br/><span style="font-size:10px;color:var(--ct)">CP, CR, GL, Ativos</span></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:8px;padding:8px 13px;font-family:'DM Mono',monospace;font-size:11px"><strong style="color:#C9A84C">vendas.*</strong><br/><span style="font-size:10px;color:var(--ct)">Venda, PDV, CRM</span></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:8px;padding:8px 13px;font-family:'DM Mono',monospace;font-size:11px"><strong style="color:#C9A84C">estoque.*</strong><br/><span style="font-size:10px;color:var(--ct)">Produto, Compra, WMS</span></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:8px;padding:8px 13px;font-family:'DM Mono',monospace;font-size:11px"><strong style="color:#C9A84C">producao.*</strong><br/><span style="font-size:10px;color:var(--ct)">OP, BOM, MRP</span></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:8px;padding:8px 13px;font-family:'DM Mono',monospace;font-size:11px"><strong style="color:#C9A84C">rh.*</strong><br/><span style="font-size:10px;color:var(--ct)">Colaborador, Folha</span></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:8px;padding:8px 13px;font-family:'DM Mono',monospace;font-size:11px"><strong style="color:#C9A84C">qualidade.*</strong><br/><span style="font-size:10px;color:var(--ct)">Inspeção, NCR</span></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:8px;padding:8px 13px;font-family:'DM Mono',monospace;font-size:11px"><strong style="color:#C9A84C">manutencao.*</strong><br/><span style="font-size:10px;color:var(--ct)">OS, Equipamentos</span></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:8px;padding:8px 13px;font-family:'DM Mono',monospace;font-size:11px"><strong style="color:#C9A84C">projetos.*</strong><br/><span style="font-size:10px;color:var(--ct)">PPM, Gantt</span></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:8px;padding:8px 13px;font-family:'DM Mono',monospace;font-size:11px"><strong style="color:#C9A84C">grc.*</strong><br/><span style="font-size:10px;color:var(--ct)">Risco, SoD</span></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:8px;padding:8px 13px;font-family:'DM Mono',monospace;font-size:11px"><strong style="color:#C9A84C">esg.*</strong><br/><span style="font-size:10px;color:var(--ct)">Carbono, CSRD</span></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:8px;padding:8px 13px;font-family:'DM Mono',monospace;font-size:11px"><strong style="color:#C9A84C">concessionarias.*</strong><br/><span style="font-size:10px;color:var(--ct)">DMS, F&I</span></div>
+  </div>
+</div>
+<div class="pg" id="p-api">
+  <div class="bc">Arquitetura <span>› API Reference</span></div>
+  <div class="st">API REST v1</div>
+  <div class="ss">Base URL: https://api.epros.com.br/api/v1 · Formato: JSON · Auth: JWT Bearer (Keycloak 24) · ProblemDetails RFC 7807</div>
+  <div class="sl">Autenticação — Keycloak 24 OIDC</div>
+  <div class="code"><span class="hl-cm">// 1. Obter token — produção: Authorization Code Flow + PKCE</span>
+POST http://auth.epros.com.br/realms/epros-tenant/protocol/openid-connect/token
+grant_type=password&amp;client_id=epros-api&amp;username=user@empresa.com&amp;password=***
+
+<span class="hl-cm">// 2. Claims do JWT — InquilinoSaaSMiddleware extrai tenantId automaticamente</span>
+{
+  <span class="hl-st">"sub"</span>: <span class="hl-st">"a3f8e2d1-..."</span>,         <span class="hl-cm">// userId</span>
+  <span class="hl-st">"tenantId"</span>: <span class="hl-st">"tenant-abc123"</span>,  <span class="hl-cm">// isolamento multi-tenant</span>
+  <span class="hl-st">"realm_access"</span>: { <span class="hl-st">"roles"</span>: [<span class="hl-st">"financeiro.contas_pagar.write"</span>] },
+  <span class="hl-st">"exp"</span>: 1716900000               <span class="hl-cm">// 15min — renovar via refresh_token rotativo</span>
+}</div>
+  <div class="sl">Padrão de rotas</div>
+  <table><thead><tr><th>Verbo</th><th>Rota</th><th>Ação</th><th>Retorno</th></tr></thead><tbody>
+    <tr><td>GET</td><td>/modulo/recurso</td><td>Listar paginado (filtros via query string)</td><td>200 + envelope paginado</td></tr>
+    <tr><td>GET</td><td>/modulo/recurso/:id</td><td>Obter por Guid</td><td>200 | 404</td></tr>
+    <tr><td>POST</td><td>/modulo/recurso</td><td>Criar</td><td>201 + recurso criado</td></tr>
+    <tr><td>PUT</td><td>/modulo/recurso/:id</td><td>Atualizar completo</td><td>200 + recurso atualizado</td></tr>
+    <tr><td>DELETE</td><td>/modulo/recurso/:id</td><td>Soft delete (seta deletado_em)</td><td>200</td></tr>
+    <tr><td>POST</td><td>/modulo/recurso/:id/acao</td><td>Verbo de negócio: /baixar, /cancelar, /emitir</td><td>200 + CommandResult</td></tr>
+    <tr><td>GET</td><td>/modulo/sync/delta</td><td>Delta sync offline (?since=ISO8601)</td><td>200 + lista de mudanças</td></tr>
+  </tbody></table>
+  <div class="sl">Rate limits por plano</div>
+  <div class="g4">
+    <div class="card" style="text-align:center;padding:14px"><div style="font-size:20px;font-weight:700;color:var(--az);font-family:'Playfair Display',serif">60</div><div style="font-size:10px;color:var(--ct)">req/min · Micro</div></div>
+    <div class="card" style="text-align:center;padding:14px"><div style="font-size:20px;font-weight:700;color:var(--az);font-family:'Playfair Display',serif">300</div><div style="font-size:10px;color:var(--ct)">req/min · Essencial</div></div>
+    <div class="card" style="text-align:center;padding:14px"><div style="font-size:20px;font-weight:700;color:var(--az);font-family:'Playfair Display',serif">1.000</div><div style="font-size:10px;color:var(--ct)">req/min · Avançado</div></div>
+    <div class="card" style="text-align:center;padding:14px"><div style="font-size:20px;font-weight:700;color:var(--az);font-family:'Playfair Display',serif">5.000</div><div style="font-size:10px;color:var(--ct)">req/min · Enterprise</div></div>
+  </div>
+</div>
+<div class="pg" id="p-status">
+  <div class="bc">Desenvolvimento <span>› Status de Implementação</span></div>
+  <div class="st">Status — Bloco 5 Concluído</div>
+  <div class="ss">92+ arquivos .cs · 32 testes unitários · 5 blocos completos · 20 clientes em produção no legado.</div>
+  <div class="sl">Módulos implementados</div>
+  <table><thead><tr><th>Módulo</th><th>Schema PG</th><th>Entidades</th><th>Testes</th><th>Status</th></tr></thead><tbody>
+    <tr><td>Shared/Base</td><td><code>—</code></td><td>EntidadeSaaSBase, OutboxMessage, CommandResult, ISyncable</td><td>—</td><td><span class="status-ok">✓ Completo</span></td></tr>
+    <tr><td>GestaoClientes</td><td><code>plataforma.*</code></td><td>Plano, ModuloPlano, Cliente, Fatura, FaturaComposicao</td><td>5</td><td><span class="status-ok">✓ Completo</span></td></tr>
+    <tr><td>Financeiro / CP</td><td><code>financas.*</code></td><td>ContaPagar, ContaPagarBaixa</td><td>8</td><td><span class="status-ok">✓ Completo</span></td></tr>
+    <tr><td>Financeiro / CR</td><td><code>financas.*</code></td><td>ContaReceber, ContaReceberBaixa</td><td>—</td><td><span class="status-ok">✓ Completo</span></td></tr>
+    <tr><td>Estoque / Produtos</td><td><code>estoque.*</code></td><td>Produto, EstoqueProduto (CMM, EAN, reserva)</td><td>—</td><td><span class="status-ok">✓ Completo</span></td></tr>
+    <tr><td>Fiscal / DFe</td><td><code>plataforma.*</code></td><td>DocumentoFiscal, EventoDocumentoFiscal</td><td>—</td><td><span class="status-wip">◎ Estrutura</span></td></tr>
+    <tr><td>Vendas / Pedidos</td><td><code>vendas.*</code></td><td>Venda, VendaItem (ICMS/PIS/COFINS), VendaPagamento, VendaDevolucao</td><td>—</td><td><span class="status-ok">✓ Bloco 5</span></td></tr>
+    <tr><td>Vendas / PDV</td><td><code>vendas.*</code></td><td>Caixa, CaixaMovimento</td><td>19</td><td><span class="status-ok">✓ Bloco 5</span></td></tr>
+    <tr><td>Estoque / Compras</td><td><code>estoque.*</code></td><td>Compra, CompraItem</td><td>—</td><td><span class="status-pend">→ Bloco 6</span></td></tr>
+  </tbody></table></div>
+<div class="pg" id="p-fases">
+  <div class="bc">Desenvolvimento <span>› As 9 Fases</span></div>
+  <div class="st">Ciclo de Desenvolvimento</div>
+  <div class="ss">9 fases com DoR, DoD e gates de qualidade. Um agente IA por fase. Nenhuma fase avança sem gate aprovado.</div>
+  <div class="fase-card">
+    <div class="fch">
+      <div class="fcn">01</div>
+      <div><div class="fct">Estratégia</div><div class="fcs">Strategy Agent</div></div>
+      <div style="margin-left:auto;font-size:11px;color:var(--ct);text-align:right"><span class="tag-user">PO</span><span class="tag-user">Tech Lead</span><span class="tag-user">Liderança</span></div>
+    </div>
+    <div class="fcb">
+      <div style="margin-bottom:6px"><strong>Entregáveis:</strong> Business Case, OKRs, roadmap</div>
+      <div><strong>Gate:</strong> <span style="color:var(--vd)">Go/No-go com OKR impactado</span></div>
+    </div>
+  </div>
+  <div class="fase-card">
+    <div class="fch">
+      <div class="fcn">02</div>
+      <div><div class="fct">Discovery</div><div class="fcs">Discovery Agent</div></div>
+      <div style="margin-left:auto;font-size:11px;color:var(--ct);text-align:right"><span class="tag-user">PO</span><span class="tag-user">BA</span><span class="tag-user">UX</span></div>
+    </div>
+    <div class="fcb">
+      <div style="margin-bottom:6px"><strong>Entregáveis:</strong> Personas, JTBD, Problem Statement</div>
+      <div><strong>Gate:</strong> <span style="color:var(--vd)">≥5 entrevistas + Problem Statement aprovado</span></div>
+    </div>
+  </div>
+  <div class="fase-card">
+    <div class="fch">
+      <div class="fcn">03</div>
+      <div><div class="fct">Requisitos</div><div class="fcs">Requirements Agent</div></div>
+      <div style="margin-left:auto;font-size:11px;color:var(--ct);text-align:right"><span class="tag-user">PO</span><span class="tag-user">BA</span><span class="tag-user">Tech Lead</span></div>
+    </div>
+    <div class="fcb">
+      <div style="margin-bottom:6px"><strong>Entregáveis:</strong> PRD, User Stories com AC em Given/When/Then</div>
+      <div><strong>Gate:</strong> <span style="color:var(--vd)">100% US com AC + stakeholder aprovou</span></div>
+    </div>
+  </div>
+  <div class="fase-card">
+    <div class="fch">
+      <div class="fcn">04</div>
+      <div><div class="fct">Design UX</div><div class="fcs">UX Agent</div></div>
+      <div style="margin-left:auto;font-size:11px;color:var(--ct);text-align:right"><span class="tag-user">UX Designer</span><span class="tag-user">Dev Frontend</span></div>
+    </div>
+    <div class="fcb">
+      <div style="margin-bottom:6px"><strong>Entregáveis:</strong> Protótipo Figma, spec de componentes</div>
+      <div><strong>Gate:</strong> <span style="color:var(--vd)">Teste com ≥3 usuários + PO aprovou</span></div>
+    </div>
+  </div>
+  <div class="fase-card">
+    <div class="fch">
+      <div class="fcn">05</div>
+      <div><div class="fct">Refinamento</div><div class="fcs">Planning Agent</div></div>
+      <div style="margin-left:auto;font-size:11px;color:var(--ct);text-align:right"><span class="tag-user">Tech Lead</span><span class="tag-user">Dev Sênior</span><span class="tag-user">PO</span></div>
+    </div>
+    <div class="fcb">
+      <div style="margin-bottom:6px"><strong>Entregáveis:</strong> Backlog estimado, mapa de dependências</div>
+      <div><strong>Gate:</strong> <span style="color:var(--vd)">2 sprints de buffer + DoR em 100%</span></div>
+    </div>
+  </div>
+  <div class="fase-card">
+    <div class="fch">
+      <div class="fcn">06</div>
+      <div><div class="fct">Arquitetura</div><div class="fcs">Architect Agent</div></div>
+      <div style="margin-left:auto;font-size:11px;color:var(--ct);text-align:right"><span class="tag-user">Dev Sênior</span><span class="tag-user">Tech Lead</span></div>
+    </div>
+    <div class="fcb">
+      <div style="margin-bottom:6px"><strong>Entregáveis:</strong> ADRs, diagrama de componentes, threat model</div>
+      <div><strong>Gate:</strong> <span style="color:var(--vd)">Revisão aprovada pelo sênior antes do 1º commit</span></div>
+    </div>
+  </div>
+  <div class="fase-card">
+    <div class="fch">
+      <div class="fcn">07</div>
+      <div><div class="fct">Desenvolvimento</div><div class="fcs">Dev Agent (Cursor)</div></div>
+      <div style="margin-left:auto;font-size:11px;color:var(--ct);text-align:right"><span class="tag-user">Dev Backend</span><span class="tag-user">Dev Frontend</span></div>
+    </div>
+    <div class="fcb">
+      <div style="margin-bottom:6px"><strong>Entregáveis:</strong> Código revisado, cobertura ≥70%, OpenAPI</div>
+      <div><strong>Gate:</strong> <span style="color:var(--vd)">PR aprovado: Code Review Agent + Tech Lead + CI verde</span></div>
+    </div>
+  </div>
+  <div class="fase-card">
+    <div class="fch">
+      <div class="fcn">08</div>
+      <div><div class="fct">QA</div><div class="fcs">QA Agent</div></div>
+      <div style="margin-left:auto;font-size:11px;color:var(--ct);text-align:right"><span class="tag-user">QA</span><span class="tag-user">Dev SDET</span></div>
+    </div>
+    <div class="fcb">
+      <div style="margin-bottom:6px"><strong>Entregáveis:</strong> Plano de testes, suite automatizada</div>
+      <div><strong>Gate:</strong> <span style="color:var(--vd)">Zero P0/P1 + regressão ≥80%</span></div>
+    </div>
+  </div>
+  <div class="fase-card">
+    <div class="fch">
+      <div class="fcn">09</div>
+      <div><div class="fct">Release</div><div class="fcs">Ops Agent</div></div>
+      <div style="margin-left:auto;font-size:11px;color:var(--ct);text-align:right"><span class="tag-user">Dev Sênior</span><span class="tag-user">Tech Lead</span></div>
+    </div>
+    <div class="fcb">
+      <div style="margin-bottom:6px"><strong>Entregáveis:</strong> Release notes, runbook, SLO dashboard</div>
+      <div><strong>Gate:</strong> <span style="color:var(--vd)">Canary 10% estável 30min + MTTR <30min</span></div>
+    </div>
+  </div>
+</div>
+<div class="pg" id="p-agentes">
+  <div class="bc">Desenvolvimento <span>› Agentes IA no Cursor</span></div>
+  <div class="st">13 Agentes de IA</div>
+  <div class="ss">9 agentes por fase + 4 transversais. Configurados como perfis de Chat no Cursor. Prompts completos em <code>epros-agentes-prompts.md</code>.</div>
+  <div class="sl">Agentes transversais — ativos em todas as fases</div>
+  <div class="tc">
+    <h3>⬡ Context Agent <span style="font-size:10px;font-weight:400;color:var(--ct);margin-left:6px">[GLOBAL] — .cursorrules</span></h3>
+    <p style="margin-top:5px">Injeta domain knowledge completo do Epros em todos os agentes — EntidadeSaaSBase, regras fiscais BR, multi-tenancy, 15 ADRs, regras SEMPRE/NUNCA — via .cursorrules na raiz do repositório. Sempre ativo, nunca invocado manualmente.<br/><strong>Quem usa:</strong> Todos (indiretamente)</p>
+  </div>
+  <div class="tc">
+    <h3>🔒 Security Agent <span style="font-size:10px;font-weight:400;color:var(--ct);margin-left:6px">[TRANSVERSAL]</span></h3>
+    <p style="margin-top:5px">Revisa qualquer código com lens OWASP Top 10, LGPD, PCI DSS. Retorna vulnerabilidades categorizadas: 🔴 crítico / 🟡 alto / 🟢 médio, com localização e correção.<br/><strong>Quem usa:</strong> Dev Backend · Dev Sênior · Tech Lead</p>
+  </div>
+  <div class="tc">
+    <h3>📝 Docs Agent <span style="font-size:10px;font-weight:400;color:var(--ct);margin-left:6px">[TRANSVERSAL]</span></h3>
+    <p style="margin-top:5px">Gera e atualiza documentação viva — changelog, ADRs, comentários XML doc, README — a partir de decisões técnicas ou diffs de PR.<br/><strong>Quem usa:</strong> Todos — após cada entrega significativa</p>
+  </div>
+  <div class="tc">
+    <h3>👁️ Code Review Agent <span style="font-size:10px;font-weight:400;color:var(--ct);margin-left:6px">[TRANSVERSAL]</span></h3>
+    <p style="margin-top:5px">Revisão estruturada de PR — padrões Epros (EntidadeSaaSBase, CQRS, multi-tenancy, snake_case). Retorna: 🔴 bloqueante / 🟡 aviso / 🔵 sugestão. Obrigatório antes de qualquer merge.<br/><strong>Quem usa:</strong> Dev Backend · Dev Frontend · Tech Lead</p>
+  </div>
+  <div class="sl">Agentes por fase — 9 especializados</div>
+  <div class="okb">Context Agent via .cursorrules injeta o domain knowledge completo do Epros em todos os agentes automaticamente. Configurar na raiz do repositório <code>PlataformaSaaS/.cursorrules</code>.</div>
+  <div style="background:#fff;border:1px solid var(--cd);border-radius:10px;padding:12px 16px;margin-bottom:7px;display:flex;gap:12px;align-items:flex-start">
+    <div style="width:28px;height:28px;border-radius:50%;background:var(--az);color:var(--do);font-family:'Playfair Display',serif;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">01</div>
+    <div style="flex:1">
+      <div style="font-size:12px;font-weight:600;color:var(--cp);margin-bottom:2px">Strategy Agent</div>
+      <div style="font-size:11px;color:var(--ct)">Fase 01 — Estratégia · <span class="tag-user">PO</span><span class="tag-user">Tech Lead</span><span class="tag-user">Liderança</span></div>
+    </div>
+  </div>
+  <div style="background:#fff;border:1px solid var(--cd);border-radius:10px;padding:12px 16px;margin-bottom:7px;display:flex;gap:12px;align-items:flex-start">
+    <div style="width:28px;height:28px;border-radius:50%;background:var(--az);color:var(--do);font-family:'Playfair Display',serif;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">02</div>
+    <div style="flex:1">
+      <div style="font-size:12px;font-weight:600;color:var(--cp);margin-bottom:2px">Discovery Agent</div>
+      <div style="font-size:11px;color:var(--ct)">Fase 02 — Discovery · <span class="tag-user">PO</span><span class="tag-user">BA</span><span class="tag-user">UX</span></div>
+    </div>
+  </div>
+  <div style="background:#fff;border:1px solid var(--cd);border-radius:10px;padding:12px 16px;margin-bottom:7px;display:flex;gap:12px;align-items:flex-start">
+    <div style="width:28px;height:28px;border-radius:50%;background:var(--az);color:var(--do);font-family:'Playfair Display',serif;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">03</div>
+    <div style="flex:1">
+      <div style="font-size:12px;font-weight:600;color:var(--cp);margin-bottom:2px">Requirements Agent</div>
+      <div style="font-size:11px;color:var(--ct)">Fase 03 — Requisitos · <span class="tag-user">PO</span><span class="tag-user">BA</span><span class="tag-user">Tech Lead</span></div>
+    </div>
+  </div>
+  <div style="background:#fff;border:1px solid var(--cd);border-radius:10px;padding:12px 16px;margin-bottom:7px;display:flex;gap:12px;align-items:flex-start">
+    <div style="width:28px;height:28px;border-radius:50%;background:var(--az);color:var(--do);font-family:'Playfair Display',serif;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">04</div>
+    <div style="flex:1">
+      <div style="font-size:12px;font-weight:600;color:var(--cp);margin-bottom:2px">UX Agent</div>
+      <div style="font-size:11px;color:var(--ct)">Fase 04 — Design UX · <span class="tag-user">UX Designer</span><span class="tag-user">Dev Frontend</span></div>
+    </div>
+  </div>
+  <div style="background:#fff;border:1px solid var(--cd);border-radius:10px;padding:12px 16px;margin-bottom:7px;display:flex;gap:12px;align-items:flex-start">
+    <div style="width:28px;height:28px;border-radius:50%;background:var(--az);color:var(--do);font-family:'Playfair Display',serif;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">05</div>
+    <div style="flex:1">
+      <div style="font-size:12px;font-weight:600;color:var(--cp);margin-bottom:2px">Planning Agent</div>
+      <div style="font-size:11px;color:var(--ct)">Fase 05 — Refinamento · <span class="tag-user">Tech Lead</span><span class="tag-user">Dev Sênior</span><span class="tag-user">PO</span></div>
+    </div>
+  </div>
+  <div style="background:#fff;border:1px solid var(--cd);border-radius:10px;padding:12px 16px;margin-bottom:7px;display:flex;gap:12px;align-items:flex-start">
+    <div style="width:28px;height:28px;border-radius:50%;background:var(--az);color:var(--do);font-family:'Playfair Display',serif;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">06</div>
+    <div style="flex:1">
+      <div style="font-size:12px;font-weight:600;color:var(--cp);margin-bottom:2px">Architect Agent</div>
+      <div style="font-size:11px;color:var(--ct)">Fase 06 — Arquitetura · <span class="tag-user">Dev Sênior</span><span class="tag-user">Tech Lead</span></div>
+    </div>
+  </div>
+  <div style="background:#fff;border:1px solid var(--cd);border-radius:10px;padding:12px 16px;margin-bottom:7px;display:flex;gap:12px;align-items:flex-start">
+    <div style="width:28px;height:28px;border-radius:50%;background:var(--az);color:var(--do);font-family:'Playfair Display',serif;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">07</div>
+    <div style="flex:1">
+      <div style="font-size:12px;font-weight:600;color:var(--cp);margin-bottom:2px">Dev Agent (Cursor)</div>
+      <div style="font-size:11px;color:var(--ct)">Fase 07 — Desenvolvimento · <span class="tag-user">Dev Backend</span><span class="tag-user">Dev Frontend</span></div>
+    </div>
+  </div>
+  <div style="background:#fff;border:1px solid var(--cd);border-radius:10px;padding:12px 16px;margin-bottom:7px;display:flex;gap:12px;align-items:flex-start">
+    <div style="width:28px;height:28px;border-radius:50%;background:var(--az);color:var(--do);font-family:'Playfair Display',serif;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">08</div>
+    <div style="flex:1">
+      <div style="font-size:12px;font-weight:600;color:var(--cp);margin-bottom:2px">QA Agent</div>
+      <div style="font-size:11px;color:var(--ct)">Fase 08 — QA · <span class="tag-user">QA</span><span class="tag-user">Dev SDET</span></div>
+    </div>
+  </div>
+  <div style="background:#fff;border:1px solid var(--cd);border-radius:10px;padding:12px 16px;margin-bottom:7px;display:flex;gap:12px;align-items:flex-start">
+    <div style="width:28px;height:28px;border-radius:50%;background:var(--az);color:var(--do);font-family:'Playfair Display',serif;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">09</div>
+    <div style="flex:1">
+      <div style="font-size:12px;font-weight:600;color:var(--cp);margin-bottom:2px">Ops Agent</div>
+      <div style="font-size:11px;color:var(--ct)">Fase 09 — Release · <span class="tag-user">Dev Sênior</span><span class="tag-user">Tech Lead</span></div>
+    </div>
+  </div>
+</div>
+<div class="pg" id="p-padroes">
+  <div class="bc">Desenvolvimento <span>› Padrões de Código</span></div>
+  <div class="st">Regras Invioláveis</div>
+  <div class="ss">Enforced pelo Context Agent no .cursorrules e pelo Code Review Agent em todo PR. Violação = PR bloqueado.</div>
+  <div class="g2">
+    <div class="card" style="background:#edf7f0;border-color:#c3e6cb">
+      <div style="font-size:12px;font-weight:600;color:var(--vd);margin-bottom:8px">✅ SEMPRE</div>
+      <div style="font-size:11px;line-height:2.1;color:#0A0F1E">
+        Herdar <code>EntidadeSaaSBase</code> em toda entidade<br/>
+        <code>DateTime.UtcNow</code> — nunca <code>DateTime.Now</code><br/>
+        <code>Guid</code> para IDs — nunca <code>long</code> ou <code>int</code><br/>
+        Soft delete via <code>entidade.Deletar(userId)</code><br/>
+        <code>ITenantProvider</code> via DI scoped — nunca estático<br/>
+        CQRS — zero lógica no Controller<br/>
+        Outbox Pattern para todo Domain Event<br/>
+        Schema por macrodomínio no mapping EF Core<br/>
+        <code>snake_case</code> nas colunas PostgreSQL<br/>
+        <code>Precision(18,2)</code> em todo campo decimal<br/>
+        Índice composto <code>(tenant_id, campo_negocio)</code><br/>
+        Índice único em <code>sync_id</code>
+      </div>
+    </div>
+    <div class="card" style="background:#FDEDEC;border-color:rgba(192,57,43,.2)">
+      <div style="font-size:12px;font-weight:600;color:var(--red);margin-bottom:8px">❌ NUNCA</div>
+      <div style="font-size:11px;line-height:2.1;color:#0A0F1E">
+        <code>context.Remove()</code> — soft delete apenas<br/>
+        Lógica de negócio no Controller<br/>
+        <code>DbContext</code> de outro módulo injetado<br/>
+        Variável estática de TenantId<br/>
+        JWT ou secret hardcoded no código<br/>
+        Connection string em appsettings de produção<br/>
+        <code>long</code> ou <code>int</code> como ID de entidade<br/>
+        Domain Event publicado diretamente (sem Outbox)<br/>
+        SQL raw sem parâmetros<br/>
+        Cross-schema query sem documentação<br/>
+        <code>DateTime.Now</code> em qualquer lugar<br/>
+        <code>IgnoreQueryFilters()</code> sem justificativa e teste
+      </div>
+    </div>
+  </div>
+</div>
+<div class="pg" id="p-testes">
+  <div class="bc">Qualidade <span>› Testes Obrigatórios</span></div>
+  <div class="st">8 Testes de Segurança Obrigatórios</div>
+  <div class="ss">Esses testes bloqueiam o deploy. Falha em qualquer um = PR não vai para produção. Sem exceção.</div>
+  <div class="sl">Suite obrigatória — CI bloqueia em falha</div>
+  <div class="g2">
+    <div class="card">
+      <div style="font-size:11px;line-height:2.3">
+        <div>✓ <strong>TenantLeakTest</strong><br/><span style="color:var(--ct);font-size:10px;padding-left:14px">Tenant A não acessa dados do Tenant B</span></div>
+        <div>✓ <strong>SoftDeleteFilterTest</strong><br/><span style="color:var(--ct);font-size:10px;padding-left:14px">Entidades deletadas não aparecem em nenhuma query</span></div>
+        <div>✓ <strong>LedgerAppendOnlyTest</strong><br/><span style="color:var(--ct);font-size:10px;padding-left:14px">Lançamentos contábeis são imutáveis — trigger PG bloqueia UPDATE/DELETE</span></div>
+        <div>✓ <strong>AuditTrailTest</strong><br/><span style="color:var(--ct);font-size:10px;padding-left:14px">Toda ação sensível gera registro em audit_trail</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:11px;line-height:2.3">
+        <div>✓ <strong>OutboxDeliveryTest</strong><br/><span style="color:var(--ct);font-size:10px;padding-left:14px">Domain Events entregues mesmo com falha após SaveChanges</span></div>
+        <div>✓ <strong>PCIDataMaskingTest</strong><br/><span style="color:var(--ct);font-size:10px;padding-left:14px">CPF/PAN nunca aparecem nos logs</span></div>
+        <div>✓ <strong>EntitlementGateTest</strong><br/><span style="color:var(--ct);font-size:10px;padding-left:14px">Módulo desabilitado retorna 403 — não 404 nem 500</span></div>
+        <div>✓ <strong>PerformanceSLOTest</strong><br/><span style="color:var(--ct);font-size:10px;padding-left:14px">P95 leitura &lt;200ms, escrita &lt;500ms</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="sl">Pipeline SecDevOps</div>
+  <div class="code">pre-commit  → gitleaks · dotnet-format
+CI①         → build · unit tests · SAST Semgrep
+CI②         → Testcontainers · 8 testes de segurança obrigatórios
+CI③         → Trivy CVE scan · SBOM CycloneDX · Grype
+CI④         → container scan · Checkov IaC
+STAGE       → DAST OWASP ZAP · Nuclei
+aprovação   → manual pelo Tech Lead
+PROD        → Vault dynamic secrets · Falco runtime · Grafana alerts</div>
+</div>
+<div class="pg" id="p-infra">
+  <div class="bc">Qualidade <span>› Infra Local</span></div>
+  <div class="st">Ambiente Local — Docker Compose</div>
+  <div class="ss">9 serviços com healthchecks. Sobe tudo com um único <code>docker compose up -d</code>.</div>
+  <div class="sl">Serviços e credenciais de desenvolvimento</div>
+  <table><thead><tr><th>Serviço</th><th>Imagem</th><th>Porta</th><th>Credenciais dev</th><th>URL</th></tr></thead><tbody>
+    <tr><td>PostgreSQL</td><td>postgres:16-alpine</td><td>5432</td><td>epros / epros_dev_password</td><td>—</td></tr>
+    <tr><td>Keycloak</td><td>keycloak:24.0</td><td>8080</td><td>admin / admin</td><td>http://localhost:8080</td></tr>
+    <tr><td>Vault</td><td>vault:1.16</td><td>8200</td><td>token: epros-dev-token</td><td>http://localhost:8200</td></tr>
+    <tr><td>MinIO</td><td>minio:latest</td><td>9000/9001</td><td>epros_minio / epros_minio_password</td><td>http://localhost:9001</td></tr>
+    <tr><td>Valkey</td><td>valkey:7-alpine</td><td>6379</td><td>—</td><td>—</td></tr>
+    <tr><td>Grafana</td><td>grafana:latest</td><td>3000</td><td>admin / admin</td><td>http://localhost:3000</td></tr>
+    <tr><td>Prometheus</td><td>prom/prometheus</td><td>9090</td><td>—</td><td>http://localhost:9090</td></tr>
+    <tr><td>Loki</td><td>grafana/loki</td><td>3100</td><td>—</td><td>—</td></tr>
+    <tr><td>Tempo</td><td>grafana/tempo</td><td>3200/4317</td><td>—</td><td>—</td></tr>
+  </tbody></table>
+  <div class="okb"><strong>URLs principais:</strong> API + Swagger: https://localhost:7000/swagger · Keycloak Admin: http://localhost:8080 · Grafana: http://localhost:3000 · MinIO Console: http://localhost:9001 · Vault UI: http://localhost:8200</div>
+</div>
+
+</div>
+<script>
+function show(id, el) {
+  document.querySelectorAll('.pg').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(n => n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (el) el.classList.add('active');
+  window.scrollTo(0,0);
+  return false;
+}
+</script>
+</body></html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — Internacionalização & Localização</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+.subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 22px; }
+.stab { padding: 5px 13px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--b2); border-radius: 20px; background: none; color: var(--t3); transition: all .15s; font-family: var(--sans); }
+.stab:hover { color: var(--t2); }
+.stab.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+.sp { display: none; }
+.sp.on { display: block; }
+.i18n-box { background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r); padding: 16px; margin-bottom: 12px; }
+.i18n-title { font-family: var(--sans); font-size: 14px; font-weight: 600; color: var(--blue); display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.i18n-tag { font-family: var(--mono); font-size: 9px; padding: 2px 6px; border-radius: 3px; background: var(--s3); color: var(--t3); border: 1px solid var(--b2); }
+.i18n-desc { font-size: 11.5px; color: var(--t2); line-height: 1.6; }
+.code-box { background: var(--s3); border: 1px solid var(--b2); border-radius: 6px; padding: 12px; margin: 10px 0; font-family: var(--mono); font-size: 11px; color: var(--blue); overflow-x: auto; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+  <a class="nt" href="08_api.html">⑧ API Reference</a>
+  <a class="nt" href="09_runbook.html">⑨ Runbook & DR</a>
+  <a class="nt" href="10_modelo_financeiro.html">⑩ Modelo Financeiro</a>
+  <a class="nt" href="11_integracoes.html">⑪ Integrações</a>
+  <a class="nt" href="12_modelo_dados.html">⑫ Modelo de Dados</a>
+  <a class="nt" href="13_onboarding.html">⑬ Guia de Onboarding</a>
+  <a class="nt" href="14_disaster_recovery.html">⑭ Disaster Recovery</a>
+  <a class="nt" href="15_glossario.html">⑮ Glossário</a>
+  <a class="nt on" href="16_i18n.html">⑯ Internacionalização</a>
+  <a class="nt" href="17_changelog.html">⑰ Changelog</a>
+  <a class="nt" href="18_plano_execucao.html">⑱ Plano de Execução</a>
+  <a class="nt" href="19_operacional.html">⑲ Modelo Operacional</a>
+  <a class="nt" href="20_treinamento.html">⑳ Treinamento por Função</a>
+  <a class="nt" href="21_agentes_prompts.html">㉑ Prompts dos Agentes</a>
+  <a class="nt" href="22_diagnostico.html">㉒ Diagnóstico do Legado</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>Multi-language · Timezones · Regional Formats · Tax Engines</div>
+  <h1>Internacionalização <em>& Localização</em></h1>
+  <p class="hero-desc">Diretrizes arquiteturais para suporte a múltiplos idiomas, moedas, fusos horários e adaptações fiscais por país no ecossistema Epros.</p>
+</div>
+
+<div class="page">
+
+<div class="subtabs">
+  <button class="stab on" onclick="st('locales')">Locales & Clientes</button>
+  <button class="stab" onclick="st('formatos')">Formatos & Timezones</button>
+  <button class="stab" onclick="st('banco')">Traduções no Banco</button>
+  <button class="stab" onclick="st('fiscal')">Localização Fiscal</button>
+</div>
+
+<!-- ══ LOCALES & CLIENTES ══ -->
+<div class="sp on" id="sp-locales">
+  <div class="sl">Estratégia de Locales no Frontend e Mobile</div>
+  <p class="lead">O suporte a múltiplos idiomas é gerenciado no lado do cliente por meio de dicionários estáticos integrados aos bundles das aplicações.</p>
+
+  <div class="i18n-box">
+    <div class="i18n-title">Nuxt 3 (Nuxt i18n) <span class="i18n-tag">Web/Desktop</span></div>
+    <div class="i18n-desc">
+      Na aplicação web e desktop (`Epros.App`), o gerenciamento é realizado pelo plugin `@nuxtjs/i18n`. Os dicionários JSON são carregados dinamicamente via lazy loading sob demanda com base no locale ativo.
+      <div class="code-box">
+// nuxt.config.ts
+i18n: {
+  locales: [
+    { code: 'pt', iso: 'pt-BR', file: 'pt-BR.json', name: 'Português (Brasil)' },
+    { code: 'en', iso: 'en-US', file: 'en-US.json', name: 'English (US)' },
+    { code: 'es', iso: 'es-ES', file: 'es-ES.json', name: 'Español (España)' }
+  ],
+  defaultLocale: 'pt',
+  lazy: true,
+  langDir: 'locales/'
+}
+      </div>
+    </div>
+  </div>
+
+  <div class="i18n-box">
+    <div class="i18n-title">React Native (expo-localization) <span class="i18n-tag">Mobile/PDV</span></div>
+    <div class="i18n-desc">
+      O aplicativo móvel `Epros.Mobile` utiliza `i18n-js` em conjunto com `expo-localization` para ler o locale nativo do sistema operacional e carregar a tradução correspondente com fallback seguro para `pt-BR`.
+    </div>
+  </div>
+</div>
+
+<!-- ══ FORMATOS & TIMEZONES ══ -->
+<div class="sp" id="sp-formatos">
+  <div class="sl">Representação de Valores Regionais e Tempo</div>
+  <p class="lead">Garantia de consistência de dados contábeis e representação correta de datas para usuários distribuídos globalmente.</p>
+
+  <div class="i18n-box">
+    <div class="i18n-title">Timezone em Armazenamento e Exibição <span class="i18n-tag">Arquitetura</span></div>
+    <div class="i18n-desc">
+      <strong>Banco de Dados (UTC):</strong> Todo campo de data e hora deve ser salvo no PostgreSQL como `timestamp with time zone` (ou mapeado como UTC no EF Core).
+      <br><br>
+      <strong>Client-Side conversion:</strong> A API envia strings no padrão ISO 8601 UTC. O cliente intercepta e formata para o fuso horário configurado nas preferências do inquilino (ou do dispositivo).
+    </div>
+  </div>
+
+  <div class="i18n-box">
+    <div class="i18n-title">Padrões de Formatação Regional <span class="i18n-tag">UX</span></div>
+    <div class="i18n-desc">
+      A formatação utiliza a API nativa `Intl` do JavaScript para formatação de números, moedas e datas baseados no locale atual:
+      <table class="tbl" style="margin-top:10px;">
+        <tr><th>Locale</th><th>Data</th><th>Número</th><th>Moeda (Exemplo)</th></tr>
+        <tr><td><code>pt-BR</code></td><td>09/06/2026</td><td>1.250,50</td><td>R$ 1.250,50</td></tr>
+        <tr><td><code>en-US</code></td><td>06/09/2026</td><td>1,250.50</td><td>$1,250.50</td></tr>
+        <tr><td><code>es-ES</code></td><td>09/06/2026</td><td>1 250,50</td><td>1.250,50 €</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TRADUÇÕES NO BANCO ══ -->
+<div class="sp" id="sp-banco">
+  <div class="sl">Dados Dinâmicos Multilíngues no PostgreSQL</div>
+  <p class="lead">Para cadastros cadastrados pelos usuários (ex: descrição de planos ou nomes de produtos), adota-se uma estratégia de tradução transacional no banco.</p>
+
+  <div class="i18n-box">
+    <div class="i18n-title">JSONB Localizado vs. Tabela Transacional <span class="i18n-tag">PostgreSQL</span></div>
+    <div class="i18n-desc">
+      Para evitar joins excessivos e garantir performance de leitura nas queries de catálogo, os campos traduzíveis de entidades estáticas utilizam colunas do tipo <code>jsonb</code> contendo chave/valor do locale.
+      <br><br>
+      <strong>Estrutura de dados (Exemplo em JSONB):</strong>
+      <div class="code-box">
+{
+  "pt-BR": "Serviço de Assinatura Platinum",
+  "en-US": "Platinum Subscription Service",
+  "es-ES": "Servicio de Suscripción Platinum"
+}
+      </div>
+      <strong>Query de Leitura Eficiente:</strong>
+      <div class="code-box">
+SELECT id, nome->>'pt-BR' AS nome_localizado FROM plataforma.planos;
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LOCALIZAÇÃO FISCAL ══ -->
+<div class="sp" id="sp-fiscal">
+  <div class="sl">Abstração de Motores de Impostos (Tax Engines)</div>
+  <p class="lead">Isolamento das complexidades e particularidades da regulação fiscal brasileira de outros mercados internacionais.</p>
+
+  <div class="i18n-box">
+    <div class="i18n-title">Padrão Adapter no Faturamento <span class="i18n-tag">C# / DDD</span></div>
+    <div class="i18n-desc">
+      O módulo fiscal expõe uma interface abstrata de faturamento `ITaxCalculator`. Para cada país de operação, implementa-se um adaptador de cálculo e transmissão específico.
+      <br><br>
+      * <strong>BrTaxCalculator:</strong> Integrado com a biblioteca `Hercules.NET` para emissão de NF-e/NFC-e e cálculo de ICMS, IPI, PIS, COFINS.
+      * <strong>EuTaxCalculator (VAT):</strong> Efetua o cálculo de imposto sobre valor agregado de acordo com as regras de balanço intra-comunitário da UE.
+      * <strong>UsTaxCalculator (Sales Tax):</strong> Conecta com engines de cálculo de Sales Tax estadual/municipal americano (ex: Avalara).
+    </div>
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<script>
+var tabs = ['locales', 'formatos', 'banco', 'fiscal'];
+function st(id) {
+  document.querySelectorAll('.stab').forEach(function(t, i) {
+    t.classList.toggle('on', tabs[i] === id);
+  });
+  document.querySelectorAll('.sp').forEach(function(p) {
+    p.classList.toggle('on', p.id === 'sp-' + id);
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+api.epros.localhost {
+    reverse_proxy localhost:5000
+}
+
+auth.epros.localhost {
+    reverse_proxy localhost:8080
+}
+
+vault.epros.localhost {
+    reverse_proxy localhost:8200
+}
+
+storage.epros.localhost {
+    reverse_proxy localhost:9000
+}
+
+console.storage.epros.localhost {
+    reverse_proxy localhost:9001
+}

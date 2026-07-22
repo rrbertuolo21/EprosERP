@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Epros — Material Estratégico</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --az:#0D2B5E;--az2:#1A4080;
+  --do:#C9A84C;--do2:#E8C96A;
+  --cp:#0A0F1E;--ct:#5A6580;
+  --cb:#F4F6FA;--cd:#DDE3EF;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:"DM Sans",sans-serif;background:var(--az);display:flex;flex-direction:column}
+
+/* TOPBAR */
+.topbar{
+  background:var(--az);
+  border-bottom:1px solid rgba(201,168,76,.18);
+  display:flex;align-items:center;
+  padding:0 28px;
+  height:54px;
+  flex-shrink:0;
+  gap:0;
+  position:relative;
+  z-index:10;
+}
+
+.logo{
+  font-family:"Playfair Display",serif;
+  font-size:18px;font-weight:700;
+  color:var(--do);
+  margin-right:28px;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+.logo em{font-style:italic;color:rgba(201,168,76,.55)}
+
+.tabs{display:flex;align-items:stretch;gap:0;flex:1;height:100%;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+
+.tab{
+  display:flex;align-items:center;gap:7px;
+  padding:0 18px;
+  font-size:12px;font-weight:400;
+  color:rgba(255,255,255,.52);
+  cursor:pointer;
+  border-bottom:3px solid transparent;
+  transition:all .15s;
+  white-space:nowrap;
+  user-select:none;
+  flex-shrink:0;
+}
+.tab:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.04)}
+.tab.active{color:var(--do);border-bottom-color:var(--do);font-weight:500}
+.tab-icon{font-size:14px;opacity:.7}
+.tab.active .tab-icon{opacity:1}
+.tab-num{
+  font-family:"DM Mono",monospace;
+  font-size:9px;font-weight:600;
+  background:rgba(201,168,76,.15);
+  color:var(--do);
+  border:1px solid rgba(201,168,76,.25);
+  border-radius:4px;
+  padding:1px 5px;
+}
+.tab.active .tab-num{background:var(--do);color:var(--az)}
+
+/* LOADING */
+.loading{
+  position:absolute;bottom:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,var(--do),transparent);
+  background-size:200% 100%;
+  animation:shimmer 1.2s infinite;
+  opacity:0;transition:opacity .2s;
+}
+.loading.active{opacity:1}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* IFRAME */
+.frame-wrap{flex:1;position:relative;overflow:hidden}
+iframe{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  border:none;
+  background:#F4F6FA;
+  transition:opacity .25s;
+}
+iframe.hidden{opacity:0;pointer-events:none}
+
+/* SPLASH — tela inicial */
+.splash{
+  position:absolute;inset:0;
+  background:linear-gradient(160deg,#0a1628 0%,var(--az) 40%,#0a2040 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity .4s;
+  z-index:5;
+}
+.splash.gone{opacity:0;pointer-events:none}
+.splash h1{
+  font-family:"Playfair Display",serif;
+  font-size:52px;font-weight:700;
+  color:#fff;line-height:1.1;
+  margin-bottom:10px;text-align:center;
+}
+.splash h1 span{color:var(--do)}
+.splash p{
+  font-size:14px;color:rgba(255,255,255,.55);
+  margin-bottom:36px;text-align:center;max-width:480px;line-height:1.7;
+}
+.splash-cards{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:680px}
+.sc{
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(201,168,76,.2);
+  border-radius:11px;padding:16px 20px;
+  cursor:pointer;
+  transition:all .18s;
+  text-align:center;min-width:140px;
+}
+.sc:hover{background:rgba(201,168,76,.12);border-color:rgba(201,168,76,.45);transform:translateY(-2px)}
+.sc-icon{font-size:24px;margin-bottom:8px}
+.sc-title{font-size:12px;font-weight:600;color:#fff;margin-bottom:3px}
+.sc-sub{font-size:10px;color:rgba(255,255,255,.4)}
+.splash-hint{margin-top:32px;font-size:11px;color:rgba(255,255,255,.25);letter-spacing:1px;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Ep<em>ros</em></div>
+
+  <div class="tabs" id="tabs">
+    <div class="tab" onclick="load('diagnostico')" id="tab-diagnostico">
+      <span class="tab-icon">🔍</span>
+      <span class="tab-num">01</span>
+      Diagnóstico do Legado
+    </div>
+    <div class="tab" onclick="load('estrategico')" id="tab-estrategico">
+      <span class="tab-icon">🎯</span>
+      <span class="tab-num">02</span>
+      Visão Estratégica
+    </div>
+    <div class="tab" onclick="load('modulos')" id="tab-modulos">
+      <span class="tab-icon">⊞</span>
+      <span class="tab-num">03</span>
+      Módulos &amp; Submódulos
+    </div>
+  </div>
+
+  <div class="loading" id="loader"></div>
+</div>
+
+<div class="frame-wrap">
+
+  <!-- SPLASH INICIAL -->
+  <div class="splash" id="splash">
+    <h1>Material<br/><span>Estratégico</span></h1>
+    <p>Documentação interna da jornada Epros — do diagnóstico do legado à visão do produto que estamos construindo.</p>
+    <div class="splash-cards">
+      <div class="sc" onclick="load('diagnostico')">
+        <div class="sc-icon">🔍</div>
+        <div class="sc-title">Diagnóstico</div>
+        <div class="sc-sub">O que estava errado</div>
+      </div>
+      <div class="sc" onclick="load('estrategico')">
+        <div class="sc-icon">🎯</div>
+        <div class="sc-title">Visão Estratégica</div>
+        <div class="sc-sub">Produto, mercado, roadmap</div>
+      </div>
+      <div class="sc" onclick="load('modulos')">
+        <div class="sc-icon">⊞</div>
+        <div class="sc-title">Módulos</div>
+        <div class="sc-sub">17 módulos · 132 submódulos</div>
+      </div>
+    </div>
+    <div class="splash-hint">Selecione uma seção para começar</div>
+  </div>
+
+  <!-- IFRAMES -->
+  <iframe id="frame-diagnostico" class="hidden" src=""></iframe>
+  <iframe id="frame-estrategico" class="hidden" src=""></iframe>
+  <iframe id="frame-modulos"     class="hidden" src=""></iframe>
+
+</div>
+
+<script>
+const PAGES = {
+  diagnostico: 'epros-diagnostico.html',
+  estrategico:  'epros-estrategico.html',
+  modulos:      'epros-modulos.html',
+};
+
+let current = null;
+
+function load(key) {
+  // esconde splash
+  document.getElementById('splash').classList.add('gone');
+
+  // tabs
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + key).classList.add('active');
+
+  if (current === key) return;
+
+  // esconde frame atual
+  if (current) {
+    document.getElementById('frame-' + current).classList.add('hidden');
+  }
+
+  const frame = document.getElementById('frame-' + key);
+
+  // se ainda não carregou, carrega agora
+  if (!frame.src || frame.src === window.location.href) {
+    const loader = document.getElementById('loader');
+    loader.classList.add('active');
+    frame.src = PAGES[key];
+    frame.onload = () => {
+      loader.classList.remove('active');
+      frame.classList.remove('hidden');
+    };
+  } else {
+    frame.classList.remove('hidden');
+  }
+
+  current = key;
+}
+</script>
+</body>
+</html>

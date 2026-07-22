@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Flunt.Br" Version="2.0.0" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Folder Include="Dtos\Vendas\" />
+    <Folder Include="Entities\" />
+    <Folder Include="Validations\Enderecos\" />
+  </ItemGroup>
+
+</Project>

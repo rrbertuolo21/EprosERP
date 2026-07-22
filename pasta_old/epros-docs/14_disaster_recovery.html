@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — Disaster Recovery</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+.subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 22px; }
+.stab { padding: 5px 13px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--b2); border-radius: 20px; background: none; color: var(--t3); transition: all .15s; font-family: var(--sans); }
+.stab:hover { color: var(--t2); }
+.stab.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+.sp { display: none; }
+.sp.on { display: block; }
+.dr-metric-box { background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r); padding: 20px; margin-bottom: 15px; }
+.cmd-box { background: var(--s3); border: 1px solid var(--b2); border-radius: 6px; padding: 12px; margin: 10px 0; font-family: var(--mono); font-size: 11.5px; color: var(--blue); overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+  <a class="nt" href="08_api.html">⑧ API Reference</a>
+  <a class="nt" href="09_runbook.html">⑨ Runbook & DR</a>
+  <a class="nt" href="10_modelo_financeiro.html">⑩ Modelo Financeiro</a>
+  <a class="nt" href="11_integracoes.html">⑪ Integrações</a>
+  <a class="nt" href="12_modelo_dados.html">⑫ Modelo de Dados</a>
+  <a class="nt" href="13_onboarding.html">⑬ Guia de Onboarding</a>
+  <a class="nt on" href="14_disaster_recovery.html">⑭ Disaster Recovery</a>
+  <a class="nt" href="15_glossario.html">⑮ Glossário</a>
+  <a class="nt" href="16_i18n.html">⑯ Internacionalização</a>
+  <a class="nt" href="17_changelog.html">⑰ Changelog</a>
+  <a class="nt" href="18_plano_execucao.html">⑱ Plano de Execução</a>
+  <a class="nt" href="19_operacional.html">⑲ Modelo Operacional</a>
+  <a class="nt" href="20_treinamento.html">⑳ Treinamento por Função</a>
+  <a class="nt" href="21_agentes_prompts.html">㉑ Prompts dos Agentes</a>
+  <a class="nt" href="22_diagnostico.html">㉒ Diagnóstico do Legado</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>RTO & RPO · Backups Físicos/Lógicos · Point-in-Time Recovery · Failover</div>
+  <h1>Plano de <em>Disaster Recovery</em></h1>
+  <p class="hero-desc">Políticas e procedimentos operacionais para recuperação da plataforma Epros diante de falhas críticas, desastres geográficos ou corrupção de dados.</p>
+</div>
+
+<div class="page">
+
+<div class="subtabs">
+  <button class="stab on" onclick="st('politicas')">Políticas & SLAs</button>
+  <button class="stab" onclick="st('backups')">Estratégia de Backups</button>
+  <button class="stab" onclick="st('restore')">Manual de Restore</button>
+  <button class="stab" onclick="st('simulados')">Simulados & Drills</button>
+</div>
+
+<!-- ══ POLÍTICAS & SLAS ══ -->
+<div class="sp on" id="sp-politicas">
+  <div class="sl">Metas de Continuidade de Negócios (BCP)</div>
+  <p class="lead">O plano de continuidade de negócios garante limites estritos para indisponibilidade e perda de dados, alinhados com os requisitos regulatórios fiscais e de segurança.</p>
+
+  <div class="g2">
+    <div class="dr-metric-box" style="border-left: 4px solid var(--blue);">
+      <div class="tag tag-b">RTO (Recovery Time Objective)</div>
+      <h2 style="font-size: 32px; margin: 10px 0 5px; font-weight: 500;">4 <em>Horas</em></h2>
+      <p style="color: var(--t2); font-size:12px; line-height: 1.6;">Tempo máximo tolerado para restabelecimento total da operação da plataforma Epros após declaração de desastre geográfico no datacenter primário.</p>
+    </div>
+
+    <div class="dr-metric-box" style="border-left: 4px solid var(--green);">
+      <div class="tag tag-g">RPO (Recovery Point Objective)</div>
+      <h2 style="font-size: 32px; margin: 10px 0 5px; font-weight: 500;">10 <em>Minutos</em></h2>
+      <p style="color: var(--t2); font-size:12px; line-height: 1.6;">Limite de perda aceitável de transações financeiras e operacionais de venda/estoque dos inquilinos (viabilizado por arquivamento WAL contínuo).</p>
+    </div>
+  </div>
+
+  <div class="sl" style="margin-top:30px">Escopo de Proteção e Severidade</div>
+  <p style="color: var(--t2); font-size: 12px; margin-bottom: 12px;">São cobertos pelo plano de contingência os seguintes cenários extremos:</p>
+  <ul style="padding-left: 18px; font-size:12px; color: var(--t2); line-height: 1.8;">
+    <li><strong>Falha Geográfica Total:</strong> Indisponibilidade permanente ou severa de uma região de nuvem (ex: AWS us-east-1).</li>
+    <li><strong>Ransomware ou Sabotagem:</strong> Criptografia maliciosa de volumes de dados ou servidores centrais.</li>
+    <li><strong>Corrupção Lógica de Dados:</strong> Bugs catastróficos no monólito modular ou script manual incorreto alterando tabelas produtivas.</li>
+  </ul>
+</div>
+
+<!-- ══ ESTRATÉGIA DE BACKUPS ══ -->
+<div class="sp" id="sp-backups">
+  <div class="sl">Arquitetura de Redundância e Proteção</div>
+  <p class="lead">A arquitetura de dados do Epros utiliza uma abordagem híbrida de replicação em tempo real combinada com backups pontuais e registros transacionais.</p>
+
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Componente</th>
+        <th>Estratégia de Backup</th>
+        <th>Frequência</th>
+        <th>Retenção</th>
+        <th>Destino Físico</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>PostgreSQL 16</strong></td>
+        <td>Backup Físico Completo (pg_basebackup) + Envio de WAL archives comprimidos.</td>
+        <td>Diário (Completo) + WAL (a cada 5 min)</td>
+        <td>30 dias (WAL) / 1 ano (Diário)</td>
+        <td>MinIO S3 (Região Redundante)</td>
+      </tr>
+      <tr>
+        <td><strong>Arquivos GED (MinIO)</strong></td>
+        <td>Replicação bidirecional ativa-passiva no nível de bucket. Retenção WORM.</td>
+        <td>Tempo Real (Streaming)</td>
+        <td>5 anos (regulatório fiscal)</td>
+        <td>Bucket S3 Secundário (Zona Fria)</td>
+      </tr>
+      <tr>
+        <td><strong>Secrets (HashiCorp Vault)</strong></td>
+        <td>Raft Snapshot exportado e encriptado com chave pública externa (GPG).</td>
+        <td>A cada 12 horas</td>
+        <td>90 dias</td>
+        <td>MinIO Privado apartado</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="sl" style="margin-top:40px">Shamir's Secret Sharing (Vault Unseal)</div>
+  <div class="warn"><strong>REGRA DE SEGURANÇA:</strong> Em produção, as chaves mestras de abertura (Unseal Keys) do Vault são divididas em <strong>5 chaves</strong>. São necessárias no mínimo <strong>3 chaves</strong> (threshold = 3) para abrir o Vault após reinicialização. Cada chave deve estar em posse de um administrador de segurança sênior diferente.</div>
+</div>
+
+<!-- ══ MANUAL DE RESTORE ══ -->
+<div class="sp" id="sp-restore">
+  <div class="sl">Manual Passo a Passo de Recuperação Física</div>
+  <p class="lead">Procedimento técnico emergencial para reconstrução do banco de dados PostgreSQL 16 e aplicação de Point-in-Time Recovery (PITR).</p>
+
+  <div class="sl" style="margin-top:20px">1. Restaurar Backup Físico Base</div>
+  <p style="color: var(--t2); font-size: 12px; margin-bottom: 8px;">Para inicializar o restore de desastre, baixe o último backup base físico para a pasta de dados do PostgreSQL:</p>
+  <div class="cmd-box">
+    # Parar o serviço do banco de dados<br>
+    systemctl stop postgresql-16<br><br>
+    # Limpar pasta de dados corrompida (preservar configurações)<br>
+    rm -rf /var/lib/postgresql/16/main/*<br><br>
+    # Baixar e extrair o backup físico base do MinIO S3<br>
+    aws s3 cp s3://epros-backups/postgres/base-latest.tar.gz - | tar -xzvf - -C /var/lib/postgresql/16/main/
+  </div>
+
+  <div class="sl" style="margin-top:20px">2. Configurar Point-in-Time Recovery (PITR)</div>
+  <p style="color: var(--t2); font-size: 12px; margin-bottom: 8px;">Crie o arquivo de controle para instruir o PostgreSQL a entrar em modo de recuperação transacional e defina a data-alvo limite de restore (RPO de 10 min):</p>
+  <div class="cmd-box">
+    # Criar sinalizador de recovery<br>
+    touch /var/lib/postgresql/16/main/recovery.signal<br><br>
+    # Adicionar configurações em postgresql.conf ou no bloco de recovery:<br>
+    restore_command = 'cp /mnt/wal_archive/%f %p'<br>
+    recovery_target_time = '2026-06-09 10:45:00 UTC'<br>
+    recovery_target_action = 'promote'
+  </div>
+
+  <div class="sl" style="margin-top:20px">3. Reiniciar Banco de Dados & Promover</div>
+  <p style="color: var(--t2); font-size: 12px; margin-bottom: 8px;">Inicie o banco de dados. Ele processará todos os logs WAL até o horário configurado e estará pronto para escrita:</p>
+  <div class="cmd-box">
+    systemctl start postgresql-16<br>
+    # Monitorar logs de recuperação no syslog/postgresql.log<br>
+    tail -f /var/log/postgresql/postgresql-16-main.log
+  </div>
+</div>
+
+<!-- ══ SIMULADOS & DRILLS ══ -->
+<div class="sp" id="sp-simulados">
+  <div class="sl">Manual de Simulações Periódicas (DR Drills)</div>
+  <p class="lead">Para garantir a eficácia do plano de continuidade de negócios, a equipe DevOps executa simulações semestrais obrigatórias.</p>
+
+  <ul class="steps-list">
+    <li class="step-item">
+      <span class="step-num">1</span>
+      <div class="step-desc"><strong>Declaração de Desastre Simulado:</strong> O coordenador do teste corta as rotas de tráfego de rede para a região produtiva principal simulando falha total.</div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">2</span>
+      <div class="step-desc"><strong>Failover de DNS (Caddy):</strong> O proxy Caddy e o roteador de DNS (Cloudflare) redirecionam o tráfego do gateway `/api/v1` para a região de contingência (Cold Standby).</div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">3</span>
+      <div class="step-desc"><strong>Verificação de Integridade de Tenants:</strong> O comando `dotnet run` reinicia os monólitos na região secundária. Varreduras de integridade automática verificam conexões e garantem que o isolamento RLS está ativo em todas as tabelas.</div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">4</span>
+      <div class="step-desc"><strong>Validação de Métricas:</strong> O tempo total do processo de restore e failover é cronometrado para certificar que o RTO real permaneceu abaixo das 4 horas acordadas.</div>
+    </li>
+  </ul>
+</div>
+
+</div><!-- /page -->
+
+<script>
+var tabs = ['politicas', 'backups', 'restore', 'simulados'];
+function st(id) {
+  document.querySelectorAll('.stab').forEach(function(t, i) {
+    t.classList.toggle('on', tabs[i] === id);
+  });
+  document.querySelectorAll('.sp').forEach(function(p) {
+    p.classList.toggle('on', p.id === 'sp-' + id);
+  });
+}
+</script>
+</body>
+</html>

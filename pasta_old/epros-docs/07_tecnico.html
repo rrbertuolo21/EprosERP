@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — Técnico & Status</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px}
+.stab{padding:5px 13px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--b2);border-radius:20px;background:none;color:var(--t3);transition:all .15s;font-family:var(--sans)}
+.stab:hover{color:var(--t2)}.stab.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.sp{display:none}.sp.on{display:block}
+
+.bloco{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px 18px;margin-bottom:8px;display:flex;gap:14px;align-items:flex-start}
+.bloco-num{font-family:var(--mono);font-size:11px;font-weight:500;min-width:60px;flex-shrink:0;padding-top:2px}
+.bloco-body h4{font-size:12px;font-weight:500;margin-bottom:4px}
+.bloco-body p{font-size:11px;color:var(--t2);line-height:1.55}
+.bloco-body .tags{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+
+.bug-row{display:flex;align-items:flex-start;gap:0;border-bottom:1px solid var(--b1);font-size:11px}
+.bug-row:last-child{border-bottom:none}
+.bug-col{padding:8px 10px;vertical-align:top}
+.bug-col.bug{font-family:var(--mono);min-width:200px;color:var(--red);flex-shrink:0}
+.bug-col.imp{color:var(--t2);flex:1}
+.bug-col.sol{color:var(--green);flex:1}
+
+.mod-impl{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);margin-bottom:8px;overflow:hidden}
+.mod-impl-head{padding:10px 16px;border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:10px;font-size:12px}
+.mod-impl-name{font-weight:500;flex:1}
+.mod-impl-schema{font-family:var(--mono);font-size:10px;color:var(--t3)}
+.mod-impl-body{padding:12px 16px;font-size:11px;color:var(--t2);line-height:1.7}
+.mod-impl-row{display:flex;gap:8px;margin-bottom:3px}
+.mod-impl-key{color:var(--t3);font-family:var(--mono);font-size:10px;min-width:80px;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="index.html">Home</a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt on" href="07_tecnico.html">⑦ Técnico & Status</a>
+  <a class="nt" href="08_api.html">⑧ API Reference</a>
+  <a class="nt" href="09_runbook.html">⑨ Runbook & DR</a>
+  <a class="nt" href="10_modelo_financeiro.html">⑩ Modelo Financeiro</a>
+  <a class="nt" href="11_integracoes.html">⑪ Integrações</a>
+  <a class="nt" href="12_modelo_dados.html">⑫ Modelo de Dados</a>
+  <a class="nt" href="13_onboarding.html">⑬ Guia de Onboarding</a>
+  <a class="nt" href="14_disaster_recovery.html">⑭ Disaster Recovery</a>
+  <a class="nt" href="15_glossario.html">⑮ Glossário</a>
+  <a class="nt" href="16_i18n.html">⑯ Internacionalização</a>
+  <a class="nt" href="17_changelog.html">⑰ Changelog</a>
+  <a class="nt" href="18_plano_execucao.html">⑱ Plano de Execução</a>
+  <a class="nt" href="19_operacional.html">⑲ Modelo Operacional</a>
+  <a class="nt" href="20_treinamento.html">⑳ Treinamento por Função</a>
+  <a class="nt" href="21_agentes_prompts.html">㉑ Prompts dos Agentes</a>
+  <a class="nt" href="22_diagnostico.html">㉒ Diagnóstico do Legado</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>Status · Módulos Implementados · ADR · Bugs Corrigidos · Roadmap</div>
+  <h1>Técnico <em>& status</em></h1>
+  <p class="hero-desc">92+ arquivos .cs gerados. Bloco 5 concluído. O que está pronto, o que vem a seguir, decisões fechadas e os bugs do legado que não se repetem.</p>
+</div>
+
+<div class="page">
+
+<div class="subtabs">
+  <button class="stab on" onclick="st('status')">Status de Implementação</button>
+  <button class="stab" onclick="st('padroes')">Padrões de Código</button>
+  <button class="stab" onclick="st('adr')">Decisões ADR</button>
+  <button class="stab" onclick="st('bugs')">Bugs Corrigidos</button>
+  <button class="stab" onclick="st('roadmap')">Roadmap Técnico</button>
+  <button class="stab" onclick="st('ambiente')">Ambiente Local</button>
+</div>
+
+<!-- ══ STATUS ══ -->
+<div class="sp on" id="sp-status">
+  <div class="sl">Módulos implementados — Bloco 5 concluído</div>
+
+  <div class="mod-impl">
+    <div class="mod-impl-head"><span class="tag tag-g" style="margin:0">Completo</span><span class="mod-impl-name">Epros.Shared — Base do sistema</span><span class="mod-impl-schema">—</span></div>
+    <div class="mod-impl-body">
+      <div class="mod-impl-row"><span class="mod-impl-key">Entidades</span><span>EntidadeSaaSBase, OutboxMessage, DomainEvent, CommandResult, ISyncable</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Interfaces</span><span>ITenantProvider, ICurrentUser, ICommand, ICommandHandler, IQuery, IQueryHandler, IRepository</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Providers</span><span>TenantProvider (scoped via IHttpContextAccessor), CurrentUser</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Testes</span><span>—</span></div>
+    </div>
+  </div>
+
+  <div class="mod-impl">
+    <div class="mod-impl-head"><span class="tag tag-g" style="margin:0">Completo</span><span class="mod-impl-name">Epros.Infrastructure — Base de dados</span><span class="mod-impl-schema">—</span></div>
+    <div class="mod-impl-body">
+      <div class="mod-impl-row"><span class="mod-impl-key">ContextBase</span><span>QueryFilter automático por reflection — tenant_id + soft delete. Nunca manual.</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Convenções</span><span>snake_case global via NamingConvention. Split queries. Compile models em produção.</span></div>
+    </div>
+  </div>
+
+  <div class="mod-impl">
+    <div class="mod-impl-head"><span class="tag tag-g" style="margin:0">Completo</span><span class="mod-impl-name">GestaoClientes</span><span class="mod-impl-schema">plataforma.*</span></div>
+    <div class="mod-impl-body">
+      <div class="mod-impl-row"><span class="mod-impl-key">Entidades</span><span>Plano, ModuloPlano, Cliente, Fatura, FaturaComposicao</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Handlers</span><span>CriarCliente, AtivarCliente, SuspenderCliente, CriarPlano, GerarFatura, BaixarFatura</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Testes</span><span>5 testes unitários — criação, ativação, suspensão, geração de fatura, baixa</span></div>
+    </div>
+  </div>
+
+  <div class="mod-impl">
+    <div class="mod-impl-head"><span class="tag tag-g" style="margin:0">Completo</span><span class="mod-impl-name">Financeiro / ContasPagar</span><span class="mod-impl-schema">financas.*</span></div>
+    <div class="mod-impl-body">
+      <div class="mod-impl-row"><span class="mod-impl-key">Entidades</span><span>ContaPagar, ContaPagarBaixa — reengenharia do ContasAPagarController.cs (910 linhas)</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Handlers</span><span>CriarContaPagar, BaixarContaPagar, CancelarContaPagar, ListarContasPagar</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Testes</span><span>8 testes — criação válida/inválida, baixa total/parcial, cancelamento, aging, conciliação OFX</span></div>
+    </div>
+  </div>
+
+  <div class="mod-impl">
+    <div class="mod-impl-head"><span class="tag tag-g" style="margin:0">Completo</span><span class="mod-impl-name">Financeiro / ContasReceber</span><span class="mod-impl-schema">financas.*</span></div>
+    <div class="mod-impl-body">
+      <div class="mod-impl-row"><span class="mod-impl-key">Entidades</span><span>ContaReceber, ContaReceberBaixa — reengenharia do ContasAReceberController.cs (930 linhas)</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Handlers</span><span>CriarContaReceber, BaixarContaReceber, CancelarContaReceber, ListarContasReceber</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Testes</span><span>— (a criar no Bloco 8)</span></div>
+    </div>
+  </div>
+
+  <div class="mod-impl">
+    <div class="mod-impl-head"><span class="tag tag-g" style="margin:0">Completo</span><span class="mod-impl-name">Estoque / Produtos</span><span class="mod-impl-schema">estoque.*</span></div>
+    <div class="mod-impl-body">
+      <div class="mod-impl-row"><span class="mod-impl-key">Entidades</span><span>Produto, EstoqueProduto (saldo, custo médio ponderado, reserva, EAN/PDV)</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Handlers</span><span>CriarProduto, AtualizarProduto, MovimentarEstoque, EntradaEstoque, ListarProdutos, BuscarPorEAN</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Testes</span><span>— (a criar no Bloco 8)</span></div>
+    </div>
+  </div>
+
+  <div class="mod-impl">
+    <div class="mod-impl-head"><span class="tag tag-b" style="margin:0">Estrutura</span><span class="mod-impl-name">Fiscal / DocumentoFiscal</span><span class="mod-impl-schema">plataforma.*</span></div>
+    <div class="mod-impl-body">
+      <div class="mod-impl-row"><span class="mod-impl-key">Entidades</span><span>DocumentoFiscal, EventoDocumentoFiscal — máquina de estados: Rascunho → Pendente → Autorizado → Cancelado</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Lib NF-e</span><span>Hercules.NET.NFe.NFCe v2026.3.15.14 — integração implementada, não os handlers completos</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Pendente</span><span>Handlers de emissão, cancelamento e contingência — Bloco 6 + 7</span></div>
+    </div>
+  </div>
+
+  <div class="mod-impl">
+    <div class="mod-impl-head"><span class="tag tag-g" style="margin:0">Bloco 5 ✓</span><span class="mod-impl-name">Vendas / GestaoDePedidos</span><span class="mod-impl-schema">vendas.*</span></div>
+    <div class="mod-impl-body">
+      <div class="mod-impl-row"><span class="mod-impl-key">Entidades</span><span>Venda, VendaItem (ICMS/PIS/COFINS por item), VendaPagamento (troco, TEF, Pix), VendaDevolucao, VendaDevolucaoItem</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Handlers</span><span>EmitirVenda (orquestra DFe + ContaReceber), CancelarVenda, DevolverVenda</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Reengenharia</span><span>VendaController.cs (2.535 linhas) + VendaNfeController.cs (2.739 linhas) → handlers CQRS</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Testes</span><span>— (a criar no Bloco 8)</span></div>
+    </div>
+  </div>
+
+  <div class="mod-impl">
+    <div class="mod-impl-head"><span class="tag tag-g" style="margin:0">Bloco 5 ✓</span><span class="mod-impl-name">Vendas / PDV — Frente de Caixa</span><span class="mod-impl-schema">vendas.*</span></div>
+    <div class="mod-impl-body">
+      <div class="mod-impl-row"><span class="mod-impl-key">Entidades</span><span>Caixa (abertura, fechamento, saldo esperado, diferença), CaixaMovimento (sangria, suprimento)</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Handlers</span><span>AbrirCaixa, FecharCaixa, Sangria, Suprimento, EntrarContingencia, SairContingencia</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Testes</span><span>19 testes unitários — abertura, fechamento, sangria com saldo insuficiente, suprimento, contingência, diferença de caixa</span></div>
+    </div>
+  </div>
+
+  <div class="mod-impl">
+    <div class="mod-impl-head"><span class="tag tag-pam" style="background:var(--amber-l);color:var(--amber);border:1px solid rgba(245,166,35,.3);font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;margin:0">Bloco 6</span><span class="mod-impl-name">Estoque / Compras</span><span class="mod-impl-schema">estoque.*</span></div>
+    <div class="mod-impl-body">
+      <div class="mod-impl-row"><span class="mod-impl-key">Pendente</span><span>Compra, CompraItem — reengenharia do CompraController.cs (3.294 linhas)</span></div>
+      <div class="mod-impl-row"><span class="mod-impl-key">Orquestração</span><span>LancarCompraCommand: Compra + NF-e entrada + ContaPagar + EntradaEstoque automática</span></div>
+    </div>
+  </div>
+
+  <div class="sl">Resumo por números</div>
+  <div class="g4">
+    <div class="card" style="text-align:center"><div style="font-family:var(--display);font-size:36px;color:var(--blue);margin-bottom:4px">92<span style="font-style:italic;color:var(--t3)">+</span></div><div style="font-family:var(--mono);font-size:10px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase">Arquivos .cs</div></div>
+    <div class="card" style="text-align:center"><div style="font-family:var(--display);font-size:36px;color:var(--green);margin-bottom:4px">32</div><div style="font-family:var(--mono);font-size:10px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase">Testes unitários</div></div>
+    <div class="card" style="text-align:center"><div style="font-family:var(--display);font-size:36px;color:var(--amber);margin-bottom:4px">5</div><div style="font-family:var(--mono);font-size:10px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase">Blocos completos</div></div>
+    <div class="card" style="text-align:center"><div style="font-family:var(--display);font-size:36px;color:var(--t1);margin-bottom:4px">20</div><div style="font-family:var(--mono);font-size:10px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase">Clientes em produção</div></div>
+  </div>
+</div>
+
+<!-- ══ PADRÕES ══ -->
+<div class="sp" id="sp-padroes">
+  <div class="sl">EntidadeSaaSBase — implementação completa</div>
+  <div class="code"><span class="kw">public abstract class</span> <span class="cl">EntidadeSaaSBase</span> : Notifiable&lt;Notification&gt;, <span class="cl">ISyncable</span>
+{
+    <span class="kw">public</span> Guid Id { <span class="kw">get private set</span>; }
+    <span class="kw">public</span> Guid SyncId { <span class="kw">get private set</span>; }
+    <span class="kw">public string</span> TenantId { <span class="kw">get private set</span>; } = <span class="st">""</span>;
+    <span class="kw">public int</span> SyncVersion { <span class="kw">get private set</span>; }
+    <span class="kw">public</span> DateTime CriadoEm { <span class="kw">get private set</span>; }
+    <span class="kw">public</span> DateTime? AlteradoEm { <span class="kw">get private set</span>; }
+    <span class="kw">public</span> DateTime? DeletadoEm { <span class="kw">get private set</span>; }
+    <span class="kw">public string</span>? CriadoPor { <span class="kw">get private set</span>; }
+    <span class="kw">public string</span>? AlteradoPor { <span class="kw">get private set</span>; }
+
+    <span class="cm">// EF Core precisa de construtor protegido sem parâmetros</span>
+    <span class="kw">protected</span> EntidadeSaaSBase() { }
+
+    <span class="kw">protected</span> EntidadeSaaSBase(<span class="kw">string</span> tenantId, <span class="kw">string</span> criadoPor)
+    {
+        Id = Guid.NewGuid();        <span class="cm">// Guid — nunca long</span>
+        SyncId = Guid.NewGuid();    <span class="cm">// chave estável para sync</span>
+        TenantId = tenantId;
+        CriadoEm = DateTime.UtcNow; <span class="cm">// UtcNow — nunca Now</span>
+        CriadoPor = criadoPor;
+        SyncVersion = 0;
+    }
+
+    <span class="kw">public void</span> MarcarAlterado(<span class="kw">string</span> alteradoPor)
+    {
+        AlteradoEm = DateTime.UtcNow;
+        AlteradoPor = alteradoPor;
+        SyncVersion++;
+    }
+
+    <span class="kw">public void</span> Deletar(<span class="kw">string</span> deletadoPor)
+    {
+        DeletadoEm = DateTime.UtcNow; <span class="cm">// soft delete — nunca context.Remove()</span>
+        AlteradoPor = deletadoPor;
+    }
+
+    <span class="kw">public bool</span> EstaAtivo() => DeletadoEm == <span class="kw">null</span>;
+    <span class="kw">public bool</span> IsValid => !Notifications.Any();
+}</div>
+
+  <div class="sl">ContextBase — QueryFilter automático por reflection</div>
+  <div class="code"><span class="kw">protected override void</span> OnModelCreating(<span class="cl">ModelBuilder</span> modelBuilder)
+{
+    <span class="kw">var</span> method = <span class="kw">typeof</span>(<span class="cl">ContextBase</span>)
+        .GetMethod(<span class="st">"AplicarFiltroTenantESoftDelete"</span>,
+            BindingFlags.NonPublic | BindingFlags.Static);
+
+    <span class="kw">foreach</span> (<span class="kw">var</span> entityType <span class="kw">in</span> modelBuilder.Model.GetEntityTypes())
+    {
+        <span class="kw">if</span> (entityType.ClrType.IsAssignableTo(<span class="kw">typeof</span>(<span class="cl">EntidadeSaaSBase</span>)))
+        {
+            method!.MakeGenericMethod(entityType.ClrType)
+                   .Invoke(<span class="kw">null</span>, [modelBuilder, <span class="kw">this</span>]);
+        }
+    }
+}
+
+<span class="cm">// Aplicado a TODAS as entidades automaticamente — nunca esquece</span>
+<span class="cm">// WHERE tenant_id = {TenantProvider.GetTenantId()}</span>
+<span class="cm">// AND deletado_em IS NULL</span></div>
+
+  <div class="sl">Regras SEMPRE e NUNCA</div>
+  <div class="g2">
+    <div class="card">
+      <p style="font-size:11px;font-weight:500;color:var(--green);margin-bottom:10px;font-family:var(--mono)">✅ SEMPRE</p>
+      <div style="font-size:11px;color:var(--t2);line-height:2.2">
+        ✓ Herdar <span class="mono">EntidadeSaaSBase</span> em toda entidade<br>
+        ✓ <span class="mono">DateTime.UtcNow</span> — nunca DateTime.Now<br>
+        ✓ <span class="mono">Guid</span> para IDs — nunca long sequencial<br>
+        ✓ Soft delete via <span class="mono">entidade.Deletar(userId)</span><br>
+        ✓ <span class="mono">ITenantProvider</span> via DI — nunca estático<br>
+        ✓ Schema por módulo no mapping EF Core<br>
+        ✓ <span class="mono">snake_case</span> nas colunas PostgreSQL<br>
+        ✓ CQRS — zero lógica no Controller<br>
+        ✓ Outbox Pattern para todo Domain Event<br>
+        ✓ <span class="mono">Precision(18,2)</span> em todo campo decimal<br>
+        ✓ Índice composto <span class="mono">(tenant_id, campo_negocio)</span><br>
+        ✓ Índice único em <span class="mono">sync_id</span>
+      </div>
+    </div>
+    <div class="card">
+      <p style="font-size:11px;font-weight:500;color:var(--red);margin-bottom:10px;font-family:var(--mono)">❌ NUNCA</p>
+      <div style="font-size:11px;color:var(--t2);line-height:2.2">
+        ✗ <span class="mono">context.Remove()</span> — soft delete apenas<br>
+        ✗ Lógica de negócio no Controller<br>
+        ✗ DbContext de outro módulo injetado<br>
+        ✗ Variável estática de TenantId<br>
+        ✗ JWT ou secret no código fonte<br>
+        ✗ Connection string em appsettings de produção<br>
+        ✗ Entidade sem herdar EntidadeSaaSBase<br>
+        ✗ <span class="mono">long</span> ou <span class="mono">int</span> como ID de entidade<br>
+        ✗ <span class="mono">DateTime.Now</span> em qualquer lugar<br>
+        ✗ Domain Event publicado diretamente<br>
+        ✗ SQL raw sem parâmetros<br>
+        ✗ Cross-schema query sem documentação
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADR ══ -->
+<div class="sp" id="sp-adr">
+  <div class="sl">Decisões arquiteturais fechadas</div>
+  <table class="tbl">
+    <tr><th>Decisão</th><th>Escolha</th><th>Descartado</th><th>Motivo principal</th></tr>
+    <tr><td>ORM</td><td class="mono">EF Core 8</td><td class="mono" style="text-decoration:line-through;color:var(--t3)">Dapper</td><td>QueryFilter multi-tenant automático — Dapper exige WHERE manual em toda query</td></tr>
+    <tr><td>Identity</td><td class="mono">Keycloak 24</td><td style="text-decoration:line-through;color:var(--t3)">JWT hardcoded · Auth0</td><td>JWT hardcoded: sem MFA, sem revogação. Auth0: $250/mês a escala + vendor lock-in</td></tr>
+    <tr><td>Cache</td><td class="mono">Valkey 7</td><td style="text-decoration:line-through;color:var(--t3)">Redis 7</td><td>Redis mudou para BSL em 2024 — risco comercial para SaaS competindo com Redis Ltd</td></tr>
+    <tr><td>Secrets</td><td class="mono">HashiCorp Vault OSS</td><td style="text-decoration:line-through;color:var(--t3)">Azure Key Vault</td><td>Cloud-agnostic. Dynamic secrets. On-premise. Zero custo.</td></tr>
+    <tr><td>IaC</td><td class="mono">OpenTofu</td><td style="text-decoration:line-through;color:var(--t3)">Terraform</td><td>HashiCorp mudou Terraform para BSL em 2023 — mesmo risco do Redis</td></tr>
+    <tr><td>Banco</td><td class="mono">PostgreSQL 16</td><td style="text-decoration:line-through;color:var(--t3)">SQL Server</td><td>Open source, zero licença, RLS nativo, extensões superiores (pgvector, pgcrypto)</td></tr>
+    <tr><td>Frontend web</td><td class="mono">Nuxt 3</td><td style="text-decoration:line-through;color:var(--t3)">Blazor WASM · Next.js</td><td>Blazor: stack diferente, time dividido. Next.js: React, curva adicional desnecessária</td></tr>
+    <tr><td>Desktop shell</td><td class="mono">Electron + Nuxt 3</td><td style="text-decoration:line-through;color:var(--t3)">Tauri (Rust)</td><td>Reutiliza 100% do código web. Tauri revisitar Fase 2 com expertise Rust</td></tr>
+    <tr><td>Mobile/PDV</td><td class="mono">React Native + Expo</td><td style="text-decoration:line-through;color:var(--t3)">Flutter</td><td>Flutter requer Dart — stack separada. RN aproveita devs JavaScript do time</td></tr>
+    <tr><td>IDs de entidade</td><td class="mono">Guid</td><td style="text-decoration:line-through;color:var(--t3)">long sequencial</td><td>Offline-first: geração local sem banco. Sem colisão em merge de dados</td></tr>
+    <tr><td>Sync offline</td><td class="mono">SyncId + SyncVersion</td><td style="text-decoration:line-through;color:var(--t3)">timestamp puro</td><td>Detecção de conflito robusta. Timestamp tem problemas com clock skew</td></tr>
+    <tr><td>Multi-tenancy</td><td>QueryFilter via ContextBase</td><td style="text-decoration:line-through;color:var(--t3)">RLS puro</td><td>Flexibilidade de troca de estratégia sem mudar queries. RLS como segunda barreira</td></tr>
+    <tr><td>Proxy / TLS</td><td class="mono">Caddy 2</td><td style="text-decoration:line-through;color:var(--t3)">Nginx</td><td>HTTPS automático (Let's Encrypt), HTTP/3, configuração 6x mais simples</td></tr>
+    <tr><td>Lib NF-e</td><td class="mono">Hercules.NET.NFe.NFCe</td><td style="text-decoration:line-through;color:var(--t3)">nfce-lib, DFe.NET</td><td>Já em produção nos 20 clientes. Homologada com todas as UFs. Não substituir.</td></tr>
+    <tr><td>Jobs agendados</td><td class="mono">Quartz.NET</td><td style="text-decoration:line-through;color:var(--t3)">Hangfire</td><td>Clustering nativo com PostgreSQL. Hangfire requer banco separado ou SQL Server</td></tr>
+  </table>
+</div>
+
+<!-- ══ BUGS ══ -->
+<div class="sp" id="sp-bugs">
+  <div class="sl">Bugs críticos do Epros.ERP legado — corrigidos por design</div>
+  <div class="danger">Estes bugs existem em produção nos 20 clientes Epros.ERP. A reescrita resolve todos por arquitetura — não por correções pontuais. Não é possível "corrigir" individualmente sem refatorar a base.</div>
+
+  <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);overflow:hidden;margin-top:12px">
+    <div style="display:flex;background:var(--s2);padding:8px 10px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--t3)">
+      <span style="min-width:200px">Bug no legado</span>
+      <span style="flex:1">Impacto em produção</span>
+      <span style="flex:1">Solução Epros</span>
+    </div>
+    <div class="bug-row"><span class="bug-col bug">TenantData.TenantIdStatic</span><span class="bug-col imp">Variável estática global. Em concorrência, Thread A pode ler TenantId da Thread B — vazamento de dados entre clientes</span><span class="bug-col sol">ITenantProvider scoped via IHttpContextAccessor. Cada request tem seu próprio contexto de tenant.</span></div>
+    <div class="bug-row"><span class="bug-col bug">JWT secret hardcoded</span><span class="bug-col imp">Secret fixo no appsettings. Sem MFA. Sem revogação de sessão. Sem SSO. Rotação manual é inviável.</span><span class="bug-col sol">Keycloak 24 com OIDC. MFA TOTP + WebAuthn. Revogação imediata de sessões. Token 15min.</span></div>
+    <div class="bug-row"><span class="bug-col bug">SQL Server (licença)</span><span class="bug-col imp">Custo de licença por cliente. Vendor lock-in da Microsoft. Sem pgvector, pgcrypto, particionamento adequado.</span><span class="bug-col sol">PostgreSQL 16 open source. Zero licença. pgcrypto para PII, pgvector para IA, pg_trgm para busca.</span></div>
+    <div class="bug-row"><span class="bug-col bug">DateTime.Now em todo código</span><span class="bug-col imp">Usa timezone local do servidor. Bugs de horário de verão. Registros com hora errada. Inconsistências em multi-servidor.</span><span class="bug-col sol">DateTime.UtcNow obrigatório. Convenção no ContextBase. Regra de PR bloqueia DateTime.Now.</span></div>
+    <div class="bug-row"><span class="bug-col bug">IDs long sequenciais</span><span class="bug-col imp">Impossível gerar ID offline (precisa de banco). Colisão ao mesclar dados de dois ambientes. Enumerable via URL.</span><span class="bug-col sol">Guid em todas as entidades. Gerado localmente no construtor. Offline-safe. Não enumerável.</span></div>
+    <div class="bug-row"><span class="bug-col bug">PDV offline com Firebird</span><span class="bug-col imp">Banco Firebird embutido. Pesado (25MB+). Sincronização manual frágil. Licença proprietária. Sem solução de conflito.</span><span class="bug-col sol">SQLite via Electron. Leve, confiável. SyncEngine com SyncVersion para detecção de conflitos. For UPDATE SKIP LOCKED.</span></div>
+    <div class="bug-row"><span class="bug-col bug">Controllers com 40k–191k linhas</span><span class="bug-col imp">CompraController: 3.294 linhas. VendaController: 2.535. VendaNfeController: 2.739. Impossível testar, manter ou evoluir.</span><span class="bug-col sol">CQRS: handler por operação (~50–100 linhas cada). Testável isoladamente. Sem estado compartilhado.</span></div>
+    <div class="bug-row"><span class="bug-col bug">QueryFilter manual por entity</span><span class="bug-col imp">Cada entidade precisava de WHERE manual. Fácil esquecer. Vazamento de dados entre tenants silencioso.</span><span class="bug-col sol">ContextBase com reflection automático. Impossível esquecer — aplica em toda entidade que herda EntidadeSaaSBase.</span></div>
+    <div class="bug-row"><span class="bug-col bug">TenantMiddleware comentado</span><span class="bug-col imp">O middleware de validação de tenant estava desabilitado em produção. Zero validação de tenant em cada request.</span><span class="bug-col sol">InquilinoSaaSMiddleware implementado, testado e com suite de integração obrigatória (tenant leak A/B).</span></div>
+    <div class="bug-row"><span class="bug-col bug">Blazor WASM no painel admin</span><span class="bug-col imp">Stack diferente do ERP. Time dividido entre Vue/Nuxt e Blazor. Build lento (5min+). DLLs .NET no browser.</span><span class="bug-col sol">Nuxt 3 unificado. Um time, uma stack, um pipeline CI. Build em segundos.</span></div>
+  </div>
+</div>
+
+<!-- ══ ROADMAP ══ -->
+<div class="sp" id="sp-roadmap">
+  <div class="sl">Próximos blocos — sequência de implementação</div>
+
+  <div class="bloco">
+    <div class="bloco-num" style="color:var(--amber)">Bloco 6</div>
+    <div class="bloco-body">
+      <h4>Estoque / Compras — NF-e de entrada</h4>
+      <p>Reengenharia do CompraController.cs (3.294 linhas). Agregado Compra + CompraItem com cálculo de impostos (ICMS ST, IPI). LancarCompraCommand orquestra: registrar NF-e de entrada na SEFAZ + criar ContaPagar no Financeiro + entrada automática de estoque com custo médio ponderado. Handlers de cancelamento e devolução de compra.</p>
+      <div class="tags"><span class="pill pam">Alta prioridade</span><span class="pill pam">Desbloqueia módulo fiscal completo</span></div>
+    </div>
+  </div>
+
+  <div class="bloco">
+    <div class="bloco-num" style="color:var(--amber)">Bloco 7</div>
+    <div class="bloco-body">
+      <h4>Infraestrutura — Migrations, Keycloak, CI/CD</h4>
+      <p>Migrations EF Core para todos os módulos existentes. Seeders Keycloak: realm epros, client epros-api, roles por módulo, Protocol Mapper para claim tenantId. Pipeline GitHub Actions completo: build → unit tests → SAST → integration tests → CVE scan → docker push → deploy staging → DAST → aprovação manual → deploy produção. Script de migração de IDs long→Guid para os 20 clientes Epros.ERP.</p>
+      <div class="tags"><span class="pill pam">Alta prioridade</span><span class="pill pam">Habilita CI/CD real</span></div>
+    </div>
+  </div>
+
+  <div class="bloco">
+    <div class="bloco-num" style="color:var(--blue)">Bloco 8</div>
+    <div class="bloco-body">
+      <h4>Qualidade + Testes de Integração + Workers</h4>
+      <p>Suite completa de testes de integração com Testcontainers: tenant leak A/B, ledger append-only, audit trail, PCI masking, entitlement gate, outbox delivery, soft delete filter. Endpoint GET /sync/delta para Desktop/PDV. Worker Quartz.NET para vencimento automático de títulos com notificação. Webhook MercadoPago para baixa automática de faturas SaaS. Testes de carga k6 com SLO gates.</p>
+      <div class="tags"><span class="pill pb">Média prioridade</span><span class="pill pb">Garante segurança antes de novos clientes</span></div>
+    </div>
+  </div>
+
+  <div class="bloco">
+    <div class="bloco-num" style="color:var(--blue)">Bloco 9</div>
+    <div class="bloco-body">
+      <h4>Cadastros Base + Epros.App (Desktop)</h4>
+      <p>Módulo Pessoa (PF/PJ/Estrangeiro) e Empresa como entidades canônicas em plataforma.* — definidas e congeladas antes de qualquer módulo novo começar. Início do Epros.App: Electron + Nuxt 3, SQLite local com BetterSqlite3, fila de sync persistida, Motor Fiscal Edge com Hercules.NET via IPC com processo sidecar .NET.</p>
+      <div class="tags"><span class="pill pb">Média prioridade</span><span class="pill pb">Desbloqueia integrações entre módulos</span></div>
+    </div>
+  </div>
+
+  <div class="bloco">
+    <div class="bloco-num" style="color:var(--t3)">Bloco 10</div>
+    <div class="bloco-body">
+      <h4>ABAC + Permissões + Epros.Mobile</h4>
+      <p>Keycloak roles mapeados por módulo e submódulo. Menu dinâmico renderizado por entitlements. PerfilUsuario + ACL para configurações avançadas. Migração de perfis dos 20 clientes Epros.ERP para o novo modelo. Início do Epros.Mobile: React Native + Expo, SQLite local, modo PDV com NFC-e em contingência offline.</p>
+      <div class="tags"><span class="pill pgy">Longo prazo</span><span class="pill pgy">Depende de Bloco 7 (Keycloak seeders)</span></div>
+    </div>
+  </div>
+
+  <div class="sl">Decisões técnicas abertas</div>
+  <div class="drow"><div class="odot"></div><span class="dq">Catalog Database global</span><span class="da">Banco de metadados de tenants (cluster, schema, credentials) especificado mas não implementado. Conexão atual via appsettings.</span></div>
+  <div class="drow"><div class="odot"></div><span class="dq">Desktop: nível de offline</span><span class="da">Dias completos (SQLite full com todos os módulos) vs. tolerância a instabilidade de minutos? Define escopo do Epros.App.</span></div>
+  <div class="drow"><div class="odot"></div><span class="dq">PDV: produto separado?</span><span class="da">Modo do Epros.Mobile com drivers de hardware vs. produto dedicado com pinpad e impressora fiscal integrados.</span></div>
+  <div class="drow"><div class="odot"></div><span class="dq">Conflict resolution offline</span><span class="da">Last Write Wins · CRDT · Fila de reconciliação manual? SyncVersion já preparado para qualquer estratégia.</span></div>
+  <div class="drow"><div class="odot"></div><span class="dq">RLS no PostgreSQL</span><span class="da">QueryFilter EF Core é a barreira primária. RLS como segunda barreira especificado mas ainda não configurado.</span></div>
+  <div class="drow"><div class="odot"></div><span class="dq">Desktop: Tauri vs Electron</span><span class="da">Electron escolhido agora (reutiliza Nuxt 3). Tauri revisitar no Bloco 9 quando time tiver expertise em Rust — menor bundle, melhor performance.</span></div>
+</div>
+
+<!-- ══ AMBIENTE ══ -->
+<div class="sp" id="sp-ambiente">
+  <div class="sl">Como subir o ambiente de desenvolvimento</div>
+  <div class="code"><span class="cm"># 1. Pré-requisitos: Docker, .NET 8 SDK, Node 20+</span>
+
+<span class="cm"># 2. Clonar e subir infraestrutura</span>
+git clone https://github.com/epros/plataforma-saas
+cd plataforma-saas
+docker compose up -d
+
+<span class="cm"># 3. Aguardar todos os serviços ficarem healthy</span>
+docker compose ps
+
+<span class="cm"># 4. Aplicar migrations (um por módulo)</span>
+dotnet ef database update \
+  --project src/Epros.Modules.GestaoClientes \
+  --startup-project src/Epros.API \
+  --context ContextGestaoClientes
+
+dotnet ef database update \
+  --project src/Epros.Modules.Financeiro \
+  --startup-project src/Epros.API \
+  --context ContextFinanceiro
+
+dotnet ef database update \
+  --project src/Epros.Modules.Estoque \
+  --startup-project src/Epros.API \
+  --context ContextEstoque
+
+dotnet ef database update \
+  --project src/Epros.Modules.Vendas \
+  --startup-project src/Epros.API \
+  --context ContextVendas
+
+<span class="cm"># 5. Rodar a API</span>
+dotnet run --project src/Epros.API
+
+<span class="cm"># 6. Rodar todos os testes</span>
+dotnet test
+
+<span class="cm"># 7. Rodar testes de segurança obrigatórios</span>
+dotnet test --filter "Category=Security"
+
+<span class="cm"># 8. Derrubar tudo (preserva volumes)</span>
+docker compose down
+
+<span class="cm"># 9. Derrubar e limpar dados</span>
+docker compose down -v</div>
+
+  <div class="sl">URLs de acesso</div>
+  <div class="row"><span class="rl">API + Swagger</span><span class="rv"><span class="mono">https://localhost:7000/swagger</span> — documentação de todos os endpoints</span></div>
+  <div class="row"><span class="rl">Keycloak Admin</span><span class="rv"><span class="mono">http://localhost:8080</span> — admin / admin · Realm: epros-tenant</span></div>
+  <div class="row"><span class="rl">Grafana</span><span class="rv"><span class="mono">http://localhost:3000</span> — admin / admin · Dashboards: API Overview, PostgreSQL</span></div>
+  <div class="row"><span class="rl">MinIO Console</span><span class="rv"><span class="mono">http://localhost:9001</span> — epros_minio / epros_minio_password</span></div>
+  <div class="row"><span class="rl">Vault UI</span><span class="rv"><span class="mono">http://localhost:8200</span> — Root token: epros-dev-token</span></div>
+  <div class="row"><span class="rl">PostgreSQL</span><span class="rv"><span class="mono">localhost:5432</span> — epros / epros_dev_password · database: epros</span></div>
+  <div class="row"><span class="rl">Prometheus</span><span class="rv"><span class="mono">http://localhost:9090</span> — PromQL direto</span></div>
+  <div class="row"><span class="rl">Valkey CLI</span><span class="rv"><span class="mono">docker compose exec valkey valkey-cli</span></span></div>
+
+  <div class="sl">Como criar um novo módulo</div>
+  <div class="code"><span class="cm"># Scaffolding manual de um novo módulo</span>
+export MODULO=NomeDoModulo SCHEMA=nome_schema
+
+mkdir -p src/Epros.Modules.$MODULO/{Domain/Entities,Domain/ValueObjects}
+mkdir -p src/Epros.Modules.$MODULO/{Application/{Commands,Queries,Handlers}}
+mkdir -p src/Epros.Modules.$MODULO/{Infrastructure/{Data/Mappings,Repositories}}
+
+<span class="cm"># Criar migration para o novo DbContext</span>
+dotnet ef migrations add InitialCreate \
+  --project src/Epros.Modules.$MODULO \
+  --startup-project src/Epros.API \
+  --context Context$MODULO
+
+<span class="cm"># Registrar no DI em src/Epros.API/Extensions/ModulosExtensions.cs</span>
+<span class="cm"># services.AddModulo{Nome}(configuration);</span>
+
+<span class="cm"># Ou usar o Prompt 2 da aba ③ Arquitetura para gerar via IA</span></div>
+</div>
+
+</div><!-- /page -->
+
+<script>
+var tabs=['status','padroes','adr','bugs','roadmap','ambiente'];
+function st(id){
+  document.querySelectorAll('.stab').forEach(function(t,i){t.classList.toggle('on',tabs[i]===id)});
+  document.querySelectorAll('.sp').forEach(function(p){p.classList.toggle('on',p.id==='sp-'+id)});
+}
+</script>
+</body>
+</html>

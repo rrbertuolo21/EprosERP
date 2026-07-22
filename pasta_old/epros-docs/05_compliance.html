@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — Compliance</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px}
+.stab{padding:5px 13px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--b2);border-radius:20px;background:none;color:var(--t3);transition:all .15s;font-family:var(--sans)}
+.stab:hover{color:var(--t2)}.stab.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.sp{display:none}.sp.on{display:block}
+
+.comp-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px 18px;margin-bottom:8px}
+.comp-head{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+.comp-name{font-size:14px;font-weight:500}
+.comp-region{font-size:11px;color:var(--t3)}
+.comp-body{font-size:11px;color:var(--t2);line-height:1.9}
+.comp-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.comp-impl{margin-top:10px;padding-top:10px;border-top:1px solid var(--b1)}
+.comp-impl-title{font-family:var(--mono);font-size:10px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px}
+.comp-impl-row{font-size:11px;color:var(--t2);margin-bottom:3px;display:flex;gap:8px}
+.comp-impl-key{color:var(--blue);font-family:var(--mono);min-width:90px;flex-shrink:0}
+.ck{color:var(--green);font-weight:600}
+.cx{color:var(--t3)}
+
+.ret-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--b1);font-size:12px}
+.ret-row:last-child{border-bottom:none}
+.ret-tipo{min-width:160px;font-weight:500;color:var(--t1)}
+.ret-prazo{font-family:var(--mono);font-size:11px;color:var(--blue);min-width:80px;flex-shrink:0}
+.ret-base{flex:1;color:var(--t2)}
+
+.right-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px 16px;margin-bottom:8px}
+.right-card h4{font-size:12px;font-weight:500;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.right-card p{font-size:11px;color:var(--t2);line-height:1.55}
+.right-card .impl{font-size:11px;color:var(--teal);margin-top:5px}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="index.html">Home</a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt on" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+  <a class="nt" href="08_api.html">⑧ API Reference</a>
+  <a class="nt" href="09_runbook.html">⑨ Runbook & DR</a>
+  <a class="nt" href="10_modelo_financeiro.html">⑩ Modelo Financeiro</a>
+  <a class="nt" href="11_integracoes.html">⑪ Integrações</a>
+  <a class="nt" href="12_modelo_dados.html">⑫ Modelo de Dados</a>
+  <a class="nt" href="13_onboarding.html">⑬ Guia de Onboarding</a>
+  <a class="nt" href="14_disaster_recovery.html">⑭ Disaster Recovery</a>
+  <a class="nt" href="15_glossario.html">⑮ Glossário</a>
+  <a class="nt" href="16_i18n.html">⑯ Internacionalização</a>
+  <a class="nt" href="17_changelog.html">⑰ Changelog</a>
+  <a class="nt" href="18_plano_execucao.html">⑱ Plano de Execução</a>
+  <a class="nt" href="19_operacional.html">⑲ Modelo Operacional</a>
+  <a class="nt" href="20_treinamento.html">⑳ Treinamento por Função</a>
+  <a class="nt" href="21_agentes_prompts.html">㉑ Prompts dos Agentes</a>
+  <a class="nt" href="22_diagnostico.html">㉒ Diagnóstico do Legado</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>Regulações · Controles Técnicos · Retenção · Direitos do Titular · Fiscal BR</div>
+  <h1>Compliance <em>mundial</em></h1>
+  <p class="hero-desc">Compliance não é uma feature — é camada arquitetural desde o primeiro commit. Filosofia: projetar os controles mais restritivos (GDPR + PCI juntos) e aplicá-los universalmente. Qualquer regulação menos restritiva é automaticamente atendida.</p>
+</div>
+
+<div class="page">
+
+<div class="subtabs">
+  <button class="stab on" onclick="st('regulacoes')">Regulações</button>
+  <button class="stab" onclick="st('controles')">Controles Técnicos</button>
+  <button class="stab" onclick="st('direitos')">Direitos do Titular</button>
+  <button class="stab" onclick="st('retencao')">Retenção de Dados</button>
+  <button class="stab" onclick="st('fiscal')">Fiscal BR</button>
+</div>
+
+<!-- ══ REGULAÇÕES ══ -->
+<div class="sp on" id="sp-regulacoes">
+  <div class="sl">Brasil</div>
+
+  <div class="comp-card">
+    <div class="comp-head"><span class="comp-name">LGPD</span><span class="comp-region">Brasil · Lei 13.709/2018 · Fiscalização: ANPD</span></div>
+    <div class="comp-body">
+      · Base legal obrigatória para cada tratamento de dado pessoal (Art. 7) — consentimento, legítimo interesse, contrato, etc.<br>
+      · Direitos do titular: acesso, correção, anonimização, portabilidade, eliminação, revogação de consentimento (Art. 18)<br>
+      · DPO (Encarregado) obrigatório para dados sensíveis — nome e contato públicos<br>
+      · RIPD (Relatório de Impacto) para operações de alto risco<br>
+      · Notificação à ANPD e ao titular em caso de incidente — prazo: "em tempo razoável" (interpretado como 72h)<br>
+      · Multas: até 2% do faturamento BR, limitado a R$ 50M por infração
+    </div>
+    <div class="comp-tags"><span class="tag tag-b">Auditoria</span><span class="tag tag-g">Portabilidade</span><span class="tag tag-am">Esquecimento</span><span class="tag tag-r">DPO</span></div>
+    <div class="comp-impl">
+      <div class="comp-impl-title">Implementação no Epros</div>
+      <div class="comp-impl-row"><span class="comp-impl-key">Base legal</span><span>Registrada por tipo de dado na tabela plataforma.finalidades_tratamento</span></div>
+      <div class="comp-impl-row"><span class="comp-impl-key">Direitos Art.18</span><span>Endpoint /api/meus-dados (portabilidade) + job de anonimização (esquecimento)</span></div>
+      <div class="comp-impl-row"><span class="comp-impl-key">Audit trail</span><span>Tabela plataforma.audit_trail append-only — triggers PG bloqueiam UPDATE/DELETE</span></div>
+      <div class="comp-impl-row"><span class="comp-impl-key">Incidentes</span><span>Módulo GRC / Whistleblower com fluxo de notificação à ANPD</span></div>
+    </div>
+  </div>
+
+  <div class="comp-card">
+    <div class="comp-head"><span class="comp-name">Legislação Fiscal BR</span><span class="comp-region">Brasil · RFB · SEFAZ · CEF · Prefeituras</span></div>
+    <div class="comp-body">
+      · NF-e (modelo 55): venda entre empresas, obrigatória para contribuintes ICMS<br>
+      · NFC-e (modelo 65): venda ao consumidor final, PDV — PAF-ECF substituído<br>
+      · NFS-e: serviços municipais — padrão ABRASF ou prefeitura específica<br>
+      · CT-e: conhecimento de transporte eletrônico<br>
+      · SPED Contábil (ECD) e SPED Fiscal (EFD): escrituração digital obrigatória<br>
+      · eSocial: obrigações trabalhistas e previdenciárias — eventos S-xxxx<br>
+      · REINF: retenções e informações da previdência social<br>
+      · Retenção de dados contábeis: 5 anos mínimo (Decreto-Lei 486/1969)
+    </div>
+    <div class="comp-tags"><span class="tag tag-b">NF-e/NFC-e</span><span class="tag tag-am">SPED</span><span class="tag tag-g">eSocial</span></div>
+    <div class="comp-impl">
+      <div class="comp-impl-title">Implementação no Epros</div>
+      <div class="comp-impl-row"><span class="comp-impl-key">Lib NF-e</span><span>Hercules.NET.NFe.NFCe v2026.3.15.14 — em produção nos 20 clientes</span></div>
+      <div class="comp-impl-row"><span class="comp-impl-key">Contingência</span><span>Motor Fiscal Edge no Desktop/PDV — emite NFC-e offline e sincroniza</span></div>
+      <div class="comp-impl-row"><span class="comp-impl-key">XMLs</span><span>Armazenados no MinIO por 5 anos mínimos — política de retenção automática</span></div>
+    </div>
+  </div>
+
+  <div class="sl">União Europeia</div>
+
+  <div class="comp-card">
+    <div class="comp-head"><span class="comp-name">GDPR</span><span class="comp-region">União Europeia · Regulamento 2016/679 · Fiscalização: DPAs nacionais</span></div>
+    <div class="comp-body">
+      · Privacy by Design &amp; Default — obrigatório por arquitetura, não configuração posterior<br>
+      · Consentimento: livre, específico, informado, inequívoco e revogável a qualquer momento<br>
+      · Data residency: dados de cidadãos EU devem permanecer na EU ou em países adequados<br>
+      · DPIA (Data Protection Impact Assessment) obrigatório para operações de alto risco<br>
+      · DPO obrigatório para processamento em larga escala de dados sensíveis<br>
+      · Notificação de breach à DPA: 72h · Ao titular: "sem demora injustificada"<br>
+      · Multas: até €20M ou 4% do faturamento global anual (o maior)
+    </div>
+    <div class="comp-tags"><span class="tag tag-b">Data residency</span><span class="tag tag-g">Privacy by Design</span><span class="tag tag-am">DPIA</span><span class="tag tag-r">72h breach</span></div>
+    <div class="comp-impl">
+      <div class="comp-impl-title">Implementação no Epros</div>
+      <div class="comp-impl-row"><span class="comp-impl-key">Residency</span><span>On-premise / Nível 3 garante dados na EU — configurável por tenant no Catalog</span></div>
+      <div class="comp-impl-row"><span class="comp-impl-key">By Design</span><span>DataMaskingMiddleware, audit_trail, PII criptografado — não configurável, sempre ativo</span></div>
+      <div class="comp-impl-row"><span class="comp-impl-key">Esquecimento</span><span>Job de anonimização respeita retenção legal (ex: dados contábeis 5 anos)</span></div>
+    </div>
+  </div>
+
+  <div class="comp-card">
+    <div class="comp-head"><span class="comp-name">CSRD</span><span class="comp-region">União Europeia · Corporate Sustainability Reporting Directive · 2023</span></div>
+    <div class="comp-body">
+      · Obrigatório para empresas com operação na EU: grandes empresas a partir de 2024, PMEs listadas a partir de 2026<br>
+      · Relatórios ESG obrigatórios conforme ESRS (European Sustainability Reporting Standards)<br>
+      · Dupla materialidade: impacto da empresa no ambiente E impacto do ambiente na empresa<br>
+      · Auditoria independente dos dados ESG — mesma exigência dos dados financeiros
+    </div>
+    <div class="comp-tags"><span class="tag tag-g">ESG obrigatório</span><span class="tag tag-b">ESRS</span><span class="tag tag-am">Auditoria ESG</span></div>
+    <div class="comp-impl">
+      <div class="comp-impl-title">Implementação no Epros</div>
+      <div class="comp-impl-row"><span class="comp-impl-key">Módulo ESG</span><span>Relatórios GRI, CSRD/ESRS, TCFD, SASB — automáticos com dados auditáveis</span></div>
+      <div class="comp-impl-row"><span class="comp-impl-key">Carbono</span><span>Scope 1/2/3 calculado a partir de dados transacionais de FIN, EST, PRO</span></div>
+    </div>
+  </div>
+
+  <div class="sl">Américas</div>
+  <div class="g2">
+    <div class="comp-card">
+      <div class="comp-head"><span class="comp-name">PCI DSS 4.0</span><span class="comp-region">Global · Payment Card Industry · Mandatório desde março 2025</span></div>
+      <div class="comp-body">
+        · Escopo reduzido (SAQ-A): Epros não armazena PAN nem CVV — pagamentos via gateway certificado<br>
+        · Epros armazena apenas: token + valor + data + ID da transação + status<br>
+        · Req. 8: MFA obrigatório para qualquer acesso administrativo<br>
+        · Req. 10: Logs de auditoria imutáveis, retidos por 12 meses mínimo<br>
+        · Req. 6: Gestão de vulnerabilidades — CVE scan integrado ao CI/CD
+      </div>
+      <div class="comp-tags"><span class="tag tag-r">SAQ-A</span><span class="tag tag-b">MFA</span><span class="tag tag-am">Logs 12 meses</span></div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-head"><span class="comp-name">CCPA / CPRA</span><span class="comp-region">California, EUA · Empresas com clientes no estado</span></div>
+      <div class="comp-body">
+        · Direito de saber quais dados pessoais são coletados e para qual finalidade<br>
+        · Opt-out de venda de dados pessoais ("Do Not Sell My Personal Information")<br>
+        · Direito de deleção similar ao GDPR right to erasure<br>
+        · Sensitive Personal Information (SPI) com tratamento mais restrito<br>
+        · Aplicável: faturamento &gt; $25M, 100k+ consumidores CA ou 50%+ receita de venda de dados
+      </div>
+      <div class="comp-tags"><span class="tag tag-g">Opt-out</span><span class="tag tag-b">Transparência</span></div>
+    </div>
+  </div>
+
+  <div class="sl">Ásia-Pacífico</div>
+  <div class="g3">
+    <div class="comp-card">
+      <div class="comp-head"><span class="comp-name">PDPA</span><span class="comp-region">Tailândia · Personal Data Protection Act · 2022</span></div>
+      <div class="comp-body">· Base legal obrigatória por tratamento<br>· Direitos do titular similares ao GDPR<br>· Data breach: notificação ao PDPC em 72h<br>· DPO obrigatório para certas categorias</div>
+      <div class="comp-tags"><span class="tag tag-t">SE Asiático</span></div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-head"><span class="comp-name">PIPL</span><span class="comp-region">China · Personal Information Protection Law · 2021</span></div>
+      <div class="comp-body">· Data localization estrita: dados de cidadãos chineses ficam na China<br>· Consentimento separado por finalidade<br>· Security Assessment obrigatória para transferência cross-border<br>· Proibição de discriminação algorítmica</div>
+      <div class="comp-tags"><span class="tag tag-r">Localização estrita</span></div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-head"><span class="comp-name">DPDP Act</span><span class="comp-region">Índia · Digital Personal Data Protection · 2023</span></div>
+      <div class="comp-body">· Consentimento livre, específico, informado e inequívoco<br>· Dados de crianças: consentimento parental obrigatório<br>· Transferência cross-border: lista de países aprovados<br>· Multas até ₹250 crore (~€27M)</div>
+      <div class="comp-tags"><span class="tag tag-g">Crescimento</span></div>
+    </div>
+  </div>
+
+  <div class="sl">Certificações</div>
+  <div class="comp-card">
+    <div class="comp-head"><span class="comp-name">SOC 2 Type II</span><span class="comp-region">Global · AICPA Trust Services Criteria · Auditoria anual</span></div>
+    <div class="comp-body">
+      · 5 Trust Service Categories: Security, Availability, Processing Integrity, Confidentiality, Privacy<br>
+      · Type II: auditoria de um período (geralmente 6–12 meses) por firma independente — não apenas design, mas operação real<br>
+      · Exigido por clientes Enterprise Fortune 500 como pré-requisito de contratação<br>
+      · Roadmap Epros: SOC 2 Type I no Ano 1, Type II no Ano 2
+    </div>
+    <div class="comp-tags"><span class="tag tag-p">Enterprise sales</span><span class="tag tag-b">Certificação</span><span class="tag tag-am">Roadmap Ano 2</span></div>
+  </div>
+</div>
+
+<!-- ══ CONTROLES TÉCNICOS ══ -->
+<div class="sp" id="sp-controles">
+  <div class="sl">Matriz de controles — cobertura por regulação</div>
+  <table class="tbl">
+    <tr><th>Controle técnico</th><th>LGPD</th><th>GDPR</th><th>PCI</th><th>CCPA</th><th>SOC 2</th><th>Implementação no Epros</th></tr>
+    <tr><td>Audit trail append-only</td><td class="ck">✓</td><td class="ck">✓</td><td class="ck">✓</td><td class="ck">✓</td><td class="ck">✓</td><td><span class="mono">plataforma.audit_trail</span> + triggers PG bloqueiam UPDATE/DELETE</td></tr>
+    <tr><td>Criptografia em repouso</td><td class="ck">✓</td><td class="ck">✓</td><td class="ck">✓</td><td class="cx">—</td><td class="ck">✓</td><td>pgcrypto nas colunas PII + volume encryption Linux + Vault KMS</td></tr>
+    <tr><td>TLS 1.3 em trânsito</td><td class="ck">✓</td><td class="ck">✓</td><td class="ck">✓</td><td class="cx">—</td><td class="ck">✓</td><td>Caddy 2 com HSTS preload + certificate pinning interno</td></tr>
+    <tr><td>MFA obrigatório</td><td class="cx">—</td><td class="cx">—</td><td class="ck">✓</td><td class="cx">—</td><td class="ck">✓</td><td>Keycloak TOTP (Google Auth) + WebAuthn/FIDO2 para perfis financeiros</td></tr>
+    <tr><td>Mascaramento em logs</td><td class="ck">✓</td><td class="ck">✓</td><td class="ck">✓</td><td class="ck">✓</td><td class="ck">✓</td><td>DataMaskingMiddleware + atributo [Sensitive] nas entidades</td></tr>
+    <tr><td>Portabilidade de dados</td><td class="ck">✓</td><td class="ck">✓</td><td class="cx">—</td><td class="ck">✓</td><td class="cx">—</td><td>GET /api/meus-dados → ZIP estruturado por tipo de dado</td></tr>
+    <tr><td>Direito ao esquecimento</td><td class="ck">✓</td><td class="ck">✓</td><td class="cx">—</td><td class="ck">✓</td><td class="cx">—</td><td>Job de anonimização — substitui dados por hash, preserva integridade contábil</td></tr>
+    <tr><td>Data residency configurável</td><td class="ck">✓</td><td class="ck">✓</td><td class="cx">—</td><td class="cx">—</td><td class="cx">—</td><td>Nível 3 on-premise por design — dados ficam na jurisdição do cliente</td></tr>
+    <tr><td>CVE scan automático no CI</td><td class="cx">—</td><td class="cx">—</td><td class="ck">✓</td><td class="cx">—</td><td class="ck">✓</td><td>Trivy — CVE crítico ou alto bloqueia o pipeline automaticamente</td></tr>
+    <tr><td>SBOM por release</td><td class="cx">—</td><td class="cx">—</td><td class="ck">✓</td><td class="cx">—</td><td class="ck">✓</td><td>CycloneDX gerado a cada build — rastreabilidade de todas as dependências</td></tr>
+    <tr><td>Secrets no Vault</td><td class="ck">✓</td><td class="ck">✓</td><td class="ck">✓</td><td class="cx">—</td><td class="ck">✓</td><td>HashiCorp Vault — dynamic secrets, rotação automática, audit log de acesso</td></tr>
+    <tr><td>Token rotation</td><td class="cx">—</td><td class="ck">✓</td><td class="ck">✓</td><td class="cx">—</td><td class="ck">✓</td><td>Keycloak: acesso 15min, refresh token de uso único rotacionado</td></tr>
+    <tr><td>Consentimento granular</td><td class="ck">✓</td><td class="ck">✓</td><td class="cx">—</td><td class="ck">✓</td><td class="cx">—</td><td>Tabela plataforma.consentimentos com finalidade, data e revogação</td></tr>
+    <tr><td>Segregação de funções (SoD)</td><td class="cx">—</td><td class="cx">—</td><td class="ck">✓</td><td class="cx">—</td><td class="ck">✓</td><td>Módulo GRC / SoD — detecção automática de conflitos de acesso</td></tr>
+  </table>
+</div>
+
+<!-- ══ DIREITOS DO TITULAR ══ -->
+<div class="sp" id="sp-direitos">
+  <div class="sl">8 direitos implementados — LGPD Art. 18 + GDPR Art. 15-22</div>
+
+  <div class="right-card">
+    <h4>① Acesso <span class="tag tag-b" style="margin:0">Art. 18-I LGPD · Art. 15 GDPR</span></h4>
+    <p>Titular pode solicitar confirmação de tratamento e acesso a todos os dados pessoais processados pelo Epros.</p>
+    <div class="impl">→ GET /api/meus-dados/acesso — retorna JSON estruturado com todos os dados por categoria</div>
+  </div>
+  <div class="right-card">
+    <h4>② Portabilidade <span class="tag tag-g" style="margin:0">Art. 18-V LGPD · Art. 20 GDPR</span></h4>
+    <p>Dados em formato estruturado, legível por máquina, transferível para outro controlador.</p>
+    <div class="impl">→ GET /api/meus-dados/exportar — ZIP com JSON + CSV por módulo. Job assíncrono para volumes grandes, notificação por e-mail.</div>
+  </div>
+  <div class="right-card">
+    <h4>③ Correção <span class="tag tag-am" style="margin:0">Art. 18-III LGPD · Art. 16 GDPR</span></h4>
+    <p>Titular pode solicitar correção de dados incompletos, inexatos ou desatualizados.</p>
+    <div class="impl">→ PUT /api/meus-dados/correcao — endpoint autenticado. Registra correção no audit_trail com dado anterior e novo.</div>
+  </div>
+  <div class="right-card">
+    <h4>④ Esquecimento (Eliminação) <span class="tag tag-am" style="margin:0">Art. 18-VI LGPD · Art. 17 GDPR</span></h4>
+    <p>Eliminação de dados desnecessários ou tratados em desconformidade. Exceção: dados necessários por obrigação legal (ex: dados contábeis 5 anos).</p>
+    <div class="impl">→ DELETE /api/meus-dados/eliminar — job de anonimização substitui dados pessoais por hash SHA-256. Preserva integridade referencial e obrigações legais. Log no audit_trail.</div>
+  </div>
+  <div class="right-card">
+    <h4>⑤ Revogação de Consentimento <span class="tag tag-b" style="margin:0">Art. 18-IX LGPD · Art. 7(3) GDPR</span></h4>
+    <p>A qualquer momento, sem custo ou prejuízo para o titular. Tratamento cessa imediatamente para a finalidade revogada.</p>
+    <div class="impl">→ POST /api/meus-dados/revogar-consentimento — atualiza plataforma.consentimentos, para jobs de tratamento vinculados.</div>
+  </div>
+  <div class="right-card">
+    <h4>⑥ Oposição ao Tratamento <span class="tag tag-b" style="margin:0">Art. 18-II LGPD · Art. 21 GDPR</span></h4>
+    <p>Titular pode se opor ao tratamento baseado em legítimo interesse ou finalidade pública.</p>
+    <div class="impl">→ POST /api/meus-dados/oposicao — gera ticket para avaliação pelo DPO. Resposta em até 15 dias.</div>
+  </div>
+  <div class="right-card">
+    <h4>⑦ Informação sobre Compartilhamento <span class="tag tag-g" style="margin:0">Art. 18-VII LGPD · Art. 15(1c) GDPR</span></h4>
+    <p>Titular pode solicitar com quem seus dados foram compartilhados (terceiros, parceiros, APIs externas).</p>
+    <div class="impl">→ GET /api/meus-dados/compartilhamentos — retorna registro de todas as transferências a terceiros com finalidade e data.</div>
+  </div>
+  <div class="right-card">
+    <h4>⑧ Revisão de Decisões Automatizadas <span class="tag tag-p" style="margin:0">Art. 20 LGPD · Art. 22 GDPR</span></h4>
+    <p>Titular pode solicitar revisão humana de decisões tomadas exclusivamente por algoritmos (ex: score de crédito, análise de risco).</p>
+    <div class="impl">→ POST /api/meus-dados/revisao-decisao — escala para analista humano. Log de todo o processo de revisão.</div>
+  </div>
+</div>
+
+<!-- ══ RETENÇÃO ══ -->
+<div class="sp" id="sp-retencao">
+  <div class="sl">Política de retenção de dados — legislação brasileira</div>
+  <div class="info">Retenção automática configurada por tipo de dado. Job Quartz.NET verifica diariamente e executa anonimização ou exclusão ao atingir o prazo. Dados com múltiplos prazos obedecem o mais longo.</div>
+
+  <div class="ret-row"><span class="ret-tipo">Documentos fiscais (NF-e, NFC-e, CT-e)</span><span class="ret-prazo">5 anos</span><span class="ret-base">Art. 195 CTN · Decreto-Lei 486/1969. XMLs armazenados no MinIO com política de retenção S3.</span></div>
+  <div class="ret-row"><span class="ret-tipo">Escrituração contábil (SPED ECD)</span><span class="ret-prazo">5 anos</span><span class="ret-base">Art. 174 CTN. Dados no schema financas.* preservados por 5 anos após encerramento.</span></div>
+  <div class="ret-row"><span class="ret-tipo">Documentos trabalhistas (admissão, demissão)</span><span class="ret-prazo">5 anos</span><span class="ret-base">Art. 11 CLT (prescrição). TRCT e recibos de pagamento: 5 anos.</span></div>
+  <div class="ret-row"><span class="ret-tipo">FGTS e contribuições previdenciárias</span><span class="ret-prazo">30 anos</span><span class="ret-base">Art. 23 Lei 8.036/1990. Comprovantes de recolhimento FGTS.</span></div>
+  <div class="ret-row"><span class="ret-tipo">Folha de pagamento e holerites</span><span class="ret-prazo">5 anos</span><span class="ret-base">Art. 11 CLT. Holerites e registros de pagamento.</span></div>
+  <div class="ret-row"><span class="ret-tipo">Ponto eletrônico (REP-P, AFD)</span><span class="ret-prazo">5 anos</span><span class="ret-base">Portaria MTE 1.510/2009. Arquivos AFD do REP.</span></div>
+  <div class="ret-row"><span class="ret-tipo">Contratos com clientes e fornecedores</span><span class="ret-prazo">5–10 anos</span><span class="ret-base">Art. 205 CC (prescrição geral 10 anos). Contratos de fornecimento e serviço.</span></div>
+  <div class="ret-row"><span class="ret-tipo">Logs de acesso ao sistema</span><span class="ret-prazo">6 meses</span><span class="ret-base">Marco Civil da Internet (Lei 12.965/2014) Art. 15. Logs de conexão de aplicação.</span></div>
+  <div class="ret-row"><span class="ret-tipo">Audit trail (ações sensíveis)</span><span class="ret-prazo">12 meses</span><span class="ret-base">PCI DSS Req. 10.5. Epros mantém 24 meses por padrão (configurável).</span></div>
+  <div class="ret-row"><span class="ret-tipo">Dados de consentimento LGPD</span><span class="ret-prazo">Duração + 5 anos</span><span class="ret-base">Prova de consentimento mantida pelo período do tratamento acrescido de 5 anos para defesa em eventual litígio.</span></div>
+  <div class="ret-row"><span class="ret-tipo">Dados de clientes após cancelamento</span><span class="ret-prazo">30 dias (soft) → 90 dias (hard)</span><span class="ret-base">30 dias: dados acessíveis para recuperação. 90 dias: anonimização definitiva. Exceção: dados com prazo legal maior.</span></div>
+  <div class="ret-row"><span class="ret-tipo">Backups de tenant</span><span class="ret-prazo">30 dias (diários) · 12 meses (mensais)</span><span class="ret-base">Backups diários retidos 30 dias. Snapshots mensais retidos 12 meses para recuperação de desastres.</span></div>
+</div>
+
+<!-- ══ FISCAL BR ══ -->
+<div class="sp" id="sp-fiscal">
+  <div class="sl">Motor Fiscal Epros — documentos suportados</div>
+  <div class="g2">
+    <div class="card"><div class="tag tag-b">NF-e — Modelo 55</div><h3>Nota Fiscal Eletrônica</h3><p>Operações entre empresas (B2B), remessas, devoluções, bonificações. Comunicação com SEFAZ em tempo real. Cancelamento em até 24h. Carta de Correção Eletrônica (CC-e). Inutilização de numeração.</p></div>
+    <div class="card"><div class="tag tag-g">NFC-e — Modelo 65</div><h3>Nota Fiscal Consumidor Eletrônico</h3><p>Substituição do ECF no PDV. Venda ao consumidor final. Modo contingência offline (FS-DA e DPEC). Sincronização com SEFAZ ao reconectar. QR Code no DANFCE para consulta pelo consumidor.</p></div>
+    <div class="card"><div class="tag tag-am">NFS-e</div><h3>Nota Fiscal de Serviços</h3><p>Emissão para prefeituras municipais. Padrão ABRASF e webservices específicos por município. RPS (Recibo Provisório de Serviços) para lote. Cancelamento via portal municipal.</p></div>
+    <div class="card"><div class="tag tag-t">CT-e — Modelo 57</div><h3>Conhecimento de Transporte</h3><p>Obrigatório para transportadoras e operações com frete. Modais rodoviário, aéreo, aquaviário, ferroviário e dutoviário. MDF-e (Manifesto) para transporte interestadual.</p></div>
+    <div class="card"><div class="tag tag-p">SPED ECD + EFD</div><h3>Escrituração Digital</h3><p>SPED Contábil (ECD): Balanço, DRE, DMPL, DLPA transmitidos digitalmente. SPED Fiscal (EFD): apuração de ICMS, IPI, PIS/COFINS. Geração automática a partir dos lançamentos do módulo FIN.</p></div>
+    <div class="card"><div class="tag tag-r">eSocial + REINF</div><h3>Obrigações Trabalhistas</h3><p>eSocial: eventos S-1000 a S-9999 — admissão, demissão, folha, afastamentos, SST. REINF: retenções INSS, IRRF de serviços, deduções. Processamento integrado ao módulo HCM.</p></div>
+  </div>
+
+  <div class="sl">Tabelas fiscais — dados de parametrização</div>
+  <div class="g3">
+    <div class="csm"><h4>CFOP</h4><p>Código Fiscal de Operações e Prestações. Determina a natureza da operação e tributação aplicável. Atualizado conforme AJUSTE SINIEF.</p></div>
+    <div class="csm"><h4>NCM + NcmTributacao</h4><p>Nomenclatura Comum do Mercosul + alíquotas de ICMS, IPI, PIS, COFINS por produto e UF de destino. Tabela TIPI da RFB.</p></div>
+    <div class="csm"><h4>CEST</h4><p>Código Especificador de Substituição Tributária. Obrigatório para produtos sujeitos ao regime de ST. Convênio ICMS 142/2018.</p></div>
+    <div class="csm"><h4>CST / CSOSN</h4><p>Código de Situação Tributária (regime normal) e CSOSN (Simples Nacional). Determinam o tratamento fiscal por operação.</p></div>
+    <div class="csm"><h4>cBenef</h4><p>Código de Benefício Fiscal por estado. DIFAL, isenções, reduções de base. Obrigatório a partir do Convênio ICMS 106/2020.</p></div>
+    <div class="csm"><h4>EmpresaParametrosDfe</h4><p>Certificado digital A1/A3 (via Vault), série NF por tipo, CSC do NFC-e, ambiente (produção/homologação) por empresa e UF.</p></div>
+  </div>
+
+  <div class="sl">Estados de um documento fiscal</div>
+  <div class="flow">
+    <div class="fb">Rascunho</div><div class="fa">→</div>
+    <div class="fb fi">Pendente</div><div class="fa">→</div>
+    <div class="fb fg">Autorizado</div><div class="fa">→</div>
+    <div class="fb fr">Cancelado</div>
+  </div>
+  <div class="flow">
+    <div class="fb fam">Contingência (offline)</div><div class="fa">→ reconecta →</div>
+    <div class="fb fi">Pendente</div><div class="fa">→</div>
+    <div class="fb fg">Autorizado</div>
+  </div>
+  <div class="flow">
+    <div class="fb fr">Rejeitado (código SEFAZ)</div><div class="fa">→ corrige →</div>
+    <div class="fb fi">Pendente</div>
+  </div>
+  <div class="ok"><strong>Hercules.NET.NFe.NFCe v2026.3.15.14</strong> — em produção nos 20 clientes Epros.ERP. Homologada com todas as UFs. Não substituir sem plano de validação extensiva em homologação.</div>
+</div>
+
+</div><!-- /page -->
+
+<script>
+var tabs=['regulacoes','controles','direitos','retencao','fiscal'];
+function st(id){
+  document.querySelectorAll('.stab').forEach(function(t,i){t.classList.toggle('on',tabs[i]===id)});
+  document.querySelectorAll('.sp').forEach(function(p){p.classList.toggle('on',p.id==='sp-'+id)});
+}
+</script>
+</body>
+</html>

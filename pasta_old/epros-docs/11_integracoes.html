@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — Integrações</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+.subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 22px; }
+.stab { padding: 5px 13px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--b2); border-radius: 20px; background: none; color: var(--t3); transition: all .15s; font-family: var(--sans); }
+.stab:hover { color: var(--t2); }
+.stab.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+.sp { display: none; }
+.sp.on { display: block; }
+.flow-diagram { background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r); padding: 18px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px; }
+.flow-step { display: flex; align-items: center; gap: 12px; }
+.flow-num { font-family: var(--mono); font-size: 11px; width: 22px; height: 22px; border-radius: 50%; background: var(--blue-l); color: var(--blue); display: flex; align-items: center; justify-content: center; font-weight: 600; border: 1px solid rgba(74,144,232,.3); }
+.flow-text { font-size: 12px; color: var(--t2); }
+.flow-text strong { color: var(--t1); }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+  <a class="nt" href="08_api.html">⑧ API Reference</a>
+  <a class="nt" href="09_runbook.html">⑨ Runbook & DR</a>
+  <a class="nt" href="10_modelo_financeiro.html">⑩ Modelo Financeiro</a>
+  <a class="nt on" href="11_integracoes.html">⑪ Integrações</a>
+  <a class="nt" href="12_modelo_dados.html">⑫ Modelo de Dados</a>
+  <a class="nt" href="13_onboarding.html">⑬ Guia de Onboarding</a>
+  <a class="nt" href="14_disaster_recovery.html">⑭ Disaster Recovery</a>
+  <a class="nt" href="15_glossario.html">⑮ Glossário</a>
+  <a class="nt" href="16_i18n.html">⑯ Internacionalização</a>
+  <a class="nt" href="17_changelog.html">⑰ Changelog</a>
+  <a class="nt" href="18_plano_execucao.html">⑱ Plano de Execução</a>
+  <a class="nt" href="19_operacional.html">⑲ Modelo Operacional</a>
+  <a class="nt" href="20_treinamento.html">⑳ Treinamento por Função</a>
+  <a class="nt" href="21_agentes_prompts.html">㉑ Prompts dos Agentes</a>
+  <a class="nt" href="22_diagnostico.html">㉒ Diagnóstico do Legado</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>API Externa · Gateways · SEFAZ · Provedores de Identidade · Logística</div>
+  <h1>Serviços & <em>Integrações</em></h1>
+  <p class="hero-desc">Documentação das interfaces de comunicação com parceiros externos, emissão fiscal governamental, processamento de pagamentos e federação de identidades.</p>
+</div>
+
+<div class="page">
+
+<div class="subtabs">
+  <button class="stab on" onclick="st('sefaz')">SEFAZ (DFe)</button>
+  <button class="stab" onclick="st('pagamentos')">Mercado Pago</button>
+  <button class="stab" onclick="st('auth')">Provedores de Identidade (OIDC)</button>
+  <button class="stab" onclick="st('logistica')">Marketplaces & Logística</button>
+</div>
+
+<!-- ══ SEFAZ ══ -->
+<div class="sp on" id="sp-sefaz">
+  <div class="sl">Emissão de Documentos Fiscais Eletrônicos (DFe)</div>
+  <p class="lead">O módulo Fiscal conecta-se diretamente aos Web Services estaduais da SEFAZ para emissão de NF-e (modelo 55) e NFC-e (modelo 65) utilizando a biblioteca proprietária homologada `Hercules.NET.NFe.NFCe`.</p>
+
+  <div class="flow-diagram">
+    <div class="flow-step">
+      <span class="flow-num">1</span>
+      <div class="flow-text"><strong>Geração do XML:</strong> O comando `EmitirDocumentoFiscalCommand` monta o XML com o schema nacional correspondente com base nos dados de vendas/compras.</div>
+    </div>
+    <div class="flow-step">
+      <span class="flow-num">2</span>
+      <div class="flow-text"><strong>Assinatura Digital:</strong> O monólito recupera o Certificado Digital A1 do tenant (armazenado com criptografia AES-256 em tabelas protegidas) e assina o XML.</div>
+    </div>
+    <div class="flow-step">
+      <span class="flow-num">3</span>
+      <div class="flow-text"><strong>Transmissão síncrona/assíncrona:</strong> O arquivo assinado é enviado via protocolo SOAP seguro para a respectiva SEFAZ autorizadora.</div>
+    </div>
+    <div class="flow-step">
+      <span class="flow-num">4</span>
+      <div class="flow-text"><strong>Persistência de Retorno:</strong> O protocolo de autorização retornado é gravado no banco de dados e o XML assinado é gravado no storage persistente MinIO S3.</div>
+    </div>
+  </div>
+
+  <div class="sl" style="margin-top:30px">Resiliência Operacional & Contingência NFC-e Offline</div>
+  <div class="danger"><strong>REGRA CRÍTICA:</strong> As operações de frente de caixa (PDV) não podem parar em caso de indisponibilidade de internet ou instabilidade da SEFAZ. O Epros.Mobile possui um fluxo nativo de contingência offline.</div>
+  
+  <ul class="steps-list">
+    <li class="step-item">
+      <span class="step-num">1</span>
+      <div class="step-desc"><strong>Detecção de Instabilidade:</strong> O aplicativo local monitora a latência das requisições e a saúde da SEFAZ. Se a comunicação cair ou demorar mais de 10 segundos, o PDV entra automaticamente em modo <strong>Contingência Offline (Offline Contingency)</strong>.</div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">2</span>
+      <div class="step-desc"><strong>Emissão Local:</strong> O XML da NFC-e é gerado localmente com a tag de tipo de emissão correspondente a contingência (`tpEmis = 9`), assinado localmente com par de chaves móveis e impresso imediatamente para o cliente.</div>
+    </li>
+    <li class="step-item">
+      <span class="step-num">3</span>
+      <div class="step-desc"><strong>Sincronização Tardia:</strong> Quando o sistema detecta que a conexão de rede foi reestabelecida, um Worker em background no SQLite local transmite todos os XMLs de contingência acumulados em segundo plano para o monólito em até 24 horas (prazo regulatório brasileiro).</div>
+    </li>
+  </ul>
+</div>
+
+<!-- ══ MERCADO PAGO ══ -->
+<div class="sp" id="sp-pagamentos">
+  <div class="sl">Processamento e Cobrança Automática via Mercado Pago</div>
+  <p class="lead">O faturamento de assinaturas SaaS da plataforma e as vendas nos PDVs dos inquilinos são integrados nativamente com o gateway do Mercado Pago, fornecendo liquidação instantânea e baixo custo transacional.</p>
+
+  <div class="g2">
+    <div class="card">
+      <div class="tag tag-b">Fluxo de Cobrança Pix</div>
+      <p style="margin-bottom: 8px;">1. A API cria uma ordem de pagamento (Preference ou Payment) enviando o payload para a URL do Mercado Pago.</p>
+      <p style="margin-bottom: 8px;">2. O MP retorna a chave Pix (copia e cola) e a string Base64 do QR Code, renderizados imediatamente na UI.</p>
+      <p>3. Um token de idempotência associado à Fatura do inquilino impede duplicações em nível de banco de dados.</p>
+    </div>
+
+    <div class="card">
+      <div class="tag tag-g">Tratamento de Webhooks & MediatR</div>
+      <p style="margin-bottom: 8px;">1. Ao receber a confirmação, o Mercado Pago dispara um webhook `POST /api/v1/financeiro/webhooks/mercadopago`.</p>
+      <p style="margin-bottom: 8px;">2. O webhook consome o endpoint de forma anônima e valida a assinatura digital do payload para garantir autenticidade.</p>
+      <p>3. O endpoint dispara `BaixarFaturaCommand` via MediatR, alterando o status da cobrança para `Paga` e ativando reativamente os limites comerciais do tenant.</p>
+    </div>
+  </div>
+
+  <div class="sl" style="margin-top:30px">Exemplo de Payload de Webhook Válido</div>
+  <div class="code">{
+  "id": "1234567890",
+  "action": "payment.created",
+  "api_version": "v1",
+  "data": {
+    "id": "9876543210"
+  },
+  "date_created": "2026-06-08T15:00:00Z",
+  "type": "payment",
+  "user_id": "epros_saas_mp_id"
+}</div>
+</div>
+
+<!-- ══ AUTH / OIDC ══ -->
+<div class="sp" id="sp-auth">
+  <div class="sl">Autenticação Unificada OIDC & Federação AD/LDAP via Keycloak</div>
+  <p class="lead">O Keycloak gerencia toda a camada de Identity Providers (IDP), tokens JWT baseados em OIDC e federação de usuários corporativos com Active Directory ou LDAP.</p>
+
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Fluxo / Recurso</th>
+        <th>Descrição Técnica</th>
+        <th>Benefício Corporativo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Direct Access Grants (ROPC)</strong></td>
+        <td>Utilizado pelo frontend desktop `Epros.App` (Electron + Nuxt 3) para realizar login diretamente na UI nativa com fluxo seguro de credenciais, sem necessitar de popups do navegador.</td>
+        <td>UX integrada em aplicativos desktop locais.</td>
+      </tr>
+      <tr>
+        <td><strong>JWT Claim TenantId</strong></td>
+        <td>O payload do token gerado pelo Keycloak contém a claim customizada `"tenantId"`, mapeada dinamicamente com base no grupo ou organização ao qual o usuário pertence.</td>
+        <td>Garantia de segurança no isolamento lógico de RLS no PostgreSQL.</td>
+      </tr>
+      <tr>
+        <td><strong>User Federation (LDAP/AD)</strong></td>
+        <td>Inquilinos de nível Enterprise (Tier 3) podem configurar o Keycloak para federar credenciais diretamente no seu Active Directory interno, sincronizando senhas e grupos corporativos.</td>
+        <td>Elimina a necessidade de cadastros duplicados e atende políticas corporativas de segurança.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="sl" style="margin-top:30px">Estrutura Interna da Claim JWT</div>
+  <p style="color: var(--t2); font-size:12px; margin-bottom:12px;">Quando o monólito recebe o bearer token no header, a claim customizada é lida pelo middleware de autenticação e injetada no escopo do `ITenantProvider`:</p>
+  <div class="code">{
+  "sub": "38db98bc-a82f-488b-a7a7-19cb5710aa7d",
+  "email": "gestor@cliente.com",
+  "name": "Gestor Epros",
+  "roles": [
+    "admin",
+    "estoque.produtos.write"
+  ],
+  "tenantId": "tenant-exemplo-abc-123"
+}</div>
+</div>
+
+<!-- ══ LOGÍSTICA & MARKETPLACES ══ -->
+<div class="sp" id="sp-logistica">
+  <div class="sl">Rede de Marketplaces & Logística</div>
+  <p class="lead">O módulo de Vendas e Estoque integra-se a hubs externos para consolidar estoque físico e precificação e calcular taxas de frete de transportadoras.</p>
+
+  <div class="g2">
+    <div class="card">
+      <div class="tag tag-t">Cálculo de Frete (Melhor Envio / Correios)</div>
+      <p style="margin-bottom:10px;">O cálculo de taxas e prazos de entrega consome a API do Melhor Envio de forma transparente durante a simulação de vendas ou checkout.</p>
+      <div class="csm">
+        <p>A API calcula o frete com base nas dimensões do produto (comprimento, largura, altura e peso) cadastradas na entidade `Produto` do Estoque.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="tag tag-p">Sincronização de Estoque com Marketplaces</div>
+      <p style="margin-bottom:10px;">Integração via webhook de atualização de estoque com Hubs parceiros (como Anymarket ou Tray) para manter o inventário em paridade com canais de vendas.</p>
+      <div class="csm">
+        <p>A cada movimentação de estoque física gerada no monólito (`MovimentoEstoque`), uma mensagem de outbox correspondente é publicada para notificar os canais digitais externos.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sl" style="margin-top:30px">Decisões de Comunicação Externa (ADR API)</div>
+  <div class="drow">
+    <div class="odot"></div>
+    <div class="dq">Circuit Breaker Integrado (Polly)</div>
+    <div class="da">Se a API da SEFAZ ou do Melhor Envio apresentar timeouts repetidos, o circuito abre por 60 segundos, retornando automaticamente um fallback local (contingência offline para SEFAZ e preço de frete em cache estático para Melhor Envio) para proteger o thread pool da API.</div>
+  </div>
+  <div class="drow">
+    <div class="odot"></div>
+    <div class="dq">Rate Limiting por Tenant</div>
+    <div class="da">As requisições externas recebidas nos webhooks são limitadas a **60 chamadas por minuto** por tenant ativo para mitigar ataques de negação de serviço e abuso de consumo de infraestrutura.</div>
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<script>
+var tabs = ['sefaz', 'pagamentos', 'auth', 'logistica'];
+function st(id) {
+  document.querySelectorAll('.stab').forEach(function(t, i) {
+    t.classList.toggle('on', tabs[i] === id);
+  });
+  document.querySelectorAll('.sp').forEach(function(p) {
+    p.classList.toggle('on', p.id === 'sp-' + id);
+  });
+}
+</script>
+</body>
+</html>

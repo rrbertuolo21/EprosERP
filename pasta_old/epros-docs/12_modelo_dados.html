@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — Modelo de Dados</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+.subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 22px; }
+.stab { padding: 5px 13px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--b2); border-radius: 20px; background: none; color: var(--t3); transition: all .15s; font-family: var(--sans); }
+.stab:hover { color: var(--t2); }
+.stab.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+.sp { display: none; }
+.sp.on { display: block; }
+.rls-card { background: var(--s2); border: 1px solid var(--b1); border-left: 4px solid var(--blue); border-radius: var(--r); padding: 18px; margin-bottom: 20px; }
+.schema-title { font-family: var(--mono); color: var(--blue); font-size: 13px; margin: 24px 0 10px; border-bottom: 1px solid var(--b1); padding-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.tbl th { font-family: var(--sans); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.tbl td { font-size: 11.5px; line-height: 1.5; }
+.badge-pk { background: rgba(235,94,85,.15); color: #eb5e55; border: 1px solid rgba(235,94,85,.3); font-family: var(--mono); font-size: 9px; padding: 1px 4px; border-radius: 3px; }
+.badge-fk { background: rgba(74,144,232,.15); color: var(--blue); border: 1px solid rgba(74,144,232,.3); font-family: var(--mono); font-size: 9px; padding: 1px 4px; border-radius: 3px; }
+.badge-idx { background: rgba(46,196,182,.15); color: #2ec4b6; border: 1px solid rgba(46,196,182,.3); font-family: var(--mono); font-size: 9px; padding: 1px 4px; border-radius: 3px; }
+.badge-req { color: #eb5e55; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+  <a class="nt" href="08_api.html">⑧ API Reference</a>
+  <a class="nt" href="09_runbook.html">⑨ Runbook & DR</a>
+  <a class="nt" href="10_modelo_financeiro.html">⑩ Modelo Financeiro</a>
+  <a class="nt" href="11_integracoes.html">⑪ Integrações</a>
+  <a class="nt on" href="12_modelo_dados.html">⑫ Modelo de Dados</a>
+  <a class="nt" href="13_onboarding.html">⑬ Guia de Onboarding</a>
+  <a class="nt" href="14_disaster_recovery.html">⑭ Disaster Recovery</a>
+  <a class="nt" href="15_glossario.html">⑮ Glossário</a>
+  <a class="nt" href="16_i18n.html">⑯ Internacionalização</a>
+  <a class="nt" href="17_changelog.html">⑰ Changelog</a>
+  <a class="nt" href="18_plano_execucao.html">⑱ Plano de Execução</a>
+  <a class="nt" href="19_operacional.html">⑲ Modelo Operacional</a>
+  <a class="nt" href="20_treinamento.html">⑳ Treinamento por Função</a>
+  <a class="nt" href="21_agentes_prompts.html">㉑ Prompts dos Agentes</a>
+  <a class="nt" href="22_diagnostico.html">㉒ Diagnóstico do Legado</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>PostgreSQL 16 · Schemas Isolados · Row-Level Security · Dicionário Físico</div>
+  <h1>Modelo de <em>Dados</em></h1>
+  <p class="hero-desc">Mapeamento físico do banco de dados relacional Epros. Estruturas de tabelas, chaves primárias, estrangeiras, índices e políticas automáticas de multi-tenancy.</p>
+</div>
+
+<div class="page">
+
+<div class="subtabs">
+  <button class="stab on" onclick="st('geral')">Geral & RLS</button>
+  <button class="stab" onclick="st('plataforma')">Schema plataforma</button>
+  <button class="stab" onclick="st('estoque')">Schema estoque</button>
+  <button class="stab" onclick="st('vendas')">Schema vendas</button>
+  <button class="stab" onclick="st('financas')">Schema financas</button>
+</div>
+
+<!-- ══ GERAL & RLS ══ -->
+<div class="sp on" id="sp-geral">
+  <div class="sl">Princípios Físicos de Modelagem</div>
+  <p class="lead">O Epros utiliza o PostgreSQL 16 estruturado sob 12 schemas lógicos para manter o desacoplamento do monólito modular. As convenções e os filtros globais são gerados e aplicados programaticamente via EF Core em `ContextBase`.</p>
+
+  <div class="g2">
+    <div class="card">
+      <div class="tag tag-b">Row-Level Security (RLS)</div>
+      <p style="margin-bottom: 8px;">1. Toda tabela associada a inquilinos possui a coluna `tenant_id` física.</p>
+      <p style="margin-bottom: 8px;">2. O interceptador `TenantRlsInterceptor` do EF Core executa `SET LOCAL app.current_tenant_id = '{id}'` em cada conexão antes das queries.</p>
+      <p>3. A política do banco garante que um tenant nunca consulte dados de outro: `tenant_id = current_setting('app.current_tenant_id')`.</p>
+    </div>
+
+    <div class="card">
+      <div class="tag tag-g">Convenções de Nomeação</div>
+      <p style="margin-bottom: 8px;">1. **snake_case**: Nomes de tabelas, colunas, chaves primárias, chaves estrangeiras e índices são mapeados em minúsculas com underscores.</p>
+      <p style="margin-bottom: 8px;">2. **Decimais**: Precisão financeira global configurada para `NUMERIC(18,2)` para todos os campos decimais.</p>
+      <p>3. **Sync Engine**: Ínclui a coluna `sync_id` com índice único composto em todas as entidades para permitir sincronização offline resiliente.</p>
+    </div>
+  </div>
+
+  <div class="sl" style="margin-top:30px">Colunas Herdadas da EntidadeSaaSBase</div>
+  <p style="margin-bottom: 12px; font-size:12px; color: var(--t2);">Toda entidade mapeada no banco de dados que herda de `EntidadeSaaSBase` possui as seguintes colunas padrões:</p>
+  
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Coluna</th>
+        <th>Tipo PostgreSQL</th>
+        <th>Modo</th>
+        <th>Chave / Índice</th>
+        <th>Descrição</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>id</strong></td>
+        <td>UUID</td>
+        <td><span class="badge-req">NOT NULL</span></td>
+        <td><span class="badge-pk">PK</span></td>
+        <td>Chave primária física (gerada localmente via GUID sequencial).</td>
+      </tr>
+      <tr>
+        <td><strong>sync_id</strong></td>
+        <td>UUID</td>
+        <td><span class="badge-req">NOT NULL</span></td>
+        <td><span class="badge-idx">UNIQUE INDEX</span></td>
+        <td>Identificador único estável usado para sincronização móvel e contingência.</td>
+      </tr>
+      <tr>
+        <td><strong>tenant_id</strong></td>
+        <td>VARCHAR(100)</td>
+        <td><span class="badge-req">NOT NULL</span></td>
+        <td><span class="badge-idx">INDEX</span></td>
+        <td>Identificador do inquilino usado na política RLS e filtragem lógica.</td>
+      </tr>
+      <tr>
+        <td><strong>sync_version</strong></td>
+        <td>INTEGER</td>
+        <td><span class="badge-req">NOT NULL</span></td>
+        <td>—</td>
+        <td>Controle de versão incremental usado para detecção de conflitos de concorrência.</td>
+      </tr>
+      <tr>
+        <td><strong>criado_em</strong></td>
+        <td>TIMESTAMPTZ</td>
+        <td><span class="badge-req">NOT NULL</span></td>
+        <td>—</td>
+        <td>Data de criação do registro (sempre gravada em UTC).</td>
+      </tr>
+      <tr>
+        <td><strong>alterado_em</strong></td>
+        <td>TIMESTAMPTZ</td>
+        <td>NULL</td>
+        <td>—</td>
+        <td>Data da última alteração do registro.</td>
+      </tr>
+      <tr>
+        <td><strong>deletado_em</strong></td>
+        <td>TIMESTAMPTZ</td>
+        <td>NULL</td>
+        <td>—</td>
+        <td>Data de exclusão lógica (Soft Delete — queries ignoram registros se preenchido).</td>
+      </tr>
+      <tr>
+        <td><strong>criado_por</strong></td>
+        <td>VARCHAR(100)</td>
+        <td>NULL</td>
+        <td>—</td>
+        <td>Identificador do usuário (Keycloak sub) que criou o registro.</td>
+      </tr>
+      <tr>
+        <td><strong>alterado_por</strong></td>
+        <td>VARCHAR(100)</td>
+        <td>NULL</td>
+        <td>—</td>
+        <td>Identificador do usuário que alterou o registro.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══ PLATAFORMA ══ -->
+<div class="sp" id="sp-plataforma">
+  <div class="sl">Tabelas Globais e Cadastros no Schema <code>plataforma</code></div>
+  <p class="lead">Este schema centraliza o cadastro de inquilinos, faturamento de assinaturas, controle de permissões (ABAC), cadastros gerais de pessoas (parceiros/clientes) e notas fiscais (DFe).</p>
+
+  <div class="schema-title">Tabela: plataforma.planos</div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Coluna</th>
+        <th>Tipo</th>
+        <th>Nulabilidade</th>
+        <th>Constraint</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-pk">PK</span></td><td>Chave primária.</td></tr>
+      <tr><td>nome</td><td>VARCHAR(150)</td><td>NOT NULL</td><td>—</td><td>Nome do plano (Silver, Gold, Platinum).</td></tr>
+      <tr><td>preco</td><td>NUMERIC(18,2)</td><td>NOT NULL</td><td>—</td><td>Valor da mensalidade recorrente.</td></tr>
+      <tr><td>limite_usuarios</td><td>INTEGER</td><td>NOT NULL</td><td>—</td><td>Quantidade de usuários simultâneos inclusos.</td></tr>
+      <tr><td>limite_dfe</td><td>INTEGER</td><td>NOT NULL</td><td>—</td><td>Limite mensal de documentos fiscais emitidos.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="schema-title">Tabela: plataforma.clientes (Tenants)</div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Coluna</th>
+        <th>Tipo</th>
+        <th>Nulabilidade</th>
+        <th>Constraint</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-pk">PK</span></td><td>Identificador do inquilino.</td></tr>
+      <tr><td>nome_inquilino</td><td>VARCHAR(100)</td><td>NOT NULL</td><td>—</td><td>Identificador textual (subdomínio ou slug).</td></tr>
+      <tr><td>plano_id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-fk">FK -> planos</span></td><td>Plano comercial associado ao inquilino.</td></tr>
+      <tr><td>status</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>—</td><td>Estado operacional do tenant (Ativo, Suspenso).</td></tr>
+    </tbody>
+  </table>
+
+  <div class="schema-title">Tabela: plataforma.pessoas</div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Coluna</th>
+        <th>Tipo</th>
+        <th>Nulabilidade</th>
+        <th>Constraint</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-pk">PK</span></td><td>Chave primária.</td></tr>
+      <tr><td>tipo_pessoa</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>—</td><td>Filtro discriminador (Fisica, Juridica, Estrangeiro).</td></tr>
+      <tr><td>nome_cadastro</td><td>VARCHAR(250)</td><td>NOT NULL</td><td>—</td><td>Nome principal ou fantasia.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="schema-title">Tabela: plataforma.pessoas_fisicas</div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Coluna</th>
+        <th>Tipo</th>
+        <th>Nulabilidade</th>
+        <th>Constraint</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>pessoa_id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-pk">PK</span> <span class="badge-fk">FK -> pessoas</span></td><td>Relacionamento 1:1.</td></tr>
+      <tr><td>cpf</td><td>VARCHAR(11)</td><td>NOT NULL</td><td><span class="badge-idx">INDEX</span></td><td>Valor do CPF (somente números).</td></tr>
+      <tr><td>nome</td><td>VARCHAR(250)</td><td>NOT NULL</td><td>—</td><td>Nome civil completo.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="schema-title">Tabela: plataforma.pessoas_juridicas</div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Coluna</th>
+        <th>Tipo</th>
+        <th>Nulabilidade</th>
+        <th>Constraint</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>pessoa_id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-pk">PK</span> <span class="badge-fk">FK -> pessoas</span></td><td>Relacionamento 1:1.</td></tr>
+      <tr><td>cnpj</td><td>VARCHAR(14)</td><td>NOT NULL</td><td><span class="badge-idx">INDEX</span></td><td>CNPJ da empresa.</td></tr>
+      <tr><td>razao_social</td><td>VARCHAR(250)</td><td>NOT NULL</td><td>—</td><td>Razão social oficial.</td></tr>
+      <tr><td>regime_tributario</td><td>VARCHAR(50)</td><td>NOT NULL</td><td>—</td><td>Simples Nacional, Lucro Presumido, Lucro Real.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="schema-title">Tabela: plataforma.enderecos</div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Coluna</th>
+        <th>Tipo</th>
+        <th>Nulabilidade</th>
+        <th>Constraint</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-pk">PK</span></td><td>Chave primária.</td></tr>
+      <tr><td>pessoa_id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-fk">FK -> pessoas</span></td><td>Relacionamento 1:N com contatos de endereço.</td></tr>
+      <tr><td>logradouro</td><td>VARCHAR(250)</td><td>NOT NULL</td><td>—</td><td>Rua, Avenida, etc.</td></tr>
+      <tr><td>numero</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>—</td><td>Número predial.</td></tr>
+      <tr><td>cep</td><td>VARCHAR(8)</td><td>NOT NULL</td><td>—</td><td>CEP de postagem.</td></tr>
+      <tr><td>cidade</td><td>VARCHAR(100)</td><td>NOT NULL</td><td>—</td><td>Município do endereço.</td></tr>
+      <tr><td>estado</td><td>VARCHAR(2)</td><td>NOT NULL</td><td>—</td><td>Sigla da unidade federativa (UF).</td></tr>
+    </tbody>
+  </table>
+
+  <div class="schema-title">Tabela: plataforma.documentos_fiscais</div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Coluna</th>
+        <th>Tipo</th>
+        <th>Nulabilidade</th>
+        <th>Constraint</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-pk">PK</span></td><td>Chave primária.</td></tr>
+      <tr><td>numero</td><td>INTEGER</td><td>NOT NULL</td><td>—</td><td>Número sequencial do documento fiscal.</td></tr>
+      <tr><td>serie</td><td>INTEGER</td><td>NOT NULL</td><td>—</td><td>Série da nota (ex: 1, 2).</td></tr>
+      <tr><td>tipo</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>—</td><td>Modelo do DFe (NFe_55, NFCe_65).</td></tr>
+      <tr><td>status</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>—</td><td>Autorizado, Cancelado, Contingencia.</td></tr>
+      <tr><td>total</td><td>NUMERIC(18,2)</td><td>NOT NULL</td><td>—</td><td>Valor líquido total da nota fiscal.</td></tr>
+      <tr><td>xml_arquivo_path</td><td>VARCHAR(500)</td><td>NULL</td><td>—</td><td>Caminho lógico do XML persistido no storage MinIO.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══ ESTOQUE ══ -->
+<div class="sp" id="sp-estoque">
+  <div class="sl">Tabelas de Catálogo e Inventário no Schema <code>estoque</code></div>
+  <p class="lead">Este schema gerencia o cadastro de insumos/produtos, movimentações físicas de inventário e compras de fornecedores.</p>
+
+  <div class="schema-title">Tabela: estoque.produtos</div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Coluna</th>
+        <th>Tipo</th>
+        <th>Nulabilidade</th>
+        <th>Constraint</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-pk">PK</span></td><td>Chave primária.</td></tr>
+      <tr><td>sku</td><td>VARCHAR(100)</td><td>NOT NULL</td><td><span class="badge-idx">UNIQUE INDEX</span></td><td>Código SKU exclusivo por inquilino (`UQ_produtos_tenant_sku`).</td></tr>
+      <tr><td>nome</td><td>VARCHAR(250)</td><td>NOT NULL</td><td>—</td><td>Nome comercial do produto.</td></tr>
+      <tr><td>preco_venda</td><td>NUMERIC(18,2)</td><td>NOT NULL</td><td>—</td><td>Preço cobrado na venda ao consumidor.</td></tr>
+      <tr><td>saldo_estoque</td><td>NUMERIC(18,4)</td><td>NOT NULL</td><td>—</td><td>Quantidade física em saldo (com precisão fracionária).</td></tr>
+      <tr><td>custo_medio</td><td>NUMERIC(18,2)</td><td>NOT NULL</td><td>—</td><td>Custo médio ponderado calculado a cada entrada de compra.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="schema-title">Tabela: estoque.compras</div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Coluna</th>
+        <th>Tipo</th>
+        <th>Nulabilidade</th>
+        <th>Constraint</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-pk">PK</span></td><td>Chave primária.</td></tr>
+      <tr><td>fornecedor_id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-fk">FK -> plataforma.pessoas</span></td><td>Fornecedor emissor da mercadoria.</td></tr>
+      <tr><td>status</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>—</td><td>Estado da compra (Rascunho, Lancada, Cancelada).</td></tr>
+      <tr><td>total</td><td>NUMERIC(18,2)</td><td>NOT NULL</td><td>—</td><td>Soma dos itens e fretes da compra.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="schema-title">Tabela: estoque.compra_itens</div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Coluna</th>
+        <th>Tipo</th>
+        <th>Nulabilidade</th>
+        <th>Constraint</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-pk">PK</span></td><td>Chave primária.</td></tr>
+      <tr><td>compra_id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-fk">FK -> compras</span></td><td>Vinculo à nota de compra correspondente.</td></tr>
+      <tr><td>produto_id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-fk">FK -> produtos</span></td><td>Produto adquirido.</td></tr>
+      <tr><td>quantidade</td><td>NUMERIC(18,4)</td><td>NOT NULL</td><td>—</td><td>Quantidade comprada.</td></tr>
+      <tr><td>preco_unitario</td><td>NUMERIC(18,2)</td><td>NOT NULL</td><td>—</td><td>Preço de aquisição por unidade física.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="schema-title">Tabela: estoque.movimentos_estoque</div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Coluna</th>
+        <th>Tipo</th>
+        <th>Nulabilidade</th>
+        <th>Constraint</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-pk">PK</span></td><td>Chave primária.</td></tr>
+      <tr><td>produto_id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-fk">FK -> produtos</span></td><td>Item movimentado.</td></tr>
+      <tr><td>quantidade</td><td>NUMERIC(18,4)</td><td>NOT NULL</td><td>—</td><td>Volume do lançamento.</td></tr>
+      <tr><td>tipo</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>—</td><td>Sentido da operação (Entrada, Saida).</td></tr>
+      <tr><td>origem_documento_id</td><td>UUID</td><td>NOT NULL</td><td>—</td><td>Referência para rastreamento (ID da Compra ou Venda).</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══ VENDAS ══ -->
+<div class="sp" id="sp-vendas">
+  <div class="sl">Tabelas de Pedidos e Ponto de Venda no Schema <code>vendas</code></div>
+  <p class="lead">Mapeia as operações transacionais de faturamento, canais de pedidos do monólito e turnos operacionais de frente de caixa (PDV Mobile).</p>
+
+  <div class="schema-title">Tabela: vendas.vendas</div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Coluna</th>
+        <th>Tipo</th>
+        <th>Nulabilidade</th>
+        <th>Constraint</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-pk">PK</span></td><td>Chave primária.</td></tr>
+      <tr><td>cliente_id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-fk">FK -> plataforma.pessoas</span></td><td>Consumidor que realizou a compra.</td></tr>
+      <tr><td>status</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>—</td><td>Estado da transação (Aberta, Faturada, Cancelada).</td></tr>
+      <tr><td>total</td><td>NUMERIC(18,2)</td><td>NOT NULL</td><td>—</td><td>Valor líquido total da venda.</td></tr>
+      <tr><td>caixa_id</td><td>UUID</td><td>NULL</td><td><span class="badge-fk">FK -> caixas</span></td><td>Vínculo com a sessão de caixa do PDV (se aplicável).</td></tr>
+    </tbody>
+  </table>
+
+  <div class="schema-title">Tabela: vendas.caixas</div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Coluna</th>
+        <th>Tipo</th>
+        <th>Nulabilidade</th>
+        <th>Constraint</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-pk">PK</span></td><td>Sessão física de caixa.</td></tr>
+      <tr><td>operador_id</td><td>VARCHAR(100)</td><td>NOT NULL</td><td><span class="badge-idx">INDEX</span></td><td>Usuário operador logado (Keycloak ID).</td></tr>
+      <tr><td>status</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>—</td><td>Estado da sessão (Aberto, Fechado).</td></tr>
+      <tr><td>saldo_abertura</td><td>NUMERIC(18,2)</td><td>NOT NULL</td><td>—</td><td>Valor inicial de fundo de troco em caixa.</td></tr>
+      <tr><td>saldo_fechamento</td><td>NUMERIC(18,2)</td><td>NULL</td><td>—</td><td>Contagem física declarada no fechamento.</td></tr>
+      <tr><td>diferenca_fechamento</td><td>NUMERIC(18,2)</td><td>NULL</td><td>—</td><td>Calculado pelo monólito (Diferença entre sistema vs contagem).</td></tr>
+    </tbody>
+  </table>
+
+  <div class="schema-title">Tabela: vendas.caixa_movimentos</div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Coluna</th>
+        <th>Tipo</th>
+        <th>Nulabilidade</th>
+        <th>Constraint</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-pk">PK</span></td><td>Chave primária.</td></tr>
+      <tr><td>caixa_id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-fk">FK -> caixas</span></td><td>Sessão de caixa vinculada.</td></tr>
+      <tr><td>valor</td><td>NUMERIC(18,2)</td><td>NOT NULL</td><td>—</td><td>Quantia do lançamento.</td></tr>
+      <tr><td>tipo</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>—</td><td>Classificação da movimentação (Suprimento, Sangria).</td></tr>
+      <tr><td>observacao</td><td>VARCHAR(500)</td><td>NULL</td><td>—</td><td>Justificativa declarada da sangria/suprimento.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══ FINANÇAS ══ -->
+<div class="sp" id="sp-financas">
+  <div class="sl">Tabelas Financeiras de Tesouraria no Schema <code>financas</code></div>
+  <p class="lead">Gerencia os lançamentos de fluxo de caixa em Contas a Pagar e Contas a Receber, além de controlar as baixas e liquidações financeiras dos inquilinos.</p>
+
+  <div class="schema-title">Tabela: financas.contas_pagar</div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Coluna</th>
+        <th>Tipo</th>
+        <th>Nulabilidade</th>
+        <th>Constraint</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-pk">PK</span></td><td>Chave primária.</td></tr>
+      <tr><td>fornecedor_id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-fk">FK -> plataforma.pessoas</span></td><td>Entidade credora da obrigação.</td></tr>
+      <tr><td>valor</td><td>NUMERIC(18,2)</td><td>NOT NULL</td><td>—</td><td>Valor bruto da duplicata/título.</td></tr>
+      <tr><td>status</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>—</td><td>Situação do título (Aberto, Pago, Cancelado).</td></tr>
+      <tr><td>data_vencimento</td><td>DATE</td><td>NOT NULL</td><td><span class="badge-idx">INDEX</span></td><td>Prazo limite para quitação sem juros.</td></tr>
+      <tr><td>numero_documento</td><td>VARCHAR(100)</td><td>NULL</td><td>—</td><td>Nota Fiscal de compra ou código de barras associado.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="schema-title">Tabela: financas.contas_pagar_baixas</div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Coluna</th>
+        <th>Tipo</th>
+        <th>Nulabilidade</th>
+        <th>Constraint</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-pk">PK</span></td><td>Chave primária da liquidação.</td></tr>
+      <tr><td>conta_pagar_id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-fk">FK -> contas_pagar</span></td><td>Título amortizado/liquidado.</td></tr>
+      <tr><td>valor_pago</td><td>NUMERIC(18,2)</td><td>NOT NULL</td><td>—</td><td>Montante desembolsado.</td></tr>
+      <tr><td>forma_pagamento</td><td>VARCHAR(50)</td><td>NOT NULL</td><td>—</td><td>Meio físico/eletrônico (Pix, Ted, Boleto, Dinheiro).</td></tr>
+      <tr><td>data_pagamento</td><td>DATE</td><td>NOT NULL</td><td>—</td><td>Data física da liquidação da baixa.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="schema-title">Tabela: financas.contas_receber</div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>Coluna</th>
+        <th>Tipo</th>
+        <th>Nulabilidade</th>
+        <th>Constraint</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-pk">PK</span></td><td>Chave primária.</td></tr>
+      <tr><td>cliente_id</td><td>UUID</td><td>NOT NULL</td><td><span class="badge-fk">FK -> plataforma.pessoas</span></td><td>Devedor do lançamento.</td></tr>
+      <tr><td>valor</td><td>NUMERIC(18,2)</td><td>NOT NULL</td><td>—</td><td>Valor a receber.</td></tr>
+      <tr><td>status</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>—</td><td>Situação do lançamento (Aberto, Pago, Cancelado).</td></tr>
+      <tr><td>data_vencimento</td><td>DATE</td><td>NOT NULL</td><td><span class="badge-idx">INDEX</span></td><td>Data limite esperada para pagamento.</td></tr>
+      <tr><td>origem</td><td>VARCHAR(50)</td><td>NOT NULL</td><td>—</td><td>Canal originador do recebível (Pedido, SaaS, PDV).</td></tr>
+    </tbody>
+  </table>
+</div>
+
+</div><!-- /page -->
+
+<script>
+var tabs = ['geral', 'plataforma', 'estoque', 'vendas', 'financas'];
+function st(id) {
+  document.querySelectorAll('.stab').forEach(function(t, i) {
+    t.classList.toggle('on', tabs[i] === id);
+  });
+  document.querySelectorAll('.sp').forEach(function(p) {
+    p.classList.toggle('on', p.id === 'sp-' + id);
+  });
+}
+</script>
+</body>
+</html>

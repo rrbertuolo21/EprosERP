@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — Glossário Canônico</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+.subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 22px; }
+.stab { padding: 5px 13px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--b2); border-radius: 20px; background: none; color: var(--t3); transition: all .15s; font-family: var(--sans); }
+.stab:hover { color: var(--t2); }
+.stab.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+.sp { display: none; }
+.sp.on { display: block; }
+.g-item { background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r); padding: 16px; margin-bottom: 12px; }
+.g-term { font-family: var(--sans); font-size: 14px; font-weight: 600; color: var(--blue); display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.g-tag { font-family: var(--mono); font-size: 9px; padding: 2px 6px; border-radius: 3px; background: var(--s3); color: var(--t3); border: 1px solid var(--b2); }
+.g-desc { font-size: 11.5px; color: var(--t2); line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+  <a class="nt" href="08_api.html">⑧ API Reference</a>
+  <a class="nt" href="09_runbook.html">⑨ Runbook & DR</a>
+  <a class="nt" href="10_modelo_financeiro.html">⑩ Modelo Financeiro</a>
+  <a class="nt" href="11_integracoes.html">⑪ Integrações</a>
+  <a class="nt" href="12_modelo_dados.html">⑫ Modelo de Dados</a>
+  <a class="nt" href="13_onboarding.html">⑬ Guia de Onboarding</a>
+  <a class="nt" href="14_disaster_recovery.html">⑭ Disaster Recovery</a>
+  <a class="nt on" href="15_glossario.html">⑮ Glossário</a>
+  <a class="nt" href="16_i18n.html">⑯ Internacionalização</a>
+  <a class="nt" href="17_changelog.html">⑰ Changelog</a>
+  <a class="nt" href="18_plano_execucao.html">⑱ Plano de Execução</a>
+  <a class="nt" href="19_operacional.html">⑲ Modelo Operacional</a>
+  <a class="nt" href="20_treinamento.html">⑳ Treinamento por Função</a>
+  <a class="nt" href="21_agentes_prompts.html">㉑ Prompts dos Agentes</a>
+  <a class="nt" href="22_diagnostico.html">㉒ Diagnóstico do Legado</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>Linguagem Ubíqua · Termos de Negócio · Padrões de Arquitetura · Métricas SaaS</div>
+  <h1>Glossário <em>Canônico</em></h1>
+  <p class="hero-desc">Dicionário de termos técnicos, conceitos de negócios e métricas financeiras. Alinhamento da Linguagem Ubíqua (Ubiquitous Language) do domínio Epros.</p>
+</div>
+
+<div class="page">
+
+<div class="subtabs">
+  <button class="stab on" onclick="st('saas')">SaaS & Plataforma</button>
+  <button class="stab" onclick="st('fiscal')">Fiscal & Vendas</button>
+  <button class="stab" onclick="st('engenharia')">Arquitetura & Engenharia</button>
+</div>
+
+<!-- ══ SAAS & PLATAFORMA ══ -->
+<div class="sp on" id="sp-saas">
+  <div class="sl">Termos de Negócios SaaS e Gestão de Inquilinos</div>
+  <p class="lead">Definições das métricas de rentabilidade operacional e estruturas do ecossistema de subscrição Epros.</p>
+
+  <div class="g-item">
+    <div class="g-term">Inquilino (Tenant) <span class="g-tag">Negócio</span></div>
+    <div class="g-desc">Empresa assinante da plataforma Epros ERP que opera em seu próprio espaço de trabalho. Os dados do inquilino são isolados fisicamente a nível de banco de dados (Row-Level Security) e o acesso é segmentado logicamente na API.</div>
+  </div>
+
+  <div class="g-item">
+    <div class="g-term">Landlord / Administrador do Sistema <span class="g-tag">Negócio</span></div>
+    <div class="g-desc">Função do operador central da plataforma Epros que gerencia planos comerciais, monitora o faturamento das assinaturas, aplica bloqueios por inadimplência ou ativa/suspende inquilinos de forma global.</div>
+  </div>
+
+  <div class="g-item">
+    <div class="g-term">Entitlement (Direitos de Plano) <span class="g-tag">Mapeamento</span></div>
+    <div class="g-desc">Validação em tempo de execução das permissões operacionais do inquilino com base no plano contratado (Silver, Gold, Platinum). Exemplo: limite de usuários simultâneos, cota de faturamento fiscal de notas e acesso a macrodomínios específicos.</div>
+  </div>
+
+  <div class="g-item">
+    <div class="g-term">MRR (Monthly Recurring Revenue) <span class="g-tag">Métrica</span></div>
+    <div class="g-desc">Receita Recorrente Mensal. Representa a receita regular previsível que a plataforma Epros gera de assinaturas ativas mensalmente. É a métrica de crescimento central para o Landlord.</div>
+  </div>
+
+  <div class="g-item">
+    <div class="g-term">LTV (Lifetime Value) <span class="g-tag">Métrica</span></div>
+    <div class="g-desc">Valor do Tempo de Vida do Cliente. Estimativa do faturamento total gerado por um inquilino ativo ao longo do período em que ele permanece na base antes do cancelamento (Churn).</div>
+  </div>
+
+  <div class="g-item">
+    <div class="g-term">CAC (Customer Acquisition Cost) <span class="g-tag">Métrica</span></div>
+    <div class="g-desc">Custo de Aquisição de Cliente. Soma dos investimentos financeiros e operacionais necessários para obter um novo inquilino na plataforma. No Epros, o CAC da carteira de 20 clientes migrados do legado é próximo a zero.</div>
+  </div>
+</div>
+
+<!-- ══ FISCAL & VENDAS ══ -->
+<div class="sp" id="sp-fiscal">
+  <div class="sl">Conceitos Fiscais, de Vendas e Inventário</div>
+  <p class="lead">Linguagem ubíqua associada ao motor fiscal brasileiro, controle de inventário físico e frente de caixa.</p>
+
+  <div class="g-item">
+    <div class="g-term">DFe (Documento Fiscal Eletrônico) <span class="g-tag">Fiscal</span></div>
+    <div class="g-desc">Termo genérico para notas fiscais digitais. No Epros, refere-se à NF-e (Nota Fiscal Eletrônica, modelo 55 para circulação física) e NFC-e (Nota Fiscal de Consumidor Eletrônica, modelo 65 para PDV/balcão) emitidas via Hercules.NET.</div>
+  </div>
+
+  <div class="g-item">
+    <div class="g-term">Contingência Offline <span class="g-tag">Fiscal</span></div>
+    <div class="g-desc">Modo operacional do PDV móvel que permite a emissão imediata e impressão de NFC-e em caso de falha de conexão de rede ou indisponibilidade de servidores da SEFAZ, com posterior transmissão obrigatória em até 24 horas.</div>
+  </div>
+
+  <div class="g-item">
+    <div class="g-term">Certificado Digital A1 <span class="g-tag">Segurança</span></div>
+    <div class="g-desc">Arquivo de criptografia digital (formato PKCS#12 / .pfx) usado para assinar digitalmente os arquivos XML das notas fiscais, garantindo a sua autenticidade jurídica perante a Receita Federal.</div>
+  </div>
+
+  <div class="g-item">
+    <div class="g-term">SKU (Stock Keeping Unit) <span class="g-tag">Estoque</span></div>
+    <div class="g-desc">Unidade de Manutenção de Estoque. Identificador alfanumérico único para cada variação física de produto do catálogo. O SKU deve ser exclusivo em nível de tenant (`UQ_produtos_tenant_sku`).</div>
+  </div>
+
+  <div class="g-item">
+    <div class="g-term">Custo Médio Ponderado (CMP) <span class="g-tag">Estoque</span></div>
+    <div class="g-desc">Fórmula de contabilidade de inventário executada em tempo real a cada entrada de compra para recalcular o custo do saldo: `CMP = (Saldo Anterior * Custo Anterior + Quantidade Comprada * Preço de Compra) / Novo Saldo`.</div>
+  </div>
+
+  <div class="g-item">
+    <div class="g-term">Sangria & Suprimento <span class="g-tag">Vendas</span></div>
+    <div class="g-desc">Movimentações avulsas de valores de caixa. **Sangria** é a retirada de numerário para guarda segura (sangria de caixa). **Suprimento** é o aporte inicial de troco para viabilizar as transações.</div>
+  </div>
+</div>
+
+<!-- ══ ENGENHARIA & STACK ══ -->
+<div class="sp" id="sp-engenharia">
+  <div class="sl">Padrões de Projeto e Infraestrutura Técnica</div>
+  <p class="lead">Glossário de decisões arquiteturais do monólito e stack tecnológica de sustentação.</p>
+
+  <div class="g-item">
+    <div class="g-term">Monólito Modular <span class="g-tag">Arquitetura</span></div>
+    <div class="g-desc">Abordagem arquitetural onde o sistema inteiro é compilado como um único binário executável, mas subdividido logicamente em pastas e projetos independentes por macrodomínio (módulos), com banco de dados isolados por schema.</div>
+  </div>
+
+  <div class="g-item">
+    <div class="g-term">CQRS (Command Query Responsibility Segregation) <span class="g-tag">Padrão</span></div>
+    <div class="g-desc">Segregação de Responsabilidade de Escrita e Leitura. Separa fluxos que alteram dados (Commands, tratados por handlers transacionais com validações) de fluxos que apenas lêem dados (Queries, retornando DTOs de leitura).</div>
+  </div>
+
+  <div class="g-item">
+    <div class="g-term">Outbox Pattern <span class="g-tag">Integração</span></div>
+    <div class="g-desc">Padrão de integração assíncrona desacoplada. Toda alteração de estado grava reativamente a mensagem correspondente na tabela `outbox_messages` na mesma transação de banco de dados do negócio. Um background worker (Quartz.NET) processa as mensagens, garantindo entrega do evento (at-least-once delivery) mesmo com quedas na rede.</div>
+  </div>
+
+  <div class="g-item">
+    <div class="g-term">Row-Level Security (RLS) <span class="g-tag">Banco de Dados</span></div>
+    <div class="g-desc">Segurança a Nível de Linha. Funcionalidade nativa do PostgreSQL 16 que limita as linhas retornadas por um comando SQL (SELECT, UPDATE, DELETE) com base nas políticas de segurança ligadas à sessão de conexão do banco de dados.</div>
+  </div>
+
+  <div class="g-item">
+    <div class="g-term">Valkey <span class="g-tag">Infraestrutura</span></div>
+    <div class="g-desc">Banco de dados em memória open source (fork do Redis sob licença BSD) usado no Epros para barramento de locks distribuídos de caixa, cache reativo de catálogo de produtos e filas rápidas de requisições.</div>
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<script>
+var tabs = ['saas', 'fiscal', 'engenharia'];
+function st(id) {
+  document.querySelectorAll('.stab').forEach(function(t, i) {
+    t.classList.toggle('on', tabs[i] === id);
+  });
+  document.querySelectorAll('.sp').forEach(function(p) {
+    p.classList.toggle('on', p.id === 'sp-' + id);
+  });
+}
+</script>
+</body>
+</html>

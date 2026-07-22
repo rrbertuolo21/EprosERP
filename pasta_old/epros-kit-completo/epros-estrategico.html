@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Epros — Portal Estratégico</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --az:#0D2B5E;--az2:#1A4080;--do:#C9A84C;--dop:#FDF5E0;
+  --cb:#F4F6FA;--cd:#DDE3EF;--ct:#5A6580;--cp:#0A0F1E;
+  --vd:#2d6a4f;--vdl:#edf7f0;--vdb:#c3e6cb;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"DM Sans",sans-serif;background:var(--cb);color:var(--cp);font-size:13px;line-height:1.6;min-height:100vh}
+#sb{position:fixed;left:0;top:0;bottom:0;width:236px;background:var(--az);display:flex;flex-direction:column;z-index:100;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(201,168,76,.25) transparent}
+.sbl{padding:22px 18px 15px;border-bottom:1px solid rgba(201,168,76,.18)}
+.sbl .lm{font-family:"Playfair Display",serif;font-size:20px;font-weight:700;color:var(--do)}
+.sbl .ls{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.sbs{padding:13px 15px 3px;font-size:9px;font-weight:600;color:rgba(201,168,76,.45);letter-spacing:2px;text-transform:uppercase}
+.nb{display:flex;align-items:center;gap:8px;padding:7px 17px;cursor:pointer;font-size:12px;color:rgba(255,255,255,.55);transition:all .15s;border-left:3px solid transparent;text-decoration:none}
+.nb:hover{color:#fff;background:rgba(255,255,255,.05)}
+.nb.active{color:var(--do);background:rgba(201,168,76,.1);border-left-color:var(--do);font-weight:500}
+.nn{width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.08);font-size:9px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.3);flex-shrink:0}
+.nb.active .nn{background:var(--do);color:var(--az)}
+#main{margin-left:236px}
+.pg{display:none;padding:38px 50px;max-width:1060px}
+.pg.active{display:block}
+/* HERO */
+.hero{background:linear-gradient(135deg,var(--az) 0%,#1A4080 55%,#0a3060 100%);border-radius:14px;padding:46px 50px;position:relative;overflow:hidden;margin-bottom:30px}
+.hero::before{content:"";position:absolute;top:-80px;right:-80px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.13) 0%,transparent 70%)}
+.hbadge{font-size:9px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--do);border:1px solid rgba(201,168,76,.3);border-radius:99px;padding:3px 11px;display:inline-block;margin-bottom:14px}
+.hero h1{font-family:"Playfair Display",serif;font-size:36px;font-weight:700;color:#fff;line-height:1.15;margin-bottom:10px}
+.hero h1 span{color:var(--do)}
+.hero p{font-size:13px;color:rgba(255,255,255,.68);line-height:1.75;max-width:560px}
+.hstats{display:flex;gap:24px;margin-top:24px;flex-wrap:wrap}
+.hs .v{font-family:"Playfair Display",serif;font-size:26px;font-weight:700;color:var(--do)}
+.hs .l{font-size:10px;color:rgba(255,255,255,.4);margin-top:1px}
+/* TIPO */
+.st{font-family:"Playfair Display",serif;font-size:22px;font-weight:600;color:var(--az);margin-bottom:5px}
+.ss{font-size:13px;color:var(--ct);margin-bottom:20px;line-height:1.6}
+.sl{font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--ct);margin:22px 0 9px;display:flex;align-items:center;gap:8px}
+.sl::after{content:"";flex:1;height:1px;background:var(--cd)}
+.bc{font-size:11px;color:var(--ct);margin-bottom:20px}
+.bc span{color:var(--az);font-weight:500}
+/* GRIDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.card{background:#fff;border:1px solid var(--cd);border-radius:11px;padding:18px 22px;margin-bottom:10px}
+/* COMPARATIVO */
+table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px}
+th{background:var(--az);color:#fff;font-size:9px;font-weight:500;letter-spacing:1px;text-transform:uppercase;padding:8px 11px;text-align:left}
+td{padding:9px 11px;border-bottom:1px solid var(--cd);color:var(--ct);vertical-align:top;line-height:1.5}
+tr:last-child td{border-bottom:none}
+tr:nth-child(even) td{background:#fafbfd}
+td:first-child{color:var(--cp);font-weight:500}
+.ok{color:var(--vd);font-weight:600}
+.no{color:#aaa}
+/* PLANOS */
+.plan-card{background:#fff;border:1px solid var(--cd);border-radius:13px;overflow:hidden;transition:transform .15s,box-shadow .15s}
+.plan-card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(13,43,94,.1)}
+.plan-h{padding:22px 22px 16px;border-bottom:1px solid var(--cd)}
+.plan-code{font-family:"DM Mono",monospace;font-size:10px;font-weight:600;letter-spacing:1px;color:#fff;padding:3px 9px;border-radius:99px;display:inline-block;margin-bottom:8px}
+.plan-name{font-family:"Playfair Display",serif;font-size:20px;font-weight:700;color:var(--cp);margin-bottom:4px}
+.plan-target{font-size:11px;color:var(--ct);line-height:1.5;margin-bottom:10px}
+.plan-users{font-size:11px;font-weight:600;color:var(--cp)}
+.plan-rev{font-size:10px;color:var(--ct)}
+.plan-body{padding:16px 22px 20px}
+.plan-desc{font-size:12px;color:var(--ct);line-height:1.65;margin-bottom:12px}
+.plan-mods{display:flex;flex-wrap:wrap;gap:4px}
+.pm{font-family:"DM Mono",monospace;font-size:9px;font-weight:600;color:#fff;padding:2px 7px;border-radius:4px}
+/* DIFERENCIAL */
+.dif{background:#fff;border:1px solid var(--cd);border-radius:12px;padding:20px 24px;margin-bottom:10px;display:flex;gap:16px}
+.dif-num{font-family:"Playfair Display",serif;font-size:11px;font-weight:700;color:#fff;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dif-icon{font-size:18px;margin-right:4px}
+.dif-title{font-size:14px;font-weight:600;color:var(--cp);margin-bottom:5px}
+.dif-body{font-size:12px;color:var(--ct);line-height:1.65;margin-bottom:6px}
+.dif-vs{font-size:11px;color:var(--ct);font-style:italic;border-top:1px dashed var(--cd);padding-top:6px;margin-top:4px}
+/* ICP */
+.icp{background:#fff;border:1px solid var(--cd);border-radius:11px;padding:16px 20px;margin-bottom:8px}
+.icp-h{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.icp-tag{font-size:10px;font-weight:700;color:#fff;padding:3px 9px;border-radius:99px;letter-spacing:.5px}
+.icp-title{font-size:13px;font-weight:600;color:var(--cp)}
+.icp-body{font-size:12px;color:var(--ct);line-height:1.65}
+/* MODELO COMERCIAL */
+.billing{background:#fff;border:1px solid var(--cd);border-radius:11px;padding:14px 18px;margin-bottom:7px;display:flex;gap:12px;align-items:flex-start}
+.billing-icon{font-size:18px;flex-shrink:0;margin-top:2px}
+.billing-title{font-size:13px;font-weight:600;color:var(--cp);margin-bottom:3px}
+.billing-desc{font-size:12px;color:var(--ct);line-height:1.6}
+/* ROADMAP */
+.rm{display:flex;gap:0;margin-bottom:6px}
+.rm-line{display:flex;flex-direction:column;align-items:center;margin-right:14px}
+.rm-dot{width:13px;height:13px;border-radius:50%;flex-shrink:0}
+.rm-track{width:2px;flex:1;min-height:24px;margin-top:3px}
+.rm:last-child .rm-track{display:none}
+.rm-body{flex:1;background:#fff;border:1px solid var(--cd);border-radius:10px;padding:13px 17px;margin-bottom:6px}
+.rm-status{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
+.rm-title{font-size:14px;font-weight:600;color:var(--cp);margin-bottom:4px}
+.rm-desc{font-size:12px;color:var(--ct);line-height:1.6}
+/* COMPLIANCE */
+.reg-card{background:#fff;border:1px solid var(--cd);border-radius:10px;padding:13px 17px;margin-bottom:7px}
+.reg-h{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.reg-name{font-size:13px;font-weight:600;color:var(--cp)}
+.reg-region{font-size:10px;color:var(--ct)}
+.reg-multa{font-size:11px;font-weight:500;color:#C0392B}
+.reg-impl{font-size:11px;color:var(--ct);line-height:1.55}
+/* ALERTS */
+.okb{background:var(--vdl);border:1px solid var(--vdb);border-radius:8px;padding:9px 13px;font-size:12px;color:var(--vd);margin-bottom:9px;line-height:1.55}
+code{background:var(--cb);padding:1px 4px;border-radius:3px;font-family:"DM Mono",monospace;font-size:11px}
+hr{border:none;border-top:1px solid var(--cd);margin:22px 0}
+@media(max-width:860px){#sb{width:200px}#main{margin-left:200px}.pg{padding:24px 20px}.g2,.g3,.g4{grid-template-columns:1fr}}
+</style></head><body>
+<nav id="sb">
+  <div class="sbl"><div class="lm">Epros</div><div class="ls">Portal Estratégico</div></div>
+  <div class="sbs">Produto</div>
+  <a class="nb active" onclick="show('p-produto',this)" href="#"><span class="nn">①</span>Visão &amp; Missão</a>
+  <a class="nb" onclick="show('p-mercado',this)" href="#"><span class="nn">②</span>Mercado &amp; ICP</a>
+  <a class="nb" onclick="show('p-diferenciais',this)" href="#"><span class="nn">③</span>Diferenciais</a>
+  <a class="nb" onclick="show('p-modelo',this)" href="#"><span class="nn">④</span>Modelo Comercial</a>
+  <div class="sbs">Plataforma</div>
+  <a class="nb" onclick="show('p-modulos',this)" href="#"><span class="nn">⑤</span>Módulos &amp; Planos</a>
+  <a class="nb" onclick="show('p-surfaces',this)" href="#"><span class="nn">⑥</span>Multi-surface</a>
+  <a class="nb" onclick="show('p-compliance',this)" href="#"><span class="nn">⑦</span>Compliance Mundial</a>
+  <div class="sbs">Trajetória</div>
+  <a class="nb" onclick="show('p-diagnostico',this)" href="#"><span class="nn">⑧</span>Diagnóstico do Legado</a>
+  <a class="nb" onclick="show('p-roadmap',this)" href="#"><span class="nn">⑨</span>Roadmap</a>
+  <a class="nb" onclick="show('p-decisao',this)" href="#"><span class="nn">⑩</span>Por que reconstruir</a>
+</nav>
+<div id="main">
+<div class="pg active" id="p-produto">
+  <div class="hero">
+    <div class="hbadge">Portal Estratégico · Interno · 2026</div>
+    <h1>Epros ERP<br/><span>Visão &amp; Missão</span></h1>
+    <p>ERP SaaS multi-tenant de nível SAP, construído do zero com 10 anos de conhecimento de domínio, stack 100% open source e compliance nativo desde o primeiro commit.</p>
+    <div class="hstats">
+      <div class="hs"><div class="v">17</div><div class="l">Módulos</div></div>
+      <div class="hs"><div class="v">132</div><div class="l">Submódulos</div></div>
+      <div class="hs"><div class="v">20</div><div class="l">Clientes em produção</div></div>
+      <div class="hs"><div class="v">12</div><div class="l">Regulações atendidas</div></div>
+    </div>
+  </div>
+  <div class="st">Missão</div>
+  <div class="ss">O norte que guia cada decisão de produto, arquitetura e negócio.</div>
+  <div class="g2">
+    <div class="card" style="border-left:5px solid var(--do)">
+      <div style="font-size:11px;font-weight:600;color:var(--do);letter-spacing:1px;margin-bottom:6px">MISSÃO</div>
+      <p style="font-size:14px;font-weight:600;color:var(--cp);margin-bottom:8px;line-height:1.4">ERP de nível SAP, acessível para qualquer empresa</p>
+      <p style="font-size:12px;color:var(--ct);line-height:1.7">Construir um ERP completo, modular e cloud-agnostic que dá a PMEs e grandes corporações o mesmo poder de gestão que SAP S/4HANA e Oracle ERP Cloud — sem licença proibitiva, sem lock-in de cloud e com compliance nativo para operar em qualquer mercado do mundo.</p>
+    </div>
+    <div class="card" style="border-left:5px solid var(--az)">
+      <div style="font-size:11px;font-weight:600;color:var(--az);letter-spacing:1px;margin-bottom:6px">PRINCÍPIO FUNDADOR</div>
+      <p style="font-size:14px;font-weight:600;color:var(--cp);margin-bottom:8px;line-height:1.4">Portabilidade total como requisito não-funcional</p>
+      <p style="font-size:12px;color:var(--ct);line-height:1.7">Qualquer componente que exija contrato com AWS, Azure ou GCP é substituído por equivalente open source. Roda em VPS de €20/mês, data center próprio ou qualquer cloud — sem alterar uma linha de código. Isso não é feature. É princípio arquitetural inegociável.</p>
+    </div>
+  </div>
+  <div class="sl">Por que isso importa para o negócio</div>
+  <div class="g3">
+    <div class="card">
+      <div style="font-size:20px;margin-bottom:8px">🌍</div>
+      <div style="font-size:13px;font-weight:600;color:var(--cp);margin-bottom:5px">Mercado global real</div>
+      <p style="font-size:12px;color:var(--ct);line-height:1.6">Clientes em países com restrições a clouds americanas conseguem usar. On-premise vira diferencial comercial contra SAP e Oracle — que exigem cloud própria ou parceiro certificado caro.</p>
+    </div>
+    <div class="card">
+      <div style="font-size:20px;margin-bottom:8px">📊</div>
+      <div style="font-size:13px;font-weight:600;color:var(--cp);margin-bottom:5px">Previsibilidade de custos</div>
+      <p style="font-size:12px;color:var(--ct);line-height:1.6">Com 10.000 tenants, AWS/Azure sobem preços 30–40% ao ano. Com infra própria, custo cresce linearmente com volume — previsível e controlável. Margem protegida na escala.</p>
+    </div>
+    <div class="card">
+      <div style="font-size:20px;margin-bottom:8px">🔒</div>
+      <div style="font-size:13px;font-weight:600;color:var(--cp);margin-bottom:5px">Soberania de dados</div>
+      <p style="font-size:12px;color:var(--ct);line-height:1.6">LGPD, GDPR, PDPA e PIPL exigem dados em território nacional. Com self-hosted ou cloud local, o cliente tem conformidade automática — sem depender de configurações do provedor.</p>
+    </div>
+  </div>
+  <div class="sl">Comparativo direto com concorrentes</div>
+  <div style="overflow-x:auto"><table>
+    <thead><tr><th>Critério</th><th>SAP S/4HANA</th><th>Oracle ERP</th><th>TOTVS</th><th>MS D365</th><th style="background:#1A4080">Epros</th></tr></thead>
+    <tbody>
+      <tr><td>DMS (Concessionárias) nativo</td><td class="no">Parcial</td><td class="no">Não</td><td class="no">Parcial</td><td class="no">Não</td><td class="ok">✓ Nativo</td></tr>
+      <tr><td>Fiscal BR nativo</td><td class="no">Add-on pago</td><td class="no">Localização</td><td>Sim</td><td class="no">Localização</td><td class="ok">✓ Nativo</td></tr>
+      <tr><td>ESG e GRC como módulos core</td><td class="no">Separado ($$$)</td><td class="no">Parcial</td><td class="no">Não</td><td class="no">Parcial</td><td class="ok">✓ Nativos</td></tr>
+      <tr><td>Cloud-agnostic / on-premise</td><td class="no">Cloud própria</td><td class="no">Cloud only</td><td>On-premise</td><td>Cloud/híbrido</td><td class="ok">✓ 3 níveis</td></tr>
+      <tr><td>Multi-tenant SaaS real</td><td class="no">Não</td><td>Sim</td><td class="no">Não</td><td>Sim</td><td class="ok">✓ Nativo</td></tr>
+      <tr><td>Stack 100% open source</td><td class="no">Não</td><td class="no">Não</td><td class="no">Não</td><td class="no">Não</td><td class="ok">✓ MIT/Apache</td></tr>
+      <tr><td>Multi-surface Web+Desktop+PDV</td><td class="no">Web only</td><td class="no">Web only</td><td class="no">Desktop legado</td><td>Web/mobile</td><td class="ok">✓ 4 surfaces</td></tr>
+      <tr><td>Compliance 12 regulações by design</td><td class="no">Configurável</td><td class="no">Configurável</td><td class="no">BR only</td><td class="no">Configurável</td><td class="ok">✓ By design</td></tr>
+      <tr><td>PDV nativo com offline</td><td class="no">Não</td><td class="no">Não</td><td class="no">Módulo separado</td><td class="no">D365 Commerce</td><td class="ok">✓ NFC-e offline</td></tr>
+    </tbody>
+  </table></div>
+</div>
+<div class="pg" id="p-mercado">
+  <div class="bc">Produto <span>› Mercado &amp; ICP</span></div>
+  <div class="st">Mercado &amp; ICP</div>
+  <div class="ss">O Epros não compete por preço baixo — compete por valor. Cada plano serve um segmento específico com necessidades distintas.</div>
+  <div class="sl">ICP por plano</div>
+  <div class="icp">
+    <div class="icp-h">
+      <span class="icp-tag" style="background:#4A90D9">Micro</span>
+      <span class="icp-title">Pequenas empresas</span>
+    </div>
+    <div class="icp-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:12px">
+        <div><strong>Segmento:</strong> Comércio varejista, e-commerce, prestadores de serviço</div>
+        <div><strong>Porte:</strong> 1–15 usuários · Até R$ 4,8M/ano</div>
+        <div><strong>Necessidade:</strong> NF-e, fluxo de caixa e controle de estoque básico</div>
+        <div><strong>Pain point:</strong> Sistemas desconectados, planilhas sem fiscal integrado</div>
+        <div style="grid-column:1/-1"><strong>Churn risk:</strong> Preço. Retenção: integração fiscal nativa.</div>
+      </div>
+    </div>
+  </div>
+  <div class="icp">
+    <div class="icp-h">
+      <span class="icp-tag" style="background:#2E7D52">Essencial</span>
+      <span class="icp-title">PMEs com manufatura</span>
+    </div>
+    <div class="icp-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:12px">
+        <div><strong>Segmento:</strong> Indústria leve, distribuidoras, atacadistas</div>
+        <div><strong>Porte:</strong> 10–100 usuários · R$ 5M–50M/ano</div>
+        <div><strong>Necessidade:</strong> Produção (BOM/MRP), qualidade e RH/folha integrados</div>
+        <div><strong>Pain point:</strong> ERP legado caro sem integração entre módulos</div>
+        <div style="grid-column:1/-1"><strong>Churn risk:</strong> Funcionalidade incompleta. Retenção: módulos integrados.</div>
+      </div>
+    </div>
+  </div>
+  <div class="icp">
+    <div class="icp-h">
+      <span class="icp-tag" style="background:#AD1457">Avançado</span>
+      <span class="icp-title">Médias empresas com compliance</span>
+    </div>
+    <div class="icp-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:12px">
+        <div><strong>Segmento:</strong> Construção civil, utilities, saúde, agronegócio</div>
+        <div><strong>Porte:</strong> 50–500 usuários · R$ 50M–500M/ano</div>
+        <div><strong>Necessidade:</strong> Manutenção (EAM), projetos (PPM), GRC/SOX</div>
+        <div><strong>Pain point:</strong> Sistemas separados, audit trail inexistente</div>
+        <div style="grid-column:1/-1"><strong>Churn risk:</strong> Compliance. Retenção: GRC + audit trail imutável.</div>
+      </div>
+    </div>
+  </div>
+  <div class="icp">
+    <div class="icp-h">
+      <span class="icp-tag" style="background:#263238">Enterprise</span>
+      <span class="icp-title">Grupos e regulados</span>
+    </div>
+    <div class="icp-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:12px">
+        <div><strong>Segmento:</strong> Grupos empresariais, concessionárias, montadoras, regulados BACEN/ANVISA</div>
+        <div><strong>Porte:</strong> 500+ usuários · R$ 500M+/ano</div>
+        <div><strong>Necessidade:</strong> DMS, ESG (CSRD obrigatório EU), on-premise, BYOK</div>
+        <div><strong>Pain point:</strong> SAP/Oracle inacessível ou engessado</div>
+        <div style="grid-column:1/-1"><strong>Churn risk:</strong> Lock-in. Retenção: on-premise + compliance global.</div>
+      </div>
+    </div>
+  </div>
+  <div class="sl">Segmentos verticais prioritários</div>
+  <div class="g2">
+    <div class="card"><div style="font-size:13px;font-weight:600;color:var(--cp);margin-bottom:4px">🚗 Concessionárias automotivas</div><p style="font-size:12px;color:var(--ct);line-height:1.6">DMS nativo — único ERP nacional com gestão de concessionárias de primeira classe. Vendas, serviços, peças, CRM, garantias e finanças integrados em um sistema.</p></div>
+    <div class="card"><div style="font-size:13px;font-weight:600;color:var(--cp);margin-bottom:4px">🏭 Indústria de manufatura</div><p style="font-size:12px;color:var(--ct);line-height:1.6">BOM multi-nível, MRP/IBP (S&OP, what-if), MES, QUA com NCR/CAPA, rastreabilidade de lote e recall. Custo de produção real integrado ao GL.</p></div>
+    <div class="card"><div style="font-size:13px;font-weight:600;color:var(--cp);margin-bottom:4px">🌱 Empresas com ESG obrigatório</div><p style="font-size:12px;color:var(--ct);line-height:1.6">CSRD (EU) obriga empresas com operação europeia a reportar ESG. Módulo nativo com GRI, CSRD, TCFD, SASB — não um add-on contratado separado.</p></div>
+    <div class="card"><div style="font-size:13px;font-weight:600;color:var(--cp);margin-bottom:4px">🏦 Regulados BACEN / ANVISA</div><p style="font-size:12px;color:var(--ct);line-height:1.6">On-premise com BYOK. Audit trail imutável com triggers de banco. Compliance PCI DSS. Deploy no ambiente do cliente sem nenhum dado na cloud.</p></div>
+    <div class="card"><div style="font-size:13px;font-weight:600;color:var(--cp);margin-bottom:4px">🛒 Comércio e distribuição</div><p style="font-size:12px;color:var(--ct);line-height:1.6">PDV nativo com NFC-e offline, WMS, TMS logístico com CO₂ por rota, CLM de compra e venda. Integração real entre fiscal, estoque e financeiro.</p></div>
+    <div class="card"><div style="font-size:13px;font-weight:600;color:var(--cp);margin-bottom:4px">🏗️ Projetos e construção</div><p style="font-size:12px;color:var(--ct);line-height:1.6">PPM completo: WBS, cronograma, EVM, orçamento, riscos, portfólio. Reconhecimento de receita por percentual de conclusão integrado ao GL financeiro.</p></div>
+  </div>
+</div>
+<div class="pg" id="p-diferenciais">
+  <div class="bc">Produto <span>› Diferenciais Competitivos</span></div>
+  <div class="st">6 Diferenciais Competitivos</div>
+  <div class="ss">Cada diferencial sozinho já seria argumento de venda. Juntos, formam uma posição defensável que nenhum concorrente entrega de forma integrada.</div>
+  <div class="dif">
+    <div style="flex-shrink:0">
+      <div class="dif-num" style="background:#BF360C">01</div>
+    </div>
+    <div style="flex:1">
+      <div class="dif-title">🚗 DMS Nativo</div>
+      <div class="dif-body">Único ERP nacional com gestão de concessionárias de primeira classe — não um add-on. Vendas, F&I, OS, peças, CRM, garantias, metas por rede e DRE por unidade. Integração real com FIN, EST e MAN.</div>
+      <div class="dif-vs">SAP: parcial via parceiro · Oracle: não tem · TOTVS: módulo separado</div>
+    </div>
+  </div>
+  <div class="dif">
+    <div style="flex-shrink:0">
+      <div class="dif-num" style="background:#1565C0">02</div>
+    </div>
+    <div style="flex:1">
+      <div class="dif-title">🧾 Fiscal BR Nativo</div>
+      <div class="dif-body">NF-e, NFC-e, NFS-e, CT-e, SPED, eSocial, REINF — dentro do Epros sem dependência externa. Lib Hercules.NET.NFe.NFCe v2026 em produção nos 20 clientes. Contingência offline para PDV.</div>
+      <div class="dif-vs">SAP: add-on pago · Oracle: localização cara · TOTVS: tem, mas monolítico</div>
+    </div>
+  </div>
+  <div class="dif">
+    <div style="flex-shrink:0">
+      <div class="dif-num" style="background:#2E7D32">03</div>
+    </div>
+    <div style="flex:1">
+      <div class="dif-title">🌱 ESG & GRC Nativos</div>
+      <div class="dif-body">ESG com carbono Scope 1/2/3, GRI, CSRD (obrigatório para empresas na EU a partir de 2024). GRC com risk register, SOX, SoD, audit trail imutável e Whistleblower. Módulos de primeira classe, não add-ons.</div>
+      <div class="dif-vs">SAP: módulo separado caro · Oracle: parcial · TOTVS: não tem</div>
+    </div>
+  </div>
+  <div class="dif">
+    <div style="flex-shrink:0">
+      <div class="dif-num" style="background:#6A1B9A">04</div>
+    </div>
+    <div style="flex:1">
+      <div class="dif-title">☁ Cloud-Agnostic</div>
+      <div class="dif-body">3 níveis de deploy, 1 binário: Shared cluster, Dedicated cluster e On-premise / cloud própria. Exatamente o mesmo código. A diferença está no Catalog e Connection Router — não no produto.</div>
+      <div class="dif-vs">SAP: cloud própria · Oracle: cloud only · TOTVS: on-premise sem SaaS</div>
+    </div>
+  </div>
+  <div class="dif">
+    <div style="flex-shrink:0">
+      <div class="dif-num" style="background:#558B2F">05</div>
+    </div>
+    <div style="flex:1">
+      <div class="dif-title">📱 Multi-surface</div>
+      <div class="dif-body">Web SaaS + Desktop offline-first + Mobile + PDV com NFC-e offline. 4 surfaces, 1 backend. Desktop com SQLite local e motor fiscal edge. PDV funciona sem internet — dados nunca perdidos.</div>
+      <div class="dif-vs">vs todos: nenhum concorrente tem PDV offline nativo + Desktop + Mobile integrados</div>
+    </div>
+  </div>
+  <div class="dif">
+    <div style="flex-shrink:0">
+      <div class="dif-num" style="background:#B71C1C">06</div>
+    </div>
+    <div style="flex:1">
+      <div class="dif-title">⚖ Compliance 12 Regulações</div>
+      <div class="dif-body">LGPD, GDPR, PCI DSS 4.0, CCPA, PDPA, PIPEDA, PDPL, DPDP, PIPL, Privacy Act, SOC 2 Type II, ISO 27001. Controles técnicos desde o primeiro commit — por arquitetura, não configuração.</div>
+      <div class="dif-vs">vs todos: concorrentes tratam compliance como configuração, não arquitetura</div>
+    </div>
+  </div>
+</div>
+<div class="pg" id="p-modelo">
+  <div class="bc">Produto <span>› Modelo Comercial</span></div>
+  <div class="st">Modelo Comercial</div>
+  <div class="ss">Dimensões de billing combináveis por contrato. O cliente paga pelo valor que usa, não por uma licença monolítica.</div>
+  <div class="sl">Dimensões de billing</div>
+  <div class="billing">
+    <div class="billing-icon">💳</div>
+    <div>
+      <div class="billing-title">Por módulo ativo</div>
+      <div class="billing-desc">Fee mensal por módulo habilitado. Desabilitar preserva dados históricos e para de cobrar imediatamente. Ativação de módulo novo sem redeploy — entitlement engine em tempo real.</div>
+    </div>
+  </div>
+  <div class="billing">
+    <div class="billing-icon">👥</div>
+    <div>
+      <div class="billing-title">Por usuário nomeado</div>
+      <div class="billing-desc">Preço por assento (concurrent ou named). Combinável com fee de módulo. Usuários inativos podem ser desativados sem perda de dados.</div>
+    </div>
+  </div>
+  <div class="billing">
+    <div class="billing-icon">📦</div>
+    <div>
+      <div class="billing-title">Por volume transacional</div>
+      <div class="billing-desc">NF-e emitidas, ordens de produção, folhas processadas. Para clientes com uso muito intenso que não se encaixam em assento fixo.</div>
+    </div>
+  </div>
+  <div class="billing">
+    <div class="billing-icon">🤝</div>
+    <div>
+      <div class="billing-title">Híbrido com teto</div>
+      <div class="billing-desc">Assento + volume com teto contratual. Modelo Enterprise com SLA customizado, suporte dedicado e onboarding assistido.</div>
+    </div>
+  </div>
+  <div class="sl">Proposta de valor por persona</div>
+  <div class="g3">
+    <div class="card">
+      <div style="font-size:11px;font-weight:600;color:var(--az);letter-spacing:1px;margin-bottom:6px">PARA O CTO / TECH LEAD</div>
+      <p style="font-size:13px;font-weight:600;color:var(--cp);margin-bottom:5px">Arquitetura que não envergonha</p>
+      <p style="font-size:12px;color:var(--ct);line-height:1.65">Monólito Modular com Hexagonal por bounded context. Schema próprio por módulo no PostgreSQL, Domain Events com Outbox Pattern. Stack 100% open source MIT/Apache. Preparado para extração em microserviços — sem reescrever nada.</p>
+    </div>
+    <div class="card">
+      <div style="font-size:11px;font-weight:600;color:var(--az);letter-spacing:1px;margin-bottom:6px">PARA O CEO / CFO</div>
+      <p style="font-size:13px;font-weight:600;color:var(--cp);margin-bottom:5px">ERP completo sem surpresas de custo</p>
+      <p style="font-size:12px;color:var(--ct);line-height:1.65">Zero licença de banco, cloud ou observabilidade. Compliance nativo com 12 regulações globais — sem add-ons extras. DMS, ESG e GRC de primeira classe. Custo cresce linearmente com volume, nunca de surpresa.</p>
+    </div>
+    <div class="card">
+      <div style="font-size:11px;font-weight:600;color:var(--az);letter-spacing:1px;margin-bottom:6px">PARA O CLIENTE ENTERPRISE</div>
+      <p style="font-size:13px;font-weight:600;color:var(--cp);margin-bottom:5px">Liberdade de infraestrutura total</p>
+      <p style="font-size:12px;color:var(--ct);line-height:1.65">On-premise com BYOK, deploy no ambiente do cliente, conformidade automática com LGPD/GDPR/PDPA por data residency. Sem dependência de cloud americana para clientes em mercados regulados.</p>
+    </div>
+  </div>
+</div>
+<div class="pg" id="p-modulos">
+  <div class="bc">Plataforma <span>› Módulos &amp; Planos</span></div>
+  <div class="st">17 Módulos · 132 Submódulos</div>
+  <div class="ss">Inventário canônico extraído e validado contra 12 sistemas reais. Cada módulo é ativado por entitlement — sem redeploy, sem configuração manual, em tempo real.</div>
+  <div class="sl">Planos e módulos incluídos</div>
+  <div class="g2">
+    <div class="plan-card">
+      <div class="plan-h">
+        <span class="plan-code" style="background:#4A90D9">MICRO</span>
+        <div class="plan-name">Micro</div>
+        <div class="plan-target">PMEs, comércio varejista, e-commerce, prestadores</div>
+        <div class="plan-users">1–15 usuários</div>
+        <div class="plan-rev">Até R$ 4,8M/ano</div>
+      </div>
+      <div class="plan-body">
+        <div class="plan-desc">NF-e, fluxo de caixa e controle de estoque. Tudo que uma pequena empresa precisa para sair das planilhas.</div>
+        <div class="plan-mods"><span class="pm" style="background:#4A90D9">FIN</span><span class="pm" style="background:#4A90D9">VEN</span><span class="pm" style="background:#4A90D9">EST</span><span class="pm" style="background:#4A90D9">PLT</span></div>
+      </div>
+    </div>
+    <div class="plan-card">
+      <div class="plan-h">
+        <span class="plan-code" style="background:#2E7D52">ESSENCIAL</span>
+        <div class="plan-name">Essencial</div>
+        <div class="plan-target">PMEs com manufatura, distribuidoras, atacadistas</div>
+        <div class="plan-users">10–100 usuários</div>
+        <div class="plan-rev">R$ 5M–50M/ano</div>
+      </div>
+      <div class="plan-body">
+        <div class="plan-desc">Produção, qualidade e RH integrados. Para quem cresceu além do básico e precisa de gestão real.</div>
+        <div class="plan-mods"><span class="pm" style="background:#2E7D52">FIN</span><span class="pm" style="background:#2E7D52">VEN</span><span class="pm" style="background:#2E7D52">EST</span><span class="pm" style="background:#2E7D52">COM</span><span class="pm" style="background:#2E7D52">PRD</span><span class="pm" style="background:#2E7D52">QLD</span><span class="pm" style="background:#2E7D52">RH</span><span class="pm" style="background:#2E7D52">PLT</span></div>
+      </div>
+    </div>
+    <div class="plan-card">
+      <div class="plan-h">
+        <span class="plan-code" style="background:#AD1457">AVANÇADO</span>
+        <div class="plan-name">Avançado</div>
+        <div class="plan-target">Médias empresas, construção, utilities, agro</div>
+        <div class="plan-users">50–500 usuários</div>
+        <div class="plan-rev">R$ 50M–500M/ano</div>
+      </div>
+      <div class="plan-body">
+        <div class="plan-desc">EAM, PPM e GRC para quem tem compliance obrigatório e operações complexas.</div>
+        <div class="plan-mods"><span class="pm" style="background:#AD1457">FIN</span><span class="pm" style="background:#AD1457">VEN</span><span class="pm" style="background:#AD1457">EST</span><span class="pm" style="background:#AD1457">COM</span><span class="pm" style="background:#AD1457">PRD</span><span class="pm" style="background:#AD1457">QLD</span><span class="pm" style="background:#AD1457">RH</span><span class="pm" style="background:#AD1457">MAN</span><span class="pm" style="background:#AD1457">PRJ</span><span class="pm" style="background:#AD1457">GRC</span><span class="pm" style="background:#AD1457">PLT</span></div>
+      </div>
+    </div>
+    <div class="plan-card">
+      <div class="plan-h">
+        <span class="plan-code" style="background:#263238">ENTERPRISE</span>
+        <div class="plan-name">Enterprise</div>
+        <div class="plan-target">Grupos empresariais, regulados, concessionárias</div>
+        <div class="plan-users">500+ usuários</div>
+        <div class="plan-rev">R$ 500M+/ano</div>
+      </div>
+      <div class="plan-body">
+        <div class="plan-desc">Tudo, incluindo ESG (CSRD), DMS e on-premise. Deploy no ambiente do cliente. BYOK disponível.</div>
+        <div class="plan-mods"><span class="pm" style="background:#263238">FIN</span><span class="pm" style="background:#263238">VEN</span><span class="pm" style="background:#263238">EST</span><span class="pm" style="background:#263238">COM</span><span class="pm" style="background:#263238">PRD</span><span class="pm" style="background:#263238">QLD</span><span class="pm" style="background:#263238">RH</span><span class="pm" style="background:#263238">MAN</span><span class="pm" style="background:#263238">PRJ</span><span class="pm" style="background:#263238">GRC</span><span class="pm" style="background:#263238">ESG</span><span class="pm" style="background:#263238">CON</span><span class="pm" style="background:#263238">IMO</span><span class="pm" style="background:#263238">RPT</span><span class="pm" style="background:#263238">PLT</span><span class="pm" style="background:#263238">APP</span><span class="pm" style="background:#263238">CAD</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="sl">Visão geral dos 17 módulos</div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:180px"><div style="width:8px;height:8px;border-radius:50%;background:#4A90D9;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--cp)">APLICATIVO</div><div style="font-size:10px;color:var(--ct)">11 submódulos</div></div></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:180px"><div style="width:8px;height:8px;border-radius:50%;background:#2E7D52;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--cp)">CADASTROS BASE</div><div style="font-size:10px;color:var(--ct)">3 submódulos</div></div></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:180px"><div style="width:8px;height:8px;border-radius:50%;background:#1565C0;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--cp)">FINANCEIRO</div><div style="font-size:10px;color:var(--ct)">12 submódulos</div></div></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:180px"><div style="width:8px;height:8px;border-radius:50%;background:#AD1457;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--cp)">VENDAS</div><div style="font-size:10px;color:var(--ct)">11 submódulos</div></div></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:180px"><div style="width:8px;height:8px;border-radius:50%;background:#E65100;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--cp)">ESTOQUE</div><div style="font-size:10px;color:var(--ct)">13 submódulos</div></div></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:180px"><div style="width:8px;height:8px;border-radius:50%;background:#6A1B9A;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--cp)">COMPRAS</div><div style="font-size:10px;color:var(--ct)">2 submódulos</div></div></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:180px"><div style="width:8px;height:8px;border-radius:50%;background:#558B2F;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--cp)">PRODUÇÃO</div><div style="font-size:10px;color:var(--ct)">8 submódulos</div></div></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:180px"><div style="width:8px;height:8px;border-radius:50%;background:#37474F;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--cp)">RH</div><div style="font-size:10px;color:var(--ct)">9 submódulos</div></div></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:180px"><div style="width:8px;height:8px;border-radius:50%;background:#4E342E;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--cp)">MANUTENÇÃO</div><div style="font-size:10px;color:var(--ct)">7 submódulos</div></div></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:180px"><div style="width:8px;height:8px;border-radius:50%;background:#00695C;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--cp)">QUALIDADE</div><div style="font-size:10px;color:var(--ct)">7 submódulos</div></div></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:180px"><div style="width:8px;height:8px;border-radius:50%;background:#1A237E;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--cp)">PROJETOS</div><div style="font-size:10px;color:var(--ct)">8 submódulos</div></div></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:180px"><div style="width:8px;height:8px;border-radius:50%;background:#B71C1C;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--cp)">GRC</div><div style="font-size:10px;color:var(--ct)">6 submódulos</div></div></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:180px"><div style="width:8px;height:8px;border-radius:50%;background:#2E7D32;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--cp)">ESG</div><div style="font-size:10px;color:var(--ct)">6 submódulos</div></div></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:180px"><div style="width:8px;height:8px;border-radius:50%;background:#BF360C;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--cp)">CONCESSIONÁRIAS</div><div style="font-size:10px;color:var(--ct)">8 submódulos</div></div></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:180px"><div style="width:8px;height:8px;border-radius:50%;background:#795548;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--cp)">IMOBILIÁRIA</div><div style="font-size:10px;color:var(--ct)">1 submódulos</div></div></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:180px"><div style="width:8px;height:8px;border-radius:50%;background:#546E7A;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--cp)">RELATÓRIOS</div><div style="font-size:10px;color:var(--ct)">2 submódulos</div></div></div>
+    <div style="background:#fff;border:1px solid var(--cd);border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:180px"><div style="width:8px;height:8px;border-radius:50%;background:#263238;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--cp)">PLATAFORMA</div><div style="font-size:10px;color:var(--ct)">18 submódulos</div></div></div>
+  </div>
+  <div class="okb">Lista completa interativa com todos os 132 submódulos, IDs canônicos e descrições disponível em <strong>epros-modulos.html</strong></div>
+</div>
+<div class="pg" id="p-surfaces">
+  <div class="bc">Plataforma <span>› Multi-surface</span></div>
+  <div class="st">4 Surfaces · 1 Backend</div>
+  <div class="ss">O core de negócio vive 100% na API cloud. Cada surface é um adapter que consome essa API — e quando offline, consome um runtime local que sincroniza ao reconectar.</div>
+  <div class="g2">
+    <div class="card" style="border-top:3px solid #4A90D9">
+      <div style="font-size:10px;font-weight:600;color:#4A90D9;letter-spacing:1px;margin-bottom:5px">WEB · Nuxt 3</div>
+      <div style="font-size:14px;font-weight:600;color:var(--cp);margin-bottom:6px">🌐 Web SaaS</div>
+      <p style="font-size:12px;color:var(--ct);line-height:1.65">Acesso 100% dos módulos ativos. SSR para performance. Módulos condicionais por tenant via entitlements. Portais Cliente e Fornecedor incluídos. Online only.</p>
+    </div>
+    <div class="card" style="border-top:3px solid #558B2F">
+      <div style="font-size:10px;font-weight:600;color:#558B2F;letter-spacing:1px;margin-bottom:5px">DSK · Electron + Nuxt 3</div>
+      <div style="font-size:14px;font-weight:600;color:var(--cp);margin-bottom:6px">🖥️ Desktop (Epros.App)</div>
+      <p style="font-size:12px;color:var(--ct);line-height:1.65">Offline-first para operações críticas. SQLite local com sync automático ao reconectar. Motor fiscal edge para emissão de NF-e em contingência. SyncVersion para detecção de conflitos. Cross-platform: Windows, macOS, Linux.</p>
+    </div>
+    <div class="card" style="border-top:3px solid #AD1457">
+      <div style="font-size:10px;font-weight:600;color:#AD1457;letter-spacing:1px;margin-bottom:5px">MOB · React Native</div>
+      <div style="font-size:14px;font-weight:600;color:var(--cp);margin-bottom:6px">📱 Mobile (Epros.Mobile)</div>
+      <p style="font-size:12px;color:var(--ct);line-height:1.65">Subset configurável dos módulos. Aprovações em campo, consultas, dashboards executivos, apontamentos de produção e manutenção. iOS e Android nativos.</p>
+    </div>
+    <div class="card" style="border-top:3px solid #E65100">
+      <div style="font-size:10px;font-weight:600;color:#E65100;letter-spacing:1px;margin-bottom:5px">PDV · React Native</div>
+      <div style="font-size:14px;font-weight:600;color:var(--cp);margin-bottom:6px">🧾 Frente de Caixa</div>
+      <p style="font-size:12px;color:var(--ct);line-height:1.65">Modo PDV do Epros.Mobile. Offline crítico — funciona sem internet. NFC-e contingência. Abertura e fechamento de caixa, sangria, suprimento, múltiplos pagamentos (TEF, Pix). Dados nunca perdidos.</p>
+    </div>
+  </div>
+  <div class="sl">Decisões abertas de surface</div>
+  <table><thead><tr><th>Decisão</th><th>Opções em aberto</th></tr></thead><tbody>
+    <tr><td>Desktop: nível de offline</td><td>Dias sem internet (SQLite completo) vs. tolerância a instabilidade de minutos? Define escopo do runtime local.</td></tr>
+    <tr><td>PDV: produto separado?</td><td>Modo do app mobile vs. produto dedicado com drivers de hardware (pinpad, impressora fiscal, leitor de código)?</td></tr>
+    <tr><td>Conflict resolution</td><td>Last Write Wins · CRDT · Fila de reconciliação manual? SyncVersion já preparado para qualquer estratégia.</td></tr>
+    <tr><td>Token JWT offline</td><td>Duração máxima sem reconexão ao Keycloak? Biometria local para reautenticar offline?</td></tr>
+  </tbody></table>
+</div>
+<div class="pg" id="p-compliance">
+  <div class="bc">Plataforma <span>› Compliance Mundial</span></div>
+  <div class="st">Compliance por Arquitetura</div>
+  <div class="ss">Compliance não é uma feature — é camada arquitetural desde o primeiro commit. Filosofia: projetar os controles mais restritivos (GDPR + PCI juntos) e aplicar universalmente. Qualquer regulação menos restritiva é automaticamente atendida.</div>
+  <div class="okb"><strong>Controles implementados por design (não configuração):</strong> audit_trail append-only · pgcrypto · TLS 1.3 (Caddy) · MFA obrigatório (Keycloak) · DataMaskingMiddleware · portabilidade (/api/v1/plataforma/meus-dados/exportar) · esquecimento (job de anonimização) · data residency (on-premise Nível 3) · CVE scan Trivy · Secrets no Vault</div>
+  <div class="sl">12 regulações mapeadas</div>
+  <div class="reg-card">
+    <div class="reg-h">
+      <span class="reg-name">LGPD</span>
+      <span class="reg-region">· Brasil</span>
+      <span class="reg-multa" style="margin-left:auto">2% faturamento BR · máx R$50M/infração</span>
+    </div>
+    <div class="reg-impl">audit_trail · portabilidade · esquecimento · DPO · RIPD</div>
+  </div>
+  <div class="reg-card">
+    <div class="reg-h">
+      <span class="reg-name">Legislação Fiscal BR</span>
+      <span class="reg-region">· Brasil</span>
+      <span class="reg-multa" style="margin-left:auto">Autuação SEFAZ + multas ANPD</span>
+    </div>
+    <div class="reg-impl">Hercules.NET NFe · Motor Fiscal Edge · MinIO 5 anos · eSocial · REINF</div>
+  </div>
+  <div class="reg-card">
+    <div class="reg-h">
+      <span class="reg-name">GDPR</span>
+      <span class="reg-region">· União Europeia</span>
+      <span class="reg-multa" style="margin-left:auto">4% faturamento global ou €20M</span>
+    </div>
+    <div class="reg-impl">Privacy by Design · Data residency · DPIA · breach 72h</div>
+  </div>
+  <div class="reg-card">
+    <div class="reg-h">
+      <span class="reg-name">PCI DSS 4.0</span>
+      <span class="reg-region">· Global</span>
+      <span class="reg-multa" style="margin-left:auto">Variável por bandeira</span>
+    </div>
+    <div class="reg-impl">DataMaskingMiddleware · TLS 1.3 · audit log imutável · Vault</div>
+  </div>
+  <div class="reg-card">
+    <div class="reg-h">
+      <span class="reg-name">CCPA/CPRA</span>
+      <span class="reg-region">· California EUA</span>
+      <span class="reg-multa" style="margin-left:auto">$7.500/violação intencional</span>
+    </div>
+    <div class="reg-impl">Portabilidade · opt-out · audit trail</div>
+  </div>
+  <div class="reg-card">
+    <div class="reg-h">
+      <span class="reg-name">PDPA</span>
+      <span class="reg-region">· Tailândia</span>
+      <span class="reg-multa" style="margin-left:auto">THB 5M (~€130k)</span>
+    </div>
+    <div class="reg-impl">Data residency Nível 3 · on-premise local</div>
+  </div>
+  <div class="reg-card">
+    <div class="reg-h">
+      <span class="reg-name">PIPL</span>
+      <span class="reg-region">· China</span>
+      <span class="reg-multa" style="margin-left:auto">CNY 50M (~€6,5M)</span>
+    </div>
+    <div class="reg-impl">Data residency Nível 3 · on-premise local</div>
+  </div>
+  <div class="reg-card">
+    <div class="reg-h">
+      <span class="reg-name">DPDP Act</span>
+      <span class="reg-region">· Índia</span>
+      <span class="reg-multa" style="margin-left:auto">₹250 crore (~€27M)</span>
+    </div>
+    <div class="reg-impl">Data residency Nível 3 · on-premise local</div>
+  </div>
+  <div class="reg-card">
+    <div class="reg-h">
+      <span class="reg-name">CSRD</span>
+      <span class="reg-region">· União Europeia</span>
+      <span class="reg-multa" style="margin-left:auto">Variável por país-membro</span>
+    </div>
+    <div class="reg-impl">Módulo ESG · relatórios ESRS · dupla materialidade</div>
+  </div>
+  <div class="reg-card">
+    <div class="reg-h">
+      <span class="reg-name">SOC 2 Type II</span>
+      <span class="reg-region">· Global (cert.)</span>
+      <span class="reg-multa" style="margin-left:auto">—</span>
+    </div>
+    <div class="reg-impl">Segurança, disponibilidade, confidencialidade e privacidade</div>
+  </div>
+  <div class="reg-card">
+    <div class="reg-h">
+      <span class="reg-name">PIPEDA</span>
+      <span class="reg-region">· Canadá</span>
+      <span class="reg-multa" style="margin-left:auto">CAD 100.000/infração</span>
+    </div>
+    <div class="reg-impl">Consentimento · portabilidade · breach notification</div>
+  </div>
+  <div class="reg-card">
+    <div class="reg-h">
+      <span class="reg-name">Privacy Act/APP</span>
+      <span class="reg-region">· Austrália</span>
+      <span class="reg-multa" style="margin-left:auto">AUD 50M ou 30% do faturamento</span>
+    </div>
+    <div class="reg-impl">Data residency · consentimento · portabilidade</div>
+  </div>
+</div>
+<div class="pg" id="p-diagnostico">
+  <div class="bc">Trajetória <span>› Diagnóstico do Legado</span></div>
+  <div class="st">De onde viemos</div>
+  <div class="ss">Diagnóstico completo do Epros.ERP legado — os problemas que encontramos, por que a reescrita era inevitável e o que preservamos do conhecimento acumulado.</div>
+  <div style="background:linear-gradient(135deg,#2C0606 0%,#4A0E0E 100%);border-radius:12px;padding:28px 32px;margin-bottom:22px">
+    <div style="font-family:'Playfair Display',serif;font-size:18px;color:#fff;margin-bottom:10px">O sistema funcionava. Mas não era sustentável.</div>
+    <p style="font-size:12px;color:rgba(255,255,255,.7);line-height:1.75;max-width:600px">20 clientes em produção, receita recorrente, equipe dedicada — mas uma arquitetura que tornava cada nova feature mais difícil que a anterior. Não foi uma decisão de reescrever por capricho. Foi uma decisão baseada em evidência.</p>
+    <div style="display:flex;gap:20px;margin-top:18px;flex-wrap:wrap">
+      <div><div style="font-family:'Playfair Display',serif;font-size:22px;color:#E88080;font-weight:700">4.784</div><div style="font-size:10px;color:rgba(255,255,255,.4)">linhas no maior controller</div></div>
+      <div><div style="font-family:'Playfair Display',serif;font-size:22px;color:#E88080;font-weight:700">0</div><div style="font-size:10px;color:rgba(255,255,255,.4)">testes automatizados</div></div>
+      <div><div style="font-family:'Playfair Display',serif;font-size:22px;color:#E88080;font-weight:700">JWT</div><div style="font-size:10px;color:rgba(255,255,255,.4)">hardcoded no código-fonte</div></div>
+      <div><div style="font-family:'Playfair Display',serif;font-size:22px;color:#E88080;font-weight:700">Static</div><div style="font-size:10px;color:rgba(255,255,255,.4)">TenantId — risco de vazamento</div></div>
+    </div>
+  </div>
+  <div class="sl">O que foi preservado</div>
+  <div class="okb"><strong>10 anos de conhecimento de domínio fiscal não foram jogados fora.</strong> NF-e, NFC-e, CFOP, NCM, CST, alíquotas interestaduais — tudo foi extraído, documentado e incorporado ao novo sistema. A lib Hercules.NET.NFe.NFCe continua em uso. O Nuxt 3 do frontend foi mantido. Regras de negócio de CP, CR e estoque foram catalogadas em 132 submódulos canônicos.<br/><br/>
+  O que mudou foi a estrutura — não o conhecimento.</div>
+  <div class="sl">Diagnóstico completo</div>
+  <div class="card" style="text-align:center;padding:28px">
+    <div style="font-size:32px;margin-bottom:10px">🔍</div>
+    <div style="font-size:14px;font-weight:600;color:var(--cp);margin-bottom:6px">Diagnóstico técnico detalhado</div>
+    <p style="font-size:12px;color:var(--ct);line-height:1.65;max-width:440px;margin:0 auto 16px">Análise completa com evidências diretas do código-fonte + Assessment de Segurança 360° (SAST, DAST, SCA, BOLA/IDOR) realizado por empresa especializada em abril 2026.</p>
+    <div style="font-family:'DM Mono',monospace;font-size:11px;background:var(--az);color:var(--do);padding:7px 14px;border-radius:6px;display:inline-block">→ epros-diagnostico.html</div>
+  </div>
+</div>
+<div class="pg" id="p-roadmap">
+  <div class="bc">Trajetória <span>› Roadmap</span></div>
+  <div class="st">Roadmap de Produto</div>
+  <div class="ss">Sequência de blocos de implementação. Cada bloco entrega valor incremental e desbloqueia o próximo. Ordem definida pelas dependências entre módulos.</div>
+  <div class="sl">Blocos de implementação</div>
+  <div class="rm">
+    <div class="rm-line">
+      <div class="rm-dot" style="background:#2E7D52"></div>
+      <div class="rm-track" style="background:linear-gradient(to bottom,#2E7D52,rgba(0,0,0,.05))"></div>
+    </div>
+    <div class="rm-body">
+      <div class="rm-status" style="color:#2E7D52">Concluído · Blocos 1–4</div>
+      <div class="rm-title">Fundação do sistema</div>
+      <div class="rm-desc">EntidadeSaaSBase, CQRS, Outbox Pattern, multi-tenancy. Módulos: GestaoClientes, Financeiro (CP+CR), Estoque, Fiscal (DFe estrutura). 92+ arquivos .cs · docker-compose · .cursorrules</div>
+    </div>
+  </div>
+  <div class="rm">
+    <div class="rm-line">
+      <div class="rm-dot" style="background:#2E7D52"></div>
+      <div class="rm-track" style="background:linear-gradient(to bottom,#2E7D52,rgba(0,0,0,.05))"></div>
+    </div>
+    <div class="rm-body">
+      <div class="rm-status" style="color:#2E7D52">Concluído · Bloco 5</div>
+      <div class="rm-title">Vendas & PDV</div>
+      <div class="rm-desc">Módulo Vendas completo com máquina de estados, impostos por item, pagamentos múltiplos. PDV com abertura/fechamento, sangria, contingência offline. 19 testes unitários.</div>
+    </div>
+  </div>
+  <div class="rm">
+    <div class="rm-line">
+      <div class="rm-dot" style="background:#E65100"></div>
+      <div class="rm-track" style="background:linear-gradient(to bottom,#E65100,rgba(0,0,0,.05))"></div>
+    </div>
+    <div class="rm-body">
+      <div class="rm-status" style="color:#E65100">Em andamento · Bloco 6</div>
+      <div class="rm-title">Estoque / Compras + NF-e entrada</div>
+      <div class="rm-desc">Agregado Compra. LancarCompraCommand orquestra: Compra + NF-e entrada + ContaPagar + EntradaEstoque. Reengenharia do CompraController.cs (3.294 linhas) em CQRS.</div>
+    </div>
+  </div>
+  <div class="rm">
+    <div class="rm-line">
+      <div class="rm-dot" style="background:#1565C0"></div>
+      <div class="rm-track" style="background:linear-gradient(to bottom,#1565C0,rgba(0,0,0,.05))"></div>
+    </div>
+    <div class="rm-body">
+      <div class="rm-status" style="color:#1565C0">Próximo · Bloco 7</div>
+      <div class="rm-title">Infraestrutura & CI/CD</div>
+      <div class="rm-desc">Migrations EF Core por módulo. Seeders Keycloak. Pipeline CI/CD GitHub Actions. Script de migração long→Guid para os 20 clientes Epros.ERP em produção.</div>
+    </div>
+  </div>
+  <div class="rm">
+    <div class="rm-line">
+      <div class="rm-dot" style="background:#1565C0"></div>
+      <div class="rm-track" style="background:linear-gradient(to bottom,#1565C0,rgba(0,0,0,.05))"></div>
+    </div>
+    <div class="rm-body">
+      <div class="rm-status" style="color:#1565C0">Próximo · Bloco 8</div>
+      <div class="rm-title">Qualidade, Sync & Workers</div>
+      <div class="rm-desc">Testcontainers (banco PostgreSQL real nos testes). Sync delta para offline. Worker de vencimento automático. Webhook MercadoPago para baixa de faturas SaaS.</div>
+    </div>
+  </div>
+  <div class="rm">
+    <div class="rm-line">
+      <div class="rm-dot" style="background:#546E7A"></div>
+      <div class="rm-track" style="background:linear-gradient(to bottom,#546E7A,rgba(0,0,0,.05))"></div>
+    </div>
+    <div class="rm-body">
+      <div class="rm-status" style="color:#546E7A">Futuro · Bloco 9</div>
+      <div class="rm-title">Cadastros Base & Desktop</div>
+      <div class="rm-desc">Entidade Pessoa unificada (PF/PJ/Estrangeiro). Epros.App (Electron + Nuxt 3) com SQLite local, motor fiscal edge e fila de sync offline.</div>
+    </div>
+  </div>
+  <div class="rm">
+    <div class="rm-line">
+      <div class="rm-dot" style="background:#546E7A"></div>
+      <div class="rm-track" style="background:linear-gradient(to bottom,#546E7A,rgba(0,0,0,.05))"></div>
+    </div>
+    <div class="rm-body">
+      <div class="rm-status" style="color:#546E7A">Futuro · Bloco 10</div>
+      <div class="rm-title">Permissões ABAC & Mobile</div>
+      <div class="rm-desc">Keycloak roles por módulo. Menu dinâmico por tenant. ACL completa. Migração dos 20 clientes para novo modelo. Epros.Mobile (React Native) lançamento.</div>
+    </div>
+  </div>
+</div>
+<div class="pg" id="p-decisao">
+  <div class="bc">Trajetória <span>› Por que reconstruir</span></div>
+  <div class="st">A Decisão de Reconstruir</div>
+  <div class="ss">Não foi uma decisão tomada de forma leviana. Foi baseada em evidência técnica, diagnóstico de segurança externo e avaliação estratégica do que seria necessário para escalar.</div>
+  <div class="sl">O que patches não resolveriam</div>
+  <div class="g2">
+    <div class="card" style="border-left:4px solid #C0392B">
+      <div style="font-size:12px;font-weight:600;color:#C0392B;margin-bottom:8px">Problemas estruturais — sem cura por patch</div>
+      <div style="font-size:12px;line-height:2.1;color:var(--ct)">
+        Controllers de 4.800 linhas → impossível testar<br/>
+        Zero testes automatizados → cada deploy é uma aposta<br/>
+        TenantIdStatic → risco de vazamento em alta carga<br/>
+        IDs long sequenciais → mobile e offline impossíveis<br/>
+        Blazor separado → time dividido entre stacks<br/>
+        SQL Server → custo crescente com escala<br/>
+        Sem observabilidade → incidentes detectados pelo cliente
+      </div>
+    </div>
+    <div class="card" style="border-left:4px solid var(--vd)">
+      <div style="font-size:12px;font-weight:600;color:var(--vd);margin-bottom:8px">O que a reescrita resolve por design</div>
+      <div style="font-size:12px;line-height:2.1;color:var(--ct)">
+        CQRS — handler por operação, 50–150 linhas<br/>
+        Testcontainers — 8 testes obrigatórios bloqueando deploy<br/>
+        ITenantProvider scoped — isolamento garantido<br/>
+        Guid — geração local offline-safe<br/>
+        Nuxt 3 unificado — web, desktop e admin<br/>
+        PostgreSQL 16 open source — zero licença<br/>
+        OpenTelemetry → Grafana + Prometheus + Loki
+      </div>
+    </div>
+  </div>
+  <div class="sl">A estratégia de transição — Strangler Fig</div>
+  <div class="card">
+    <p style="font-size:13px;color:var(--ct);line-height:1.75">O sistema legado continua em produção atendendo os 20 clientes atuais enquanto o novo é construído módulo a módulo. Clientes migram gradualmente — sem big bang, sem risco de downtime total. A fronteira de migração é o schema do banco: cada módulo novo tem seu próprio schema PostgreSQL, independente do SQL Server legado. Rollback disponível a qualquer momento durante o período de transição.</p>
+    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+      <div style="background:var(--cb);border:1px solid var(--cd);border-radius:8px;padding:8px 14px;font-size:12px"><strong>Fase 1</strong> — Novo sistema recebe clientes novos</div>
+      <div style="font-size:16px;color:var(--ct);margin-top:6px">→</div>
+      <div style="background:var(--cb);border:1px solid var(--cd);border-radius:8px;padding:8px 14px;font-size:12px"><strong>Fase 2</strong> — Migração gradual dos 20 clientes legado</div>
+      <div style="font-size:16px;color:var(--ct);margin-top:6px">→</div>
+      <div style="background:var(--vdl);border:1px solid var(--vdb);border-radius:8px;padding:8px 14px;font-size:12px;color:var(--vd)"><strong>Fase 3</strong> — Legado descomissionado</div>
+    </div>
+  </div>
+</div>
+
+</div>
+<script>
+function show(id, el) {
+  document.querySelectorAll('.pg').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(n => n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (el) el.classList.add('active');
+  window.scrollTo(0,0);
+  return false;
+}
+</script>
+</body></html>

@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: epros-postgres
+    environment:
+      POSTGRES_DB: epros
+      POSTGRES_USER: epros
+      POSTGRES_PASSWORD: epros_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - epros-network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.0
+    container_name: epros-keycloak
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./infra/keycloak:/opt/keycloak/data/import
+    networks:
+      - epros-network
+
+  vault:
+    image: hashicorp/vault:1.16.0
+    container_name: epros-vault
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: epros-dev-token
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    cap_add:
+      - IPC_LOCK
+    networks:
+      - epros-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: epros-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: epros_minio
+      MINIO_ROOT_PASSWORD: epros_minio_password
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - epros-network
+
+  valkey:
+    image: valkey/valkey:7-alpine
+    container_name: epros-valkey
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey_data:/data
+    networks:
+      - epros-network
+
+volumes:
+  postgres_data:
+  minio_data:
+  valkey_data:
+
+networks:
+  epros-network:
+    name: epros-network
+    driver: bridge

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — Changelog & Histórico</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+.filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 25px; }
+.f-btn { padding: 5px 13px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--b2); border-radius: 20px; background: none; color: var(--t3); transition: all .15s; font-family: var(--sans); }
+.f-btn:hover { color: var(--t2); }
+.f-btn.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+.timeline { position: relative; padding-left: 24px; border-left: 1px solid var(--b1); margin-top: 10px; }
+.t-item { position: relative; margin-bottom: 35px; }
+.t-item::before { content: ''; position: absolute; left: -28.5px; top: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--blue); border: 2px solid var(--bg); }
+.t-version { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--blue); margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; }
+.t-date { font-size: 11px; color: var(--t3); font-weight: 400; }
+.t-title { font-size: 14px; font-weight: 500; color: var(--t1); margin-bottom: 8px; }
+.t-desc { font-size: 12px; color: var(--t2); line-height: 1.6; }
+
+.change-list { margin-top: 8px; padding-left: 14px; }
+.change-li { list-style: none; position: relative; font-size: 11.5px; line-height: 1.6; margin-bottom: 4px; color: var(--t2); }
+.change-li::before { content: '→'; position: absolute; left: -14px; color: var(--blue); }
+
+.tag-c { font-size: 9px; font-family: var(--mono); padding: 1px 5px; border-radius: 3px; font-weight: 500; margin-left: 6px; text-transform: uppercase; }
+.tag-add { background: rgba(59,130,246,0.1); color: #3b82f6; border: 1px solid rgba(59,130,246,0.2); }
+.tag-imp { background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.2); }
+.tag-fix { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+.tag-sec { background: rgba(139,92,246,0.1); color: #8b5cf6; border: 1px solid rgba(139,92,246,0.2); }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+  <a class="nt" href="08_api.html">⑧ API Reference</a>
+  <a class="nt" href="09_runbook.html">⑨ Runbook & DR</a>
+  <a class="nt" href="10_modelo_financeiro.html">⑩ Modelo Financeiro</a>
+  <a class="nt" href="11_integracoes.html">⑪ Integrações</a>
+  <a class="nt" href="12_modelo_dados.html">⑫ Modelo de Dados</a>
+  <a class="nt" href="13_onboarding.html">⑬ Guia de Onboarding</a>
+  <a class="nt" href="14_disaster_recovery.html">⑭ Disaster Recovery</a>
+  <a class="nt" href="15_glossario.html">⑮ Glossário</a>
+  <a class="nt" href="16_i18n.html">⑯ Internacionalização</a>
+  <a class="nt on" href="17_changelog.html">⑰ Changelog</a>
+  <a class="nt" href="18_plano_execucao.html">⑱ Plano de Execução</a>
+  <a class="nt" href="19_operacional.html">⑲ Modelo Operacional</a>
+  <a class="nt" href="20_treinamento.html">⑳ Treinamento por Função</a>
+  <a class="nt" href="21_agentes_prompts.html">㉑ Prompts dos Agentes</a>
+  <a class="nt" href="22_diagnostico.html">㉒ Diagnóstico do Legado</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>Release Notes · Histórico de Entregas · Evolução dos Blocos</div>
+  <h1>Changelog <em>& Histórico</em></h1>
+  <p class="hero-desc">Registro sistemático das alterações, novas APIs, correções e melhorias de segurança introduzidas no Epros ERP ao longo dos blocos de desenvolvimento.</p>
+</div>
+
+<div class="page">
+
+<div class="filters">
+  <button class="f-btn on" onclick="filterChangelog('all')">Todos os registros</button>
+  <button class="f-btn" onclick="filterChangelog('add')">Novos Recursos</button>
+  <button class="f-btn" onclick="filterChangelog('imp')">Melhorias</button>
+  <button class="f-btn" onclick="filterChangelog('fix')">Correções</button>
+  <button class="f-btn" onclick="filterChangelog('sec')">Segurança</button>
+</div>
+
+<div class="timeline">
+
+  <!-- ══ BLOCO 15 ══ -->
+  <div class="t-item" data-tags="add,imp">
+    <div class="t-version">
+      <span>Bloco 15: Caixa & PDV Mobile</span>
+      <span class="t-date">Junho 2026</span>
+    </div>
+    <div class="t-title">Turnos de caixas operacionais e lançamentos avulsos de sangrias/suprimentos</div>
+    <div class="t-desc">
+      Introdução da infraestrutura transacional local e remota para faturamento em pontos de venda e reconciliação contábil rápida.
+      <ul class="change-list">
+        <li class="change-li">Implementação de entidades <code>Caixa</code> e <code>CaixaMovimento</code> no monólito. <span class="tag-c tag-add">Add</span></li>
+        <li class="change-li">Criação de handlers de abertura, fechamento e lançamentos avulsos. <span class="tag-c tag-add">Add</span></li>
+        <li class="change-li">Cálculo e conciliação automática de divergências físicas no monólito. <span class="tag-c tag-imp">Imp</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══ BLOCO 14 ══ -->
+  <div class="t-item" data-tags="add,fix">
+    <div class="t-version">
+      <span>Bloco 14: Sincronização Mobile & Contingência</span>
+      <span class="t-date">Maio 2026</span>
+    </div>
+    <div class="t-title">Sincronização offline móvel resiliente baseada em SQLite local</div>
+    <div class="t-desc">
+      Desenvolvimento do motor de contingência offline para faturamento sem conectividade de internet e ingestão em lote.
+      <ul class="change-list">
+        <li class="change-li">Sincronização incremental com persistência temporária local no SQLite móvel. <span class="tag-c tag-add">Add</span></li>
+        <li class="change-li">Abatimento físico e reserva de estoque offline resiliente. <span class="tag-c tag-imp">Imp</span></li>
+        <li class="change-li">Correção de duplicidade de transações causadas por concorrência de reenvio de lote. <span class="tag-c tag-fix">Fix</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══ BLOCO 13 ══ -->
+  <div class="t-item" data-tags="add,sec">
+    <div class="t-version">
+      <span>Bloco 13: Financeiro Integrado & Outbox</span>
+      <span class="t-date">Maio 2026</span>
+    </div>
+    <div class="t-title">Contas a pagar, a receber e baixas com auditoria de alteração</div>
+    <div class="t-desc">
+      Estruturação do core financeiro do monólito em schema isolado.
+      <ul class="change-list">
+        <li class="change-li">Criação das entidades <code>ContaPagar</code>, <code>ContaReceber</code> e históricos de baixa. <span class="tag-c tag-add">Add</span></li>
+        <li class="change-li">Processador assíncrono Quartz.NET consumindo a tabela <code>OutboxMessage</code> para integração estrita. <span class="tag-c tag-imp">Imp</span></li>
+        <li class="change-li">Trava de imutabilidade de lançamentos contábeis gravados (auditoria contínua). <span class="tag-c tag-sec">Segurança</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══ BLOCO 12 ══ -->
+  <div class="t-item" data-tags="add,imp">
+    <div class="t-version">
+      <span>Bloco 12: Emissão de DFe (Motor Fiscal)</span>
+      <span class="t-date">Abril 2026</span>
+    </div>
+    <div class="t-title">Emissão síncrona e em contingência de NF-e e NFC-e</div>
+    <div class="t-desc">
+      Integração com a SEFAZ via biblioteca homologada Hercules.NET para assinaturas A1 e faturamento transacional.
+      <ul class="change-list">
+        <li class="change-li">Mapeamento de <code>DocumentoFiscal</code> e lógica de tributação brasileira (ICMS/IPI/PIS/COFINS). <span class="tag-c tag-add">Add</span></li>
+        <li class="change-li">Fluxo de transmissão e tratamento de erros de retorno de rejeição SEFAZ. <span class="tag-c tag-imp">Imp</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══ BLOCO 11 ══ -->
+  <div class="t-item" data-tags="add">
+    <div class="t-version">
+      <span>Bloco 11: Contratos & Recorrência SaaS</span>
+      <span class="t-date">Abril 2026</span>
+    </div>
+    <div class="t-title">Geração e faturamento de contratos SaaS reativos</div>
+    <div class="t-desc">
+      Processamento periódico automatizado de faturas recorrentes de inquilinos com suporte a upgrades e suspensões.
+      <ul class="change-list">
+        <li class="change-li">Entidades <code>Contrato</code> e <code>ContratoItem</code> no domínio plataforma. <span class="tag-c tag-add">Add</span></li>
+        <li class="change-li">Background Job para verificação de faturas vencidas e aplicação de suspensão de inquilino. <span class="tag-c tag-add">Add</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══ BLOCO 10 ══ -->
+  <div class="t-item" data-tags="sec,add">
+    <div class="t-version">
+      <span>Bloco 10: Permissões ABAC & Mobile Scaffolding</span>
+      <span class="t-date">Março 2026</span>
+    </div>
+    <div class="t-title">Segurança de acessos por atributos (ABAC) e Scaffold Mobile</div>
+    <div class="t-desc">
+      Estruturação de segurança refinada baseada em claims contextuais adicionais e pontapé inicial do PDV móvel.
+      <ul class="change-list">
+        <li class="change-li">Filtro customizado de controle de acessos <code>AbacFilter</code> injetado globalmente nas rotas da API. <span class="tag-c tag-sec">Segurança</span></li>
+        <li class="change-li">Estruturação do aplicativo <code>Epros.Mobile</code> em React Native Expo com base de dados offline. <span class="tag-c tag-add">Add</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══ BLOCO 9 ══ -->
+  <div class="t-item" data-tags="add,imp">
+    <div class="t-version">
+      <span>Bloco 9: Cadastros Base & Desktop Shell</span>
+      <span class="t-date">Fevereiro 2026</span>
+    </div>
+    <div class="t-title">Entidades transversais da plataforma e encapsulamento desktop</div>
+    <div class="t-desc">
+      Mapeamento inicial de cadastros comerciais e inicialização do contêiner desktop local.
+      <ul class="change-list">
+        <li class="change-li">Mapeamento das entidades <code>Pessoa</code> e <code>Empresa</code> no schema plataforma. <span class="tag-c tag-add">Add</span></li>
+        <li class="change-li">Criação do esqueleto da aplicação desktop <code>Epros.App</code> usando Electron + Nuxt 3. <span class="tag-c tag-add">Add</span></li>
+        <li class="change-li">Configuração de URL relativa (compatibilidade com protocolo <code>file:///</code>). <span class="tag-c tag-imp">Imp</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══ BLOCO 8 ══ -->
+  <div class="t-item" data-tags="imp,fix">
+    <div class="t-version">
+      <span>Bloco 8: Testcontainers & Integração MercadoPago</span>
+      <span class="t-date">Janeiro 2026</span>
+    </div>
+    <div class="t-title">Testes de integração físicos e processador de webhooks financeiro</div>
+    <div class="t-desc">
+      Aceleração e resiliência das validações contínuas e acoplamento com gateway de pagamentos.
+      <ul class="change-list">
+        <li class="change-li">Integração de testes físicos com contêineres Docker automáticos via Testcontainers. <span class="tag-c tag-imp">Imp</span></li>
+        <li class="change-li">Endpoint e processamento de webhook Pix MercadoPago integrado ao domínio. <span class="tag-c tag-add">Add</span></li>
+        <li class="change-li">Correção de concorrência de threads na leitura e atualização simultânea de faturas de inquilinos. <span class="tag-c tag-fix">Fix</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══ BLOCO 7 ══ -->
+  <div class="t-item" data-tags="imp,sec">
+    <div class="t-version">
+      <span>Bloco 7: DevOps & Identity Management</span>
+      <span class="t-date">Dezembro 2025</span>
+    </div>
+    <div class="t-title">CI/CD de segurança e provisionamento do servidor OIDC</div>
+    <div class="t-desc">
+      Infraestrutura operacional e gerenciamento centralizado de identidades de inquilinos.
+      <ul class="change-list">
+        <li class="change-li">Configuração do realm do Keycloak com auto-import e mapeamento de claim <code>tenantId</code> no token. <span class="tag-c tag-sec">Segurança</span></li>
+        <li class="change-li">Pipeline GitHub Actions integrada com ferramentas de detecção de vulnerabilidades (Trivy, Gitleaks, Checkov). <span class="tag-c tag-imp">Imp</span></li>
+        <li class="change-li">Script SQL determinístico de migração de chaves sequenciais legadas para UUID. <span class="tag-c tag-imp">Imp</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══ BLOCO 6 ══ -->
+  <div class="t-item" data-tags="add,fix">
+    <div class="t-version">
+      <span>Bloco 6: Reengenharia de Estoque & Compras</span>
+      <span class="t-date">Novembro 2025</span>
+    </div>
+    <div class="t-title">Cálculo de Custo Médio Ponderado e gestão de inventário</div>
+    <div class="t-desc">
+      Mapeamento transacional de compras integrando atualizações financeiras e lançamentos físicos.
+      <ul class="change-list">
+        <li class="change-li">Desenvolvimento das entidades <code>Produto</code>, <code>Compra</code> e <code>MovimentoEstoque</code>. <span class="tag-c tag-add">Add</span></li>
+        <li class="change-li">Motor contábil de recálculo de Custo Médio Ponderado em tempo real por compra realizada. <span class="tag-c tag-imp">Imp</span></li>
+        <li class="change-li">Correção de desalinhamento de custo de estoque legado devido a cancelamentos fora de ordem. <span class="tag-c tag-fix">Fix</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ══ BLOCO 5 ══ -->
+  <div class="t-item" data-tags="add,sec">
+    <div class="t-version">
+      <span>Bloco 5: Core SaaS & Multi-Tenancy</span>
+      <span class="t-date">Outubro 2025</span>
+    </div>
+    <div class="t-title">Row-Level Security nativa PostgreSQL e estrutura do monólito modular</div>
+    <div class="t-desc">
+      Definição da arquitetura central e infraestrutura de isolamento rígido de inquilinos.
+      <ul class="change-list">
+        <li class="change-li">Estruturação de projetos por camada (Shared, Infrastructure, API, Modules). <span class="tag-c tag-add">Add</span></li>
+        <li class="change-li">Configuração do gerador de migrations EF Core para criar políticas de RLS no PostgreSQL de forma nativa. <span class="tag-c tag-sec">Segurança</span></li>
+        <li class="change-li">Interceptor do DbContext para injeção automática do identificador de inquilino ativo na sessão de conexão. <span class="tag-c tag-sec">Segurança</span></li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- /page -->
+
+<script>
+function filterChangelog(tag) {
+  document.querySelectorAll('.f-btn').forEach(function(btn) {
+    btn.classList.toggle('on', btn.getAttribute('onclick').includes("'" + tag + "'"));
+  });
+  
+  document.querySelectorAll('.t-item').forEach(function(item) {
+    if (tag === 'all') {
+      item.style.display = 'block';
+    } else {
+      var tags = item.getAttribute('data-tags').split(',');
+      if (tags.includes(tag)) {
+        item.style.display = 'block';
+      } else {
+        item.style.display = 'none';
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>

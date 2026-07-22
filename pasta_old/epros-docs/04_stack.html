@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — Stack</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px}
+.stab{padding:5px 13px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--b2);border-radius:20px;background:none;color:var(--t3);transition:all .15s;font-family:var(--sans)}
+.stab:hover{color:var(--t2)}.stab.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.sp{display:none}.sp.on{display:block}
+
+.stack-section{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);margin-bottom:12px;overflow:hidden}
+.stack-head{padding:10px 16px;border-bottom:1px solid var(--b1);font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);display:flex;align-items:center;gap:8px}
+.si{display:flex;align-items:flex-start;gap:14px;padding:12px 16px;border-bottom:1px solid var(--b1)}
+.si:last-child{border-bottom:none}
+.si-left{display:flex;flex-direction:column;gap:4px;min-width:180px;flex-shrink:0}
+.si-name{font-weight:500;color:var(--t1);font-size:12px}
+.si-ver{font-family:var(--mono);font-size:10px;color:var(--t3)}
+.si-desc{flex:1;font-size:12px;color:var(--t2);line-height:1.55}
+.si-why{font-size:11px;color:var(--t3);margin-top:4px;font-style:italic}
+.si-tag{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:3px;white-space:nowrap;align-self:flex-start;margin-top:2px}
+.si-manter{background:var(--green-l);color:var(--green)}
+.si-novo{background:var(--blue-l);color:var(--blue)}
+.si-evoluir{background:var(--amber-l);color:var(--amber)}
+.si-critico{background:var(--red-l);color:var(--red)}
+.si-fase2{background:var(--purple-l);color:var(--purple)}
+
+/* decision matrix */
+.dec-table td{vertical-align:middle}
+.dec-table .opt{font-family:var(--mono);font-size:11px}
+.dec-table .chosen{color:var(--green);font-weight:500}
+.dec-table .rejected{color:var(--t3);text-decoration:line-through}
+
+/* version overview */
+.ver-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.ver-item{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:12px 14px}
+.ver-name{font-size:12px;font-weight:500;margin-bottom:2px}
+.ver-ver{font-family:var(--mono);font-size:11px;color:var(--blue);margin-bottom:4px}
+.ver-note{font-size:10px;color:var(--t3);line-height:1.4}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="index.html">Home</a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt on" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+  <a class="nt" href="08_api.html">⑧ API Reference</a>
+  <a class="nt" href="09_runbook.html">⑨ Runbook & DR</a>
+  <a class="nt" href="10_modelo_financeiro.html">⑩ Modelo Financeiro</a>
+  <a class="nt" href="11_integracoes.html">⑪ Integrações</a>
+  <a class="nt" href="12_modelo_dados.html">⑫ Modelo de Dados</a>
+  <a class="nt" href="13_onboarding.html">⑬ Guia de Onboarding</a>
+  <a class="nt" href="14_disaster_recovery.html">⑭ Disaster Recovery</a>
+  <a class="nt" href="15_glossario.html">⑮ Glossário</a>
+  <a class="nt" href="16_i18n.html">⑯ Internacionalização</a>
+  <a class="nt" href="17_changelog.html">⑰ Changelog</a>
+  <a class="nt" href="18_plano_execucao.html">⑱ Plano de Execução</a>
+  <a class="nt" href="19_operacional.html">⑲ Modelo Operacional</a>
+  <a class="nt" href="20_treinamento.html">⑳ Treinamento por Função</a>
+  <a class="nt" href="21_agentes_prompts.html">㉑ Prompts dos Agentes</a>
+  <a class="nt" href="22_diagnostico.html">㉒ Diagnóstico do Legado</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>Stack · Versões · Racional · Status por componente</div>
+  <h1>Stack <em>técnica</em></h1>
+  <p class="hero-desc">Cada componente com versão fixada, racional da escolha e status de adoção. 100% open source — MIT ou Apache 2.0. Nenhuma dependência de licença comercial de cloud.</p>
+</div>
+
+<div class="page">
+
+<div class="subtabs">
+  <button class="stab on" onclick="st('visao')">Visão Geral</button>
+  <button class="stab" onclick="st('backend')">Backend</button>
+  <button class="stab" onclick="st('dados')">Dados & Cache</button>
+  <button class="stab" onclick="st('seguranca')">Segurança</button>
+  <button class="stab" onclick="st('obs')">Observabilidade</button>
+  <button class="stab" onclick="st('infra')">Infra & Deploy</button>
+  <button class="stab" onclick="st('frontend')">Frontend & Mobile</button>
+  <button class="stab" onclick="st('decisoes')">Decisões de Escolha</button>
+</div>
+
+<!-- ══ VISÃO GERAL ══ -->
+<div class="sp on" id="sp-visao">
+  <div class="sl">Versões fixadas — referência rápida</div>
+  <div class="ver-grid">
+    <div class="ver-item"><div class="ver-name">ASP.NET Core</div><div class="ver-ver">8.0 LTS</div><div class="ver-note">LTS até Nov 2026. Runtime Linux nativo.</div></div>
+    <div class="ver-item"><div class="ver-name">PostgreSQL</div><div class="ver-ver">16.x</div><div class="ver-note">12 schemas. pgvector, pg_trgm, uuid-ossp.</div></div>
+    <div class="ver-item"><div class="ver-name">EF Core + Npgsql</div><div class="ver-ver">8.0.x</div><div class="ver-note">QueryFilter automático. snake_case global.</div></div>
+    <div class="ver-item"><div class="ver-name">MediatR</div><div class="ver-ver">12.x</div><div class="ver-note">CQRS + Behaviors para cross-cutting.</div></div>
+    <div class="ver-item"><div class="ver-name">Keycloak</div><div class="ver-ver">24.0</div><div class="ver-note">OIDC, MFA, SSO, claim tenantId.</div></div>
+    <div class="ver-item"><div class="ver-name">HashiCorp Vault</div><div class="ver-ver">1.16.x</div><div class="ver-note">Dynamic secrets. Audit log nativo.</div></div>
+    <div class="ver-item"><div class="ver-name">Valkey</div><div class="ver-ver">7.x</div><div class="ver-note">Fork Redis OSS. Cache + locks.</div></div>
+    <div class="ver-item"><div class="ver-name">MinIO</div><div class="ver-ver">RELEASE.2024</div><div class="ver-note">S3-compatible. NF-e XML, PDFs, GED.</div></div>
+    <div class="ver-item"><div class="ver-name">Grafana</div><div class="ver-ver">10.x</div><div class="ver-note">Dashboards. Fonte de métricas e logs.</div></div>
+    <div class="ver-item"><div class="ver-name">Prometheus</div><div class="ver-ver">2.x</div><div class="ver-note">Scraping. SLO e alertas.</div></div>
+    <div class="ver-item"><div class="ver-name">Loki</div><div class="ver-ver">2.x</div><div class="ver-note">Log aggregation. Serilog sink.</div></div>
+    <div class="ver-item"><div class="ver-name">Tempo</div><div class="ver-ver">2.x</div><div class="ver-note">Distributed tracing. OTLP gRPC+HTTP.</div></div>
+    <div class="ver-item"><div class="ver-name">Nuxt</div><div class="ver-ver">3.x</div><div class="ver-note">SSR. Frontend web + Desktop.</div></div>
+    <div class="ver-item"><div class="ver-name">React Native</div><div class="ver-ver">0.74+</div><div class="ver-note">Mobile + PDV. iOS e Android.</div></div>
+    <div class="ver-item"><div class="ver-name">Quartz.NET</div><div class="ver-ver">3.x</div><div class="ver-note">Jobs: Outbox, retenção, vencimento.</div></div>
+    <div class="ver-item"><div class="ver-name">Testcontainers</div><div class="ver-ver">3.x (.NET)</div><div class="ver-note">PostgreSQL real nos testes de integração.</div></div>
+    <div class="ver-item"><div class="ver-name">Caddy</div><div class="ver-ver">2.x</div><div class="ver-note">Reverse proxy. HTTPS automático. HTTP/3.</div></div>
+    <div class="ver-item"><div class="ver-name">Docker Compose</div><div class="ver-ver">v2</div><div class="ver-note">Fase 1. 9 serviços com healthchecks.</div></div>
+    <div class="ver-item"><div class="ver-name">K3s</div><div class="ver-ver">1.29+</div><div class="ver-note">Fase 2. K8s leve para VPS/bare-metal.</div></div>
+    <div class="ver-item"><div class="ver-name">OpenTofu</div><div class="ver-ver">1.7+</div><div class="ver-note">IaC. Fork OSS do Terraform.</div></div>
+    <div class="ver-item"><div class="ver-name">Hercules.NET NFe</div><div class="ver-ver">2026.3.15.14</div><div class="ver-note">Lib NF-e em produção. Preservada.</div></div>
+    <div class="ver-item"><div class="ver-name">FluentValidation</div><div class="ver-ver">11.x</div><div class="ver-note">Validação de Commands/Queries.</div></div>
+    <div class="ver-item"><div class="ver-name">Flunt</div><div class="ver-ver">2.x</div><div class="ver-note">Validação de domínio. Notifiable.</div></div>
+    <div class="ver-item"><div class="ver-name">Serilog</div><div class="ver-ver">3.x</div><div class="ver-note">Logs estruturados JSON + enrichers.</div></div>
+  </div>
+
+  <div class="sl">Legenda de status</div>
+  <div class="g4">
+    <div class="csm"><span class="si-tag si-manter">MANTER</span><p style="font-size:11px;color:var(--t2);margin-top:6px">Já existe no Epros.ERP legado. Versão atualizada e padrões revistos.</p></div>
+    <div class="csm"><span class="si-tag si-novo">NOVO</span><p style="font-size:11px;color:var(--t2);margin-top:6px">Não existia no legado. Adicionado pelo Epros.</p></div>
+    <div class="csm"><span class="si-tag si-critico">CRÍTICO</span><p style="font-size:11px;color:var(--t2);margin-top:6px">Núcleo da plataforma. Qualquer substituição requer ADR e aprovação.</p></div>
+    <div class="csm"><span class="si-tag si-evoluir">EVOLUIR</span><p style="font-size:11px;color:var(--t2);margin-top:6px">Funcional hoje, mas com roadmap de melhoria planejado.</p></div>
+    <div class="csm"><span class="si-tag si-fase2">FASE 2</span><p style="font-size:11px;color:var(--t2);margin-top:6px">Não em uso agora. Planejado para quando atingir escala maior.</p></div>
+  </div>
+</div>
+
+<!-- ══ BACKEND ══ -->
+<div class="sp" id="sp-backend">
+  <div class="stack-section">
+    <div class="stack-head">⬡ Runtime & Framework</div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">ASP.NET Core 8</span><span class="si-ver">v8.0 LTS</span><span class="si-tag si-manter">MANTER</span></div>
+      <div class="si-desc">Runtime open source MIT. Performance #1 no TechEmpower Framework Benchmarks — acima de Go, Java e Node em JSON serialization e plaintext. LTS até novembro 2026. Roda em Alpine Linux com imagem de 80MB. Minimal API suportada mas não usada — Controllers para clareza e Swagger automático.
+        <div class="si-why">Quem usa em produção: Discord (mensagens), Stack Overflow (Q&amp;A), Cloudflare (edge workers), Alibaba (serviços internos).</div>
+      </div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">MediatR</span><span class="si-ver">v12.x</span><span class="si-tag si-manter">MANTER</span></div>
+      <div class="si-desc">Mediator pattern para CQRS. Behaviors (pipeline) para cross-cutting concerns: logging, validação FluentValidation, auditoria, rate-limit por command — sem poluir os handlers de negócio. IRequest&lt;TResponse&gt; garante tipagem completa. Zero reflexão em runtime crítico.
+        <div class="si-why">Alternativa considerada: Carter (Minimal API) — descartado por perder Swagger automático e comportamento de Behaviors.</div>
+      </div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Flunt</span><span class="si-ver">v2.x</span><span class="si-tag si-manter">MANTER</span></div>
+      <div class="si-desc">Validação de domínio dentro dos agregados. Notifiable&lt;Notification&gt; acumula erros sem lançar exceção — permite retornar lista completa de erros ao invés de falhar no primeiro. Integrado ao CommandResult. EntidadeSaaSBase.IsValid é a porta de saída.
+        <div class="si-why">Alternativa: DataAnnotations — descartado por poluir entidades com atributos de apresentação. Domain deve ser ignorante de frameworks externos.</div>
+      </div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">FluentValidation</span><span class="si-ver">v11.x</span><span class="si-tag si-manter">MANTER</span></div>
+      <div class="si-desc">Validação declarativa de Commands e Queries no pipeline MediatR. Regras por tenant via IValidator customizado injetado via DI. Retorna 422 com lista de erros antes de chegar no Handler. Testes de validação são simples e legíveis.
+        <div class="si-why">Responsabilidade distinta do Flunt: FluentValidation valida o input externo (Command), Flunt valida as invariantes do domínio (Entidade).</div>
+      </div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Quartz.NET</span><span class="si-ver">v3.x</span><span class="si-tag si-novo">NOVO</span></div>
+      <div class="si-desc">Agendamento de jobs com persistência no PostgreSQL (evita jobs duplicados em multi-instância). Usado para: Outbox processor (polling a cada 5s), retenção de dados LGPD, fechamento contábil automático, alertas de vencimento de títulos, rotação de secrets Vault.
+        <div class="si-why">Alternativa: Hangfire — mais simples, mas requer banco separado ou SQL Server. Quartz tem suporte a cron expressions complexas e clustering nativo.</div>
+      </div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Serilog</span><span class="si-ver">v3.x</span><span class="si-tag si-manter">MANTER</span></div>
+      <div class="si-desc">Logs estruturados JSON com enrichers automáticos de tenantId, traceId e userId em cada linha de log. DataMaskingMiddleware garante que CPF/PAN nunca aparecem. Sinks: Console (dev), Loki (produção). Destructor policy para objetos complexos.
+        <div class="si-why">Alternativa: NLog — descartado por configuração mais verbosa e enrichers menos flexíveis.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack-section">
+    <div class="stack-head">📦 NuGet packages críticos</div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Hercules.NET.NFe.NFCe</span><span class="si-ver">v2026.3.15.14</span><span class="si-tag si-critico">CRÍTICO</span></div>
+      <div class="si-desc">Biblioteca para emissão de NF-e (modelo 55), NFC-e (modelo 65), NFS-e, CT-e. Já em produção nos 20 clientes Epros.ERP. Homologada com SEFAZ de todos os estados. Suporta contingência offline (DPEC e FS-DA). Não substituir sem validação extensiva em homologação.
+        <div class="si-why">Esta lib é um ativo crítico — representa anos de ajustes para compliance com cada UF. Qualquer troca requer plano de migração e testes em todos os ambientes estaduais.</div>
+      </div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">OpenTelemetry .NET</span><span class="si-ver">1.8+</span><span class="si-tag si-novo">NOVO</span></div>
+      <div class="si-desc">Instrumentação automática de ASP.NET Core, EF Core, Valkey (via StackExchange.Redis), HttpClient e Quartz. Traces, métricas e logs unificados via OTLP. TraceId propagado até o ProblemDetails retornado ao cliente — suporte facilita debugging em produção.
+      </div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Polly</span><span class="si-ver">8.x</span><span class="si-tag si-novo">NOVO</span></div>
+      <div class="si-desc">Resiliência para chamadas externas: retry com backoff exponencial, circuit breaker, timeout e bulkhead isolation. Usado em: chamadas SEFAZ (NF-e), gateways de pagamento, Vault, Keycloak. Configurado via HttpClientFactory + AddResilienceHandler.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DADOS ══ -->
+<div class="sp" id="sp-dados">
+  <div class="stack-section">
+    <div class="stack-head">🗄 Banco de dados principal</div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">PostgreSQL 16</span><span class="si-ver">16.x alpine</span><span class="si-tag si-critico">CRÍTICO</span></div>
+      <div class="si-desc">12 schemas separados por macrodomínio. Extensões ativas: <span class="mono">uuid-ossp</span> (UUIDs), <span class="mono">pg_trgm</span> (busca trigram full-text), <span class="mono">unaccent</span> (busca sem acento), <span class="mono">pgcrypto</span> (colunas PII criptografadas). Row-Level Security configurado como segunda barreira. Particionamento por data para tabelas de auditoria e outbox. <span class="mono">pgvector</span> planejado para fase IA/ML.
+        <div class="si-why">Substituiu SQL Server do legado: open source, zero licença comercial, superior para JSONB, melhor ecossistema de extensões, Row-Level Security nativo.</div>
+      </div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">EF Core 8 + Npgsql</span><span class="si-ver">8.0.x</span><span class="si-tag si-critico">CRÍTICO</span></div>
+      <div class="si-desc">ORM com convenção snake_case global via <span class="mono">UseSnakeCaseNamingConvention()</span>. QueryFilter multi-tenant + soft delete aplicado por reflection em ContextBase — nunca manual. Migrations versionadas por DbContext (um por módulo). Split queries para evitar N+1 em includes. Compile models para performance em produção.
+        <div class="si-why">Alternativa considerada: Dapper — descartado porque exigiria QueryFilter manual, risco de esquecer tenant em alguma query. EF Core garante por construção.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack-section">
+    <div class="stack-head">⚡ Cache & Locks</div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Valkey 7</span><span class="si-ver">7.x alpine</span><span class="si-tag si-critico">CRÍTICO</span></div>
+      <div class="si-desc">Fork open source do Redis criado após a mudança de licença (BSL) em 2024. Mantido pela Linux Foundation com contribuidores da AWS, Google, Oracle e Ericsson. API 100% compatível com Redis — usa StackExchange.Redis como client sem mudança. Usos no Epros: cache de Connection Router (TTL 5min), sessões Keycloak, rate-limit sliding window, locks distribuídos de estoque (SETNX).
+        <div class="si-why">Por que não Redis: mudança para BSL em 2024 cria risco comercial para SaaS que competem com Redis Ltd. Valkey é o sucessor oficialmente open source.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack-section">
+    <div class="stack-head">📁 Object Storage</div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">MinIO</span><span class="si-ver">RELEASE.2024</span><span class="si-tag si-novo">NOVO</span></div>
+      <div class="si-desc">Object storage S3-compatible self-hosted. API idêntica à AWS S3 — usa AWSSDK.S3 como client. Armazena: XMLs de NF-e/NFC-e, PDFs DANFE, anexos GED, backups de tenant, exports LGPD. Replicação multi-site para disaster recovery. Buckets separados por tenant com políticas de acesso por IAM própria do MinIO.
+        <div class="si-why">Substituível por qualquer S3 (AWS, GCS, Azure Blob) sem mudar uma linha de código da aplicação — só a connection string no Vault.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SEGURANÇA ══ -->
+<div class="sp" id="sp-seguranca">
+  <div class="stack-section">
+    <div class="stack-head">🔐 Identity & Access Management</div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Keycloak 24</span><span class="si-ver">24.0</span><span class="si-tag si-critico">CRÍTICO</span></div>
+      <div class="si-desc">Identity Provider completo: OIDC/OAuth2/SAML 2.0. MFA nativo (TOTP via Google Authenticator, WebAuthn/FIDO2, SMS). Federation com Active Directory/LDAP para clientes enterprise. Dois realms separados: <span class="mono">epros-admin</span> (operação interna) e <span class="mono">epros-tenant</span> (clientes). Claim <span class="mono">tenantId</span> injetado no JWT via Protocol Mapper. Token de acesso: 15min. Refresh token: uso único, rotacionado.
+        <div class="si-why">Substituiu JWT hardcoded do legado. Quem usa: Red Hat (SSO corporativo), Airbus, Adidas, Intesa Sanpaolo. CNCF project.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack-section">
+    <div class="stack-head">🔑 Secrets Management</div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">HashiCorp Vault OSS</span><span class="si-ver">1.16.x</span><span class="si-tag si-critico">CRÍTICO</span></div>
+      <div class="si-desc">Gestão centralizada de secrets. Dynamic secrets para PostgreSQL: Vault gera usuário+senha temporários a cada acesso, rotaciona automaticamente — connection string nunca fixa. Secrets Engines usados: KV v2 (API keys, certs digitais), Database (PostgreSQL dynamic), PKI (certificados TLS internos). Audit log nativo de cada acesso a secret. AppRole auth para CI/CD.
+        <div class="si-why">Alternativa: AWS Secrets Manager / Azure Key Vault — descartados por criar dependência de cloud. Vault roda on-premise com paridade funcional total.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack-section">
+    <div class="stack-head">🌐 Reverse Proxy & TLS</div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Caddy 2</span><span class="si-ver">2.x</span><span class="si-tag si-novo">NOVO</span></div>
+      <div class="si-desc">Reverse proxy com HTTPS automático via Let's Encrypt (ACME) — zero configuração manual de certificado. HTTP/3 nativo (QUIC). TLS 1.3 por padrão, TLS 1.2 como fallback. Rate limiting nativo. HSTS preload. Headers de segurança automáticos (X-Frame-Options, CSRF, CSP). Caddyfile é declarativo e versionável.
+        <div class="si-why">Alternativa: Nginx — descartado por configuração verbosa, certificados manuais e ausência de HTTP/3 nativo. Caddy faz em 10 linhas o que Nginx faz em 60.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack-section">
+    <div class="stack-head">🛡 Segurança de código e runtime</div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Trivy</span><span class="si-ver">latest</span><span class="si-tag si-novo">NOVO</span></div>
+      <div class="si-desc">Scanner de vulnerabilidades para imagens Docker, pacotes NuGet/npm e manifests IaC (Dockerfile, Compose, K8s). Integrado ao CI — CVE crítico ou alto bloqueia o pipeline. Gera relatório SARIF para GitHub Security tab. Zero configuração para uso básico.</div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Falco</span><span class="si-ver">0.37+</span><span class="si-tag si-fase2">FASE 2</span></div>
+      <div class="si-desc">Runtime security para containers em Kubernetes. Detecta comportamento anômalo em produção: processo inesperado dentro de container, acesso a arquivos sensíveis, shell aberto em container, conexão de rede não autorizada. Alertas para Grafana/PagerDuty.</div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">OWASP ZAP</span><span class="si-ver">2.14+</span><span class="si-tag si-novo">NOVO</span></div>
+      <div class="si-desc">DAST — Dynamic Application Security Testing. Varredura ativa da API em ambiente de staging. Detecta: SQL injection, XSS, SSRF, autenticação fraca, endpoints sem autorização, rate limit bypassável. Roda automaticamente no pipeline de staging antes de release.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ OBSERVABILIDADE ══ -->
+<div class="sp" id="sp-obs">
+  <div class="info">Os 4 componentes de observabilidade formam um stack coeso — todos open source, todos integrados ao Grafana como pane único. Substitui Datadog (~$30k/ano), Azure Monitor e CloudWatch sem perda funcional.</div>
+
+  <div class="stack-section">
+    <div class="stack-head">📊 Stack Grafana OSS — 4 pilares</div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Grafana</span><span class="si-ver">10.x</span><span class="si-tag si-novo">NOVO</span></div>
+      <div class="si-desc">Dashboards unificados para métricas (Prometheus), logs (Loki) e traces (Tempo) — correlação com um clique. Alerting nativo com notificações para Slack, PagerDuty, e-mail. Provisioning via YAML/JSON versionado no Git. Dashboards separados por módulo e por tenant para clientes Enterprise.
+      </div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Prometheus</span><span class="si-ver">2.x</span><span class="si-tag si-novo">NOVO</span></div>
+      <div class="si-desc">Scraping de métricas da API .NET via OpenTelemetry Prometheus exporter. Métricas obrigatórias por módulo: request rate, error rate, latência P50/P95/P99, tamanho do outbox pendente, lag de sync offline. PromQL para SLO queries. Retenção de 15 dias por padrão.
+      </div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Loki</span><span class="si-ver">2.x</span><span class="si-ver"></span><span class="si-tag si-novo">NOVO</span></div>
+      <div class="si-desc">Log aggregation sem indexação de conteúdo — só labels (tenantId, moduleId, level, traceId). Serilog sink para Loki. LogQL para queries. Correlação direta com Tempo via traceId. Retenção configurável por módulo — logs de auditoria LGPD: 12 meses mínimo.
+      </div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Tempo</span><span class="si-ver">2.x</span><span class="si-tag si-novo">NOVO</span></div>
+      <div class="si-desc">Distributed tracing com OTLP via gRPC (porta 4317) e HTTP (4318). TraceId gerado no middleware e propagado até o ProblemDetails retornado ao cliente. Visualização de spans: HTTP → MediatR Handler → EF Core query → Valkey → Outbox. Integrado ao Grafana para salto direto de log → trace.
+      </div>
+    </div>
+  </div>
+
+  <div class="stack-section">
+    <div class="stack-head">📏 SLOs definidos por nível de serviço</div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Leitura (GET)</span><span class="si-ver">P95 &lt; 200ms</span><span class="si-tag si-critico">SLO</span></div>
+      <div class="si-desc">Medido via Prometheus histogram. Alertar em P95 &gt; 150ms (warning) e &gt; 200ms (critical). Dashboard por módulo para identificar regressões específicas.</div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Escrita (POST/PUT)</span><span class="si-ver">P95 &lt; 500ms</span><span class="si-tag si-critico">SLO</span></div>
+      <div class="si-desc">Inclui validação, persistência e enqueue do Outbox. Alertar em P95 &gt; 400ms. Operações fiscais (NF-e) têm SLO separado de &lt; 3s incluindo SEFAZ.</div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Disponibilidade</span><span class="si-ver">99.9% / mês</span><span class="si-tag si-critico">SLO</span></div>
+      <div class="si-desc">Calculado via Prometheus uptime query. Error budget de 43min/mês. Downtime planejado (migrations) notificado com 24h de antecedência.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ INFRA ══ -->
+<div class="sp" id="sp-infra">
+  <div class="stack-section">
+    <div class="stack-head">🐳 Containerização & Orquestração</div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Docker + Compose v2</span><span class="si-ver">Compose v2</span><span class="si-tag si-manter">MANTER</span></div>
+      <div class="si-desc">Fase 1 — dev e produção inicial. 9 serviços no docker-compose: PostgreSQL, Keycloak, Vault, MinIO, Valkey, Grafana, Prometheus, Loki, Tempo. Todos com healthchecks. Volumes named para persistência. Rede isolada <span class="mono">epros_network</span>. Reproduzível em qualquer Linux com Docker instalado — base para CI e on-premise.
+      </div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">K3s / Kubernetes</span><span class="si-ver">K3s 1.29+</span><span class="si-tag si-fase2">FASE 2</span></div>
+      <div class="si-desc">Fase 2 — quando atingir 50+ tenants dedicados ou Enterprise on-premise com SLA negociado. K3s: binário de 40MB, funciona em VM de 1GB RAM, instala em 30s. Mesmos manifests YAML rodam em AKS, EKS ou GKE sem modificação — zero vendor lock-in. HPA para autoscaling por módulo.
+      </div>
+    </div>
+  </div>
+
+  <div class="stack-section">
+    <div class="stack-head">🔧 CI/CD & IaC</div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">GitHub Actions</span><span class="si-ver">—</span><span class="si-tag si-novo">NOVO</span></div>
+      <div class="si-desc">Pipeline: pre-commit → build → unit tests → SAST (Semgrep) → integration tests (Testcontainers) → CVE scan (Trivy) → container build → push registry → deploy staging → DAST (ZAP) → aprovação manual → deploy produção. Cada etapa pode bloquear o pipeline. Secrets via GitHub Secrets + Vault.
+      </div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">OpenTofu</span><span class="si-ver">1.7+</span><span class="si-tag si-novo">NOVO</span></div>
+      <div class="si-desc">IaC open source — fork do Terraform após mudança de licença (BSL) pela HashiCorp em 2023. Mantido pela Linux Foundation. Infra reproduzível: provisionamento de clusters PostgreSQL, buckets MinIO, realms Keycloak, configurações Vault. State no backend S3 (MinIO). Plano de execução sempre revisado antes de apply.
+        <div class="si-why">Por que não Terraform: mesma mudança de licença que levou ao fork do Redis → Valkey. OpenTofu tem paridade funcional e é mantido ativamente.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FRONTEND ══ -->
+<div class="sp" id="sp-frontend">
+  <div class="stack-section">
+    <div class="stack-head">🖥 Web SaaS</div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Nuxt 3</span><span class="si-ver">3.x</span><span class="si-tag si-manter">MANTER</span></div>
+      <div class="si-desc">SSR (Server-Side Rendering) para SEO e performance de carregamento inicial. Módulos condicionais por tenant via entitlements — menu renderiza apenas o que o tenant tem ativo. Composition API + Pinia para estado global. Auto-imports de composables e componentes. TypeScript nativo. Substitui Blazor WASM do legado — time unificado, uma stack só.
+        <div class="si-why">Por que não Next.js (React): time já tem expertise em Vue/Nuxt do front do Epros.ERP legado. Migração de aprendizado menor.</div>
+      </div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Pinia</span><span class="si-ver">2.x</span><span class="si-tag si-manter">MANTER</span></div>
+      <div class="si-desc">State management oficial do Vue/Nuxt 3. Stores por domínio: auth, tenant, módulos ativos, notificações. Devtools integration. SSR-safe. TypeScript first. Substituiu Vuex — mais simples, menos boilerplate.</div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">nuxt-auth-utils + OIDC</span><span class="si-ver">—</span><span class="si-tag si-evoluir">EVOLUIR</span></div>
+      <div class="si-desc">Fluxo PKCE completo com Keycloak. Atualmente o frontend usa Header <span class="mono">X-Tenant-Id</span> em desenvolvimento. Em produção: Authorization Code Flow + PKCE, token refresh automático, logout federado. A evoluir para remover qualquer secret no frontend.
+      </div>
+    </div>
+  </div>
+
+  <div class="stack-section">
+    <div class="stack-head">🖥 Desktop — Epros.App</div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Electron + Nuxt 3</span><span class="si-ver">Electron 30+</span><span class="si-tag si-novo">NOVO</span></div>
+      <div class="si-desc">Wrapper Electron em torno do Nuxt 3 — reutiliza 100% do código web. Módulos básicos offline-capable: FIN, VEN, EST, Fiscal. SQLite local via better-sqlite3 para dados offline. Fila de sync persistida localmente. Motor Fiscal Edge embutido (Hercules.NET via Electron IPC com processo .NET sidecar).
+        <div class="si-why">Alternativa considerada: Tauri (Rust) — performance superior, bundle menor. Descartado temporariamente por risco de retrabalho: time não tem expertise em Rust. Revisitar na Fase 2.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stack-section">
+    <div class="stack-head">📱 Mobile & PDV — Epros.Mobile</div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">React Native</span><span class="si-ver">0.74+</span><span class="si-tag si-novo">NOVO</span></div>
+      <div class="si-desc">iOS e Android a partir de um codebase único. Subset configurável de módulos por tenant. Modo PDV: NFC-e em contingência offline, abertura/fechamento de caixa, sangria, suprimento, múltiplas formas de pagamento. SQLite local via expo-sqlite. Sync automático ao reconectar via /sync/delta endpoint.
+        <div class="si-why">Alternativa: Flutter — descartado por stack Dart diferente do restante da equipe (Vue/Nuxt). React Native permite aproveitar desenvolvedores JavaScript.</div>
+      </div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Expo</span><span class="si-ver">SDK 51+</span><span class="si-tag si-novo">NOVO</span></div>
+      <div class="si-desc">Toolchain para React Native. Expo Go para desenvolvimento rápido. EAS Build para builds CI/CD iOS e Android. Expo SQLite para storage local offline. OTA updates para correções críticas sem passar pelo App Store review.</div>
+    </div>
+  </div>
+
+  <div class="stack-section">
+    <div class="stack-head">🧪 Testes de Frontend</div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Playwright</span><span class="si-ver">1.44+</span><span class="si-tag si-novo">NOVO</span></div>
+      <div class="si-desc">E2E tests dos fluxos críticos de negócio contra a API real com Testcontainers. Cenários: fluxo completo de venda → NF-e → ContaReceber, login multi-tenant, módulo desabilitado bloqueando rota, export LGPD. Roda no CI no step de staging antes de release. Screenshot on failure para debugging.
+      </div>
+    </div>
+    <div class="si">
+      <div class="si-left"><span class="si-name">Vitest</span><span class="si-ver">1.x</span><span class="si-tag si-novo">NOVO</span></div>
+      <div class="si-desc">Testes unitários de composables e stores Pinia. Compatível com Vite — zero configuração extra no Nuxt 3. Mocking de API via MSW (Mock Service Worker) para testes de componentes isolados.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DECISÕES ══ -->
+<div class="sp" id="sp-decisoes">
+  <div class="sl">Decisões arquiteturais de stack — ADR resumido</div>
+  <table class="tbl dec-table">
+    <tr><th>Decisão</th><th>Escolhido</th><th>Descartado</th><th>Motivo principal</th></tr>
+    <tr><td>Banco de dados</td><td class="opt chosen">PostgreSQL 16</td><td class="opt rejected">SQL Server</td><td>Open source, zero licença, Row-Level Security nativo, extensões superiores</td></tr>
+    <tr><td>ORM</td><td class="opt chosen">EF Core 8</td><td class="opt rejected">Dapper puro</td><td>QueryFilter automático multi-tenant — Dapper exigiria WHERE manual em toda query</td></tr>
+    <tr><td>Identity</td><td class="opt chosen">Keycloak 24</td><td class="opt rejected">JWT hardcoded · Auth0</td><td>JWT hardcoded: sem MFA, sem revogação. Auth0: $250/mês a escala + vendor lock-in</td></tr>
+    <tr><td>Cache</td><td class="opt chosen">Valkey 7</td><td class="opt rejected">Redis 7</td><td>Redis mudou para BSL em 2024 — risco comercial para SaaS competindo com Redis Ltd</td></tr>
+    <tr><td>Secrets</td><td class="opt chosen">HashiCorp Vault OSS</td><td class="opt rejected">Azure Key Vault · AWS SM</td><td>Cloud-agnostic. Dynamic secrets. On-premise. Zero custo.</td></tr>
+    <tr><td>Proxy / TLS</td><td class="opt chosen">Caddy 2</td><td class="opt rejected">Nginx</td><td>HTTPS automático (Let's Encrypt), HTTP/3, configuração 6x mais simples</td></tr>
+    <tr><td>Observabilidade</td><td class="opt chosen">Grafana OSS stack</td><td class="opt rejected">Datadog · New Relic</td><td>Datadog ~$30k/ano a escala. OSS: zero custo, mesma funcionalidade, on-premise</td></tr>
+    <tr><td>IaC</td><td class="opt chosen">OpenTofu</td><td class="opt rejected">Terraform</td><td>HashiCorp mudou Terraform para BSL em 2023 — mesmo risco do Redis. OpenTofu é o fork OSS</td></tr>
+    <tr><td>Orquestração Fase 1</td><td class="opt chosen">Docker Compose v2</td><td class="opt rejected">K8s desde dia 1</td><td>Complexidade desnecessária com time pequeno. K8s na Fase 2 quando justificado por escala</td></tr>
+    <tr><td>Frontend web</td><td class="opt chosen">Nuxt 3 + Pinia</td><td class="opt rejected">Blazor WASM · Next.js</td><td>Blazor: stack diferente, time dividido. Next.js: React, curva de aprendizado adicional</td></tr>
+    <tr><td>Desktop shell</td><td class="opt chosen">Electron + Nuxt 3</td><td class="opt rejected">Tauri (Rust)</td><td>Reutiliza 100% do código web. Tauri revisitar Fase 2 quando time tiver expertise Rust</td></tr>
+    <tr><td>Mobile</td><td class="opt chosen">React Native + Expo</td><td class="opt rejected">Flutter</td><td>Flutter requer Dart — stack separada. RN aproveita devs JavaScript do time</td></tr>
+    <tr><td>Jobs agendados</td><td class="opt chosen">Quartz.NET</td><td class="opt rejected">Hangfire</td><td>Clustering nativo com PostgreSQL. Hangfire tem UI melhor mas requer banco separado</td></tr>
+    <tr><td>Validação domínio</td><td class="opt chosen">Flunt</td><td class="opt rejected">DataAnnotations</td><td>DataAnnotations polui entidades com atributos de apresentação. Domain deve ser puro</td></tr>
+  </table>
+
+  <div class="sl">Princípio de seleção de stack</div>
+  <div class="g3">
+    <div class="csm"><h4>① Licença permissiva</h4><p>MIT ou Apache 2.0. Qualquer componente com BSL, SSPL ou licença comercial é candidato a substituição — como já aconteceu com Redis (→ Valkey) e Terraform (→ OpenTofu).</p></div>
+    <div class="csm"><h4>② Maturidade comprovada</h4><p>Mínimo 3 anos de projeto, comunidade ativa, usado por empresas Fortune 500 ou equivalente. Não adotamos "the next big thing" sem histórico.</p></div>
+    <div class="csm"><h4>③ Cloud-agnostic</h4><p>Qualquer componente que só funcione em AWS, Azure ou GCP é descartado. A stack deve rodar identicamente em VPS de €20/mês ou data center próprio do cliente.</p></div>
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<script>
+var tabs=['visao','backend','dados','seguranca','obs','infra','frontend','decisoes'];
+function st(id){
+  document.querySelectorAll('.stab').forEach(function(t,i){t.classList.toggle('on',tabs[i]===id)});
+  document.querySelectorAll('.sp').forEach(function(p){p.classList.toggle('on',p.id==='sp-'+id)});
+}
+</script>
+</body>
+</html>

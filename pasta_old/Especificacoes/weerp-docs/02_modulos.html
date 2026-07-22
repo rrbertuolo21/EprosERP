@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — Módulos & Planos</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+/* ── SUBTABS ── */
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px}
+.stab{padding:5px 13px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--b2);border-radius:20px;background:none;color:var(--t3);transition:all .15s;font-family:var(--sans)}
+.stab:hover{color:var(--t2)}.stab.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.sp{display:none}.sp.on{display:block}
+
+/* ── MÓDULO ACCORDION ── */
+.mod-block{border:1px solid var(--b1);border-radius:var(--r);margin-bottom:10px;overflow:hidden;background:var(--s1)}
+.mod-header{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;user-select:none;transition:background .15s}
+.mod-header:hover{background:var(--s2)}
+.mod-header.open{background:var(--s2);border-bottom:1px solid var(--b1)}
+.mod-key{font-family:var(--mono);font-size:12px;font-weight:600;min-width:42px;color:var(--blue)}
+.mod-name{flex:1;font-size:13px;font-weight:500;color:var(--t1)}
+.mod-desc{font-size:11px;color:var(--t3);max-width:340px;display:none}
+.mod-header:not(.open) .mod-desc{display:block}
+.mod-plan{font-size:10px;font-weight:500;font-family:var(--mono);padding:2px 9px;border-radius:10px}
+.mp-micro{background:var(--s3);color:var(--t3)}
+.mp-ess{background:var(--blue-l);color:var(--blue)}
+.mp-avr{background:var(--amber-l);color:var(--amber)}
+.mp-ent{background:var(--green-l);color:var(--green)}
+.mod-chevron{font-size:11px;color:var(--t3);transition:transform .2s;flex-shrink:0}
+.mod-header.open .mod-chevron{transform:rotate(180deg)}
+.mod-body{display:none;padding:16px 18px 18px}
+.mod-header.open + .mod-body{display:block}
+.mod-summary{font-size:12px;color:var(--t2);line-height:1.7;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--b1)}
+
+/* ── SUBMÓDULO GRID ── */
+.sub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+.sub-item{background:var(--s2);border:1px solid var(--b1);border-radius:6px;padding:10px 13px;transition:border-color .15s}
+.sub-item:hover{border-color:var(--b3)}
+.sub-item.novo{border-left:3px solid var(--blue)}
+.sub-item.legado{border-left:3px solid var(--b3)}
+.sub-name{font-size:12px;font-weight:500;color:var(--t1);margin-bottom:3px;display:flex;align-items:center;gap:6px}
+.sub-desc{font-size:11px;color:var(--t2);line-height:1.5}
+.novo-badge{font-family:var(--mono);font-size:9px;padding:1px 5px;border-radius:3px;background:var(--blue-l);color:var(--blue);flex-shrink:0}
+
+/* ── REQS ── */
+.mod-reqs{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--b1)}
+.req-label{font-family:var(--mono);font-size:10px;color:var(--t3);align-self:center}
+.req-chip{font-family:var(--mono);font-size:11px;padding:2px 9px;border-radius:4px;background:var(--s3);border:1px solid var(--b2);color:var(--t2)}
+
+/* ── PLATAFORMA ── */
+.plat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.plat-item{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:12px 14px}
+.plat-item h4{font-size:12px;font-weight:500;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.plat-item p{font-size:11px;color:var(--t2);line-height:1.5}
+.plat-icon{font-size:13px}
+
+/* ── DEP DIAGRAM ── */
+.dep-flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 0}
+.dep-box{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:5px;font-weight:500;border:1px solid}
+.dep-base{background:var(--s3);border-color:var(--b2);color:var(--t2)}
+.dep-req{background:var(--blue-l);border-color:rgba(74,144,232,.3);color:var(--blue)}
+.dep-target{background:var(--s2);border-color:var(--b1);color:var(--t1)}
+.dep-arr{color:var(--t3);font-size:12px}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="index.html">Home</a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt on" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>Módulos · Submódulos · Planos · Plataforma Transversal</div>
+  <h1>Módulos <em>& planos</em></h1>
+  <p class="hero-desc">11 macrodomínios com todos os submódulos detalhados. Ativação por entitlement com pré-requisitos validados automaticamente — sem redeploy.</p>
+</div>
+
+<div class="page">
+
+<div class="subtabs">
+  <button class="stab on" onclick="st('modulos')">Módulos & Submódulos</button>
+  <button class="stab" onclick="st('planos')">Planos SaaS</button>
+  <button class="stab" onclick="st('dependencias')">Dependências</button>
+  <button class="stab" onclick="st('plataforma')">Plataforma Transversal</button>
+  <button class="stab" onclick="st('entitlement')">Entitlement Engine</button>
+</div>
+
+<!-- ══ MÓDULOS & SUBMÓDULOS ══ -->
+<div class="sp on" id="sp-modulos">
+  <p style="font-size:12px;color:var(--t2);margin-bottom:16px">Clique em cada módulo para expandir e ver todos os submódulos. <span style="color:var(--blue)">Barra azul</span> = submódulo novo (vs legado Epros.ERP). <span style="color:var(--b3)">Barra cinza</span> = reengenharia de funcionalidade existente.</p>
+
+  <!-- FIN -->
+  <div class="mod-block">
+    <div class="mod-header" onclick="tog(this)">
+      <span class="mod-key">FIN</span>
+      <span class="mod-name">Financeiro &amp; Contabilidade</span>
+      <span class="mod-desc">GL · AR/AP · Tesouraria · Câmbio · IFRS 16 · Orçamento</span>
+      <span class="mod-plan mp-micro">Micro — Núcleo</span>
+      <span class="mod-chevron">▼</span>
+    </div>
+    <div class="mod-body">
+      <p class="mod-summary">Hub financeiro central — recebe lançamentos de todos os módulos. Ledger append-only por lei (lançamentos nunca editados, apenas estornados). Suporte a multi-empresa, multi-moeda e múltiplos planos de contas (BRGAAP + IFRS).</p>
+      <div class="sub-grid">
+        <div class="sub-item legado"><div class="sub-name">Contabilidade Geral (GL)</div><div class="sub-desc">Ledger principal, plano de contas, lançamentos contábeis, fechamento de período, balancetes e DRE</div></div>
+        <div class="sub-item legado"><div class="sub-name">Contas a Receber (AR)</div><div class="sub-desc">Títulos, cobrança, aging, conciliação bancária OFX, juros e multas automáticos, remessa/retorno CNAB</div></div>
+        <div class="sub-item legado"><div class="sub-name">Contas a Pagar (AP)</div><div class="sub-desc">Pagamentos, aprovações por alçada, borderôs, antecipação de fornecedores, conciliação</div></div>
+        <div class="sub-item legado"><div class="sub-name">Ativos Fixos</div><div class="sub-desc">Cadastro, depreciação (SL, DB, SOYD), baixas, transferências, inventário de ativos, CIAP</div></div>
+        <div class="sub-item legado"><div class="sub-name">Contabilidade Gerencial (CO)</div><div class="sub-desc">Centros de custo, ordens internas, resultado por produto, projeto e unidade de negócio</div></div>
+        <div class="sub-item legado"><div class="sub-name">Consolidação &amp; Reporting</div><div class="sub-desc">Consolidação multi-empresa, eliminações intercompany, BRGAAP, IFRS, relatórios regulatórios</div></div>
+        <div class="sub-item legado"><div class="sub-name">Planejamento &amp; Orçamento</div><div class="sub-desc">Budget anual, forecast rolling, simulações, controle de desvios e aprovação de revisões</div></div>
+        <div class="sub-item legado"><div class="sub-name">Subsídios &amp; Fundos</div><div class="sub-desc">Gestão de verbas, funding público, FINEP, prestação de contas por projeto</div></div>
+        <div class="sub-item novo"><div class="sub-name">Tesouraria &amp; Liquidez <span class="novo-badge">NOVO</span></div><div class="sub-desc">Cash positioning diário, FX hedge, cash pooling, banco interno, gestão de risco de liquidez</div></div>
+        <div class="sub-item novo"><div class="sub-name">Contratos Financeiros <span class="novo-badge">NOVO</span></div><div class="sub-desc">IFRS 16 / ASC 842, leases operacionais e financeiros, dívida estruturada, derivativos, marcação a mercado</div></div>
+        <div class="sub-item novo"><div class="sub-name">Câmbio &amp; Risco de Mercado <span class="novo-badge">NOVO</span></div><div class="sub-desc">Exposures cambiais, forwards, options, mark-to-market, VaR, sensibilidade a variações de taxa</div></div>
+      </div>
+      <div class="mod-reqs"><span class="req-label">Pré-requisitos:</span><span class="req-chip">Nenhum — módulo base</span></div>
+    </div>
+  </div>
+
+  <!-- VEN -->
+  <div class="mod-block">
+    <div class="mod-header" onclick="tog(this)">
+      <span class="mod-key">VEN</span>
+      <span class="mod-name">Vendas &amp; Distribuição</span>
+      <span class="mod-desc">CRM · Pedidos · Logística · Portal Cliente · PDV · Omnichannel</span>
+      <span class="mod-plan mp-micro">Micro — Núcleo</span>
+      <span class="mod-chevron">▼</span>
+    </div>
+    <div class="mod-body">
+      <p class="mod-summary">Da oportunidade à entrega. Inclui PDV nativo com NFC-e e modo contingência offline. Integra com FIN (ContaReceber), EST (reserva de estoque) e Fiscal (NF-e).</p>
+      <div class="sub-grid">
+        <div class="sub-item legado"><div class="sub-name">CRM</div><div class="sub-desc">Funil de vendas, oportunidades, atividades, previsão, segmentação de clientes e histórico de interações</div></div>
+        <div class="sub-item legado"><div class="sub-name">Planejamento de Demanda</div><div class="sub-desc">Previsão estatística, S&OP, consenso de demanda, gestão de promoções e sazonalidade</div></div>
+        <div class="sub-item legado"><div class="sub-name">Gestão de Pedidos</div><div class="sub-desc">Cotação, pedido, aprovação de crédito, backorder, split de entrega, políticas de preço</div></div>
+        <div class="sub-item legado"><div class="sub-name">Logística de Saída</div><div class="sub-desc">Picking, packing, expedição, romaneio, NF-e, rastreamento de entrega, integração transportadoras</div></div>
+        <div class="sub-item legado"><div class="sub-name">Gestão de Garantias</div><div class="sub-desc">Acionamento, análise de defeito, reposição, RMA, integração com MAN e DMS</div></div>
+        <div class="sub-item legado"><div class="sub-name">Gestão de Serviços</div><div class="sub-desc">Ordens de serviço, SLA, agenda de técnicos, peças, faturamento de serviço e NFS-e</div></div>
+        <div class="sub-item legado"><div class="sub-name">Portal do Cliente</div><div class="sub-desc">Auto-serviço: pedidos online, notas fiscais, boletos, status de entrega, histórico</div></div>
+        <div class="sub-item legado"><div class="sub-name">Frente de Caixa (PDV)</div><div class="sub-desc">NFC-e, abertura/fechamento de caixa, sangria, suprimento, múltiplos pagamentos, TEF, Pix, contingência offline</div></div>
+        <div class="sub-item novo"><div class="sub-name">CLM de Venda <span class="novo-badge">NOVO</span></div><div class="sub-desc">Contratos comerciais, versionamento, aprovações eletrônicas, alertas de vencimento e renovação automática</div></div>
+        <div class="sub-item novo"><div class="sub-name">Comércio Eletrônico <span class="novo-badge">NOVO</span></div><div class="sub-desc">Loja virtual B2B/B2C, omnichannel, integrações com marketplaces (ML, Shopee, Amazon), checkout</div></div>
+      </div>
+      <div class="mod-reqs"><span class="req-label">Pré-requisitos:</span><span class="req-chip">Nenhum — módulo base</span></div>
+    </div>
+  </div>
+
+  <!-- EST -->
+  <div class="mod-block">
+    <div class="mod-header" onclick="tog(this)">
+      <span class="mod-key">EST</span>
+      <span class="mod-name">Estoque &amp; Suprimentos</span>
+      <span class="mod-desc">WMS · Compras · TMS · Comex/GTM · Rastreabilidade de Lote</span>
+      <span class="mod-plan mp-micro">Micro — Núcleo</span>
+      <span class="mod-chevron">▼</span>
+    </div>
+    <div class="mod-body">
+      <p class="mod-summary">Da compra à prateleira. WMS com endereçamento, TMS com otimização de rotas e CO₂ por embarque, Comércio Exterior com NCM/HS e drawback, rastreabilidade bidirecional de lote para recall.</p>
+      <div class="sub-grid">
+        <div class="sub-item legado"><div class="sub-name">Análise &amp; Planejamento</div><div class="sub-desc">Curva ABC/XYZ, ponto de reposição, estoque mín/máx, cobertura, relatório de giro</div></div>
+        <div class="sub-item legado"><div class="sub-name">WMS — Gestão de Armazém</div><div class="sub-desc">Endereçamento, recebimento, armazenagem, separação por onda, expedição, inventário cíclico, WMS mobile</div></div>
+        <div class="sub-item legado"><div class="sub-name">Inventário &amp; Contagem Cíclica</div><div class="sub-desc">Inventário físico, contagem cíclica, ajustes auditados, bloqueio e liberação de lote</div></div>
+        <div class="sub-item legado"><div class="sub-name">Sourcing &amp; Compras</div><div class="sub-desc">Cotação, RFQ, homologação de fornecedores, PO, aprovações por alçada, recebimento</div></div>
+        <div class="sub-item legado"><div class="sub-name">Logística de Entrada</div><div class="sub-desc">Agendamento de entrega, recebimento, conferência, divergências, laudo de inspeção QUA</div></div>
+        <div class="sub-item legado"><div class="sub-name">Subcontratação</div><div class="sub-desc">Ordens de subcontratação, remessa de materiais, recebimento de produtos acabados, custeio</div></div>
+        <div class="sub-item legado"><div class="sub-name">Portal do Fornecedor</div><div class="sub-desc">Auto-serviço: confirmação de PO, NF-e, status de pagamento, ocorrências, scorecard</div></div>
+        <div class="sub-item novo"><div class="sub-name">CLM de Compra <span class="novo-badge">NOVO</span></div><div class="sub-desc">Contratos de fornecimento, SLA de entrega, penalidades automáticas, renovações, auditoria</div></div>
+        <div class="sub-item novo"><div class="sub-name">TMS — Transporte <span class="novo-badge">NOVO</span></div><div class="sub-desc">Otimização de rotas, gestão de carriers, CT-e, freight settlement, CO₂ por embarque, rastreamento</div></div>
+        <div class="sub-item novo"><div class="sub-name">Comércio Exterior / GTM <span class="novo-badge">NOVO</span></div><div class="sub-desc">NCM/HS, drawback simples e suspensão, licenças de importação/exportação, DI/DE, controle de sanções</div></div>
+        <div class="sub-item novo"><div class="sub-name">Rastreabilidade de Lote <span class="novo-badge">NOVO</span></div><div class="sub-desc">Árvore de rastreabilidade bidirecional, genealogia de lotes, gestão de recall, serialização GS1, ANVISA</div></div>
+      </div>
+      <div class="mod-reqs"><span class="req-label">Pré-requisitos:</span><span class="req-chip">Nenhum — módulo base</span></div>
+    </div>
+  </div>
+
+  <!-- PRO -->
+  <div class="mod-block">
+    <div class="mod-header" onclick="tog(this)">
+      <span class="mod-key">PRO</span>
+      <span class="mod-name">Produção</span>
+      <span class="mod-desc">BOM · MRP/IBP · MES · Scheduling · Custos de Produção</span>
+      <span class="mod-plan mp-ess">Essencial</span>
+      <span class="mod-chevron">▼</span>
+    </div>
+    <div class="mod-body">
+      <p class="mod-summary">Do planejamento ao chão de fábrica. BOM multi-nível com engineering change control, MRP integrado com S&OP, MES com IoT e apontamento mobile, custos reais vs padrão.</p>
+      <div class="sub-grid">
+        <div class="sub-item legado"><div class="sub-name">Estimativa &amp; Custeio</div><div class="sub-desc">Orçamento de produção, custo padrão vs real, variações, rentabilidade por ordem de produção</div></div>
+        <div class="sub-item legado"><div class="sub-name">Planejamento de Produção</div><div class="sub-desc">PCP, análise de capacidade, identificação de gargalos, plano mestre (MPS)</div></div>
+        <div class="sub-item legado"><div class="sub-name">Gestão de Ordens</div><div class="sub-desc">Abertura, liberação, apontamento, encerramento, custos reais, retrabalho</div></div>
+        <div class="sub-item legado"><div class="sub-name">Scheduling</div><div class="sub-desc">Programação finita/infinita, sequenciamento otimizado, Gantt interativo, otimização de setup</div></div>
+        <div class="sub-item legado"><div class="sub-name">MES — Execução de Manufatura</div><div class="sub-desc">Chão de fábrica digital, integração IoT, apontamento mobile, OEE, controle de refugo e retrabalho</div></div>
+        <div class="sub-item legado"><div class="sub-name">Custos de Produção</div><div class="sub-desc">Absorção de custos, CIP (Custos Indiretos de Produção), desvios, fechamento de período</div></div>
+        <div class="sub-item novo"><div class="sub-name">BOM Multi-nível <span class="novo-badge">NOVO</span></div><div class="sub-desc">Estrutura de produto multi-nível, variantes, engineering change order (ECO/ECR), versionamento de BOM</div></div>
+        <div class="sub-item novo"><div class="sub-name">MRP / IBP <span class="novo-badge">NOVO</span></div><div class="sub-desc">MRP II, planejamento integrado de negócio (S&OP), cenários what-if, previsão de capacidade, simulação</div></div>
+      </div>
+      <div class="mod-reqs"><span class="req-label">Pré-requisitos:</span><span class="req-chip">EST</span><span class="req-chip">FIN</span></div>
+    </div>
+  </div>
+
+  <!-- QUA -->
+  <div class="mod-block">
+    <div class="mod-header" onclick="tog(this)">
+      <span class="mod-key">QUA</span>
+      <span class="mod-name">Gestão da Qualidade</span>
+      <span class="mod-desc">Inspeção · NCR/CAPA · Qualidade Fornecedor · Rastreabilidade &amp; Recall</span>
+      <span class="mod-plan mp-ess">Essencial</span>
+      <span class="mod-chevron">▼</span>
+    </div>
+    <div class="mod-body">
+      <p class="mod-summary">SGQ completo integrado ao fluxo operacional. Inspeção disparada automaticamente na entrada de mercadoria (EST) ou encerramento de ordem (PRO). NCR/CAPA com raiz de causa e plano de ação.</p>
+      <div class="sub-grid">
+        <div class="sub-item legado"><div class="sub-name">Gestão de Atributos</div><div class="sub-desc">Especificações técnicas, tolerâncias, características de controle por produto e processo</div></div>
+        <div class="sub-item legado"><div class="sub-name">Planos de Inspeção &amp; Amostragem</div><div class="sub-desc">Planos de controle, AQL, lotes estatísticos (ISO 2859), calibração de instrumentos de medição</div></div>
+        <div class="sub-item legado"><div class="sub-name">Administração do SGQ</div><div class="sub-desc">Documentos do SGQ, procedimentos, ISO 9001/14001, auditorias internas, certificações</div></div>
+        <div class="sub-item legado"><div class="sub-name">Aceitação &amp; Rejeição</div><div class="sub-desc">Laudos de inspeção, decisão de uso, disposição de material não conforme, custos da qualidade</div></div>
+        <div class="sub-item novo"><div class="sub-name">NCR &amp; CAPA <span class="novo-badge">NOVO</span></div><div class="sub-desc">Registro de não conformidades, análise de causa raiz (8D, Ishikawa, 5-Porquês), ações corretivas e preventivas</div></div>
+        <div class="sub-item novo"><div class="sub-name">Qualidade de Fornecedor <span class="novo-badge">NOVO</span></div><div class="sub-desc">Avaliação de fornecedores, certificados de qualidade, auditorias em campo, scorecard de desempenho</div></div>
+        <div class="sub-item novo"><div class="sub-name">Rastreabilidade &amp; Recall <span class="novo-badge">NOVO</span></div><div class="sub-desc">Rastreabilidade bidirecional de lote, árvore de impacto, recall com alerta ao mercado e ANVISA</div></div>
+      </div>
+      <div class="mod-reqs"><span class="req-label">Pré-requisitos:</span><span class="req-chip">PRO</span><span style="font-size:11px;color:var(--t3);align-self:center">ou</span><span class="req-chip">EST</span></div>
+    </div>
+  </div>
+
+  <!-- HCM -->
+  <div class="mod-block">
+    <div class="mod-header" onclick="tog(this)">
+      <span class="mod-key">HCM</span>
+      <span class="mod-name">Capital Humano</span>
+      <span class="mod-desc">Folha CLT · Talentos · LMS · EHS · Ponto &amp; Jornada · eSocial</span>
+      <span class="mod-plan mp-ess">Essencial</span>
+      <span class="mod-chevron">▼</span>
+    </div>
+    <div class="mod-body">
+      <p class="mod-summary">RH completo com foco na legislação trabalhista brasileira. Folha de pagamento com eSocial, ponto eletrônico (REP-P), LMS para treinamentos e EHS para segurança do trabalho conforme NRs.</p>
+      <div class="sub-grid">
+        <div class="sub-item legado"><div class="sub-name">Gestão da Força de Trabalho</div><div class="sub-desc">Organograma, cargos, salários, histórico funcional, headcount, posições e vagas</div></div>
+        <div class="sub-item legado"><div class="sub-name">Recrutamento</div><div class="sub-desc">Requisições, processo seletivo, banco de talentos, entrevistas, proposta, onboarding digital</div></div>
+        <div class="sub-item legado"><div class="sub-name">Gestão de Talentos</div><div class="sub-desc">Avaliação de desempenho (9-box), PDI, mapa de sucessão, mapeamento de competências</div></div>
+        <div class="sub-item legado"><div class="sub-name">Desenvolvimento de Funcionários</div><div class="sub-desc">Trilhas de carreira, planos de desenvolvimento individuais, histórico de formação</div></div>
+        <div class="sub-item legado"><div class="sub-name">Folha de Pagamento &amp; Benefícios</div><div class="sub-desc">Cálculo CLT, RPA, benefícios (VT, VR, plano de saúde), FGTS, INSS, IRRF, eSocial, REINF</div></div>
+        <div class="sub-item legado"><div class="sub-name">Planejamento de RH</div><div class="sub-desc">Workforce planning, FTE, budget de pessoal, modelagem de cenários de crescimento</div></div>
+        <div class="sub-item novo"><div class="sub-name">LMS — Treinamentos <span class="novo-badge">NOVO</span></div><div class="sub-desc">E-learning, trilhas de certificação, compliance training, SCORM/xAPI, relatórios de conclusão</div></div>
+        <div class="sub-item novo"><div class="sub-name">EHS — Saúde &amp; Segurança <span class="novo-badge">NOVO</span></div><div class="sub-desc">Incidentes, PPRA/PCMSO/PGR, EPIs, NRs (NR-1 a NR-36), auditorias de segurança, ASO</div></div>
+        <div class="sub-item novo"><div class="sub-name">Ponto &amp; Jornada <span class="novo-badge">NOVO</span></div><div class="sub-desc">REP-P integrado, banco de horas, escalas de turno, horas extras, AFD, jornada 12x36</div></div>
+      </div>
+      <div class="mod-reqs"><span class="req-label">Pré-requisitos:</span><span class="req-chip">FIN</span></div>
+    </div>
+  </div>
+
+  <!-- MAN -->
+  <div class="mod-block">
+    <div class="mod-header" onclick="tog(this)">
+      <span class="mod-key">MAN</span>
+      <span class="mod-name">Manutenção — EAM</span>
+      <span class="mod-desc">Preventiva · Preditiva IoT · RCM · Paradas · Peças de Reposição</span>
+      <span class="mod-plan mp-avr">Avançado</span>
+      <span class="mod-chevron">▼</span>
+    </div>
+    <div class="mod-body">
+      <p class="mod-summary">Enterprise Asset Management completo. Manutenção preditiva com ML e sensores IoT (vibração, temperatura, corrente). Integrado com WMS para peças de reposição e FIN para custos de OS.</p>
+      <div class="sub-grid">
+        <div class="sub-item legado"><div class="sub-name">Configuração de Equipamentos</div><div class="sub-desc">Cadastro técnico, hierarquia de ativos (localização funcional), plaquetas, dados de garantia e manuals</div></div>
+        <div class="sub-item legado"><div class="sub-name">Manutenção Preventiva</div><div class="sub-desc">Planos de MP, gatilhos por tempo/uso/condição, rotas de inspeção, lubrificação, checklist mobile</div></div>
+        <div class="sub-item legado"><div class="sub-name">Manutenção Preditiva</div><div class="sub-desc">Integração IoT com sensores, análise preditiva com ML, anomaly detection, alertas de falha iminente</div></div>
+        <div class="sub-item legado"><div class="sub-name">Gestão de Paradas</div><div class="sub-desc">Planejamento de shutdown, PERT/CPM, gestão de contratados e materiais, pré e pós-parada</div></div>
+        <div class="sub-item legado"><div class="sub-name">Gestão de Trabalho</div><div class="sub-desc">Ordens de manutenção, planejamento de mão de obra, custos reais, encerramento e histórico</div></div>
+        <div class="sub-item legado"><div class="sub-name">Confiabilidade — RCM</div><div class="sub-desc">FMEA, análise de modos de falha, MTBF/MTTR, análise de causa raiz, melhoria de confiabilidade</div></div>
+        <div class="sub-item novo"><div class="sub-name">Peças de Reposição <span class="novo-badge">NOVO</span></div><div class="sub-desc">Estoque de peças críticas com reserva por equipamento, linked ao WMS, reposição automática por consumo</div></div>
+      </div>
+      <div class="mod-reqs"><span class="req-label">Pré-requisitos:</span><span class="req-chip">EST</span><span class="req-chip">FIN</span></div>
+    </div>
+  </div>
+
+  <!-- PRJ -->
+  <div class="mod-block">
+    <div class="mod-header" onclick="tog(this)">
+      <span class="mod-key">PRJ</span>
+      <span class="mod-name">Projetos — PPM</span>
+      <span class="mod-desc">WBS · Cronograma · EVM · Portfólio · Riscos · Faturamento</span>
+      <span class="mod-plan mp-avr">Avançado</span>
+      <span class="mod-chevron">▼</span>
+    </div>
+    <div class="mod-body">
+      <p class="mod-summary">Project Portfolio Management com Earned Value Management (EVM). Reconhecimento de receita por percentual de conclusão integrado ao FIN. Alocação de recursos com visão de capacidade.</p>
+      <div class="sub-grid">
+        <div class="sub-item legado"><div class="sub-name">Definição &amp; WBS</div><div class="sub-desc">Estrutura analítica de projeto, marcos, entregáveis, responsáveis, baseline de escopo</div></div>
+        <div class="sub-item legado"><div class="sub-name">Planejamento &amp; Rastreamento</div><div class="sub-desc">Cronograma Gantt, baseline, variações de prazo, Earned Value (CPI, SPI), relatórios de status</div></div>
+        <div class="sub-item legado"><div class="sub-name">Orçamento de Projeto</div><div class="sub-desc">Budget por WBS, forecast de custo, controle de comprometimento, aprovações de mudança</div></div>
+        <div class="sub-item legado"><div class="sub-name">Faturamento de Projeto</div><div class="sub-desc">Reconhecimento de receita por % conclusão (POC) ou milestone, faturamento automático ao FIN</div></div>
+        <div class="sub-item legado"><div class="sub-name">Encerramento de Projeto</div><div class="sub-desc">Lições aprendidas, liberação de recursos, liquidação financeira, arquivo e documentação</div></div>
+        <div class="sub-item novo"><div class="sub-name">Gestão de Recursos <span class="novo-badge">NOVO</span></div><div class="sub-desc">Alocação de equipes por projeto, utilização, disponibilidade, calendário de capacidade, sobrecarga</div></div>
+        <div class="sub-item novo"><div class="sub-name">Riscos de Projeto <span class="novo-badge">NOVO</span></div><div class="sub-desc">Registro de riscos, probabilidade × impacto, planos de resposta, issues log, escaladas</div></div>
+        <div class="sub-item novo"><div class="sub-name">Portfólio &amp; Priorização <span class="novo-badge">NOVO</span></div><div class="sub-desc">Dashboard executivo de portfólio, score de prioridade estratégica, roadmap, heatmap de riscos</div></div>
+      </div>
+      <div class="mod-reqs"><span class="req-label">Pré-requisitos:</span><span class="req-chip">FIN</span><span class="req-chip">HCM</span></div>
+    </div>
+  </div>
+
+  <!-- GRC -->
+  <div class="mod-block">
+    <div class="mod-header" onclick="tog(this)">
+      <span class="mod-key">GRC</span>
+      <span class="mod-name">Governança, Risco &amp; Compliance</span>
+      <span class="mod-desc">Risk register · SOX · SoD · Whistleblower · Políticas · LGPD/CSRD</span>
+      <span class="mod-plan mp-avr">Avançado — Módulo 100% novo</span>
+      <span class="mod-chevron">▼</span>
+    </div>
+    <div class="mod-body">
+      <p class="mod-summary">Módulo 100% novo sem equivalente no Epros.ERP legado. Audit trail imutável que extrai dados de todos os módulos ativos. SoD detecta conflitos de acesso automaticamente. Whistleblower anônimo integrado.</p>
+      <div class="sub-grid">
+        <div class="sub-item novo"><div class="sub-name">Riscos Corporativos <span class="novo-badge">NOVO</span></div><div class="sub-desc">Risk register completo, heat maps de probabilidade × impacto, scoring quantitativo, KRIs e limites de tolerância</div></div>
+        <div class="sub-item novo"><div class="sub-name">Controles Internos &amp; Auditoria <span class="novo-badge">NOVO</span></div><div class="sub-desc">Mapeamento de controles SOX, planos de teste, evidências, achados, plano de remediação, relatório de auditores</div></div>
+        <div class="sub-item novo"><div class="sub-name">Segregação de Funções (SoD) <span class="novo-badge">NOVO</span></div><div class="sub-desc">Matriz SoD, detecção automática de conflitos de acesso, exceções aprovadas, remediação e monitoramento contínuo</div></div>
+        <div class="sub-item novo"><div class="sub-name">Compliance Regulatório <span class="novo-badge">NOVO</span></div><div class="sub-desc">Gestão de obrigações LGPD, CSRD, Lei 12.846 (anticorrupção), FCPA, reporting de conformidade</div></div>
+        <div class="sub-item novo"><div class="sub-name">Gestão de Políticas <span class="novo-badge">NOVO</span></div><div class="sub-desc">Publicação, versionamento, aceite eletrônico rastreável, revisão periódica automática, distribuição por papel</div></div>
+        <div class="sub-item novo"><div class="sub-name">Whistleblower &amp; Investigações <span class="novo-badge">NOVO</span></div><div class="sub-desc">Canal anônimo de denúncias, triagem, atribuição de investigador, ciclo de vida do caso, relatório de encerramento</div></div>
+      </div>
+      <div class="mod-reqs"><span class="req-label">Pré-requisitos:</span><span class="req-chip">FIN</span><span class="req-chip">HCM</span></div>
+    </div>
+  </div>
+
+  <!-- ESG -->
+  <div class="mod-block">
+    <div class="mod-header" onclick="tog(this)">
+      <span class="mod-key">ESG</span>
+      <span class="mod-name">Sustentabilidade &amp; ESG</span>
+      <span class="mod-desc">Carbono Scope 1/2/3 · GRI · CSRD · Economia Circular · Diversidade</span>
+      <span class="mod-plan mp-ent">Enterprise — Módulo 100% novo</span>
+      <span class="mod-chevron">▼</span>
+    </div>
+    <div class="mod-body">
+      <p class="mod-summary">Módulo 100% novo. Dados transacionais de FIN, EST e PRO alimentam automaticamente o cálculo de pegada de carbono. Relatórios GRI, CSRD (obrigatório para empresas na EU), TCFD e SASB automatizados e auditáveis.</p>
+      <div class="sub-grid">
+        <div class="sub-item novo"><div class="sub-name">Pegada de Carbono <span class="novo-badge">NOVO</span></div><div class="sub-desc">Emissões Scope 1 (diretas), Scope 2 (energia), Scope 3 (cadeia de valor), PCF por produto e corporativo</div></div>
+        <div class="sub-item novo"><div class="sub-name">Gestão Ambiental EHS <span class="novo-badge">NOVO</span></div><div class="sub-desc">Resíduos, efluentes, emissões atmosféricas, conformidade ISO 14001, licenças ambientais</div></div>
+        <div class="sub-item novo"><div class="sub-name">Relatórios ESG <span class="novo-badge">NOVO</span></div><div class="sub-desc">GRI Standards, CSRD/ESRS, TCFD, SASB — relatórios automáticos com dados auditáveis e trilha de evidências</div></div>
+        <div class="sub-item novo"><div class="sub-name">Economia Circular <span class="novo-badge">NOVO</span></div><div class="sub-desc">Responsabilidade pós-consumo (EPR), reciclagem, remanufatura, reutilização de materiais, economia de recursos</div></div>
+        <div class="sub-item novo"><div class="sub-name">Transporte Sustentável <span class="novo-badge">NOVO</span></div><div class="sub-desc">CO₂ por rota e embarque (linked ao TMS), offset management, metas de descarbonização, modal comparison</div></div>
+        <div class="sub-item novo"><div class="sub-name">Diversidade &amp; Responsabilidade Social <span class="novo-badge">NOVO</span></div><div class="sub-desc">Indicadores D&I, due diligence de direitos humanos na cadeia de fornecimento, impacto social</div></div>
+      </div>
+      <div class="mod-reqs"><span class="req-label">Pré-requisitos:</span><span class="req-chip">FIN</span><span class="req-chip">EST</span></div>
+    </div>
+  </div>
+
+  <!-- DMS -->
+  <div class="mod-block">
+    <div class="mod-header" onclick="tog(this)">
+      <span class="mod-key">DMS</span>
+      <span class="mod-name">Gestão de Concessionárias</span>
+      <span class="mod-desc">Vendas · Serviços · Peças · CRM · Garantias · F&amp;I · Manutenção</span>
+      <span class="mod-plan mp-ent">Enterprise</span>
+      <span class="mod-chevron">▼</span>
+    </div>
+    <div class="mod-body">
+      <p class="mod-summary">DMS nativo — diferencial estratégico único no mercado. Único ERP nacional com gestão de concessionárias de primeira classe, integrado aos módulos VEN, EST e MAN. Cobre todo o ciclo: venda → serviço → peças → financeiro.</p>
+      <div class="sub-grid">
+        <div class="sub-item legado"><div class="sub-name">Vendas DMS</div><div class="sub-desc">Configuração de veículos, ordem de venda, integração financiamento, comissões, F&I (financeiro e seguro)</div></div>
+        <div class="sub-item legado"><div class="sub-name">Gestão de Serviços DMS</div><div class="sub-desc">OS completa, diagnóstico, revisões programadas, recall integrado com montadora, histórico do veículo</div></div>
+        <div class="sub-item legado"><div class="sub-name">Peças de Reposição DMS</div><div class="sub-desc">Estoque de peças, pedido ao distribuidor, controle de obsolescência, kit de revisão, preço de venda</div></div>
+        <div class="sub-item legado"><div class="sub-name">CRM de Concessionária</div><div class="sub-desc">Histórico do cliente e veículo, agendamentos, funil de pós-venda, fidelização, campanhas</div></div>
+        <div class="sub-item legado"><div class="sub-name">Desenvolvimento de Rede</div><div class="sub-desc">Metas por concessionária, avaliação de rede, plano de ação, ranking, relatório para montadora</div></div>
+        <div class="sub-item legado"><div class="sub-name">Garantias DMS</div><div class="sub-desc">Acionamento de garantia, análise de causa, reembolso da montadora, peças em garantia, relatório</div></div>
+        <div class="sub-item legado"><div class="sub-name">Manutenção DMS</div><div class="sub-desc">Integração com MAN, histórico de revisões por chassi, alertas preditivos, plano de manutenção</div></div>
+        <div class="sub-item legado"><div class="sub-name">Finanças DMS</div><div class="sub-desc">F&I (financeiro e seguro), fluxo de caixa por unidade, DRE da concessionária, comissões de vendas</div></div>
+      </div>
+      <div class="mod-reqs"><span class="req-label">Pré-requisitos:</span><span class="req-chip">VEN</span><span class="req-chip">EST</span><span class="req-chip">MAN</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PLANOS ══ -->
+<div class="sp" id="sp-planos">
+  <div class="sl">4 planos SaaS</div>
+  <div class="g4">
+    <div class="card" style="border-top:2px solid var(--b3)"><div class="tag tag-gy">Micro</div><p style="font-family:var(--mono);font-size:10px;color:var(--t3);margin-bottom:8px">FIN · VEN · EST</p><p>Micro e pequenas empresas. Núcleo operacional completo. Fiscal BR incluso. Shared cluster.</p><p style="font-size:11px;color:var(--t3);margin-top:8px">1–15 usuários · varejo · serviços · comércio</p></div>
+    <div class="card" style="border-top:2px solid var(--blue)"><div class="tag tag-b">Essencial</div><p style="font-family:var(--mono);font-size:10px;color:var(--t3);margin-bottom:8px">+ PRO · QUA · HCM</p><p>PME com manufatura, qualidade e RH. Shared cluster com SLA.</p><p style="font-size:11px;color:var(--t3);margin-top:8px">10–100 usuários · indústria · distribuição</p></div>
+    <div class="card" style="border-top:2px solid var(--amber)"><div class="tag tag-am">Avançado</div><p style="font-family:var(--mono);font-size:10px;color:var(--t3);margin-bottom:8px">+ MAN · PRJ · GRC</p><p>Manutenção, projetos e compliance. Dedicated cluster — sem noisy neighbor.</p><p style="font-size:11px;color:var(--t3);margin-top:8px">50–500 usuários · construção · utilities</p></div>
+    <div class="card" style="border-top:2px solid var(--green)"><div class="tag tag-g">Enterprise</div><p style="font-family:var(--mono);font-size:10px;color:var(--t3);margin-bottom:8px">+ ESG · DMS · todos</p><p>Grupos, concessionárias, regulados. On-premise disponível. SLA customizado.</p><p style="font-size:11px;color:var(--t3);margin-top:8px">500+ usuários · grupos · montadoras · regulados</p></div>
+  </div>
+
+  <div class="sl">Módulos por plano — visão completa</div>
+  <table class="tbl">
+    <tr><th>Módulo</th><th>Micro</th><th>Essencial</th><th>Avançado</th><th>Enterprise</th><th>Submódulos totais</th></tr>
+    <tr><td>FIN — Financeiro</td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td>11 submódulos</td></tr>
+    <tr><td>VEN — Vendas</td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td>10 submódulos</td></tr>
+    <tr><td>EST — Estoque</td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td>11 submódulos</td></tr>
+    <tr><td>PRO — Produção</td><td><span class="pill pgy">—</span></td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td>8 submódulos</td></tr>
+    <tr><td>QUA — Qualidade</td><td><span class="pill pgy">—</span></td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td>7 submódulos</td></tr>
+    <tr><td>HCM — Capital Humano</td><td><span class="pill pgy">—</span></td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td>9 submódulos</td></tr>
+    <tr><td>MAN — Manutenção EAM</td><td><span class="pill pgy">—</span></td><td><span class="pill pgy">—</span></td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td>7 submódulos</td></tr>
+    <tr><td>PRJ — Projetos PPM</td><td><span class="pill pgy">—</span></td><td><span class="pill pgy">—</span></td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td>8 submódulos</td></tr>
+    <tr><td>GRC — Governança</td><td><span class="pill pgy">—</span></td><td><span class="pill pgy">—</span></td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td>6 submódulos</td></tr>
+    <tr><td>ESG — Sustentabilidade</td><td><span class="pill pgy">—</span></td><td><span class="pill pgy">—</span></td><td><span class="pill pgy">—</span></td><td><span class="pill pg">✓</span></td><td>6 submódulos</td></tr>
+    <tr><td>DMS — Concessionárias</td><td><span class="pill pgy">—</span></td><td><span class="pill pgy">—</span></td><td><span class="pill pgy">—</span></td><td><span class="pill pg">✓</span></td><td>8 submódulos</td></tr>
+    <tr style="border-top:1px solid var(--b2)"><td><strong>Plataforma Transversal</strong></td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td><span class="pill pg">✓</span></td><td>12 componentes</td></tr>
+    <tr><td><strong>Total de submódulos ativos</strong></td><td><strong>32</strong></td><td><strong>56</strong></td><td><strong>77</strong></td><td><strong>91</strong></td><td>—</td></tr>
+  </table>
+</div>
+
+<!-- ══ DEPENDÊNCIAS ══ -->
+<div class="sp" id="sp-dependencias">
+  <div class="sl">Grafo de dependências</div>
+  <p style="font-size:12px;color:var(--t2);margin-bottom:16px">Cada módulo só pode ser ativado se seus pré-requisitos estiverem habilitados. A validação é automática — bloqueio com mensagem clara ao tentar ativar sem pré-requisito.</p>
+
+  <div class="dep-flow"><span class="dep-base">FIN</span><span class="dep-arr">+</span><span class="dep-base">EST</span><span class="dep-arr">→</span><span class="dep-target">PRO — Produção</span></div>
+  <div class="dep-flow"><span class="dep-base">PRO</span><span class="dep-arr">ou</span><span class="dep-base">EST</span><span class="dep-arr">→</span><span class="dep-target">QUA — Qualidade</span></div>
+  <div class="dep-flow"><span class="dep-base">FIN</span><span class="dep-arr">→</span><span class="dep-target">HCM — Capital Humano</span></div>
+  <div class="dep-flow"><span class="dep-base">FIN</span><span class="dep-arr">+</span><span class="dep-base">EST</span><span class="dep-arr">→</span><span class="dep-target">MAN — Manutenção EAM</span></div>
+  <div class="dep-flow"><span class="dep-base">FIN</span><span class="dep-arr">+</span><span class="dep-base">HCM</span><span class="dep-arr">→</span><span class="dep-target">PRJ — Projetos PPM</span></div>
+  <div class="dep-flow"><span class="dep-base">FIN</span><span class="dep-arr">+</span><span class="dep-base">HCM</span><span class="dep-arr">→</span><span class="dep-target">GRC — Governança</span></div>
+  <div class="dep-flow"><span class="dep-base">FIN</span><span class="dep-arr">+</span><span class="dep-base">EST</span><span class="dep-arr">→</span><span class="dep-target">ESG — Sustentabilidade</span></div>
+  <div class="dep-flow"><span class="dep-base">VEN</span><span class="dep-arr">+</span><span class="dep-base">EST</span><span class="dep-arr">+</span><span class="dep-base">MAN</span><span class="dep-arr">→</span><span class="dep-target">DMS — Concessionárias</span></div>
+
+  <div class="sl">Tabela de dependências com motivo</div>
+  <table class="tbl">
+    <tr><th>Módulo</th><th>Pré-requisitos</th><th>Motivo da dependência</th></tr>
+    <tr><td>PRO — Produção</td><td><span class="mono">EST + FIN</span></td><td>EST para consumo de materiais na ordem · FIN para absorção de custos de produção no GL</td></tr>
+    <tr><td>QUA — Qualidade</td><td><span class="mono">PRO ou EST</span></td><td>Inspeção disparada na entrada de mercadoria (EST) ou no encerramento de ordem de produção (PRO)</td></tr>
+    <tr><td>HCM — Capital Humano</td><td><span class="mono">FIN</span></td><td>Folha de pagamento lança provisão salarial no General Ledger (FIN)</td></tr>
+    <tr><td>MAN — Manutenção</td><td><span class="mono">EST + FIN</span></td><td>Peças de reposição via WMS (EST) · custos de ordem de serviço lançados no FIN</td></tr>
+    <tr><td>PRJ — Projetos</td><td><span class="mono">FIN + HCM</span></td><td>Reconhecimento de receita por % conclusão no GL (FIN) · alocação de recursos humanos (HCM)</td></tr>
+    <tr><td>GRC — Governança</td><td><span class="mono">FIN + HCM</span></td><td>Auditoria financeira extrai dados do FIN · controle de acessos vinculado a colaboradores (HCM)</td></tr>
+    <tr><td>ESG — Sustentabilidade</td><td><span class="mono">FIN + EST</span></td><td>Dados transacionais de FIN e EST alimentam cálculo de pegada de carbono Scope 1/2/3</td></tr>
+    <tr><td>DMS — Concessionárias</td><td><span class="mono">VEN + EST + MAN</span></td><td>Vendas de veículos (VEN) · peças de reposição (EST) · ordens de serviço de manutenção (MAN)</td></tr>
+  </table>
+</div>
+
+<!-- ══ PLATAFORMA ══ -->
+<div class="sp" id="sp-plataforma">
+  <div class="sl">12 componentes — sempre ativos em todos os planos</div>
+  <div class="plat-grid">
+    <div class="plat-item"><h4><span class="plat-icon">🧾</span> Motor Fiscal BR</h4><p>NF-e (55), NFC-e (65), NFS-e, CT-e, SPED Fiscal, SPED Contábil, eSocial, REINF. Lib Hercules.NET.NFe.NFCe v2026.3.15.14 — em produção nos 20 clientes.</p></div>
+    <div class="plat-item"><h4><span class="plat-icon">📴</span> Motor Fiscal Edge</h4><p>NFC-e offline para contingência PDV. Motor fiscal local no Desktop e PDV. Sincroniza com a SEFAZ ao reconectar. Sem perda de nota.</p></div>
+    <div class="plat-item"><h4><span class="plat-icon">⚙️</span> Workflow / BPM</h4><p>Aprovações configuráveis por módulo, alçada e tenant. Escaladas automáticas por prazo. Designer visual de fluxos. Integrado ao eSignature.</p></div>
+    <div class="plat-item"><h4><span class="plat-icon">📁</span> GED</h4><p>Gestão eletrônica de documentos. MinIO/S3. OCR automático. Versionamento. Acesso cross-módulo. Indexação full-text com ElasticSearch.</p></div>
+    <div class="plat-item"><h4><span class="plat-icon">✍️</span> eSignature</h4><p>Assinatura eletrônica ICP-Brasil com validade jurídica. Integrada ao workflow. Trilha de auditoria de aceites. LGPD compliant.</p></div>
+    <div class="plat-item"><h4><span class="plat-icon">📊</span> Analytics &amp; BI</h4><p>Dashboards interativos, relatórios ad hoc, KPIs configuráveis. ClickHouse para queries analíticas pesadas sem impactar o OLTP. Exportação Excel/PDF.</p></div>
+    <div class="plat-item"><h4><span class="plat-icon">🤖</span> IA / ML</h4><p>Previsão de demanda, anomaly detection em transações financeiras, NLP para documentos, recomendações de reposição de estoque.</p></div>
+    <div class="plat-item"><h4><span class="plat-icon">🔄</span> Sync Engine</h4><p>Cloud ↔ Desktop/PDV offline-first via ISyncable + SyncVersion. Conflict resolver plugável (LWW, CRDT ou fila manual). Delta sync por timestamp.</p></div>
+    <div class="plat-item"><h4><span class="plat-icon">🛡️</span> LGPD Compliance</h4><p>Direito ao esquecimento (anonimização), portabilidade (Art.18), criptografia de PII, audit trail imutável append-only, DPO dashboard.</p></div>
+    <div class="plat-item"><h4><span class="plat-icon">🔐</span> Identity &amp; ABAC</h4><p>Keycloak 24 — OIDC, MFA (TOTP, WebAuthn), SSO, Federation AD/LDAP. Roles por módulo. ABAC para GRC e SoD. Claim tenantId no JWT.</p></div>
+    <div class="plat-item"><h4><span class="plat-icon">🔌</span> API Gateway &amp; SDK</h4><p>REST API versionada (v1). Webhooks por evento de negócio. SDK de extensões para customização sem fork. Rate limiting por tenant. OpenAPI/Swagger.</p></div>
+    <div class="plat-item"><h4><span class="plat-icon">👁️</span> Observabilidade</h4><p>OpenTelemetry com traces correlacionados por tenantId. Grafana + Prometheus + Loki + Tempo. Alertas por módulo, tenant e SLO. SLIs configuráveis.</p></div>
+  </div>
+</div>
+
+<!-- ══ ENTITLEMENT ══ -->
+<div class="sp" id="sp-entitlement">
+  <div class="sl">Como o Entitlement Engine funciona</div>
+  <div class="info">Mudança de plano = transação na tabela <span class="mono">catalog.tenant_modules</span> — sem redeploy, sem restart, sem downtime. Efeito imediato na próxima request do tenant.</div>
+
+  <div class="g2" style="margin-bottom:16px">
+    <div class="card">
+      <div class="tag tag-b">Ativação de módulo</div>
+      <h3>Bloqueio automático por pré-requisito</h3>
+      <p>Ao tentar ativar um módulo, o Entitlement Engine verifica pré-requisitos em tempo real. Se não satisfeitos, retorna <span class="mono">422 Unprocessable Entity</span> com mensagem indicando quais módulos precisam ser habilitados primeiro. Zero ativação incorreta.</p>
+    </div>
+    <div class="card">
+      <div class="tag tag-g">Desativação de módulo</div>
+      <h3>Dados históricos sempre preservados</h3>
+      <p>Módulo desabilitado não apaga dados. O schema PostgreSQL permanece intacto — apenas o acesso é revogado. Reativação é instantânea. Dados de anos anteriores ficam disponíveis no momento da reativação.</p>
+    </div>
+  </div>
+
+  <div class="sl">Zero código condicional no runtime</div>
+  <div class="csm"><h4>Como funciona na prática</h4><p>Módulo desabilitado para o tenant = nenhum listener de Domain Event registrado na inicialização. O código não tem <span class="mono">if (moduloAtivo)</span> em nenhum lugar — o próprio event bus não entrega eventos para handlers de módulos inativos. Isso garante que código de módulo desabilitado nunca executa.</p></div>
+  <div class="csm"><h4>Entitlement check por request</h4><p>O middleware <span class="mono">ModuloTenantMiddleware</span> valida macrodomínio + submódulo ativo para o tenant em cada request HTTP. Retorna <span class="mono">403 Forbidden</span> se inativo — antes de chegar ao handler de negócio. A UI também consome <span class="mono">/api/me/entitlements</span> no boot e renderiza apenas menus de módulos ativos.</p></div>
+
+  <div class="sl">Tabela catalog.tenant_modules</div>
+  <table class="tbl">
+    <tr><th>Campo</th><th>Tipo</th><th>Propósito</th></tr>
+    <tr><td class="mono">tenant_id</td><td class="mono">uuid FK</td><td>Referência ao tenant</td></tr>
+    <tr><td class="mono">module_key</td><td class="mono">text</td><td>Chave canônica do módulo: 'fin', 'ven', 'pro', 'hcm'…</td></tr>
+    <tr><td class="mono">enabled</td><td class="mono">boolean</td><td>Liga/desliga o módulo — efeito imediato</td></tr>
+    <tr><td class="mono">enabled_at</td><td class="mono">timestamptz</td><td>Quando foi ativado — audit trail</td></tr>
+    <tr><td class="mono">enabled_by</td><td class="mono">uuid</td><td>Quem ativou (userId Keycloak)</td></tr>
+    <tr><td class="mono">prerequisites_met</td><td class="mono">boolean</td><td>Validado no momento da ativação — cache de validação</td></tr>
+    <tr><td class="mono">config</td><td class="mono">jsonb</td><td>Parâmetros opcionais por módulo (ex: série NF, ambiente fiscal)</td></tr>
+  </table>
+</div>
+
+</div><!-- /page -->
+
+<script>
+var tabs=['modulos','planos','dependencias','plataforma','entitlement'];
+function st(id){
+  document.querySelectorAll('.stab').forEach(function(t,i){t.classList.toggle('on',tabs[i]===id)});
+  document.querySelectorAll('.sp').forEach(function(p){p.classList.toggle('on',p.id==='sp-'+id)});
+}
+function tog(hdr){
+  hdr.classList.toggle('open');
+}
+</script>
+</body>
+</html>

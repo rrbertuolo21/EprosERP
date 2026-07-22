@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — API Reference</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px}
+.stab{padding:5px 13px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--b2);border-radius:20px;background:none;color:var(--t3);transition:all .15s;font-family:var(--sans)}
+.stab:hover{color:var(--t2)}.stab.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.sp{display:none}.sp.on{display:block}
+
+/* endpoint card */
+.ep{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.ep-head{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;user-select:none}
+.ep-head:hover{background:var(--s2)}
+.ep-head.open{background:var(--s2);border-bottom:1px solid var(--b1)}
+.method{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 9px;border-radius:4px;min-width:52px;text-align:center;flex-shrink:0}
+.m-get{background:var(--green-l);color:var(--green)}
+.m-post{background:var(--blue-l);color:var(--blue)}
+.m-put{background:var(--amber-l);color:var(--amber)}
+.m-del{background:var(--red-l);color:var(--red)}
+.ep-path{font-family:var(--mono);font-size:12px;color:var(--t1);flex:1}
+.ep-desc{font-size:11px;color:var(--t3);margin-left:auto}
+.ep-chev{color:var(--t3);font-size:11px;transition:transform .2s;flex-shrink:0}
+.ep-head.open .ep-chev{transform:rotate(180deg)}
+.ep-body{display:none;padding:16px}
+.ep-head.open + .ep-body{display:block}
+
+/* param table */
+.ptbl{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:12px}
+.ptbl th{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--t3);padding:5px 8px;border-bottom:1px solid var(--b1);text-align:left;font-weight:400}
+.ptbl td{padding:6px 8px;border-bottom:1px solid var(--b1);vertical-align:top}
+.ptbl tr:last-child td{border-bottom:none}
+.pname{font-family:var(--mono);color:var(--blue)}
+.ptype{font-family:var(--mono);color:var(--amber);font-size:10px}
+.preq{font-family:var(--mono);font-size:9px;padding:1px 5px;border-radius:3px}
+.preq.r{background:var(--red-l);color:var(--red)}
+.preq.o{background:var(--s2);color:var(--t3)}
+.pdesc{color:var(--t2)}
+
+/* json example */
+.jex{background:var(--s2);border-radius:6px;padding:12px 14px;font-family:var(--mono);font-size:11px;line-height:1.75;margin-bottom:12px;overflow-x:auto;white-space:pre}
+.jk{color:var(--blue)}.jv{color:var(--green)}.jn{color:var(--amber)}.jb{color:var(--purple)}.jc{color:var(--t3)}
+
+/* error codes */
+.err-row{display:flex;align-items:flex-start;gap:12px;padding:7px 0;border-bottom:1px solid var(--b1);font-size:12px}
+.err-row:last-child{border-bottom:none}
+.err-code{font-family:var(--mono);font-size:12px;font-weight:600;min-width:48px;flex-shrink:0}
+.err-name{min-width:160px;font-weight:500;flex-shrink:0}
+.err-desc{color:var(--t2);flex:1}
+
+/* auth */
+.auth-step{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--b1)}
+.auth-step:last-child{border-bottom:none}
+.auth-num{font-family:var(--mono);font-size:11px;color:var(--blue);min-width:24px;flex-shrink:0;padding-top:1px}
+.auth-body h4{font-size:12px;font-weight:500;margin-bottom:3px}
+.auth-body p{font-size:11px;color:var(--t2);line-height:1.5}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="index.html">Home</a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+  <a class="nt on" href="08_api.html">⑧ API Reference</a>
+  <a class="nt" href="09_runbook.html">⑨ Runbook & DR</a>
+  <a class="nt" href="10_modelo_financeiro.html">⑩ Modelo Financeiro</a>
+  <a class="nt" href="11_integracoes.html">⑪ Integrações</a>
+  <a class="nt" href="12_modelo_dados.html">⑫ Modelo de Dados</a>
+  <a class="nt" href="13_onboarding.html">⑬ Guia de Onboarding</a>
+  <a class="nt" href="14_disaster_recovery.html">⑭ Disaster Recovery</a>
+  <a class="nt" href="15_glossario.html">⑮ Glossário</a>
+  <a class="nt" href="16_i18n.html">⑯ Internacionalização</a>
+  <a class="nt" href="17_changelog.html">⑰ Changelog</a>
+  <a class="nt" href="18_plano_execucao.html">⑱ Plano de Execução</a>
+  <a class="nt" href="19_operacional.html">⑲ Modelo Operacional</a>
+  <a class="nt" href="20_treinamento.html">⑳ Treinamento por Função</a>
+  <a class="nt" href="21_agentes_prompts.html">㉑ Prompts dos Agentes</a>
+  <a class="nt" href="22_diagnostico.html">㉒ Diagnóstico do Legado</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>API REST v1 · Autenticação · Endpoints · Erros · Paginação</div>
+  <h1>API <em>Reference</em></h1>
+  <p class="hero-desc">Documentação completa da API REST do Epros. Base URL: <span style="font-family:var(--mono);color:var(--blue)">https://api.epros.com.br/api/v1</span> · Formato: JSON · Auth: JWT Bearer (Keycloak 24)</p>
+</div>
+
+<div class="page">
+
+<div class="subtabs">
+  <button class="stab on" onclick="st('auth')">Autenticação</button>
+  <button class="stab" onclick="st('conv')">Convenções</button>
+  <button class="stab" onclick="st('fin')">Financeiro</button>
+  <button class="stab" onclick="st('ven')">Vendas & PDV</button>
+  <button class="stab" onclick="st('est')">Estoque</button>
+  <button class="stab" onclick="st('fis')">Fiscal</button>
+  <button class="stab" onclick="st('plat')">Plataforma</button>
+  <button class="stab" onclick="st('erros')">Erros & Códigos</button>
+</div>
+
+<!-- ══ AUTH ══ -->
+<div class="sp on" id="sp-auth">
+  <div class="sl">Fluxo de autenticação — Keycloak 24 OIDC</div>
+
+  <div class="auth-step"><span class="auth-num">1</span><div class="auth-body"><h4>Obter token de acesso</h4><p>Faça um POST para o Keycloak com suas credenciais. Em produção, use Authorization Code Flow + PKCE (nunca client_secret no frontend).</p></div></div>
+  <div class="jex"><span class="jc">POST http://auth.epros.com.br/realms/epros-tenant/protocol/openid-connect/token</span>
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password
+&client_id=epros-api
+&username=usuario@empresa.com
+&password=senha123
+&scope=openid profile email</div>
+
+  <div class="auth-step"><span class="auth-num">2</span><div class="auth-body"><h4>Resposta — token JWT</h4><p>O token de acesso expira em 15 minutos. Use o refresh_token (uso único, rotacionado) para renovar sem pedir senha novamente.</p></div></div>
+  <div class="jex">{
+  <span class="jk">"access_token"</span>: <span class="jv">"eyJhbGciOiJSUzI1NiIsInR5cCI6Ikp..."</span>,
+  <span class="jk">"expires_in"</span>: <span class="jn">900</span>,
+  <span class="jk">"refresh_token"</span>: <span class="jv">"eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp..."</span>,
+  <span class="jk">"refresh_expires_in"</span>: <span class="jn">86400</span>,
+  <span class="jk">"token_type"</span>: <span class="jv">"Bearer"</span>
+}</div>
+
+  <div class="auth-step"><span class="auth-num">3</span><div class="auth-body"><h4>Usar o token nas requisições</h4><p>Inclua o Authorization header em toda request. O middleware extrai o tenantId do claim JWT automaticamente — não é necessário passar o tenant explicitamente.</p></div></div>
+  <div class="jex">GET /api/v1/financeiro/contas-pagar
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6Ikp...</div>
+
+  <div class="auth-step"><span class="auth-num">4</span><div class="auth-body"><h4>Claims do JWT</h4><p>O token contém os claims usados pelo backend para autenticação, autorização e isolamento multi-tenant.</p></div></div>
+  <div class="jex"><span class="jc">// Payload do JWT decodificado</span>
+{
+  <span class="jk">"sub"</span>: <span class="jv">"a3f8e2d1-..."</span>,          <span class="jc">// userId</span>
+  <span class="jk">"email"</span>: <span class="jv">"joao@empresa.com"</span>,
+  <span class="jk">"tenantId"</span>: <span class="jv">"tenant-abc123"</span>,    <span class="jc">// isolamento multi-tenant</span>
+  <span class="jk">"realm_access"</span>: {
+    <span class="jk">"roles"</span>: [<span class="jv">"financeiro.contas_pagar.write"</span>, <span class="jv">"vendas.read"</span>]
+  },
+  <span class="jk">"exp"</span>: <span class="jn">1716900000</span>            <span class="jc">// 15min após emissão</span>
+}</div>
+
+  <div class="sl">Renovação de token</div>
+  <div class="jex"><span class="jc">POST http://auth.epros.com.br/realms/epros-tenant/protocol/openid-connect/token</span>
+
+grant_type=refresh_token
+&client_id=epros-api
+&refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp...</div>
+
+  <div class="warn">Refresh tokens são de uso único e rotacionados — um novo é emitido a cada renovação. Armazene sempre o mais recente. Usar um refresh token antigo invalida a sessão inteira.</div>
+</div>
+
+<!-- ══ CONVENÇÕES ══ -->
+<div class="sp" id="sp-conv">
+  <div class="sl">Estrutura de URLs</div>
+  <div class="row"><span class="rl">Base URL prod</span><span class="rv"><span class="mono">https://api.epros.com.br/api/v1</span></span></div>
+  <div class="row"><span class="rl">Base URL dev</span><span class="rv"><span class="mono">https://localhost:7000/api/v1</span></span></div>
+  <div class="row"><span class="rl">Swagger UI</span><span class="rv"><span class="mono">https://localhost:7000/swagger</span></span></div>
+  <div class="row"><span class="rl">Formato</span><span class="rv">JSON em todos os requests e responses. <span class="mono">Content-Type: application/json</span></span></div>
+  <div class="row"><span class="rl">Versionamento</span><span class="rv">Prefixo <span class="mono">/api/v1/</span> — versão nova só quando houver breaking change. v1 e v2 coexistem por 12 meses.</span></div>
+
+  <div class="sl">Padrão de rotas</div>
+  <div class="row"><span class="rl mono">GET /modulo/recurso</span><span class="rv">Listar — paginado. Filtros via query string.</span></div>
+  <div class="row"><span class="rl mono">GET /modulo/recurso/:id</span><span class="rv">Obter um registro por ID (Guid).</span></div>
+  <div class="row"><span class="rl mono">POST /modulo/recurso</span><span class="rv">Criar. Retorna 201 com o recurso criado.</span></div>
+  <div class="row"><span class="rl mono">PUT /modulo/recurso/:id</span><span class="rv">Atualizar completo. Retorna 200 com o recurso atualizado.</span></div>
+  <div class="row"><span class="rl mono">DELETE /modulo/recurso/:id</span><span class="rv">Soft delete. Retorna 200. Dado não é apagado — apenas marcado com <span class="mono">deletado_em</span>.</span></div>
+  <div class="row"><span class="rl mono">POST /modulo/recurso/:id/acao</span><span class="rv">Verbo de negócio. Ex: <span class="mono">/baixar</span>, <span class="mono">/cancelar</span>, <span class="mono">/emitir</span>.</span></div>
+  <div class="row"><span class="rl mono">GET /modulo/sync/delta</span><span class="rv">Delta sync para Desktop/PDV offline. Parâmetro <span class="mono">?since=ISO8601</span>.</span></div>
+
+  <div class="sl">Paginação</div>
+  <div class="jex"><span class="jc">// Query string</span>
+GET /api/v1/financeiro/contas-pagar?pagina=1&tamanhoPagina=20&ordenarPor=vencimento&direcao=asc
+
+<span class="jc">// Response envelope paginado</span>
+{
+  <span class="jk">"dados"</span>: [ ... ],
+  <span class="jk">"pagina"</span>: <span class="jn">1</span>,
+  <span class="jk">"tamanhoPagina"</span>: <span class="jn">20</span>,
+  <span class="jk">"totalRegistros"</span>: <span class="jn">247</span>,
+  <span class="jk">"totalPaginas"</span>: <span class="jn">13</span>,
+  <span class="jk">"temProxima"</span>: <span class="jb">true</span>,
+  <span class="jk">"temAnterior"</span>: <span class="jb">false</span>
+}</div>
+
+  <div class="sl">Response envelope padrão</div>
+  <div class="jex"><span class="jc">// Sucesso</span>
+{
+  <span class="jk">"sucesso"</span>: <span class="jb">true</span>,
+  <span class="jk">"mensagem"</span>: <span class="jv">"Conta a pagar criada com sucesso."</span>,
+  <span class="jk">"dados"</span>: { ... }
+}
+
+<span class="jc">// Erro de validação (422)</span>
+{
+  <span class="jk">"sucesso"</span>: <span class="jb">false</span>,
+  <span class="jk">"erros"</span>: [
+    <span class="jv">"Valor deve ser maior que zero."</span>,
+    <span class="jv">"Data de vencimento é obrigatória."</span>
+  ]
+}
+
+<span class="jc">// Erro de servidor (500) — ProblemDetails RFC 7807</span>
+{
+  <span class="jk">"type"</span>: <span class="jv">"https://epros.com.br/errors/internal"</span>,
+  <span class="jk">"title"</span>: <span class="jv">"Erro interno do servidor"</span>,
+  <span class="jk">"status"</span>: <span class="jn">500</span>,
+  <span class="jk">"traceId"</span>: <span class="jv">"00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"</span>
+}</div>
+
+  <div class="sl">Filtros por data e status</div>
+  <div class="jex">GET /api/v1/financeiro/contas-pagar
+  ?dataVencimentoDe=2025-01-01
+  &dataVencimentoAte=2025-03-31
+  &status=Aberto
+  &pessoaId=3fa85f64-5717-4562-b3fc-2c963f66afa6
+  &pagina=1
+  &tamanhoPagina=50</div>
+</div>
+
+<!-- ══ FINANCEIRO ══ -->
+<div class="sp" id="sp-fin">
+  <div class="sl">Contas a Pagar</div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-get">GET</span>
+      <span class="ep-path">/financeiro/contas-pagar</span>
+      <span class="ep-desc">Listar contas a pagar com filtros</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptbl">
+        <tr><th>Parâmetro</th><th>Tipo</th><th>Req?</th><th>Descrição</th></tr>
+        <tr><td class="pname">pagina</td><td class="ptype">integer</td><td><span class="preq o">Opcional</span></td><td class="pdesc">Página atual. Default: 1</td></tr>
+        <tr><td class="pname">tamanhoPagina</td><td class="ptype">integer</td><td><span class="preq o">Opcional</span></td><td class="pdesc">Registros por página. Default: 20. Máximo: 100</td></tr>
+        <tr><td class="pname">status</td><td class="ptype">enum</td><td><span class="preq o">Opcional</span></td><td class="pdesc">Aberto | Baixado | Cancelado | Vencido</td></tr>
+        <tr><td class="pname">dataVencimentoDe</td><td class="ptype">date</td><td><span class="preq o">Opcional</span></td><td class="pdesc">ISO 8601: 2025-01-01</td></tr>
+        <tr><td class="pname">dataVencimentoAte</td><td class="ptype">date</td><td><span class="preq o">Opcional</span></td><td class="pdesc">ISO 8601: 2025-03-31</td></tr>
+        <tr><td class="pname">pessoaId</td><td class="ptype">uuid</td><td><span class="preq o">Opcional</span></td><td class="pdesc">Filtrar por fornecedor</td></tr>
+      </table>
+      <div class="jex">{
+  <span class="jk">"dados"</span>: [{
+    <span class="jk">"id"</span>: <span class="jv">"3fa85f64-5717-4562-b3fc-2c963f66afa6"</span>,
+    <span class="jk">"numeroDocumento"</span>: <span class="jv">"NF-001234"</span>,
+    <span class="jk">"valor"</span>: <span class="jn">1500.00</span>,
+    <span class="jk">"saldoAberto"</span>: <span class="jn">750.00</span>,
+    <span class="jk">"dataVencimento"</span>: <span class="jv">"2025-03-15"</span>,
+    <span class="jk">"status"</span>: <span class="jv">"Aberto"</span>,
+    <span class="jk">"fornecedor"</span>: { <span class="jk">"id"</span>: <span class="jv">"..."</span>, <span class="jk">"nome"</span>: <span class="jv">"Fornecedor ABC"</span> },
+    <span class="jk">"criadoEm"</span>: <span class="jv">"2025-02-10T14:30:00Z"</span>
+  }],
+  <span class="jk">"totalRegistros"</span>: <span class="jn">247</span>, <span class="jk">"pagina"</span>: <span class="jn">1</span>, <span class="jk">"totalPaginas"</span>: <span class="jn">13</span>
+}</div>
+    </div>
+  </div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-post">POST</span>
+      <span class="ep-path">/financeiro/contas-pagar</span>
+      <span class="ep-desc">Criar conta a pagar</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptbl">
+        <tr><th>Campo</th><th>Tipo</th><th>Req?</th><th>Descrição</th></tr>
+        <tr><td class="pname">pessoaId</td><td class="ptype">uuid</td><td><span class="preq r">Obrigatório</span></td><td class="pdesc">ID do fornecedor (plataforma.pessoas)</td></tr>
+        <tr><td class="pname">empresaId</td><td class="ptype">uuid</td><td><span class="preq r">Obrigatório</span></td><td class="pdesc">Empresa pagadora</td></tr>
+        <tr><td class="pname">valor</td><td class="ptype">decimal</td><td><span class="preq r">Obrigatório</span></td><td class="pdesc">Valor total. Maior que zero.</td></tr>
+        <tr><td class="pname">dataVencimento</td><td class="ptype">date</td><td><span class="preq r">Obrigatório</span></td><td class="pdesc">ISO 8601: 2025-03-15</td></tr>
+        <tr><td class="pname">numeroDocumento</td><td class="ptype">string</td><td><span class="preq o">Opcional</span></td><td class="pdesc">Número da NF ou documento</td></tr>
+        <tr><td class="pname">descricao</td><td class="ptype">string</td><td><span class="preq o">Opcional</span></td><td class="pdesc">Descrição livre</td></tr>
+        <tr><td class="pname">contaContabilId</td><td class="ptype">uuid</td><td><span class="preq o">Opcional</span></td><td class="pdesc">Conta do plano para lançamento automático</td></tr>
+      </table>
+      <div class="jex"><span class="jc">// Request</span>
+{
+  <span class="jk">"pessoaId"</span>: <span class="jv">"3fa85f64-5717-4562-b3fc-2c963f66afa6"</span>,
+  <span class="jk">"empresaId"</span>: <span class="jv">"7cb12f64-1234-4562-b3fc-9d8e3f77bfa8"</span>,
+  <span class="jk">"valor"</span>: <span class="jn">1500.00</span>,
+  <span class="jk">"dataVencimento"</span>: <span class="jv">"2025-03-15"</span>,
+  <span class="jk">"numeroDocumento"</span>: <span class="jv">"NF-001234"</span>
+}
+
+<span class="jc">// Response 201</span>
+{ <span class="jk">"sucesso"</span>: <span class="jb">true</span>, <span class="jk">"mensagem"</span>: <span class="jv">"Conta a pagar criada."</span>, <span class="jk">"dados"</span>: { <span class="jk">"id"</span>: <span class="jv">"..."</span>, <span class="jk">"status"</span>: <span class="jv">"Aberto"</span> } }</div>
+    </div>
+  </div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-post">POST</span>
+      <span class="ep-path">/financeiro/contas-pagar/:id/baixar</span>
+      <span class="ep-desc">Registrar pagamento (baixa total ou parcial)</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptbl">
+        <tr><th>Campo</th><th>Tipo</th><th>Req?</th><th>Descrição</th></tr>
+        <tr><td class="pname">valorPago</td><td class="ptype">decimal</td><td><span class="preq r">Obrigatório</span></td><td class="pdesc">Valor efetivamente pago. ≤ saldo aberto.</td></tr>
+        <tr><td class="pname">dataPagamento</td><td class="ptype">date</td><td><span class="preq r">Obrigatório</span></td><td class="pdesc">Data efetiva do pagamento</td></tr>
+        <tr><td class="pname">formaPagamento</td><td class="ptype">enum</td><td><span class="preq r">Obrigatório</span></td><td class="pdesc">Boleto | Pix | Transferencia | Dinheiro | Cheque</td></tr>
+        <tr><td class="pname">juros</td><td class="ptype">decimal</td><td><span class="preq o">Opcional</span></td><td class="pdesc">Juros e multa. Default: 0</td></tr>
+        <tr><td class="pname">desconto</td><td class="ptype">decimal</td><td><span class="preq o">Opcional</span></td><td class="pdesc">Desconto concedido. Default: 0</td></tr>
+        <tr><td class="pname">observacao</td><td class="ptype">string</td><td><span class="preq o">Opcional</span></td><td class="pdesc">Observação da baixa</td></tr>
+      </table>
+      <div class="jex"><span class="jc">// Baixa parcial — saldo fica aberto</span>
+{ <span class="jk">"valorPago"</span>: <span class="jn">750.00</span>, <span class="jk">"dataPagamento"</span>: <span class="jv">"2025-03-10"</span>, <span class="jk">"formaPagamento"</span>: <span class="jv">"Pix"</span> }
+
+<span class="jc">// Response</span>
+{ <span class="jk">"sucesso"</span>: <span class="jb">true</span>, <span class="jk">"dados"</span>: { <span class="jk">"saldoRestante"</span>: <span class="jn">750.00</span>, <span class="jk">"status"</span>: <span class="jv">"Aberto"</span> } }</div>
+    </div>
+  </div>
+
+  <div class="sl">Contas a Receber</div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-get">GET</span>
+      <span class="ep-path">/financeiro/contas-receber</span>
+      <span class="ep-desc">Listar com filtros — mesmos parâmetros de CP</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <p style="font-size:12px;color:var(--t2);margin-bottom:10px">Mesmos filtros de Contas a Pagar: status, dataVencimentoDe/Ate, pessoaId, pagina, tamanhoPagina.</p>
+      <div class="jex">GET /api/v1/financeiro/contas-receber?status=Vencido&dataVencimentoAte=2025-01-31</div>
+    </div>
+  </div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-post">POST</span>
+      <span class="ep-path">/financeiro/contas-receber/:id/baixar</span>
+      <span class="ep-desc">Registrar recebimento</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptbl">
+        <tr><th>Campo</th><th>Tipo</th><th>Req?</th><th>Descrição</th></tr>
+        <tr><td class="pname">valorRecebido</td><td class="ptype">decimal</td><td><span class="preq r">Obrigatório</span></td><td class="pdesc">Valor recebido. Baixa parcial se menor que saldo.</td></tr>
+        <tr><td class="pname">dataRecebimento</td><td class="ptype">date</td><td><span class="preq r">Obrigatório</span></td><td class="pdesc">Data efetiva do recebimento</td></tr>
+        <tr><td class="pname">formaPagamento</td><td class="ptype">enum</td><td><span class="preq r">Obrigatório</span></td><td class="pdesc">Boleto | Pix | Cartao | Dinheiro | Transferencia</td></tr>
+        <tr><td class="pname">juros</td><td class="ptype">decimal</td><td><span class="preq o">Opcional</span></td><td class="pdesc">Juros recebidos. Somado ao valor.</td></tr>
+        <tr><td class="pname">desconto</td><td class="ptype">decimal</td><td><span class="preq o">Opcional</span></td><td class="pdesc">Desconto concedido. Subtraído do valor.</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ VENDAS & PDV ══ -->
+<div class="sp" id="sp-ven">
+  <div class="sl">Vendas</div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-post">POST</span>
+      <span class="ep-path">/vendas</span>
+      <span class="ep-desc">Emitir venda com NF-e/NFC-e integrada</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptbl">
+        <tr><th>Campo</th><th>Tipo</th><th>Req?</th><th>Descrição</th></tr>
+        <tr><td class="pname">empresaId</td><td class="ptype">uuid</td><td><span class="preq r">Obrigatório</span></td><td class="pdesc">Empresa emitente</td></tr>
+        <tr><td class="pname">modeloFiscal</td><td class="ptype">enum</td><td><span class="preq r">Obrigatório</span></td><td class="pdesc">NFe (55) | NFCe (65) | NFS (99) | CupomNaoFiscal</td></tr>
+        <tr><td class="pname">origem</td><td class="ptype">enum</td><td><span class="preq r">Obrigatório</span></td><td class="pdesc">Balcao | PDV | ECommerce | Telefone | Representante</td></tr>
+        <tr><td class="pname">itens[]</td><td class="ptype">array</td><td><span class="preq r">Obrigatório</span></td><td class="pdesc">Mínimo 1 item. Ver estrutura abaixo.</td></tr>
+        <tr><td class="pname">pagamentos[]</td><td class="ptype">array</td><td><span class="preq r">Obrigatório</span></td><td class="pdesc">Soma deve cobrir o total da venda.</td></tr>
+        <tr><td class="pname">pessoaId</td><td class="ptype">uuid</td><td><span class="preq o">Opcional</span></td><td class="pdesc">Cliente cadastrado. Nulo para consumidor final sem cadastro.</td></tr>
+        <tr><td class="pname">emitirFiscal</td><td class="ptype">boolean</td><td><span class="preq o">Opcional</span></td><td class="pdesc">Default: true. False salva em rascunho sem emitir NF.</td></tr>
+      </table>
+      <div class="jex"><span class="jc">// Request</span>
+{
+  <span class="jk">"empresaId"</span>: <span class="jv">"3fa85f64-..."</span>,
+  <span class="jk">"modeloFiscal"</span>: <span class="jv">"NFCe"</span>,
+  <span class="jk">"origem"</span>: <span class="jv">"PDV"</span>,
+  <span class="jk">"consumidorFinal"</span>: <span class="jb">true</span>,
+  <span class="jk">"itens"</span>: [{
+    <span class="jk">"produtoId"</span>: <span class="jv">"..."</span>,
+    <span class="jk">"descricao"</span>: <span class="jv">"Produto Exemplo"</span>,
+    <span class="jk">"quantidade"</span>: <span class="jn">2</span>,
+    <span class="jk">"valorUnitario"</span>: <span class="jn">50.00</span>,
+    <span class="jk">"aliquotaIcms"</span>: <span class="jn">12</span>,
+    <span class="jk">"ncm"</span>: <span class="jv">"84713012"</span>,
+    <span class="jk">"cfop"</span>: <span class="jv">"5102"</span>
+  }],
+  <span class="jk">"pagamentos"</span>: [{ <span class="jk">"formaPagamento"</span>: <span class="jv">"Pix"</span>, <span class="jk">"valor"</span>: <span class="jn">100.00</span> }]
+}
+
+<span class="jc">// Response 200</span>
+{
+  <span class="jk">"sucesso"</span>: <span class="jb">true</span>,
+  <span class="jk">"dados"</span>: {
+    <span class="jk">"id"</span>: <span class="jv">"..."</span>, <span class="jk">"numeroVenda"</span>: <span class="jn">1042</span>,
+    <span class="jk">"status"</span>: <span class="jv">"Faturada"</span>, <span class="jk">"totalNota"</span>: <span class="jn">100.00</span>,
+    <span class="jk">"troco"</span>: <span class="jn">0</span>, <span class="jk">"documentoFiscalId"</span>: <span class="jv">"..."</span>
+  }
+}</div>
+    </div>
+  </div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-del">DELETE</span>
+      <span class="ep-path">/vendas/:id?motivo=...</span>
+      <span class="ep-desc">Cancelar venda — cancela DFe se já faturada</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="warn">Motivo deve ter no mínimo 15 caracteres — exigência SEFAZ para cancelamento de NF-e. Se a venda já foi faturada, cancela o documento fiscal na SEFAZ automaticamente (apenas dentro de 24h após emissão).</div>
+      <div class="jex">DELETE /api/v1/vendas/3fa85f64-...?motivo=Cancelamento%20a%20pedido%20do%20cliente</div>
+    </div>
+  </div>
+
+  <div class="sl">PDV — Caixa</div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-post">POST</span>
+      <span class="ep-path">/pdv/caixas/abrir</span>
+      <span class="ep-desc">Abrir caixa com fundo de troco</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="jex">{ <span class="jk">"empresaId"</span>: <span class="jv">"..."</span>, <span class="jk">"identificadorCaixa"</span>: <span class="jv">"Caixa 01"</span>, <span class="jk">"valorAbertura"</span>: <span class="jn">200.00</span> }
+<span class="jc">// → 200: { id, identificadorCaixa, abertoEm, valorAbertura }</span></div>
+    </div>
+  </div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-post">POST</span>
+      <span class="ep-path">/pdv/caixas/:id/fechar</span>
+      <span class="ep-desc">Fechar caixa com conferência de valores</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="jex">{ <span class="jk">"valorConferido"</span>: <span class="jn">850.00</span>, <span class="jk">"observacao"</span>: <span class="jv">"Fechamento turno manhã"</span> }
+<span class="jc">// → 200: { saldoEsperado: 840.00, valorConferido: 850.00, diferencaCaixa: 10.00 }</span></div>
+    </div>
+  </div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-post">POST</span>
+      <span class="ep-path">/pdv/caixas/:id/contingencia</span>
+      <span class="ep-desc">Ativar/desativar modo offline para NFC-e</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="jex">{ <span class="jk">"ativar"</span>: <span class="jb">true</span> }
+<span class="jc">// → 200: { emContingencia: true, inicioContingencia: "2025-03-10T14:22:00Z" }</span>
+<span class="jc">// NFC-e emitida localmente. Sincroniza com SEFAZ ao reconectar.</span></div>
+    </div>
+  </div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-get">GET</span>
+      <span class="ep-path">/pdv/caixas/:id/sync/delta?since=ISO8601</span>
+      <span class="ep-desc">Delta sync para Desktop/PDV offline</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <p style="font-size:12px;color:var(--t2);margin-bottom:10px">Retorna todos os registros alterados após o timestamp informado. Usado pelo Epros.App e Epros.Mobile para sincronização incremental.</p>
+      <div class="jex">GET /api/v1/pdv/caixas/sync/delta?since=2025-03-10T08:00:00Z
+<span class="jc">// → { alterados: [...], deletados: ["id1","id2"], timestamp: "2025-03-10T14:30:00Z" }</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ESTOQUE ══ -->
+<div class="sp" id="sp-est">
+  <div class="sl">Produtos</div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-get">GET</span>
+      <span class="ep-path">/estoque/produtos</span>
+      <span class="ep-desc">Listar produtos com busca full-text</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptbl">
+        <tr><th>Parâmetro</th><th>Tipo</th><th>Req?</th><th>Descrição</th></tr>
+        <tr><td class="pname">busca</td><td class="ptype">string</td><td><span class="preq o">Opcional</span></td><td class="pdesc">Full-text com pg_trgm. Busca em código, descrição, EAN.</td></tr>
+        <tr><td class="pname">tipo</td><td class="ptype">enum</td><td><span class="preq o">Opcional</span></td><td class="pdesc">Produto | Servico | MateriaPrima | ProdutoAcabado</td></tr>
+        <tr><td class="pname">comSaldo</td><td class="ptype">boolean</td><td><span class="preq o">Opcional</span></td><td class="pdesc">true = apenas produtos com estoque disponível > 0</td></tr>
+      </table>
+      <div class="jex">GET /api/v1/estoque/produtos?busca=notebook&comSaldo=true</div>
+    </div>
+  </div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-get">GET</span>
+      <span class="ep-path">/estoque/produtos/ean/:ean</span>
+      <span class="ep-desc">Buscar produto por EAN/código de barras — PDV</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <p style="font-size:12px;color:var(--t2)">Endpoint otimizado para leitura de código de barras no PDV. Resposta em &lt;50ms com cache Valkey.</p>
+      <div class="jex">GET /api/v1/estoque/produtos/ean/7891234567890
+<span class="jc">// → { id, codigoProduto, descricao, valorVenda, saldoDisponivel, aliquotaIcms }</span></div>
+    </div>
+  </div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-post">POST</span>
+      <span class="ep-path">/estoque/produtos</span>
+      <span class="ep-desc">Cadastrar produto</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="jex">{
+  <span class="jk">"codigoProduto"</span>: <span class="jv">"PROD-001"</span>,
+  <span class="jk">"descricao"</span>: <span class="jv">"Notebook Dell Inspiron"</span>,
+  <span class="jk">"tipo"</span>: <span class="jv">"Produto"</span>,
+  <span class="jk">"unidadeMedida"</span>: <span class="jv">"UN"</span>,
+  <span class="jk">"ncm"</span>: <span class="jv">"84713012"</span>,
+  <span class="jk">"ean"</span>: <span class="jv">"7891234567890"</span>,
+  <span class="jk">"controlaLote"</span>: <span class="jb">false</span>,
+  <span class="jk">"valorVenda"</span>: <span class="jn">3500.00</span>
+}</div>
+    </div>
+  </div>
+
+  <div class="sl">Estoque</div>
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-get">GET</span>
+      <span class="ep-path">/estoque/saldo/:produtoId</span>
+      <span class="ep-desc">Consultar saldo, custo médio e reservas</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="jex">GET /api/v1/estoque/saldo/3fa85f64-...
+{
+  <span class="jk">"produtoId"</span>: <span class="jv">"..."</span>,
+  <span class="jk">"saldoTotal"</span>: <span class="jn">150</span>,
+  <span class="jk">"saldoReservado"</span>: <span class="jn">20</span>,
+  <span class="jk">"saldoDisponivel"</span>: <span class="jn">130</span>,
+  <span class="jk">"custoMedioMovel"</span>: <span class="jn">3100.00</span>,
+  <span class="jk">"posicaoEstoque"</span>: [
+    { <span class="jk">"local"</span>: <span class="jv">"Depósito Principal"</span>, <span class="jk">"saldo"</span>: <span class="jn">130</span> },
+    { <span class="jk">"local"</span>: <span class="jv">"Loja 01"</span>, <span class="jk">"saldo"</span>: <span class="jn">20</span> }
+  ]
+}</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FISCAL ══ -->
+<div class="sp" id="sp-fis">
+  <div class="sl">Documentos Fiscais</div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-get">GET</span>
+      <span class="ep-path">/fiscal/documentos/:id</span>
+      <span class="ep-desc">Consultar documento fiscal por ID</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="jex">{
+  <span class="jk">"id"</span>: <span class="jv">"3fa85f64-..."</span>,
+  <span class="jk">"modelo"</span>: <span class="jv">"NFCe"</span>,
+  <span class="jk">"status"</span>: <span class="jv">"Autorizado"</span>,
+  <span class="jk">"chaveAcesso"</span>: <span class="jv">"35250312345678000195650010000001021234567890"</span>,
+  <span class="jk">"protocolo"</span>: <span class="jv">"135250000012345"</span>,
+  <span class="jk">"urlDanfe"</span>: <span class="jv">"https://..."</span>,
+  <span class="jk">"urlXml"</span>: <span class="jv">"https://..."</span>,
+  <span class="jk">"emContingencia"</span>: <span class="jb">false</span>,
+  <span class="jk">"autorizadoEm"</span>: <span class="jv">"2025-03-10T14:22:33Z"</span>
+}</div>
+    </div>
+  </div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-get">GET</span>
+      <span class="ep-path">/fiscal/documentos/chave/:chave</span>
+      <span class="ep-desc">Consultar por chave de acesso (44 dígitos)</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="jex">GET /api/v1/fiscal/documentos/chave/35250312345678000195650010000001021234567890</div>
+    </div>
+  </div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-get">GET</span>
+      <span class="ep-path">/fiscal/documentos/:id/xml</span>
+      <span class="ep-desc">Download do XML da NF-e/NFC-e</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <p style="font-size:12px;color:var(--t2)">Retorna o XML assinado. Content-Type: <span class="mono">application/xml</span>. Armazenado no MinIO com retenção de 5 anos (legislação fiscal).</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PLATAFORMA ══ -->
+<div class="sp" id="sp-plat">
+  <div class="sl">Pessoas</div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-get">GET</span>
+      <span class="ep-path">/plataforma/pessoas</span>
+      <span class="ep-desc">Listar pessoas — clientes, fornecedores, funcionários</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptbl">
+        <tr><th>Parâmetro</th><th>Tipo</th><th>Req?</th><th>Descrição</th></tr>
+        <tr><td class="pname">busca</td><td class="ptype">string</td><td><span class="preq o">Opcional</span></td><td class="pdesc">Full-text em nome, razão social, CPF/CNPJ</td></tr>
+        <tr><td class="pname">papel</td><td class="ptype">enum</td><td><span class="preq o">Opcional</span></td><td class="pdesc">Cliente | Fornecedor | Funcionario | Transportadora</td></tr>
+        <tr><td class="pname">tipo</td><td class="ptype">enum</td><td><span class="preq o">Opcional</span></td><td class="pdesc">PessoaFisica | PessoaJuridica | Estrangeiro</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="sl">LGPD — Dados do titular</div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-get">GET</span>
+      <span class="ep-path">/plataforma/meus-dados/exportar</span>
+      <span class="ep-desc">Portabilidade — exportar todos os dados do usuário (LGPD Art. 18-V)</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <p style="font-size:12px;color:var(--t2);margin-bottom:8px">Gera um ZIP com JSON estruturado de todos os dados pessoais do titular autenticado. Para volumes grandes, retorna 202 Accepted e envia por e-mail quando pronto.</p>
+      <div class="jex"><span class="jc">// Resposta imediata para volumes pequenos</span>
+<span class="jc">// Content-Type: application/zip</span>
+<span class="jc">// Content-Disposition: attachment; filename="meus-dados-2025-03-10.zip"</span>
+
+<span class="jc">// Para volumes grandes: 202 Accepted</span>
+{ <span class="jk">"sucesso"</span>: <span class="jb">true</span>, <span class="jk">"mensagem"</span>: <span class="jv">"Exportação em processamento. Você receberá um e-mail quando estiver pronta."</span> }</div>
+    </div>
+  </div>
+
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-del">DELETE</span>
+      <span class="ep-path">/plataforma/meus-dados/eliminar</span>
+      <span class="ep-desc">Direito ao esquecimento — anonimizar dados pessoais (LGPD Art. 18-VI)</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="warn">Dados necessários por obrigação legal (ex: dados contábeis por 5 anos) não são anonimizados — o sistema informa quais ficaram e por qual motivo legal.</div>
+      <div class="jex">{ <span class="jk">"confirmacao"</span>: <span class="jv">"CONFIRMO A ELIMINAÇÃO DOS MEUS DADOS"</span> }
+<span class="jc">// → 200: { anonimizados: 47, preservadosPorLei: 12, detalhes: [...] }</span></div>
+    </div>
+  </div>
+
+  <div class="sl">Entitlements — módulos ativos do tenant</div>
+  <div class="ep">
+    <div class="ep-head" onclick="tog(this)">
+      <span class="method m-get">GET</span>
+      <span class="ep-path">/plataforma/me/entitlements</span>
+      <span class="ep-desc">Módulos ativos para o tenant atual — usado pelo frontend no boot</span>
+      <span class="ep-chev">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="jex">{
+  <span class="jk">"tenant"</span>: { <span class="jk">"id"</span>: <span class="jv">"tenant-abc123"</span>, <span class="jk">"nome"</span>: <span class="jv">"Empresa ABC"</span>, <span class="jk">"plano"</span>: <span class="jv">"Essencial"</span> },
+  <span class="jk">"modulosAtivos"</span>: [<span class="jv">"fin"</span>, <span class="jv">"ven"</span>, <span class="jv">"est"</span>, <span class="jv">"pro"</span>, <span class="jv">"qua"</span>, <span class="jv">"hcm"</span>],
+  <span class="jk">"plataformaTransversal"</span>: <span class="jb">true</span>
+}</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ERROS ══ -->
+<div class="sp" id="sp-erros">
+  <div class="sl">Códigos HTTP utilizados</div>
+  <div class="err-row"><span class="err-code" style="color:var(--green)">200</span><span class="err-name">OK</span><span class="err-desc">Request processado com sucesso. Usado em GET, PUT e ações (baixar, cancelar).</span></div>
+  <div class="err-row"><span class="err-code" style="color:var(--green)">201</span><span class="err-name">Created</span><span class="err-desc">Recurso criado com sucesso. Retorna o objeto criado com ID.</span></div>
+  <div class="err-row"><span class="err-code" style="color:var(--green)">202</span><span class="err-name">Accepted</span><span class="err-desc">Request aceita para processamento assíncrono. Ex: exportação LGPD para volumes grandes.</span></div>
+  <div class="err-row"><span class="err-code" style="color:var(--amber)">400</span><span class="err-name">Bad Request</span><span class="err-desc">Request malformado. JSON inválido, tipo errado, parâmetro obrigatório ausente no path.</span></div>
+  <div class="err-row"><span class="err-code" style="color:var(--amber)">401</span><span class="err-name">Unauthorized</span><span class="err-desc">Token ausente, inválido ou expirado. Renovar via refresh token.</span></div>
+  <div class="err-row"><span class="err-code" style="color:var(--amber)">403</span><span class="err-name">Forbidden</span><span class="err-desc">Autenticado mas sem permissão. Módulo inativo para o tenant ou role insuficiente.</span></div>
+  <div class="err-row"><span class="err-code" style="color:var(--amber)">404</span><span class="err-name">Not Found</span><span class="err-desc">Recurso não encontrado. Pode ser soft-deleted (invisível) ou de outro tenant.</span></div>
+  <div class="err-row"><span class="err-code" style="color:var(--amber)">409</span><span class="err-name">Conflict</span><span class="err-desc">Conflito de estado. Ex: tentar baixar uma conta já cancelada.</span></div>
+  <div class="err-row"><span class="err-code" style="color:var(--amber)">422</span><span class="err-name">Unprocessable Entity</span><span class="err-desc">Validação de negócio falhou. Retorna lista de erros do Flunt/FluentValidation.</span></div>
+  <div class="err-row"><span class="err-code" style="color:var(--amber)">429</span><span class="err-name">Too Many Requests</span><span class="err-desc">Rate limit atingido. Header Retry-After indica quando tentar novamente.</span></div>
+  <div class="err-row"><span class="err-code" style="color:var(--red)">500</span><span class="err-name">Internal Server Error</span><span class="err-desc">Erro inesperado. Retorna ProblemDetails com traceId para correlação nos logs.</span></div>
+  <div class="err-row"><span class="err-code" style="color:var(--red)">503</span><span class="err-name">Service Unavailable</span><span class="err-desc">API em manutenção ou banco indisponível. Header Retry-After presente.</span></div>
+
+  <div class="sl">Rate limiting</div>
+  <div class="row"><span class="rl">Plano Micro</span><span class="rv">60 requests/minuto por tenant</span></div>
+  <div class="row"><span class="rl">Plano Essencial</span><span class="rv">300 requests/minuto por tenant</span></div>
+  <div class="row"><span class="rl">Plano Avançado</span><span class="rv">1.000 requests/minuto por tenant</span></div>
+  <div class="row"><span class="rl">Plano Enterprise</span><span class="rv">Configurável por contrato. Default: 5.000/minuto</span></div>
+  <div class="row"><span class="rl">Headers</span><span class="rv"><span class="mono">X-RateLimit-Limit</span>, <span class="mono">X-RateLimit-Remaining</span>, <span class="mono">X-RateLimit-Reset</span>, <span class="mono">Retry-After</span></span></div>
+
+  <div class="sl">Idempotência</div>
+  <div class="info">Para operações críticas (emitir venda, baixar título), envie o header <span class="mono">Idempotency-Key: {uuid}</span>. A mesma key retorna o resultado da primeira execução sem processar novamente — seguro para retry automático em falhas de rede.</div>
+  <div class="jex">POST /api/v1/vendas
+Authorization: Bearer ...
+Idempotency-Key: 7f3a9c12-4e8b-4d2f-9a1c-8b6e3f7d2a4c
+Content-Type: application/json
+
+{ ... }</div>
+
+  <div class="sl">Erros de negócio comuns</div>
+  <table class="tbl">
+    <tr><th>Situação</th><th>HTTP</th><th>Mensagem de erro</th></tr>
+    <tr><td>Token expirado</td><td>401</td><td>Token de acesso expirado. Renove via refresh token.</td></tr>
+    <tr><td>Módulo inativo para o tenant</td><td>403</td><td>Módulo FINANCEIRO não está ativo para este tenant.</td></tr>
+    <tr><td>Valor de pagamento insuficiente</td><td>422</td><td>Valor pago (50,00) menor que total da venda (115,65).</td></tr>
+    <tr><td>Cancelar venda já cancelada</td><td>409</td><td>Venda já está cancelada.</td></tr>
+    <tr><td>Motivo de cancelamento curto</td><td>422</td><td>Motivo de cancelamento deve ter ao menos 15 caracteres (SEFAZ).</td></tr>
+    <tr><td>NF-e após 24h da emissão</td><td>422</td><td>Prazo de cancelamento de NF-e expirado (máximo 24h após autorização).</td></tr>
+    <tr><td>Sangria acima do saldo</td><td>422</td><td>Saldo insuficiente para sangria. Saldo atual: R$ 80,00.</td></tr>
+    <tr><td>Produto sem EAN cadastrado</td><td>404</td><td>Nenhum produto encontrado com EAN 7891234567890.</td></tr>
+  </table>
+</div>
+
+</div><!-- /page -->
+
+<script>
+var tabs=['auth','conv','fin','ven','est','fis','plat','erros'];
+function st(id){
+  document.querySelectorAll('.stab').forEach(function(t,i){t.classList.toggle('on',tabs[i]===id)});
+  document.querySelectorAll('.sp').forEach(function(p){p.classList.toggle('on',p.id==='sp-'+id)});
+}
+function tog(hdr){ hdr.classList.toggle('open'); }
+</script>
+</body>
+</html>

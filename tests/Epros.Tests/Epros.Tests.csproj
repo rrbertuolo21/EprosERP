@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.4" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="3.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Shared\Epros.Shared\Epros.Shared.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Epros.Modules.GestaoClientes\Epros.Modules.GestaoClientes.csproj" />
+    <ProjectReference Include="..\..\src\Infrastructure\Epros.Infrastructure\Epros.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Epros.Modules.Estoque\Epros.Modules.Estoque.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Epros.Modules.Fiscal\Epros.Modules.Fiscal.csproj" />
+    <ProjectReference Include="..\..\src\API\Epros.API\Epros.API.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Epros.Modules.Financeiro\Epros.Modules.Financeiro.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Epros.Modules.Vendas\Epros.Modules.Vendas.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Epros.Modules.Aplicativo\Epros.Modules.Aplicativo.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Epros.Modules.Qualidade\Epros.Modules.Qualidade.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Epros.Modules.Producao\Epros.Modules.Producao.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Epros.Modules.RH\Epros.Modules.RH.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Epros.Modules.Projetos\Epros.Modules.Projetos.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Epros.Modules.Manutencao\Epros.Modules.Manutencao.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Epros.Modules.GRC\Epros.Modules.GRC.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Epros.Modules.ESG\Epros.Modules.ESG.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Epros.Modules.DMS\Epros.Modules.DMS.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — Produto</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px}
+.stab{padding:5px 13px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--b2);border-radius:20px;background:none;color:var(--t3);transition:all .15s;font-family:var(--sans)}
+.stab:hover{color:var(--t2)}
+.stab.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.sp{display:none}.sp.on{display:block}
+.icp-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px 18px}
+.icp-card h4{font-size:13px;font-weight:500;margin-bottom:8px}
+.icp-card li{font-size:11px;color:var(--t2);line-height:1.9;list-style:none}
+.icp-card li::before{content:'→ ';color:var(--blue)}
+.surf-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);overflow:hidden}
+.surf-head{padding:11px 16px;border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:10px;font-weight:500;font-size:12px}
+.surf-body{padding:13px 16px}
+.surf-body p{font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:6px}
+.surf-feat{font-size:10px;font-family:var(--mono);color:var(--t3);line-height:2}
+.phase{display:flex;gap:14px;margin-bottom:8px}
+.phase-n{font-family:var(--mono);font-size:10px;color:var(--blue);min-width:48px;padding-top:3px;flex-shrink:0}
+.phase-b{flex:1;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:12px 14px}
+.phase-b h4{font-size:12px;font-weight:500;margin-bottom:4px}
+.phase-b p{font-size:11px;color:var(--t2);line-height:1.5}
+.phase-b .ptags{margin-top:6px;display:flex;gap:5px;flex-wrap:wrap}
+.diff-card{background:var(--s1);border:1px solid var(--b1);border-left:3px solid;border-radius:var(--r);padding:14px 16px}
+.diff-card h4{font-size:12px;font-weight:500;margin-bottom:4px}
+.diff-card p{font-size:11px;color:var(--t2);line-height:1.55}
+.diff-card .dv{font-size:10px;font-family:var(--mono);color:var(--t3);margin-top:6px}
+.leg-item{position:relative;padding-left:20px;margin-bottom:16px}
+.leg-item::before{content:'';position:absolute;left:0;top:5px;width:8px;height:8px;border-radius:50%;background:var(--blue);border:2px solid var(--bg)}
+.leg-item::after{content:'';position:absolute;left:3.5px;top:13px;width:1px;height:calc(100% + 4px);background:var(--b1)}
+.leg-item:last-child::after{display:none}
+.leg-item h4{font-size:12px;font-weight:500;margin-bottom:3px}
+.leg-item p{font-size:11px;color:var(--t2);line-height:1.5}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="index.html">Home</a>
+  <a class="nt on" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>Produto · Visão · Mercado · Roadmap</div>
+  <h1>O <em>produto</em></h1>
+  <p class="hero-desc">Missão, posicionamento de mercado, ICP, diferenciais competitivos, modelo multi-surface, origem nos legados e roadmap de lançamento.</p>
+</div>
+
+<div class="page">
+
+  <div class="subtabs">
+    <button class="stab on" onclick="st('visao')">Visão & Missão</button>
+    <button class="stab" onclick="st('posicionamento')">Posicionamento</button>
+    <button class="stab" onclick="st('icp')">ICP & Mercado</button>
+    <button class="stab" onclick="st('diferenciais')">Diferenciais</button>
+    <button class="stab" onclick="st('surfaces')">Multi-Surface</button>
+    <button class="stab" onclick="st('legados')">Legados & Origem</button>
+    <button class="stab" onclick="st('roadmap')">Roadmap</button>
+  </div>
+
+  <!-- ── VISÃO ── -->
+  <div class="sp on" id="sp-visao">
+    <h2 class="ch">Visão <em>& missão</em></h2>
+    <p class="lead">Epros é a reescrita inteligente do Epros.ERP — 20 clientes em produção hoje. Não migra código ruim. Aproveita 10+ anos de conhecimento em ERP para construir algo moderno, cloud-agnostic e compliance-first desde o primeiro commit.</p>
+
+    <div class="sl">Números do projeto</div>
+    <div class="g4">
+      <div class="metric"><div class="metric-val">20</div><div class="metric-label">Clientes ativos</div><div class="metric-sub">Epros.ERP em produção — base de migração Epros</div></div>
+      <div class="metric"><div class="metric-val"><em>11</em></div><div class="metric-label">Macrodomínios</div><div class="metric-sub">FIN · VEN · EST · PRO · QUA · HCM · MAN · PRJ · GRC · ESG · DMS</div></div>
+      <div class="metric"><div class="metric-val">92<em>+</em></div><div class="metric-label">Arquivos .cs</div><div class="metric-sub">Bloco 5 concluído · testes unitários incluídos</div></div>
+      <div class="metric"><div class="metric-val"><em>12</em></div><div class="metric-label">Regulações</div><div class="metric-sub">LGPD · GDPR · PCI DSS · CCPA · PDPA · PIPL · SOC 2…</div></div>
+    </div>
+
+    <div class="sl">Missão e princípio fundador</div>
+    <div class="g2">
+      <div class="card">
+        <div class="tag tag-b">Missão</div>
+        <h3>ERP de nível SAP, acessível para qualquer empresa</h3>
+        <p>Construir um ERP completo, modular e cloud-agnostic que dá a PMEs e grandes corporações o mesmo poder de gestão que SAP S/4HANA e Oracle ERP Cloud — sem licença proibitiva, sem lock-in de cloud e com compliance nativo para operar em qualquer mercado do mundo.</p>
+      </div>
+      <div class="card">
+        <div class="tag tag-g">Princípio fundador</div>
+        <h3>Portabilidade total como requisito não-funcional</h3>
+        <p>Qualquer componente que exija contrato com AWS, Azure ou GCP é substituído por equivalente open source com paridade funcional. O sistema roda identicamente em VPS de €20/mês, data center próprio ou qualquer cloud — sem alterar uma linha de código. Isso não é feature. É princípio arquitetural inegociável.</p>
+      </div>
+    </div>
+
+    <div class="sl">Por que isso importa para o negócio</div>
+    <div class="g3">
+      <div class="card">
+        <div class="tag tag-b">Mercado global real</div>
+        <h3>Zero lock-in geográfico</h3>
+        <p>Clientes em países com restrições a clouds americanas (Brasil Gov, China, Rússia, Índia) conseguem usar. On-premise vira diferencial comercial contra SAP e Oracle — que exigem cloud própria ou parceiro certificado caro.</p>
+      </div>
+      <div class="card">
+        <div class="tag tag-am">Previsibilidade de custos</div>
+        <h3>Custo cresce linearmente</h3>
+        <p>Com 10.000 tenants, AWS/Azure sobem preços 30–40% ao ano. Com infra própria, custo cresce linearmente com volume — previsível e controlável. Margem protegida a escala.</p>
+      </div>
+      <div class="card">
+        <div class="tag tag-g">Soberania de dados</div>
+        <h3>O cliente escolhe onde os dados vivem</h3>
+        <p>LGPD, GDPR, PDPA e PIPL exigem dados em território nacional. Com self-hosted ou cloud local, o cliente tem conformidade automática — sem depender de configurações do provedor de cloud.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── POSICIONAMENTO ── -->
+  <div class="sp" id="sp-posicionamento">
+    <h2 class="ch">Posicionamento <em>de mercado</em></h2>
+    <p class="lead">Epros não compete por preço baixo — compete por valor: poder de ERP enterprise com agilidade de SaaS moderno, compliance nativo e liberdade de infraestrutura.</p>
+
+    <div class="sl">Comparativo direto com concorrentes</div>
+    <table class="tbl">
+      <tr><th>Critério</th><th>SAP S/4HANA</th><th>Oracle ERP Cloud</th><th>TOTVS Protheus</th><th>Microsoft D365</th><th>Epros</th></tr>
+      <tr><td>DMS (Concessionárias) nativo</td><td><span class="pill pam">Parcial</span></td><td><span class="pill pr">Não</span></td><td><span class="pill pam">Parcial</span></td><td><span class="pill pr">Não</span></td><td><span class="pill pg">Nativo</span></td></tr>
+      <tr><td>Fiscal BR nativo</td><td><span class="pill pam">Add-on pago</span></td><td><span class="pill pam">Localização</span></td><td><span class="pill pg">Sim</span></td><td><span class="pill pam">Localização</span></td><td><span class="pill pg">Nativo</span></td></tr>
+      <tr><td>ESG e GRC como módulos core</td><td><span class="pill pam">Separado ($$$)</span></td><td><span class="pill pam">Parcial</span></td><td><span class="pill pr">Não</span></td><td><span class="pill pam">Parcial</span></td><td><span class="pill pg">Nativos</span></td></tr>
+      <tr><td>Cloud-agnostic / on-premise</td><td><span class="pill pam">Cloud própria</span></td><td><span class="pill pr">Cloud only</span></td><td><span class="pill pg">On-premise</span></td><td><span class="pill pam">Cloud/híbrido</span></td><td><span class="pill pg">3 níveis</span></td></tr>
+      <tr><td>Multi-tenant SaaS real</td><td><span class="pill pr">Não</span></td><td><span class="pill pg">Sim</span></td><td><span class="pill pr">Não</span></td><td><span class="pill pg">Sim</span></td><td><span class="pill pg">Sim</span></td></tr>
+      <tr><td>Stack 100% open source</td><td><span class="pill pr">Não</span></td><td><span class="pill pr">Não</span></td><td><span class="pill pr">Não</span></td><td><span class="pill pr">Não</span></td><td><span class="pill pg">100%</span></td></tr>
+      <tr><td>Multi-surface (Web+Desktop+PDV)</td><td><span class="pill pam">Web only</span></td><td><span class="pill pam">Web only</span></td><td><span class="pill pam">Desktop legado</span></td><td><span class="pill pam">Web/mobile</span></td><td><span class="pill pg">4 surfaces</span></td></tr>
+      <tr><td>Compliance 12 regulações by design</td><td><span class="pill pam">Configurável</span></td><td><span class="pill pam">Configurável</span></td><td><span class="pill pr">BR only</span></td><td><span class="pill pam">Configurável</span></td><td><span class="pill pg">By design</span></td></tr>
+      <tr><td>PDV nativo integrado</td><td><span class="pill pr">Não</span></td><td><span class="pill pr">Não</span></td><td><span class="pill pam">Módulo separado</span></td><td><span class="pill pam">D365 Commerce</span></td><td><span class="pill pg">Nativo</span></td></tr>
+    </table>
+
+    <div class="sl">Modelo comercial — dimensões de billing</div>
+    <div class="g2">
+      <div class="csm"><h4>Por módulo ativo</h4><p>Fee mensal por módulo habilitado. Desabilitar preserva dados históricos e para de cobrar imediatamente.</p></div>
+      <div class="csm"><h4>Por usuário nomeado</h4><p>Preço por assento (concurrent ou named). Combinável com fee de módulo.</p></div>
+      <div class="csm"><h4>Por volume transacional</h4><p>NF-e emitidas, ordens de produção, folhas processadas. Para clientes com uso intenso.</p></div>
+      <div class="csm"><h4>Híbrido com teto</h4><p>Assento + volume com teto contratual. Modelo Enterprise com SLA customizado.</p></div>
+    </div>
+
+    <div class="sl">Proposta de valor por persona</div>
+    <div class="g2">
+      <div class="card" style="border-color:var(--blue)">
+        <div class="tag tag-b">Para o CTO / Tech Lead</div>
+        <h3>Arquitetura que não envergonha</h3>
+        <p>Monólito Modular com Hexagonal por bounded context. Schema próprio por módulo no PostgreSQL, interfaces públicas explícitas, Domain Events com Outbox Pattern. Sem big ball of mud. Preparado para extração em microserviços quando necessário — sem reescrever nada. Stack 100% open source, MIT/Apache.</p>
+      </div>
+      <div class="card" style="border-color:var(--green)">
+        <div class="tag tag-g">Para o CEO / CFO</div>
+        <h3>ERP completo sem surpresas de custo</h3>
+        <p>Zero licença de banco, cloud ou observabilidade. Compliance nativo com 12 regulações globais — sem add-ons extras. DMS, ESG e GRC de primeira classe. On-premise disponível para regulados. Custo cresce linearmente com volume, nunca de surpresa.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ICP ── -->
+  <div class="sp" id="sp-icp">
+    <h2 class="ch">ICP <em>& mercado-alvo</em></h2>
+    <p class="lead">Ideal Customer Profile por plano. Cada segmento tem necessidades diferentes — o Epros atende do Micro ao Enterprise sem forçar módulos desnecessários.</p>
+
+    <div class="sl">ICP por plano</div>
+    <div class="g2">
+      <div class="icp-card">
+        <h4><span class="tag tag-gy" style="margin-bottom:0;margin-right:8px">Micro</span> Micro e pequenas empresas</h4>
+        <ul>
+          <li>Comércio varejista, e-commerce, prestadores de serviço</li>
+          <li>1–15 usuários simultâneos</li>
+          <li>Faturamento: até R$ 4,8M/ano (MEI a pequeno porte)</li>
+          <li>Necessidade: NF-e, fluxo de caixa, controle de estoque</li>
+          <li>Pain point atual: sistemas desconectados, planilhas, sem fiscal</li>
+          <li>Churn risk: preço. Retenção: integração fiscal nativa.</li>
+        </ul>
+      </div>
+      <div class="icp-card">
+        <h4><span class="tag tag-b" style="margin-bottom:0;margin-right:8px">Essencial</span> PMEs com manufatura</h4>
+        <ul>
+          <li>Indústria leve, distribuidoras, atacadistas</li>
+          <li>10–100 usuários simultâneos</li>
+          <li>Faturamento: R$ 5M–50M/ano</li>
+          <li>Necessidade: produção (BOM/MRP), qualidade, RH/folha</li>
+          <li>Pain point atual: ERP legado caro, sem integração entre módulos</li>
+          <li>Churn risk: funcionalidade incompleta. Retenção: módulos integrados.</li>
+        </ul>
+      </div>
+      <div class="icp-card">
+        <h4><span class="tag tag-am" style="margin-bottom:0;margin-right:8px">Avançado</span> Médias empresas com compliance</h4>
+        <ul>
+          <li>Construção civil, utilities, saúde, agro</li>
+          <li>50–500 usuários simultâneos</li>
+          <li>Faturamento: R$ 50M–500M/ano</li>
+          <li>Necessidade: manutenção (EAM), projetos (PPM), GRC/SOX</li>
+          <li>Pain point atual: sistemas separados, audit trail inexistente</li>
+          <li>Churn risk: compliance. Retenção: GRC + audit trail imutável.</li>
+        </ul>
+      </div>
+      <div class="icp-card">
+        <h4><span class="tag tag-g" style="margin-bottom:0;margin-right:8px">Enterprise</span> Grupos e regulados</h4>
+        <ul>
+          <li>Grupos empresariais, concessionárias, montadoras, bancos, regulados BACEN/ANVISA</li>
+          <li>500+ usuários, multi-empresa, multi-moeda</li>
+          <li>Faturamento: R$ 500M+/ano</li>
+          <li>Necessidade: DMS, ESG (CSRD obrigatório EU), on-premise, BYOK</li>
+          <li>Pain point atual: SAP/Oracle inacessível ou engessado</li>
+          <li>Churn risk: lock-in. Retenção: on-premise + compliance global.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sl">Segmentos verticais prioritários</div>
+    <div class="g3">
+      <div class="csm"><h4>Concessionárias automotivas</h4><p>DMS nativo — único ERP nacional com gestão de concessionárias de primeira classe. Vendas, serviços, peças, CRM, garantias, finanças integrados.</p></div>
+      <div class="csm"><h4>Indústria de manufatura</h4><p>BOM multi-nível, MRP/IBP (S&OP, what-if), MES, QUA com NCR/CAPA, rastreabilidade de lote e recall.</p></div>
+      <div class="csm"><h4>Empresas com ESG obrigatório</h4><p>CSRD (EU) obriga empresas com operação europeia a reportar ESG. Epros tem módulo ESG nativo com GRI, CSRD, TCFD, SASB.</p></div>
+      <div class="csm"><h4>Regulados BACEN / ANVISA</h4><p>On-premise com BYOK. Audit trail imutável. Compliance PCI DSS. Deploy no ambiente do cliente sem dados na cloud.</p></div>
+      <div class="csm"><h4>Comércio e distribuição</h4><p>PDV nativo com NFC-e offline, WMS, TMS logístico com CO₂ por rota, CLM de compra e venda.</p></div>
+      <div class="csm"><h4>Projetos e construção</h4><p>PPM completo: WBS, cronograma, EVM, orçamento, riscos, portfólio. Integração com FIN para reconhecimento de receita por percentual de conclusão.</p></div>
+    </div>
+  </div>
+
+  <!-- ── DIFERENCIAIS ── -->
+  <div class="sp" id="sp-diferenciais">
+    <h2 class="ch">Diferenciais <em>competitivos</em></h2>
+    <p class="lead">6 diferenciais que nenhum concorrente entrega de forma integrada. Cada um sozinho já seria um argumento de venda. Juntos, formam uma posição defensável.</p>
+
+    <div class="g2" style="gap:10px">
+      <div class="diff-card" style="border-left-color:var(--teal)">
+        <div class="tag tag-t">01 — DMS Nativo</div>
+        <h4>Gestão de Concessionárias integrada</h4>
+        <p>Único ERP nacional com DMS de primeira classe — não um add-on. Vendas de veículos, configuração, financiamento, comissões, OS de serviço, peças, CRM, garantias, metas por rede, DRE por unidade. Integração real com módulos FIN, EST e MAN.</p>
+        <div class="dv">vs SAP: parcial via parceiro · vs Oracle: não tem · vs TOTVS: módulo separado</div>
+      </div>
+      <div class="diff-card" style="border-left-color:var(--blue)">
+        <div class="tag tag-b">02 — Fiscal BR Nativo</div>
+        <h4>Motor fiscal sem dependência de terceiros</h4>
+        <p>NF-e (55), NFC-e (65), NFS-e, CT-e, SPED Fiscal, SPED Contábil, eSocial, REINF — tudo dentro do Epros. Contingência offline para PDV. Lib Hercules.NET.NFe.NFCe v2026 já em produção nos 20 clientes Epros.ERP.</p>
+        <div class="dv">vs SAP: add-on pago · vs Oracle: localização cara · vs TOTVS: tem, mas monolítico</div>
+      </div>
+      <div class="diff-card" style="border-left-color:var(--purple)">
+        <div class="tag tag-p">03 — ESG & GRC nativos</div>
+        <h4>Compliance como módulo de primeira classe</h4>
+        <p>ESG: pegada de carbono Scope 1/2/3, GRI, CSRD (obrigatório para empresas na EU), TCFD, SASB. GRC: risk register, SOX, SoD, audit trail imutável, Whistleblower, gestão de políticas. Não são add-ons — são módulos integrados.</p>
+        <div class="dv">vs SAP: módulo separado caro · vs Oracle: parcial · vs TOTVS: não tem</div>
+      </div>
+      <div class="diff-card" style="border-left-color:var(--green)">
+        <div class="tag tag-g">04 — Cloud-Agnostic by design</div>
+        <h4>3 níveis de deploy, 1 binário</h4>
+        <p>Shared cluster (Micro/Essencial), dedicated cluster (Avançado/Enterprise) e on-premise / cloud própria — exatamente o mesmo binário, sem fork, sem código condicional. A diferença está inteiramente no Catalog + Connection Router.</p>
+        <div class="dv">vs SAP: cloud própria · vs Oracle: cloud only · vs TOTVS: on-premise sem SaaS</div>
+      </div>
+      <div class="diff-card" style="border-left-color:var(--amber)">
+        <div class="tag tag-am">05 — Multi-surface</div>
+        <h4>Web + Desktop offline + Mobile + PDV</h4>
+        <p>4 surfaces com um backend. Desktop com SQLite offline-first e motor fiscal edge. Mobile com React Native para campo e aprovações. PDV com NFC-e contingência — funciona sem internet. Todas as surfaces consomem a mesma API REST.</p>
+        <div class="dv">vs todos: nenhum concorrente tem PDV offline nativo + Desktop + Mobile integrados</div>
+      </div>
+      <div class="diff-card" style="border-left-color:var(--red)">
+        <div class="tag tag-r">06 — Compliance 12 regulações</div>
+        <h4>By design — não configurável depois</h4>
+        <p>LGPD, GDPR, PCI DSS 4.0, CCPA, PDPA, PIPEDA, PDPL, DPDP, PIPL, Privacy Act/APP, SOC 2 Type II, ISO 27001. Controles técnicos implementados desde o primeiro commit — não como configuração posterior.</p>
+        <div class="dv">vs todos: concorrentes tratam compliance como configuração, não arquitetura</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SURFACES ── -->
+  <div class="sp" id="sp-surfaces">
+    <h2 class="ch">Plataforma <em>multi-surface</em></h2>
+    <p class="lead">4 surfaces com um único backend. O core de negócio vive 100% na API cloud. Cada surface é um adapter que consome essa API — e quando offline, consome um runtime local que sincroniza ao reconectar.</p>
+
+    <div class="sl">As 4 surfaces</div>
+    <div class="g2">
+      <div class="surf-card">
+        <div class="surf-head"><span class="tag tag-b" style="margin:0">WEB</span> Nuxt 3 — Web SaaS</div>
+        <div class="surf-body">
+          <p>Acesso 100% dos módulos ativos. SSR para SEO e performance. Módulos condicionais por tenant via entitlements. Portais Cliente e Fornecedor incluídos.</p>
+          <div class="surf-feat">
+            Acesso completo a todos os 11 módulos<br>
+            Portais Cliente e Fornecedor<br>
+            Analytics & BI dashboards<br>
+            Gestão de configurações e entitlements<br>
+            Online only — sem modo offline
+          </div>
+        </div>
+      </div>
+      <div class="surf-card">
+        <div class="surf-head"><span class="tag tag-am" style="margin:0">DSK</span> Electron + Nuxt 3 — Desktop</div>
+        <div class="surf-body">
+          <p>Epros.App — offline-first para operações críticas. SQLite local com sync automático ao reconectar. Motor fiscal edge para emissão de NF-e em contingência.</p>
+          <div class="surf-feat">
+            Módulos básicos (FIN, VEN, EST, Fiscal)<br>
+            SQLite local + fila de sync<br>
+            Motor Fiscal Edge (NF-e/NFC-e contingência)<br>
+            SyncVersion para detecção de conflitos<br>
+            Cross-platform: Windows, macOS, Linux
+          </div>
+        </div>
+      </div>
+      <div class="surf-card">
+        <div class="surf-head"><span class="tag tag-p" style="margin:0">MOB</span> React Native — Mobile</div>
+        <div class="surf-body">
+          <p>Epros.Mobile — subset configurável dos módulos. Aprovações em campo, consultas, dashboards executivos, apontamentos de produção e manutenção.</p>
+          <div class="surf-feat">
+            Subset configurável por tenant<br>
+            Aprovações de workflow<br>
+            Apontamentos MES e manutenção<br>
+            Consultas e dashboards<br>
+            iOS e Android nativos
+          </div>
+        </div>
+      </div>
+      <div class="surf-card">
+        <div class="surf-head"><span class="tag tag-r" style="margin:0">PDV</span> React Native — Frente de Caixa</div>
+        <div class="surf-body">
+          <p>Modo PDV do Epros.Mobile. Offline crítico — funciona sem internet. NFC-e contingência. Abertura e fechamento de caixa, sangria, suprimento, múltiplos pagamentos.</p>
+          <div class="surf-feat">
+            NFC-e em modo contingência offline<br>
+            Abertura / fechamento de caixa<br>
+            Sangria e suprimento<br>
+            Múltiplas formas de pagamento (TEF, Pix)<br>
+            Sync ao reconectar — dados nunca perdidos
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sl">Decisões abertas de surface</div>
+    <div class="drow"><div class="odot"></div><span class="dq">Desktop: nível de offline?</span><span class="da">Dias sem internet (SQLite completo) vs. tolerância a instabilidade de minutos? Define escopo do runtime local.</span></div>
+    <div class="drow"><div class="odot"></div><span class="dq">PDV: mesmo binário do Mobile?</span><span class="da">Modo do app mobile vs. produto separado com drivers de hardware (pinpad, impressora fiscal, leitor de código)?</span></div>
+    <div class="drow"><div class="odot"></div><span class="dq">Conflict resolution</span><span class="da">Last Write Wins · CRDT · Fila de reconciliação manual? SyncVersion já preparado para qualquer estratégia.</span></div>
+    <div class="drow"><div class="odot"></div><span class="dq">Token JWT offline</span><span class="da">Duração máxima sem reconexão ao Keycloak? Biometria local para reautenticar offline?</span></div>
+  </div>
+
+  <!-- ── LEGADOS ── -->
+  <div class="sp" id="sp-legados">
+    <h2 class="ch">Legados <em>& origem</em></h2>
+    <p class="lead">3 sistemas legados analisados. O Epros não migra código — aproveita o conhecimento, corrige os bugs críticos e reconstrói com arquitetura moderna.</p>
+
+    <div class="sl">Sistemas legados analisados</div>
+    <table class="tbl">
+      <tr><th>Sistema</th><th>Tecnologia</th><th>Linhas de código</th><th>Status</th></tr>
+      <tr><td>epros_erp-main</td><td class="mono">.NET 8 / SQL Server / EF Core</td><td>ContasAPagarCtrl 910 · ContasAReceberCtrl 930 · CompraCtrl 3.294 · VendaCtrl 2.535 · VendaNfeCtrl 2.739</td><td><span class="pill pg">Mapeado e extraído</span></td></tr>
+      <tr><td>epros_erp_front-main</td><td class="mono">Nuxt 3 + Vuetify</td><td>Frontend completo do ERP legado</td><td><span class="pill pg">Mapeado</span></td></tr>
+      <tr><td>epros_gestao_clientes</td><td class="mono">.NET 8 / Blazor WASM / PostgreSQL</td><td>GcFaturaCtrl · GcPlanoCtrl · GcClienteCtrl</td><td><span class="pill pg">Extraído e consolidado</span></td></tr>
+    </table>
+
+    <div class="sl">Bugs críticos corrigidos na reescrita</div>
+    <table class="tbl">
+      <tr><th>Bug no Epros.ERP</th><th>Impacto real em produção</th><th>Solução Epros</th></tr>
+      <tr><td class="mono">TenantData.TenantIdStatic</td><td>Variável estática global — vaza TenantId entre threads de tenants diferentes em concorrência</td><td><span class="mono">ITenantProvider</span> scoped via <span class="mono">IHttpContextAccessor</span></td></tr>
+      <tr><td>JWT com secret hardcoded</td><td>Segurança comprometida, sem SSO, sem MFA, sem revogação</td><td>Keycloak 24 com OIDC + claim tenantId + MFA</td></tr>
+      <tr><td>SQL Server (licença comercial)</td><td>Custo de licença por cliente, vendor lock-in, sem particionamento</td><td>PostgreSQL 16 open source + schemas por módulo</td></tr>
+      <tr><td><span class="mono">DateTime.Now</span> em todo código</td><td>Bugs de timezone em produção — registros com hora errada</td><td><span class="mono">DateTime.UtcNow</span> em toda a codebase</td></tr>
+      <tr><td>IDs <span class="mono">long</span> sequenciais</td><td>Impossível gerar ID offline, colisão em merge de dados</td><td><span class="mono">Guid</span> em todas as entidades</td></tr>
+      <tr><td>PDV offline com Firebird</td><td>Pesado, difícil sync, licença proprietária, lento</td><td>SQLite via Electron/Tauri</td></tr>
+      <tr><td>Controllers 40k–191k linhas</td><td>CompraCtrl 3.294 · VendaCtrl 2.535 — impossível testar ou manter</td><td>CQRS — handler por operação, testável</td></tr>
+      <tr><td>QueryFilter manual entity por entity</td><td>Fácil esquecer — vazamento de dados entre tenants</td><td>ContextBase com reflection automático</td></tr>
+      <tr><td>TenantMiddleware comentado</td><td>Middleware desabilitado em produção — sem validação de tenant</td><td>Implementado e testado via TenantProvider</td></tr>
+      <tr><td>Blazor WASM no painel admin</td><td>Stack diferente do ERP — time dividido, manutenção dupla</td><td>Nuxt 3 unificado — um time, uma stack</td></tr>
+    </table>
+
+    <div class="sl">Status de extração dos legados</div>
+    <table class="tbl">
+      <tr><th>Legado</th><th>Módulo</th><th>Submódulo</th><th>Mapeado</th><th>Extraído</th><th>Consolidado</th></tr>
+      <tr><td class="mono">EPROS_ERP</td><td>FINANCEIRO</td><td>CONTAS_PAGAR</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td class="mono">EPROS_ERP</td><td>FINANCEIRO</td><td>CONTAS_RECEBER</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td class="mono">EPROS_GC</td><td>GESTAO_CLIENTES</td><td>PLANOS / FATURAS</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td class="mono">EPROS_ERP</td><td>ESTOQUE</td><td>PRODUTOS</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td class="mono">EPROS_ERP</td><td>PLATAFORMA</td><td>FISCAL / DFe</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td class="mono">EPROS_GC</td><td>GESTAO_CLIENTES</td><td>REVENDAS</td><td>✅</td><td>⏳</td><td>—</td></tr>
+      <tr><td class="mono">EPROS_ERP</td><td>VENDAS</td><td>GESTAO_DE_PEDIDOS</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td class="mono">EPROS_ERP</td><td>VENDAS</td><td>PDV</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      <tr><td class="mono">EPROS_ERP</td><td>ESTOQUE</td><td>SOURCING_COMPRAS</td><td>✅</td><td>—</td><td>—</td></tr>
+      <tr><td class="mono">EPROS_ERP</td><td>PLATAFORMA</td><td>CADASTRO_PESSOAS</td><td>✅</td><td>—</td><td>—</td></tr>
+    </table>
+  </div>
+
+  <!-- ── ROADMAP ── -->
+  <div class="sp" id="sp-roadmap">
+    <h2 class="ch">Roadmap <em>de produto</em></h2>
+    <p class="lead">Sequência de blocos de implementação. Cada bloco entrega valor incremental e desbloqueia o próximo. Ordem definida pelas dependências entre módulos.</p>
+
+    <div class="sl">Blocos concluídos</div>
+    <div class="phase"><span class="phase-n">Bloco 1–4</span><div class="phase-b"><h4>Fundação — Shared, GestaoClientes, Financeiro, Estoque, Fiscal</h4><p>EntidadeSaaSBase, TenantProvider, ContextBase, CQRS, Outbox. Módulos GestaoClientes (Plano, Cliente, Fatura), Financeiro (CP e CR com baixa e conciliação OFX), Estoque (Produto, EstoqueProduto com custo médio), Fiscal (DFe NF-e/NFC-e/NFS-e estrutura completa). docker-compose, init.sql, .cursorrules.</p><div class="ptags"><span class="pill pg">Concluído</span><span class="pill pg">92+ arquivos .cs</span><span class="pill pg">13 testes</span></div></div></div>
+    <div class="phase"><span class="phase-n">Bloco 5</span><div class="phase-b"><h4>Módulo Vendas + PDV</h4><p>Agregado Venda (máquina de estados completa), VendaItem (ICMS/PIS/COFINS por item), VendaPagamento (troco, TEF, Pix), VendaDevolucao, Caixa PDV (abertura, fechamento, sangria, suprimento, contingência offline). EmitirVendaCommand orquestra Venda + DFe + ContaReceber. VendasController + PDVController.</p><div class="ptags"><span class="pill pg">Concluído</span><span class="pill pg">19 testes unitários</span></div></div></div>
+
+    <div class="sl">Próximos blocos</div>
+    <div class="phase"><span class="phase-n">Bloco 6</span><div class="phase-b"><h4>Estoque / Compras — NF-e entrada</h4><p>Agregado Compra + CompraItem com impostos. LancarCompraCommand orquestra: Compra + DocumentoFiscal NF-e entrada + ContaPagar + EntradaEstoque automática. Reengenharia do CompraController.cs (3.294 linhas).</p><div class="ptags"><span class="pill pam">Próximo</span><span class="pill pam">Alta prioridade</span></div></div></div>
+    <div class="phase"><span class="phase-n">Bloco 7</span><div class="phase-b"><h4>Infraestrutura — Migrations, Keycloak, CI/CD</h4><p>Migrations EF Core por módulo. Seeders Keycloak (realm epros, client plataforma-saas-api, roles, mapper claim tenantId). Pipeline CI/CD GitHub Actions (build → test → docker push → deploy). Script de migração de dados long→Guid para os 20 clientes Epros.ERP.</p><div class="ptags"><span class="pill pam">Alta prioridade</span></div></div></div>
+    <div class="phase"><span class="phase-n">Bloco 8</span><div class="phase-b"><h4>Qualidade, Sync e Workers</h4><p>Testes de integração com Testcontainers (banco PostgreSQL real). Endpoint sync delta GET /api/v1/{modulo}/sync/delta?since={timestamp}. Worker de vencimento automático de títulos (Quartz.NET). Webhook MercadoPago para baixa automática de faturas SaaS.</p><div class="ptags"><span class="pill pb">Médio prazo</span></div></div></div>
+    <div class="phase"><span class="phase-n">Bloco 9</span><div class="phase-b"><h4>Cadastros Base + Desktop Offline Shell</h4><p>Pessoa (PF/PJ/Estrangeiro), Empresa, Endereço → PLATAFORMA_COMPARTILHADA. Início do Epros.App (Electron + Nuxt 3) com SQLite local, motor fiscal edge e fila de sync.</p><div class="ptags"><span class="pill pb">Médio prazo</span></div></div></div>
+    <div class="phase"><span class="phase-n">Bloco 10</span><div class="phase-b"><h4>Permissões ABAC + Mobile</h4><p>Keycloak roles mapeados por módulo. Menu dinâmico por tenant. PerfilUsuario + ACL. Migração dos 20 clientes Epros.ERP para o novo modelo de permissões. Início do Epros.Mobile (React Native).</p><div class="ptags"><span class="pill pgy">Longo prazo</span></div></div></div>
+  </div>
+
+</div>
+
+<script>
+var ids=['visao','posicionamento','icp','diferenciais','surfaces','legados','roadmap'];
+function st(id){
+  document.querySelectorAll('.stab').forEach(function(t,i){t.classList.toggle('on',ids[i]===id)});
+  document.querySelectorAll('.sp').forEach(function(p){p.classList.toggle('on',p.id==='sp-'+id)});
+}
+</script>
+</body>
+</html>

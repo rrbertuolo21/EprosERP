@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Epros — DDD & Dados</title>
+<link rel="stylesheet" href="_shared.css">
+<style>
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px}
+.stab{padding:5px 13px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--b2);border-radius:20px;background:none;color:var(--t3);transition:all .15s;font-family:var(--sans)}
+.stab:hover{color:var(--t2)}.stab.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.sp{display:none}.sp.on{display:block}
+
+.bc-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px 18px;margin-bottom:8px}
+.bc-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.bc-name{font-size:13px;font-weight:500}
+.bc-schema{font-family:var(--mono);font-size:11px;color:var(--t3)}
+.bc-section{margin-bottom:8px}
+.bc-label{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);margin-bottom:4px}
+.bc-items{display:flex;gap:6px;flex-wrap:wrap}
+.bc-agg{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:4px;background:var(--blue-l);color:var(--blue);border:1px solid rgba(74,144,232,.3)}
+.bc-agg.root{background:var(--s2);border-color:var(--b2);color:var(--t1);font-weight:500}
+.bc-vo{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:4px;background:var(--s2);color:var(--t3);border:1px solid var(--b2)}
+.bc-ev{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:4px;background:var(--amber-l);color:var(--amber);border:1px solid rgba(245,166,35,.3)}
+
+.schema-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px 16px}
+.schema-name{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--blue);margin-bottom:6px}
+.schema-tables{font-size:11px;color:var(--t2);line-height:1.8}
+.schema-status{font-family:var(--mono);font-size:10px;margin-top:6px}
+
+.ent-block{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.ent-head{padding:10px 16px;border-bottom:1px solid var(--b1);font-family:var(--mono);font-size:11px;display:flex;gap:10px;align-items:center}
+.ent-body{padding:0}
+.ent-row{display:flex;align-items:flex-start;gap:0;border-bottom:1px solid var(--b1)}
+.ent-row:last-child{border-bottom:none}
+.ent-col{font-family:var(--mono);font-size:11px;padding:6px 14px;flex-shrink:0}
+.ent-col.name{min-width:180px;color:var(--blue)}
+.ent-col.type{min-width:100px;color:var(--amber)}
+.ent-col.desc{color:var(--t2);flex:1;font-family:var(--sans);font-size:11px}
+.ent-col.flag{min-width:60px;color:var(--t3);font-size:10px}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="index.html">Ep<em>ros</em></a>
+  <a class="nt" href="index.html">Home</a>
+  <a class="nt" href="01_produto.html">① Produto</a>
+  <a class="nt" href="02_modulos.html">② Módulos & Planos</a>
+  <a class="nt" href="03_arquitetura.html">③ Arquitetura</a>
+  <a class="nt" href="04_stack.html">④ Stack</a>
+  <a class="nt" href="05_compliance.html">⑤ Compliance</a>
+  <a class="nt on" href="06_ddd.html">⑥ DDD & Dados</a>
+  <a class="nt" href="07_tecnico.html">⑦ Técnico & Status</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-kicker"><span></span>DDD · Bounded Contexts · Entidades Base · Domain Events · Schemas · Infra</div>
+  <h1>DDD <em>& dados</em></h1>
+  <p class="hero-desc">Bounded contexts com agregados, Value Objects e Domain Events por macrodomínio. Entidades do núcleo compartilhadas. Outbox Pattern. 12 schemas PostgreSQL. docker-compose completo.</p>
+</div>
+
+<div class="page">
+
+<div class="subtabs">
+  <button class="stab on" onclick="st('bc')">Bounded Contexts</button>
+  <button class="stab" onclick="st('nucleo')">Entidades do Núcleo</button>
+  <button class="stab" onclick="st('events')">Domain Events</button>
+  <button class="stab" onclick="st('outbox')">Outbox Pattern</button>
+  <button class="stab" onclick="st('schemas')">Schemas PostgreSQL</button>
+  <button class="stab" onclick="st('infra')">Infra Local</button>
+</div>
+
+<!-- ══ BOUNDED CONTEXTS ══ -->
+<div class="sp on" id="sp-bc">
+  <div class="sl">11 bounded contexts — cada um é um hexágono independente</div>
+
+  <div class="bc-card">
+    <div class="bc-head"><div class="tag tag-b" style="margin:0">FINANCEIRO</div><span class="bc-name">FinancasEContabilidade</span><span class="bc-schema">financas.*</span></div>
+    <div class="bc-section"><div class="bc-label">Agregados</div><div class="bc-items"><span class="bc-agg root">LancamentoContabil ★</span><span class="bc-agg">ContaPagar</span><span class="bc-agg">ContaReceber</span><span class="bc-agg">ConciliacaoBancaria</span><span class="bc-agg">AtivoPermanente</span><span class="bc-agg">OrcamentoAnual</span></div></div>
+    <div class="bc-section"><div class="bc-label">Value Objects</div><div class="bc-items"><span class="bc-vo">ContaContabil</span><span class="bc-vo">Valor+Moeda</span><span class="bc-vo">PeriodoContabil</span><span class="bc-vo">Vencimento</span><span class="bc-vo">ParcelaNum</span><span class="bc-vo">CentroCusto</span></div></div>
+    <div class="bc-section"><div class="bc-label">Domain Events</div><div class="bc-items"><span class="bc-ev">LancamentoRegistrado</span><span class="bc-ev">TituloVencido</span><span class="bc-ev">FechamentoPeriodoRealizado</span><span class="bc-ev">ConciliacaoConfirmada</span><span class="bc-ev">BaixaRealizada</span></div></div>
+    <div class="info" style="margin-top:8px;margin-bottom:0;font-size:11px">⚑ Ledger append-only por lei. Lançamentos nunca editados — apenas estornados. Constraint de banco via trigger PG, não apenas regra de aplicação.</div>
+  </div>
+
+  <div class="bc-card">
+    <div class="bc-head"><div class="tag tag-g" style="margin:0">VENDAS</div><span class="bc-name">VendasEDistribuicao</span><span class="bc-schema">vendas.*</span></div>
+    <div class="bc-section"><div class="bc-label">Agregados</div><div class="bc-items"><span class="bc-agg root">Venda ★</span><span class="bc-agg">OportunidadeCRM</span><span class="bc-agg">PedidoVenda</span><span class="bc-agg">Caixa (PDV)</span><span class="bc-agg">VendaDevolucao</span></div></div>
+    <div class="bc-section"><div class="bc-label">Value Objects</div><div class="bc-items"><span class="bc-vo">VendaItem+Impostos</span><span class="bc-vo">CondicaoPagamento</span><span class="bc-vo">Frete+Incoterm</span><span class="bc-vo">ChaveNFe</span><span class="bc-vo">ModeloFiscal</span></div></div>
+    <div class="bc-section"><div class="bc-label">Domain Events</div><div class="bc-items"><span class="bc-ev">VendaFaturada</span><span class="bc-ev">VendaCancelada</span><span class="bc-ev">EstoqueReservado</span><span class="bc-ev">CaixaFechado</span><span class="bc-ev">DevolucaoRegistrada</span></div></div>
+  </div>
+
+  <div class="bc-card">
+    <div class="bc-head"><div class="tag tag-am" style="margin:0">ESTOQUE</div><span class="bc-name">EstoqueESuprimentos</span><span class="bc-schema">estoque.*</span></div>
+    <div class="bc-section"><div class="bc-label">Agregados</div><div class="bc-items"><span class="bc-agg root">ItemEstoque ★</span><span class="bc-agg">PedidoCompra</span><span class="bc-agg">Compra</span><span class="bc-agg">CotacaoCompra</span><span class="bc-agg">LoteRastreavel</span></div></div>
+    <div class="bc-section"><div class="bc-label">Value Objects</div><div class="bc-items"><span class="bc-vo">Lote+Validade+Local</span><span class="bc-vo">QuantidadeDisponivel</span><span class="bc-vo">CustoMedioMovel</span><span class="bc-vo">Enderecamento WMS</span></div></div>
+    <div class="bc-section"><div class="bc-label">Domain Events</div><div class="bc-items"><span class="bc-ev">EstoqueAbaixoMinimo</span><span class="bc-ev">CompraLancada</span><span class="bc-ev">MercadoriaRecebida</span><span class="bc-ev">RastreabilidadeRegistrada</span></div></div>
+  </div>
+
+  <div class="bc-card">
+    <div class="bc-head"><div class="tag tag-t" style="margin:0">PRODUCAO</div><span class="bc-name">Producao</span><span class="bc-schema">producao.*</span></div>
+    <div class="bc-section"><div class="bc-label">Agregados</div><div class="bc-items"><span class="bc-agg root">OrdemProducao ★</span><span class="bc-agg">ListaMateriais BOM</span><span class="bc-agg">ProgramacaoProducao</span></div></div>
+    <div class="bc-section"><div class="bc-label">Value Objects</div><div class="bc-items"><span class="bc-vo">RoteiroProdução</span><span class="bc-vo">CapacidadeProdutiva</span><span class="bc-vo">Componente+Rendimento</span><span class="bc-vo">VersaoBOM</span></div></div>
+    <div class="bc-section"><div class="bc-label">Domain Events</div><div class="bc-items"><span class="bc-ev">OrdemAberta</span><span class="bc-ev">ProducaoIniciada</span><span class="bc-ev">OrdemProducaoEncerrada</span><span class="bc-ev">RefugoRegistrado</span></div></div>
+  </div>
+
+  <div class="bc-card">
+    <div class="bc-head"><div class="tag tag-r" style="margin:0">HCM</div><span class="bc-name">CapitalHumano</span><span class="bc-schema">rh.*</span></div>
+    <div class="bc-section"><div class="bc-label">Agregados</div><div class="bc-items"><span class="bc-agg root">Colaborador ★</span><span class="bc-agg">FolhaPagamento</span><span class="bc-agg">Timesheet</span><span class="bc-agg">AvaliacaoDesempenho</span></div></div>
+    <div class="bc-section"><div class="bc-label">Value Objects</div><div class="bc-items"><span class="bc-vo">Cargo+Departamento</span><span class="bc-vo">JornadaTrabalho</span><span class="bc-vo">Holerite+Verba</span><span class="bc-vo">Competencia</span></div></div>
+    <div class="bc-section"><div class="bc-label">Domain Events</div><div class="bc-items"><span class="bc-ev">ColaboradorAdmitido</span><span class="bc-ev">FolhaProcessada</span><span class="bc-ev">ColaboradorDesligado</span><span class="bc-ev">AcessoRevogado</span></div></div>
+  </div>
+
+  <div class="bc-card">
+    <div class="bc-head"><div class="tag tag-p" style="margin:0">GRC</div><span class="bc-name">Governanca</span><span class="bc-schema">grc.*</span></div>
+    <div class="bc-section"><div class="bc-label">Agregados</div><div class="bc-items"><span class="bc-agg root">RiscosCorporativos ★</span><span class="bc-agg">ControleInterno</span><span class="bc-agg">IncidenteSeguranca</span><span class="bc-agg">Politica</span></div></div>
+    <div class="bc-section"><div class="bc-label">Value Objects</div><div class="bc-items"><span class="bc-vo">Permissao+SoD</span><span class="bc-vo">Acao+Ator+Timestamp</span><span class="bc-vo">MatrizRisco</span></div></div>
+    <div class="bc-section"><div class="bc-label">Domain Events</div><div class="bc-items"><span class="bc-ev">ViolacaoSoDDetectada</span><span class="bc-ev">RiscoEscalado</span><span class="bc-ev">AuditoriaConcluida</span><span class="bc-ev">AuditoriaRequisitada</span></div></div>
+  </div>
+
+  <div class="g3" style="margin-top:8px">
+    <div class="bc-card" style="margin-bottom:0"><div class="bc-head"><div class="tag tag-gy" style="margin:0">QUA</div><span class="bc-name">Qualidade</span><span class="bc-schema">qualidade.*</span></div><div class="bc-section"><div class="bc-label">Agregados</div><div class="bc-items"><span class="bc-agg root">InspecaoLote ★</span><span class="bc-agg">NaoConformidade</span></div></div><div class="bc-section"><div class="bc-label">Events</div><div class="bc-items"><span class="bc-ev">InspecaoReprovada</span><span class="bc-ev">NCRAberta</span><span class="bc-ev">RecallDisparado</span></div></div></div>
+    <div class="bc-card" style="margin-bottom:0"><div class="bc-head"><div class="tag tag-gy" style="margin:0">MAN</div><span class="bc-name">Manutencao EAM</span><span class="bc-schema">manutencao.*</span></div><div class="bc-section"><div class="bc-label">Agregados</div><div class="bc-items"><span class="bc-agg root">OrdemManutencao ★</span><span class="bc-agg">Equipamento</span></div></div><div class="bc-section"><div class="bc-label">Events</div><div class="bc-items"><span class="bc-ev">OSAberta</span><span class="bc-ev">FalhaDetectada</span></div></div></div>
+    <div class="bc-card" style="margin-bottom:0"><div class="bc-head"><div class="tag tag-gy" style="margin:0">ESG</div><span class="bc-name">Sustentabilidade</span><span class="bc-schema">esg.*</span></div><div class="bc-section"><div class="bc-label">Agregados</div><div class="bc-items"><span class="bc-agg root">EmissaoCarbono ★</span><span class="bc-agg">RelatorioESG</span></div></div><div class="bc-section"><div class="bc-label">Events</div><div class="bc-items"><span class="bc-ev">TransacaoRegistrada</span></div></div></div>
+  </div>
+  <div class="info" style="margin-top:10px">★ = Aggregate Root. Toda escrita passa pelo agregado raiz — nunca acessa entidades filhas diretamente pelo repositório.</div>
+</div>
+
+<!-- ══ ENTIDADES DO NÚCLEO ══ -->
+<div class="sp" id="sp-nucleo">
+  <div class="sl">Entidades compartilhadas — definidas ANTES dos módulos</div>
+  <div class="warn">Estas entidades vivem no schema <span class="mono">plataforma.*</span> e são referenciadas por todos os módulos. Se cada módulo definir sua própria versão de "Produto" ou "Pessoa", a integração nunca funcionará. Devem ser aprovadas e congeladas antes de qualquer módulo começar.</div>
+
+  <div class="ent-block">
+    <div class="ent-head"><span style="color:var(--blue);font-weight:500">EntidadeSaaSBase</span><span style="color:var(--t3)">— herdada por toda entidade do sistema</span></div>
+    <div class="ent-body">
+      <div class="ent-row"><span class="ent-col name">id</span><span class="ent-col type">uuid</span><span class="ent-col desc">PK — gerado localmente, offline-safe. Nunca long ou int.</span><span class="ent-col flag">PK · NOT NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">sync_id</span><span class="ent-col type">uuid</span><span class="ent-col desc">Chave estável para sync offline — nunca muda, mesmo após migrações.</span><span class="ent-col flag">UNIQUE · NOT NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">tenant_id</span><span class="ent-col type">text</span><span class="ent-col desc">Isolamento multi-tenant. QueryFilter automático garante never null.</span><span class="ent-col flag">NOT NULL · IDX</span></div>
+      <div class="ent-row"><span class="ent-col name">sync_version</span><span class="ent-col type">int</span><span class="ent-col desc">Incrementado a cada save. Detecta conflitos de sync offline.</span><span class="ent-col flag">DEFAULT 0</span></div>
+      <div class="ent-row"><span class="ent-col name">criado_em</span><span class="ent-col type">timestamptz</span><span class="ent-col desc">DateTime.UtcNow — nunca DateTime.Now. Armazenado em UTC.</span><span class="ent-col flag">NOT NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">alterado_em</span><span class="ent-col type">timestamptz?</span><span class="ent-col desc">Preenchido por MarcarAlterado(userId). Audit trail básico.</span><span class="ent-col flag">NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">deletado_em</span><span class="ent-col type">timestamptz?</span><span class="ent-col desc">Soft delete. QueryFilter filtra WHERE deletado_em IS NULL automaticamente.</span><span class="ent-col flag">NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">criado_por</span><span class="ent-col type">text?</span><span class="ent-col desc">userId do Keycloak (sub claim). Audit trail de criação.</span><span class="ent-col flag">NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">alterado_por</span><span class="ent-col type">text?</span><span class="ent-col desc">userId do Keycloak. Preenchido por MarcarAlterado e Deletar.</span><span class="ent-col flag">NULL</span></div>
+    </div>
+  </div>
+
+  <div class="ent-block">
+    <div class="ent-head"><span style="color:var(--green);font-weight:500">plataforma.pessoas</span><span style="color:var(--t3)">— PF, PJ, Estrangeiro · referenciada por FIN, VEN, EST, HCM</span></div>
+    <div class="ent-body">
+      <div class="ent-row"><span class="ent-col name">tipo_pessoa</span><span class="ent-col type">enum</span><span class="ent-col desc">PessoaFisica | PessoaJuridica | Estrangeiro — determina campos obrigatórios</span><span class="ent-col flag">NOT NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">cpf_cnpj</span><span class="ent-col type">text?</span><span class="ent-col desc">CPF (PF) ou CNPJ (PJ). Criptografado em repouso (pgcrypto). NULL para Estrangeiro.</span><span class="ent-col flag">CRYPT</span></div>
+      <div class="ent-row"><span class="ent-col name">razao_social</span><span class="ent-col type">text</span><span class="ent-col desc">Nome completo (PF) ou Razão Social (PJ)</span><span class="ent-col flag">NOT NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">nome_fantasia</span><span class="ent-col type">text?</span><span class="ent-col desc">PJ apenas</span><span class="ent-col flag">NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">inscricao_estadual</span><span class="ent-col type">text?</span><span class="ent-col desc">IE ou ISENTO. Contribuinte ICMS.</span><span class="ent-col flag">NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">email, telefone</span><span class="ent-col type">text?</span><span class="ent-col desc">Dados de contato. PII — criptografados. Mascarados em logs.</span><span class="ent-col flag">CRYPT</span></div>
+      <div class="ent-row"><span class="ent-col name">tipo_papel[]</span><span class="ent-col type">enum[]</span><span class="ent-col desc">Cliente | Fornecedor | Funcionario | Transportadora | Representante — uma pessoa pode ter múltiplos papéis</span><span class="ent-col flag">ARRAY</span></div>
+    </div>
+  </div>
+
+  <div class="ent-block">
+    <div class="ent-head"><span style="color:var(--amber);font-weight:500">plataforma.produtos</span><span style="color:var(--t3)">— catálogo único · referenciado por VEN, EST, PRO, QUA, DMS</span></div>
+    <div class="ent-body">
+      <div class="ent-row"><span class="ent-col name">codigo_produto</span><span class="ent-col type">text</span><span class="ent-col desc">Código interno único por tenant. Gerado ou informado.</span><span class="ent-col flag">UNIQUE/tenant</span></div>
+      <div class="ent-row"><span class="ent-col name">ean</span><span class="ent-col type">text?</span><span class="ent-col desc">GTIN-8, GTIN-12, GTIN-13, GTIN-14. Validado por algoritmo de check digit.</span><span class="ent-col flag">IDX</span></div>
+      <div class="ent-row"><span class="ent-col name">descricao, descricao_completa</span><span class="ent-col type">text</span><span class="ent-col desc">Descrição curta (NF-e) e descrição completa (catálogo)</span><span class="ent-col flag">NOT NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">ncm</span><span class="ent-col type">text?</span><span class="ent-col desc">8 dígitos. Nomenclatura Comum do Mercosul. Obrigatório para NF-e.</span><span class="ent-col flag">NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">unidade_medida</span><span class="ent-col type">text</span><span class="ent-col desc">UN, KG, L, M, M2, M3, CX, PC… Conforme tabela SINIEF.</span><span class="ent-col flag">NOT NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">tipo_produto</span><span class="ent-col type">enum</span><span class="ent-col desc">Produto | Servico | Kit | MateriaPrima | ProdutoAcabado</span><span class="ent-col flag">NOT NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">controla_lote, controla_serie</span><span class="ent-col type">bool</span><span class="ent-col desc">Habilita rastreabilidade de lote e serialização GS1</span><span class="ent-col flag">DEFAULT false</span></div>
+    </div>
+  </div>
+
+  <div class="ent-block">
+    <div class="ent-head"><span style="color:var(--purple);font-weight:500">plataforma.empresas</span><span style="color:var(--t3)">— multi-empresa por tenant · referenciada por todos os módulos</span></div>
+    <div class="ent-body">
+      <div class="ent-row"><span class="ent-col name">cnpj</span><span class="ent-col type">text</span><span class="ent-col desc">CNPJ da empresa. Validado algoritmo. Um tenant pode ter N empresas.</span><span class="ent-col flag">UNIQUE/tenant</span></div>
+      <div class="ent-row"><span class="ent-col name">razao_social, nome_fantasia</span><span class="ent-col type">text</span><span class="ent-col desc">Dados cadastrais obrigatórios para emissão fiscal</span><span class="ent-col flag">NOT NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">regime_tributario</span><span class="ent-col type">enum</span><span class="ent-col desc">SimplesNacional | LucroPresumido | LucroReal — define tributação</span><span class="ent-col flag">NOT NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">empresa_pai_id</span><span class="ent-col type">uuid?</span><span class="ent-col desc">Para estrutura de holding — consolidação contábil multi-empresa</span><span class="ent-col flag">FK self</span></div>
+    </div>
+  </div>
+
+  <div class="ent-block">
+    <div class="ent-head"><span style="color:var(--teal);font-weight:500">plataforma.contas_contabeis</span><span style="color:var(--t3)">— plano de contas · referenciada pelo FIN para todo lançamento</span></div>
+    <div class="ent-body">
+      <div class="ent-row"><span class="ent-col name">codigo</span><span class="ent-col type">text</span><span class="ent-col desc">Ex: 1.1.01.001 — estrutura hierárquica por ponto. Único por empresa.</span><span class="ent-col flag">UNIQUE/empresa</span></div>
+      <div class="ent-row"><span class="ent-col name">descricao</span><span class="ent-col type">text</span><span class="ent-col desc">Nome da conta contábil</span><span class="ent-col flag">NOT NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">tipo</span><span class="ent-col type">enum</span><span class="ent-col desc">Ativo | Passivo | PatrimonioLiquido | Receita | Despesa | Custo</span><span class="ent-col flag">NOT NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">natureza</span><span class="ent-col type">enum</span><span class="ent-col desc">Devedora | Credora — determina sinal dos lançamentos</span><span class="ent-col flag">NOT NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">aceita_lancamento</span><span class="ent-col type">bool</span><span class="ent-col desc">Contas analíticas (folha) aceitam lançamentos. Sintéticas (grupos) apenas consolidam.</span><span class="ent-col flag">DEFAULT true</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DOMAIN EVENTS ══ -->
+<div class="sp" id="sp-events">
+  <div class="sl">Mapa completo de domain events entre módulos</div>
+  <table class="tbl">
+    <tr><th>Evento</th><th>Produtor</th><th>Consumidor(es)</th><th>Efeito automático</th><th>Crítico?</th></tr>
+    <tr><td class="mono">VendaFaturada</td><td>VENDAS</td><td>FINANCEIRO · FISCAL</td><td>Cria ContaReceber + autoriza NF-e/NFC-e na SEFAZ</td><td><span class="pill pr">Sim</span></td></tr>
+    <tr><td class="mono">VendaCancelada</td><td>VENDAS</td><td>FINANCEIRO · FISCAL · ESTOQUE</td><td>Estorna ContaReceber + cancela DFe SEFAZ + devolve saldo ao estoque</td><td><span class="pill pr">Sim</span></td></tr>
+    <tr><td class="mono">EstoqueReservado</td><td>VENDAS</td><td>ESTOQUE</td><td>Pedido aprovado → reserva automática de itens no WMS</td><td><span class="pill pr">Sim</span></td></tr>
+    <tr><td class="mono">CompraLancada</td><td>ESTOQUE</td><td>FINANCEIRO · FISCAL</td><td>Cria ContaPagar + registra NF-e de entrada na SEFAZ</td><td><span class="pill pr">Sim</span></td></tr>
+    <tr><td class="mono">MercadoriaRecebida</td><td>ESTOQUE</td><td>QUALIDADE · FINANCEIRO</td><td>Dispara inspeção QUA (se módulo ativo) + confirma ContaPagar</td><td><span class="pill pb">Médio</span></td></tr>
+    <tr><td class="mono">EstoqueAbaixoMinimo</td><td>ESTOQUE</td><td>ESTOQUE · (notificação)</td><td>Sugere geração de PedidoCompra automático</td><td><span class="pill pgy">Baixo</span></td></tr>
+    <tr><td class="mono">OrdemProducaoEncerrada</td><td>PRODUCAO</td><td>FINANCEIRO · ESTOQUE</td><td>Absorve custos no General Ledger + gera entrada de produto acabado</td><td><span class="pill pb">Médio</span></td></tr>
+    <tr><td class="mono">CaixaFechado</td><td>VENDAS/PDV</td><td>FINANCEIRO</td><td>Lança resumo do caixa (dinheiro, cartão, Pix, sangrias) no fluxo de caixa</td><td><span class="pill pb">Médio</span></td></tr>
+    <tr><td class="mono">DocumentoFiscalAutorizado</td><td>FISCAL</td><td>VENDAS · ESTOQUE</td><td>Marca Venda como Faturada / Compra como conferida pela SEFAZ</td><td><span class="pill pr">Sim</span></td></tr>
+    <tr><td class="mono">FolhaProcessada</td><td>HCM</td><td>FINANCEIRO</td><td>Lança provisão salarial e encargos no General Ledger</td><td><span class="pill pb">Médio</span></td></tr>
+    <tr><td class="mono">ColaboradorAdmitido</td><td>HCM</td><td>GRC</td><td>Cria perfil de acesso no Keycloak conforme cargo e departamento</td><td><span class="pill pb">Médio</span></td></tr>
+    <tr><td class="mono">ColaboradorDesligado</td><td>HCM</td><td>GRC · KEYCLOAK</td><td>Revoga todos os acessos e sessions ativas imediatamente</td><td><span class="pill pr">Sim</span></td></tr>
+    <tr><td class="mono">InspecaoReprovada</td><td>QUALIDADE</td><td>ESTOQUE · (notificação)</td><td>Bloqueia lote no WMS + dispara NCR automaticamente</td><td><span class="pill pb">Médio</span></td></tr>
+    <tr><td class="mono">ViolacaoSoDDetectada</td><td>GRC</td><td>GRC · KEYCLOAK</td><td>Bloqueia acesso + alerta compliance officer + abre incidente</td><td><span class="pill pr">Sim</span></td></tr>
+    <tr><td class="mono">TransacaoRegistrada</td><td>FIN/VEN/EST/PRO</td><td>ESG</td><td>Alimenta cálculo de pegada de carbono Scope 1/2/3</td><td><span class="pill pgy">Baixo</span></td></tr>
+    <tr><td class="mono">AuditoriaRequisitada</td><td>GRC</td><td>TODOS os ativos</td><td>Extrai trilha imutável de audit_trail de todos os módulos</td><td><span class="pill pb">Médio</span></td></tr>
+  </table>
+
+  <div class="sl">Contrato de um Domain Event</div>
+  <div class="code"><span class="kw">public abstract class</span> <span class="cl">DomainEvent</span>
+{
+    <span class="kw">public</span> Guid EventId { <span class="kw">get</span>; } = Guid.NewGuid(); <span class="cm">// idempotência</span>
+    <span class="kw">public</span> DateTime OcorridoEm { <span class="kw">get</span>; } = DateTime.UtcNow;
+    <span class="kw">public string</span> TenantId { <span class="kw">get protected set</span>; } = <span class="st">""</span>;
+    <span class="kw">public abstract string</span> EventType { <span class="kw">get</span>; } <span class="cm">// ex: "VendaFaturada"</span>
+}
+
+<span class="cm">// Exemplo de evento concreto</span>
+<span class="kw">public class</span> <span class="cl">VendaFaturadaEvent</span> : <span class="cl">DomainEvent</span>
+{
+    <span class="kw">public override string</span> EventType => <span class="st">"VendaFaturada"</span>;
+    <span class="kw">public</span> Guid VendaId { <span class="kw">get init</span>; }
+    <span class="kw">public</span> Guid EmpresaId { <span class="kw">get init</span>; }
+    <span class="kw">public</span> <span class="kw">decimal</span> TotalNota { <span class="kw">get init</span>; }
+    <span class="kw">public</span> ModeloFiscal ModeloFiscal { <span class="kw">get init</span>; }
+}</div>
+</div>
+
+<!-- ══ OUTBOX ══ -->
+<div class="sp" id="sp-outbox">
+  <div class="sl">Por que Outbox Pattern é obrigatório</div>
+  <div class="danger">Sem Outbox: se a API responde 200 OK mas o broker de eventos falha logo depois, o evento se perde. O banco ficou atualizado mas o módulo consumidor nunca soube. Inconsistência garantida a escala.</div>
+  <div class="ok">Com Outbox: evento é persistido na mesma transação ACID do comando. Mesmo que a API caia imediatamente após o SaveChanges, o evento está no banco. Worker faz retry até entregar.</div>
+
+  <div class="sl">Fluxo completo</div>
+  <div class="flow"><div class="fb fi">Handler executa</div><div class="fa">→</div><div class="fb">Entidade muda estado</div><div class="fa">→</div><div class="fb fam">OutboxMessage.Criar()</div><div class="fa">→</div><div class="fb fg">SaveChanges (atômico)</div><div class="fa">→</div><div class="fb">Worker Quartz (poll 5s)</div><div class="fa">→</div><div class="fb fg">Evento entregue ao handler</div></div>
+
+  <div class="sl">Estrutura da tabela outbox_messages</div>
+  <div class="ent-block">
+    <div class="ent-head"><span style="color:var(--amber);font-weight:500">plataforma.outbox_messages</span><span style="color:var(--t3)">— append-only · particionada por criado_em</span></div>
+    <div class="ent-body">
+      <div class="ent-row"><span class="ent-col name">id</span><span class="ent-col type">uuid PK</span><span class="ent-col desc">Identificador único do OutboxMessage</span><span class="ent-col flag">NOT NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">tenant_id</span><span class="ent-col type">text</span><span class="ent-col desc">Isolamento por tenant — handlers filtram por tenant_id</span><span class="ent-col flag">IDX</span></div>
+      <div class="ent-row"><span class="ent-col name">event_type</span><span class="ent-col type">text</span><span class="ent-col desc">"VendaFaturada", "ColaboradorDesligado"… — roteamento para o handler correto</span><span class="ent-col flag">IDX</span></div>
+      <div class="ent-row"><span class="ent-col name">payload</span><span class="ent-col type">jsonb</span><span class="ent-col desc">Conteúdo completo do DomainEvent serializado. JSONB para queries e indexação.</span><span class="ent-col flag">NOT NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">criado_em</span><span class="ent-col type">timestamptz</span><span class="ent-col desc">Timestamp de criação — usado para ordenação e particionamento</span><span class="ent-col flag">NOT NULL</span></div>
+      <div class="ent-row"><span class="ent-col name">processado_em</span><span class="ent-col type">timestamptz?</span><span class="ent-col desc">NULL = pendente. Preenchido pelo worker após entrega bem-sucedida.</span><span class="ent-col flag">NULL · IDX</span></div>
+      <div class="ent-row"><span class="ent-col name">tentativas</span><span class="ent-col type">int</span><span class="ent-col desc">Contador de tentativas. Backoff exponencial: 5s, 30s, 5min, 30min, 2h.</span><span class="ent-col flag">DEFAULT 0</span></div>
+      <div class="ent-row"><span class="ent-col name">erro</span><span class="ent-col type">text?</span><span class="ent-col desc">Stack trace da última falha. NULL se nunca falhou. Para diagnóstico.</span><span class="ent-col flag">NULL</span></div>
+    </div>
+  </div>
+
+  <div class="sl">Worker — lógica de processamento</div>
+  <div class="code"><span class="cm">// Quartz.NET job — executa a cada 5 segundos</span>
+<span class="cm">// Lê OutboxMessages não processados (processado_em IS NULL)</span>
+<span class="cm">// Ordena por criado_em ASC — garante entrega ordenada por tenant</span>
+<span class="cm">// Tenta entregar ao handler do módulo consumidor</span>
+<span class="cm">// Sucesso: seta processado_em = UtcNow</span>
+<span class="cm">// Falha: incrementa tentativas, registra erro, aplica backoff</span>
+<span class="cm">// Após 10 tentativas: move para dead_letter_queue para análise manual</span>
+
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> plataforma.outbox_messages
+<span class="kw">WHERE</span> processado_em <span class="kw">IS NULL</span>
+  <span class="kw">AND</span> tentativas &lt; <span class="nm">10</span>
+  <span class="kw">AND</span> (prox_tentativa_em <span class="kw">IS NULL OR</span> prox_tentativa_em &lt;= NOW())
+<span class="kw">ORDER BY</span> tenant_id, criado_em <span class="kw">ASC</span>
+<span class="kw">LIMIT</span> <span class="nm">100</span>
+<span class="kw">FOR UPDATE SKIP LOCKED</span>; <span class="cm">-- safe para múltiplas instâncias da API</span></div>
+</div>
+
+<!-- ══ SCHEMAS ══ -->
+<div class="sp" id="sp-schemas">
+  <div class="sl">12 schemas PostgreSQL — um por macrodomínio</div>
+  <div class="g3">
+    <div class="schema-card"><div class="schema-name">plataforma.*</div><div class="schema-tables">pessoas · empresas · produtos · contas_contabeis · centros_custo · outbox_messages · audit_trail · consentimentos · finalidades_tratamento · gestao_clientes · fiscal_dfe · ged</div><div class="schema-status"><span class="pill pg">Implementado</span></div></div>
+    <div class="schema-card"><div class="schema-name">financas.*</div><div class="schema-tables">contas_pagar · contas_pagar_baixas · contas_receber · contas_receber_baixas · lancamentos_contabeis · conciliacoes_bancarias · ativos_permanentes</div><div class="schema-status"><span class="pill pg">Implementado</span></div></div>
+    <div class="schema-card"><div class="schema-name">vendas.*</div><div class="schema-tables">vendas · venda_itens · venda_pagamentos · venda_devolucoes · oportunidades_crm · caixas · caixa_movimentos</div><div class="schema-status"><span class="pill pg">Bloco 5 ✓</span></div></div>
+    <div class="schema-card"><div class="schema-name">estoque.*</div><div class="schema-tables">produtos_estoque · compras · compra_itens · pedidos_compra · lotes · localizacoes_wms · movimentos_estoque</div><div class="schema-status"><span class="pill pg">Parcial</span></div></div>
+    <div class="schema-card"><div class="schema-name">producao.*</div><div class="schema-tables">ordens_producao · listas_materiais · bom_itens · programacao_producao · apontamentos</div><div class="schema-status"><span class="pill pam">Bloco 6+</span></div></div>
+    <div class="schema-card"><div class="schema-name">qualidade.*</div><div class="schema-tables">inspecoes · nao_conformidades · capas · planos_inspecao · avaliacoes_fornecedor</div><div class="schema-status"><span class="pill pam">Bloco 8+</span></div></div>
+    <div class="schema-card"><div class="schema-name">projetos.*</div><div class="schema-tables">projetos · wbs_itens · cronogramas · orcamentos_projeto · riscos_projeto · alocacoes</div><div class="schema-status"><span class="pill pgy">Futuro</span></div></div>
+    <div class="schema-card"><div class="schema-name">manutencao.*</div><div class="schema-tables">equipamentos · ordens_manutencao · planos_preventivos · historico_falhas · pecas_reposicao</div><div class="schema-status"><span class="pill pgy">Futuro</span></div></div>
+    <div class="schema-card"><div class="schema-name">rh.*</div><div class="schema-tables">colaboradores · folhas_pagamento · timesheets · avaliacoes · treinamentos · incidentes_ehs</div><div class="schema-status"><span class="pill pgy">Futuro</span></div></div>
+    <div class="schema-card"><div class="schema-name">concessionarias.*</div><div class="schema-tables">vendas_veiculos · ordens_servico_dms · estoque_pecas · crm_dealer · garantias_montadora</div><div class="schema-status"><span class="pill pgy">Futuro</span></div></div>
+    <div class="schema-card"><div class="schema-name">grc.*</div><div class="schema-tables">riscos_corporativos · controles_internos · violacoes_sod · denuncias · politicas · incidentes</div><div class="schema-status"><span class="pill pgy">Futuro</span></div></div>
+    <div class="schema-card"><div class="schema-name">esg.*</div><div class="schema-tables">emissoes_carbono · inventario_ghg · relatorios_esg · residuos · indicadores_di</div><div class="schema-status"><span class="pill pgy">Futuro</span></div></div>
+  </div>
+
+  <div class="sl">Extensões PostgreSQL ativas</div>
+  <div class="row"><span class="rl mono">uuid-ossp</span><span class="rv">Geração UUID v4 no banco — fallback quando app não gera. <span class="mono">gen_random_uuid()</span> como default em PKs.</span></div>
+  <div class="row"><span class="rl mono">pg_trgm</span><span class="rv">Busca full-text trigram. Índices GIN em descrição de produto, nome de pessoa. <span class="mono">similarity()</span> para busca aproximada.</span></div>
+  <div class="row"><span class="rl mono">unaccent</span><span class="rv">Normalização de texto para busca sem acento. "Joao" encontra "João". Configurado no collation.</span></div>
+  <div class="row"><span class="rl mono">pgcrypto</span><span class="rv">Criptografia de colunas PII: CPF, CNPJ, e-mail, telefone. <span class="mono">pgp_sym_encrypt/decrypt</span> com chave no Vault.</span></div>
+  <div class="row"><span class="rl mono">pgvector</span><span class="rv">Planejado para Fase IA/ML. Embeddings de produtos para busca semântica e recomendações.</span></div>
+</div>
+
+<!-- ══ INFRA LOCAL ══ -->
+<div class="sp" id="sp-infra">
+  <div class="sl">docker-compose — 9 serviços</div>
+  <table class="tbl">
+    <tr><th>Serviço</th><th>Imagem</th><th>Porta(s)</th><th>Propósito</th><th>Credenciais dev</th></tr>
+    <tr><td style="font-weight:500">PostgreSQL</td><td class="mono">postgres:16-alpine</td><td class="mono">5432</td><td>Banco principal — 12 schemas, extensões</td><td class="mono">epros / epros_dev_password</td></tr>
+    <tr><td style="font-weight:500">Keycloak</td><td class="mono">keycloak:24.0</td><td class="mono">8080</td><td>Identity — OIDC, claim tenantId, MFA</td><td class="mono">admin / admin</td></tr>
+    <tr><td style="font-weight:500">HashiCorp Vault</td><td class="mono">vault:1.16</td><td class="mono">8200</td><td>Secrets — connection strings, certs digitais</td><td class="mono">epros-dev-token</td></tr>
+    <tr><td style="font-weight:500">MinIO</td><td class="mono">minio:latest</td><td class="mono">9000 · 9001</td><td>Object storage — XMLs NF-e, PDFs, GED</td><td class="mono">epros_minio / epros_minio_password</td></tr>
+    <tr><td style="font-weight:500">Valkey 7</td><td class="mono">valkey:7-alpine</td><td class="mono">6379</td><td>Cache Connection Router + locks distribuídos</td><td>sem auth em dev</td></tr>
+    <tr><td style="font-weight:500">Grafana</td><td class="mono">grafana:latest</td><td class="mono">3000</td><td>Dashboards — métricas, logs, traces unificados</td><td class="mono">admin / admin</td></tr>
+    <tr><td style="font-weight:500">Prometheus</td><td class="mono">prom/prometheus:latest</td><td class="mono">9090</td><td>Scraping métricas da API .NET via OTLP</td><td>sem auth</td></tr>
+    <tr><td style="font-weight:500">Loki</td><td class="mono">grafana/loki:latest</td><td class="mono">3100</td><td>Aggregação logs Serilog — correlação por traceId</td><td>sem auth</td></tr>
+    <tr><td style="font-weight:500">Tempo</td><td class="mono">grafana/tempo:latest</td><td class="mono">3200 · 4317 · 4318</td><td>Distributed tracing OTLP gRPC (4317) e HTTP (4318)</td><td>sem auth</td></tr>
+  </table>
+
+  <div class="sl">URLs de acesso local</div>
+  <div class="row"><span class="rl">API + Swagger</span><span class="rv"><span class="mono">https://localhost:7000/swagger</span></span></div>
+  <div class="row"><span class="rl">Keycloak Admin</span><span class="rv"><span class="mono">http://localhost:8080</span> — admin / admin</span></div>
+  <div class="row"><span class="rl">Grafana</span><span class="rv"><span class="mono">http://localhost:3000</span> — admin / admin</span></div>
+  <div class="row"><span class="rl">MinIO Console</span><span class="rv"><span class="mono">http://localhost:9001</span> — epros_minio / epros_minio_password</span></div>
+  <div class="row"><span class="rl">Vault UI</span><span class="rv"><span class="mono">http://localhost:8200</span> — token: epros-dev-token</span></div>
+  <div class="row"><span class="rl">PostgreSQL</span><span class="rv"><span class="mono">localhost:5432</span> — epros / epros_dev_password · database: epros</span></div>
+  <div class="row"><span class="rl">Prometheus</span><span class="rv"><span class="mono">http://localhost:9090</span></span></div>
+
+  <div class="sl">Inicialização do ambiente</div>
+  <div class="code"><span class="cm"># Subir todos os serviços</span>
+docker compose up -d
+
+<span class="cm"># Verificar saúde dos serviços</span>
+docker compose ps
+
+<span class="cm"># Aplicar migrations (um por módulo)</span>
+dotnet ef database update \
+  --project src/Epros.Modules.Financeiro \
+  --startup-project src/Epros.API \
+  --context ContextFinanceiro
+
+<span class="cm"># Rodar a API</span>
+dotnet run --project src/Epros.API
+
+<span class="cm"># Rodar todos os testes</span>
+dotnet test
+
+<span class="cm"># Rodar apenas testes de segurança obrigatórios</span>
+dotnet test --filter "Category=Security"
+
+<span class="cm"># Derrubar tudo e limpar volumes</span>
+docker compose down -v</div>
+</div>
+
+</div><!-- /page -->
+
+<script>
+var tabs=['bc','nucleo','events','outbox','schemas','infra'];
+function st(id){
+  document.querySelectorAll('.stab').forEach(function(t,i){t.classList.toggle('on',tabs[i]===id)});
+  document.querySelectorAll('.sp').forEach(function(p){p.classList.toggle('on',p.id==='sp-'+id)});
+}
+</script>
+</body>
+</html>
