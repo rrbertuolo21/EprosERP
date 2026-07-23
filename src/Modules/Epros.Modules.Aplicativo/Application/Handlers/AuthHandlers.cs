@@ -9,8 +9,10 @@ using Epros.Modules.Aplicativo.Infrastructure.Data;
 using Epros.Modules.GestaoClientes.Domain.Entities;
 using Epros.Modules.GestaoClientes.Domain.ValueObjects;
 using Epros.Modules.GestaoClientes.Infrastructure.Data;
+using Epros.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -22,17 +24,20 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
         private readonly ContextGestaoClientes _contextGestao;
         private readonly ICurrentUser _currentUser;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public AutenticarUsuarioCommandHandler(
             ContextAplicativo context,
             ContextGestaoClientes contextGestao,
             ICurrentUser currentUser,
-            IPasswordHasher passwordHasher)
+            IPasswordHasher passwordHasher,
+            IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _contextGestao = contextGestao;
             _currentUser = currentUser;
             _passwordHasher = passwordHasher;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<CommandResult> Handle(AutenticarUsuarioCommand request, CancellationToken cancellationToken)
@@ -48,9 +53,17 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 return CommandResult.Falha(new[] { "Acesso temporariamente bloqueado." });
             }
 
-            // 2. Tentar localizar o usuário
+            // 2. Tentar localizar o usuário (cross-tenant: login anônimo não conhece o inquilino)
+            await AuthRlsBypass.EnableAsync(_context, cancellationToken);
             var usuario = await _context.Usuarios
+                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(u => u.Email == emailLower && u.DeletadoEm == null, cancellationToken);
+            await AuthRlsBypass.DisableAsync(_context, cancellationToken);
+
+            if (usuario != null)
+            {
+                DefinirTenantDaRequisicao(usuario.TenantId);
+            }
 
             if (usuario == null)
             {
@@ -167,6 +180,15 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
 
             return CommandResult.Ok("Autenticação realizada com sucesso!", dto);
         }
+
+        private void DefinirTenantDaRequisicao(string tenantId)
+        {
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext != null)
+            {
+                httpContext.Items["TenantId"] = tenantId;
+            }
+        }
     }
 
     public class SelecionarEmpresaCommandHandler : ICommandHandler<SelecionarEmpresaCommand>
@@ -236,18 +258,30 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
     public class SolicitarRecuperacaoSenhaCommandHandler : ICommandHandler<SolicitarRecuperacaoSenhaCommand>
     {
         private readonly ContextAplicativo _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public SolicitarRecuperacaoSenhaCommandHandler(ContextAplicativo context)
+        public SolicitarRecuperacaoSenhaCommandHandler(
+            ContextAplicativo context,
+            IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<CommandResult> Handle(SolicitarRecuperacaoSenhaCommand request, CancellationToken cancellationToken)
         {
             var emailLower = request.Email.ToLowerInvariant().Trim();
 
+            await AuthRlsBypass.EnableAsync(_context, cancellationToken);
             var usuario = await _context.Usuarios
+                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(u => u.Email == emailLower && u.DeletadoEm == null, cancellationToken);
+            await AuthRlsBypass.DisableAsync(_context, cancellationToken);
+
+            if (usuario != null && _httpContextAccessor.HttpContext != null)
+            {
+                _httpContextAccessor.HttpContext.Items["TenantId"] = usuario.TenantId;
+            }
 
             if (usuario != null)
             {
@@ -269,19 +303,32 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
     {
         private readonly ContextAplicativo _context;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public ResetarSenhaCommandHandler(ContextAplicativo context, IPasswordHasher passwordHasher)
+        public ResetarSenhaCommandHandler(
+            ContextAplicativo context,
+            IPasswordHasher passwordHasher,
+            IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _passwordHasher = passwordHasher;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<CommandResult> Handle(ResetarSenhaCommand request, CancellationToken cancellationToken)
         {
             var emailLower = request.Email.ToLowerInvariant().Trim();
 
+            await AuthRlsBypass.EnableAsync(_context, cancellationToken);
             var usuario = await _context.Usuarios
+                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(u => u.Email == emailLower && u.DeletadoEm == null, cancellationToken);
+            await AuthRlsBypass.DisableAsync(_context, cancellationToken);
+
+            if (usuario != null && _httpContextAccessor.HttpContext != null)
+            {
+                _httpContextAccessor.HttpContext.Items["TenantId"] = usuario.TenantId;
+            }
 
             if (usuario == null || usuario.ForgotPasswordToken != request.Token)
             {
@@ -354,27 +401,36 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
         private readonly ContextAplicativo _contextAplicativo;
         private readonly ContextGestaoClientes _contextGestaoClientes;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public RegistrarNovoTenantCommandHandler(
             ContextAplicativo contextAplicativo,
             ContextGestaoClientes contextGestaoClientes,
-            IPasswordHasher passwordHasher)
+            IPasswordHasher passwordHasher,
+            IHttpContextAccessor httpContextAccessor)
         {
             _contextAplicativo = contextAplicativo;
             _contextGestaoClientes = contextGestaoClientes;
             _passwordHasher = passwordHasher;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<CommandResult> Handle(RegistrarNovoTenantCommand request, CancellationToken cancellationToken)
         {
             var emailLower = request.EmailAdmin.ToLowerInvariant().Trim();
 
-            // 1. Validar duplicidade de e-mail na base de usuários
+            // 1. Validar duplicidade de e-mail na base de usuários (cross-tenant)
+            await AuthRlsBypass.EnableAsync(_contextAplicativo, cancellationToken);
+            await AuthRlsBypass.EnableAsync(_contextGestaoClientes, cancellationToken);
+
             var emailExiste = await _contextAplicativo.Usuarios
+                .IgnoreQueryFilters()
                 .AnyAsync(u => u.Email == emailLower && u.DeletadoEm == null, cancellationToken);
 
             if (emailExiste)
             {
+                await AuthRlsBypass.DisableAsync(_contextGestaoClientes, cancellationToken);
+                await AuthRlsBypass.DisableAsync(_contextAplicativo, cancellationToken);
                 return CommandResult.Falha(new[] { "Já existe um usuário cadastrado com este e-mail." });
             }
 
@@ -383,6 +439,9 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             var cnpjExiste = await _contextGestaoClientes.Empresas
                 .IgnoreQueryFilters()
                 .AnyAsync(e => e.Cnpj == cnpjFormatado && e.DeletadoEm == null, cancellationToken);
+
+            await AuthRlsBypass.DisableAsync(_contextGestaoClientes, cancellationToken);
+            await AuthRlsBypass.DisableAsync(_contextAplicativo, cancellationToken);
 
             if (cnpjExiste)
             {
@@ -404,6 +463,11 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             {
                 var tenantId = $"tenant-{Guid.NewGuid().ToString("N").Substring(0, 12)}";
                 var criadoPor = "self-register";
+
+                if (_httpContextAccessor.HttpContext != null)
+                {
+                    _httpContextAccessor.HttpContext.Items["TenantId"] = tenantId;
+                }
 
                 // Criar o endereço padrão para a empresa (valores padrões aceitáveis no self-register)
                 var endereco = new Epros.Modules.GestaoClientes.Domain.ValueObjects.Endereco("Logradouro Padrão", "S/N", "Self Register", "Bairro Padrão", "00000000", "Cidade Padrão", "SP");

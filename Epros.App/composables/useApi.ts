@@ -1,3 +1,4 @@
+import { useNuxtApp } from '#app'
 import type { FetchOptions } from 'ofetch'
 
 /**
@@ -52,7 +53,7 @@ function montarRota(path: string, params?: Record<string, string | number>): str
 /**
  * Cliente de API tipado — ÚNICO ponto de IO das telas.
  *
- * A baseURL (host) e a injeção de token/tenant são feitas pelo plugin `plugins/api.ts`.
+ * A baseURL (host) e a injeção de token/tenant são feitas pelo plugin `plugins/api.ts` (`$api`).
  * Aqui apenas prefixamos `/api/v1`, resolvemos `{param}` da rota e devolvemos o payload já tipado.
  *
  * Retorna diretamente o corpo da resposta (`T`). Para o envelope CommandResult completo,
@@ -69,8 +70,10 @@ export async function useApi<T = unknown, B = unknown>(
   const { method = 'GET', query, body, params, headers, responseType } = options
   const rota = montarRota(path, params)
 
+  const { $api } = useNuxtApp()
+
   // Cast necessário: nossa assinatura genérica de método (HttpMethod) é mais ampla que
-  // o union literal esperado pelo tipo Nitro do $fetch global. O runtime é idêntico.
+  // o union literal esperado pelo $fetch. O runtime é idêntico.
   const opcoes = {
     method,
     query,
@@ -79,7 +82,7 @@ export async function useApi<T = unknown, B = unknown>(
     responseType
   } as FetchOptions
 
-  return (await ($fetch as typeof $fetch)(rota, opcoes as never)) as T
+  return (await $api(rota, opcoes as never)) as T
 }
 
 /** Atalhos tipados get/post/put/patch/delete sobre `useApi`. */

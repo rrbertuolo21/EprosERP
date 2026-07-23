@@ -1,0 +1,19 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN_APP} {
+	root * /srv
+	encode gzip
+	file_server
+	try_files {path} /index.html
+}
+
+{$DOMAIN_API} {
+	encode gzip
+	reverse_proxy api:8080
+}
+
+{$DOMAIN_STORAGE} {
+	reverse_proxy minio:9000
+}

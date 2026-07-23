@@ -1,12 +1,14 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+const isElectronBuild = process.env.NUXT_ELECTRON === 'true'
+
 export default defineNuxtConfig({
   ssr: false,
-  devtools: { enabled: true },
+  devtools: { enabled: process.env.NODE_ENV !== 'production' },
   css: ['~/assets/css/main.css'],
   app: {
-    // baseURL relativa é obrigatória para que o Electron consiga carregar
-    // os assets estáticos a partir do sistema de arquivos local (file:///)
-    baseURL: './'
+    // baseURL relativa é obrigatória para Electron (file:///).
+    // Deploy web em produção usa '/' para assets absolutos via Caddy.
+    baseURL: isElectronBuild ? './' : '/'
   },
   // Proxy dev: evita CORS entre frontend e API.
   // `nitro.devProxy` reescrevia o mesmo caminho `/api/v1`, então o proxy do Vite
@@ -24,9 +26,9 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       // Vazio em dev = mesma origem via proxy (/api/v1/...)
-      apiBaseUrl: '',
-      realtimeUrl: 'http://127.0.0.1:5000',
-      storageUri: ''
+      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || '',
+      realtimeUrl: process.env.NUXT_PUBLIC_REALTIME_URL || 'http://127.0.0.1:5000',
+      storageUri: process.env.NUXT_PUBLIC_STORAGE_URI || ''
     }
   }
 })

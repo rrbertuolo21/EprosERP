@@ -69,6 +69,21 @@ try
                   .AllowAnyMethod()
                   .AllowCredentials();
         });
+
+        var corsOrigins = builder.Configuration["CORS_ORIGINS"]?
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            ?? Array.Empty<string>();
+
+        options.AddPolicy("ProdCorsPolicy", policy =>
+        {
+            if (corsOrigins.Length > 0)
+            {
+                policy.WithOrigins(corsOrigins)
+                      .AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowCredentials();
+            }
+        });
     });
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
@@ -400,7 +415,24 @@ try
             .Build();
     });
 
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    if (!string.IsNullOrWhiteSpace(connectionString))
+    {
+        builder.Services.AddHealthChecks()
+            .AddNpgSql(connectionString, name: "postgresql");
+    }
+
     var app = builder.Build();
+
+    if (args.Contains("--seed-fiscal"))
+    {
+        using var seedScope = app.Services.CreateScope();
+        var dbFiscalSeed = seedScope.ServiceProvider.GetRequiredService<ContextFiscal>();
+        Log.Information("Semeando catálogos fiscais (CFOP/CST IBS-CBS)...");
+        await Epros.Modules.Fiscal.Infrastructure.Data.CatalogoFiscalSeeder.SeedAsync(dbFiscalSeed);
+        Log.Information("Catálogos fiscais semeados com sucesso.");
+        return;
+    }
 
     // Executa as migrations automáticas para todos os DbContexts se estiver em Desenvolvimento
     if (app.Environment.IsDevelopment())
@@ -509,7 +541,7 @@ try
     // ORDEM OBRIGATÓRIA DO PIPELINE HTTP:
     // UseAuthentication -> ExcecaoGlobalMiddleware -> InquilinoSaaSMiddleware -> ModuloTenantMiddleware -> DataMaskingMiddleware -> AuditMiddleware -> Controllers
 
-    app.UseCors("DevCorsPolicy");
+    app.UseCors(app.Environment.IsDevelopment() ? "DevCorsPolicy" : "ProdCorsPolicy");
     app.UseAuthentication();
     app.UseAuthorization();
 
@@ -521,11 +553,12 @@ try
     app.UseMiddleware<DataMaskingMiddleware>();
     app.UseMiddleware<AuditMiddleware>();
 
+    app.MapHealthChecks("/health").AllowAnonymous();
     app.MapControllers();
 
     app.Run();
 }
-catch (Exception ex)
+catch (Exception ex) when (ex is not Microsoft.Extensions.Hosting.HostAbortedException)
 {
     Log.Fatal(ex, "A API falhou na inicialização.");
 }

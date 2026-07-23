@@ -1,0 +1,187 @@
+name: epros-prod
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: epros-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-epros}
+      POSTGRES_USER: ${POSTGRES_USER:-epros}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - epros-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-epros} -d ${POSTGRES_DB:-epros}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  valkey:
+    image: valkey/valkey:7-alpine
+    container_name: epros-valkey
+    restart: unless-stopped
+    volumes:
+      - valkey_data:/data
+    networks:
+      - epros-internal
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: epros-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER is required}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}
+    volumes:
+      - minio_data:/data
+    networks:
+      - epros-internal
+
+  init-minio:
+    image: minio/mc:latest
+    container_name: epros-init-minio
+    depends_on:
+      minio:
+        condition: service_started
+    environment:
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET:-epros-fiscal}
+    volumes:
+      - ./scripts/init-minio.sh:/scripts/init-minio.sh:ro
+    entrypoint: ["/bin/sh", "/scripts/init-minio.sh"]
+    networks:
+      - epros-internal
+    restart: "no"
+
+  migrate:
+    build:
+      context: .
+      dockerfile: src/API/Epros.API/Dockerfile
+      target: migrate
+    container_name: epros-migrate
+    env_file:
+      - .env.production
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-epros};Username=${POSTGRES_USER:-epros};Password=${POSTGRES_PASSWORD}"
+      Cofre__KekLocal: ${COFRE_KEK_LOCAL:?COFRE_KEK_LOCAL is required}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - epros-internal
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: src/API/Epros.API/Dockerfile
+      target: runtime
+    image: ${REGISTRY:-epros}/api:${IMAGE_TAG:-latest}
+    container_name: epros-api
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-epros};Username=${POSTGRES_USER:-epros};Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__RedisConnection: valkey:6379
+      Cofre__KekLocal: ${COFRE_KEK_LOCAL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      EPROS_DFE_STORAGE: /data/dfe
+    volumes:
+      - dfe_storage:/data/dfe
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - epros-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  frontend:
+    build:
+      context: ./Epros.App
+      dockerfile: Dockerfile
+      args:
+        NUXT_PUBLIC_API_BASE_URL: ${NUXT_PUBLIC_API_BASE_URL}
+        NUXT_PUBLIC_REALTIME_URL: ${NUXT_PUBLIC_REALTIME_URL}
+        NUXT_PUBLIC_STORAGE_URI: ${NUXT_PUBLIC_STORAGE_URI}
+    image: ${REGISTRY:-epros}/frontend:${IMAGE_TAG:-latest}
+    container_name: epros-frontend
+    volumes:
+      - frontend_static:/export
+    entrypoint: ["/bin/sh", "-c", "cp -a /srv/. /export/"]
+    restart: "no"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: epros-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN_APP: ${DOMAIN_APP:?DOMAIN_APP is required}
+      DOMAIN_API: ${DOMAIN_API:?DOMAIN_API is required}
+      DOMAIN_STORAGE: ${DOMAIN_STORAGE:?DOMAIN_STORAGE is required}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@${DOMAIN_APP}}
+    volumes:
+      - ./infra/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - frontend_static:/srv:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      frontend:
+        condition: service_completed_successfully
+      minio:
+        condition: service_started
+    networks:
+      - epros-internal
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  postgres_data:
+  valkey_data:
+  minio_data:
+  dfe_storage:
+  frontend_static:
+  caddy_data:
+  caddy_config:
+
+networks:
+  epros-internal:
+    name: epros-network-prod
+    driver: bridge

@@ -88,6 +88,8 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
             // Define o schema do banco do PostgreSQL para o macrodomínio do Aplicativo
             modelBuilder.HasDefaultSchema("aplicativo");
 
+            base.OnModelCreating(modelBuilder);
+
             modelBuilder.Entity<UsuarioInterno>(entity =>
             {
                 entity.HasKey(u => u.Id);
@@ -599,8 +601,6 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
                 entity.Property(h => h.IpOrigem).HasMaxLength(64);
                 entity.HasIndex(h => new { h.Entidade, h.EntidadeIdReferencia }).HasDatabaseName("ix_upl_historicos_entidade");
             });
-
-            base.OnModelCreating(modelBuilder);
         }
     }
 }
