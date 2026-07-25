@@ -37,6 +37,7 @@ using Epros.Modules.Manutencao.Infrastructure.Jobs;
 using Epros.Modules.GRC.Infrastructure.Data;
 using Epros.Modules.GRC.Infrastructure.Jobs;
 using Epros.Modules.ESG.Infrastructure.Data;
+using Epros.Modules.Imobiliaria.Infrastructure.Data;
 using Epros.Modules.DMS.Infrastructure.Data;
 
 // Inicializa o logger Serilog antes do bootstrap da aplicação
@@ -196,6 +197,12 @@ try
 
     // Registra o DbContext do módulo DMS (com PostgreSQL e RLS)
     builder.Services.AddDbContext<ContextDMS>((serviceProvider, options) =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+               .AddInterceptors(serviceProvider.GetRequiredService<TenantRlsInterceptor>())
+               .ReplaceService<IMigrationsSqlGenerator, EprosMigrationsSqlGenerator>());
+
+    // Registra o DbContext do módulo Imobiliária (com PostgreSQL e RLS)
+    builder.Services.AddDbContext<ContextImobiliaria>((serviceProvider, options) =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
                .AddInterceptors(serviceProvider.GetRequiredService<TenantRlsInterceptor>())
                .ReplaceService<IMigrationsSqlGenerator, EprosMigrationsSqlGenerator>());
@@ -528,6 +535,10 @@ try
                 Log.Information("Aplicando migrations pendentes para ContextDMS...");
                 var dbDMS = services.GetRequiredService<ContextDMS>();
                 dbDMS.Database.Migrate();
+
+                Log.Information("Aplicando migrations pendentes para ContextImobiliaria...");
+                var dbImobiliaria = services.GetRequiredService<ContextImobiliaria>();
+                dbImobiliaria.Database.Migrate();
 
                 Log.Information("Todas as migrations de módulos foram aplicadas com sucesso no PostgreSQL!");
 
