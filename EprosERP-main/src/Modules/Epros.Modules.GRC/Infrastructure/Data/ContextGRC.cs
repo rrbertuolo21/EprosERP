@@ -1,0 +1,256 @@
+using Epros.Infrastructure.Data;
+using Epros.Modules.GRC.Domain.Entities;
+using Epros.Shared.Application.Contracts;
+using Epros.Shared.Domain.Events;
+using Microsoft.EntityFrameworkCore;
+
+namespace Epros.Modules.GRC.Infrastructure.Data
+{
+    public class ContextGRC : ContextBase
+    {
+        // Frente 1 (ja existentes)
+        public DbSet<RiscoCorporativo> RiscosCorporativos => Set<RiscoCorporativo>();
+        public DbSet<ControleInterno> ControlesInternos => Set<ControleInterno>();
+        public DbSet<IncidenteCompliance> IncidentesCompliance => Set<IncidenteCompliance>();
+        public DbSet<Denuncia> Denuncias => Set<Denuncia>();
+
+        // GRC-POL (Gestao de Politicas)
+        public DbSet<Politica> Politicas => Set<Politica>();
+        public DbSet<PoliticaVersao> PoliticaVersoes => Set<PoliticaVersao>();
+        public DbSet<PoliticaPublicoAlvo> PoliticaPublicosAlvo => Set<PoliticaPublicoAlvo>();
+        public DbSet<PoliticaAceite> PoliticaAceites => Set<PoliticaAceite>();
+
+        // GRC-REG (Compliance Regulatorio)
+        public DbSet<RegistroRegulatorio> RegistrosRegulatorios => Set<RegistroRegulatorio>();
+        public DbSet<CertificadoDigital> CertificadosDigitais => Set<CertificadoDigital>();
+        public DbSet<CalendarioRegulatorio> CalendariosRegulatorios => Set<CalendarioRegulatorio>();
+        public DbSet<ValidacaoCertificado> ValidacoesCertificado => Set<ValidacaoCertificado>();
+
+        // GRC-RIS (Riscos Corporativos — aditivas ao RiscoCorporativo)
+        public DbSet<AvaliacaoRisco> AvaliacoesRisco => Set<AvaliacaoRisco>();
+        public DbSet<PlanoAcaoRisco> PlanosAcaoRisco => Set<PlanoAcaoRisco>();
+        public DbSet<ControleMitigador> ControlesMitigadores => Set<ControleMitigador>();
+        public DbSet<Kri> Kris => Set<Kri>();
+        public DbSet<KriLeitura> KriLeituras => Set<KriLeitura>();
+
+        // GRC-CIA (Controles Internos / Auditoria — aditivas ao ControleInterno)
+        public DbSet<PlanoAuditoria> PlanosAuditoria => Set<PlanoAuditoria>();
+        public DbSet<TesteControle> TestesControle => Set<TesteControle>();
+        public DbSet<Achado> Achados => Set<Achado>();
+        public DbSet<PlanoAcaoAuditoria> PlanosAcaoAuditoria => Set<PlanoAcaoAuditoria>();
+
+        // GRC-SOD (Segregacao de Funcoes)
+        public DbSet<FuncaoSoD> FuncoesSoD => Set<FuncaoSoD>();
+        public DbSet<RegraSoD> RegrasSoD => Set<RegraSoD>();
+        public DbSet<SimulacaoSoD> SimulacoesSoD => Set<SimulacaoSoD>();
+        public DbSet<ViolacaoSoD> ViolacoesSoD => Set<ViolacaoSoD>();
+        public DbSet<ExcecaoSoD> ExcecoesSoD => Set<ExcecaoSoD>();
+
+        public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
+        public ContextGRC(
+            DbContextOptions<ContextGRC> options,
+            ITenantProvider tenantProvider,
+            ICurrentUser currentUser) : base(options, tenantProvider, currentUser)
+        {
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.HasDefaultSchema("grc");
+
+            modelBuilder.Entity<RiscoCorporativo>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.ToTable("riscos_corporativos");
+            });
+
+            modelBuilder.Entity<ControleInterno>(entity =>
+            {
+                entity.HasKey(c => c.Id);
+                entity.ToTable("controles_internos");
+                entity.HasIndex(c => new { c.TenantId, c.Codigo }).IsUnique();
+            });
+
+            modelBuilder.Entity<IncidenteCompliance>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.ToTable("incidentes_compliance");
+            });
+
+            modelBuilder.Entity<Denuncia>(entity =>
+            {
+                entity.HasKey(d => d.Id);
+                entity.ToTable("denuncias");
+                entity.HasIndex(d => new { d.TenantId, d.CodigoAcompanhamento }).IsUnique();
+            });
+
+            // ===================== GRC-POL =====================
+            modelBuilder.Entity<Politica>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.ToTable("grc_pol_politica");
+                entity.HasIndex(p => new { p.TenantId, p.Codigo }).IsUnique();
+                entity.HasIndex(p => new { p.TenantId, p.Status });
+            });
+
+            modelBuilder.Entity<PoliticaVersao>(entity =>
+            {
+                entity.HasKey(v => v.Id);
+                entity.ToTable("grc_pol_versao");
+                entity.HasIndex(v => new { v.PoliticaId, v.NumeroVersao }).IsUnique();
+            });
+
+            modelBuilder.Entity<PoliticaPublicoAlvo>(entity =>
+            {
+                entity.HasKey(pa => pa.Id);
+                entity.ToTable("grc_pol_publico_alvo");
+                entity.HasIndex(pa => pa.PoliticaId);
+            });
+
+            modelBuilder.Entity<PoliticaAceite>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                entity.ToTable("grc_pol_aceite");
+                entity.HasIndex(a => new { a.TenantId, a.VersaoId, a.UsuarioId }).IsUnique();
+            });
+
+            // ===================== GRC-REG =====================
+            modelBuilder.Entity<RegistroRegulatorio>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.ToTable("grc_reg_registro");
+                entity.HasIndex(r => new { r.TenantId, r.Codigo }).IsUnique();
+            });
+
+            modelBuilder.Entity<CertificadoDigital>(entity =>
+            {
+                entity.HasKey(c => c.Id);
+                entity.ToTable("grc_reg_certificado_digital");
+                entity.HasIndex(c => new { c.Cnpj, c.Serial, c.EmpresaId });
+            });
+
+            modelBuilder.Entity<CalendarioRegulatorio>(entity =>
+            {
+                entity.HasKey(c => c.Id);
+                entity.ToTable("grc_reg_calendario");
+                entity.HasIndex(c => new { c.DataVencimento, c.Status });
+            });
+
+            modelBuilder.Entity<ValidacaoCertificado>(entity =>
+            {
+                entity.HasKey(v => v.Id);
+                entity.ToTable("grc_reg_validacao_certificado");
+                entity.HasIndex(v => new { v.CertificadoId, v.DataHora });
+            });
+
+            // ===================== GRC-RIS =====================
+            modelBuilder.Entity<AvaliacaoRisco>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                entity.ToTable("grc_ris_avaliacao");
+                entity.HasIndex(a => a.RiscoId);
+            });
+
+            modelBuilder.Entity<PlanoAcaoRisco>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.ToTable("grc_ris_plano_acao");
+                entity.HasIndex(p => p.RiscoId);
+            });
+
+            modelBuilder.Entity<ControleMitigador>(entity =>
+            {
+                entity.HasKey(c => c.Id);
+                entity.ToTable("grc_ris_controle_mitigador");
+                entity.HasIndex(c => new { c.RiscoId, c.ControleId }).IsUnique();
+            });
+
+            modelBuilder.Entity<Kri>(entity =>
+            {
+                entity.HasKey(k => k.Id);
+                entity.ToTable("grc_ris_kri");
+                entity.HasIndex(k => k.RiscoId);
+            });
+
+            modelBuilder.Entity<KriLeitura>(entity =>
+            {
+                entity.HasKey(l => l.Id);
+                entity.ToTable("grc_ris_kri_leitura");
+                entity.HasIndex(l => l.KriId);
+            });
+
+            // ===================== GRC-CIA =====================
+            modelBuilder.Entity<PlanoAuditoria>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.ToTable("grc_cia_plano_auditoria");
+                entity.HasIndex(p => new { p.TenantId, p.Codigo }).IsUnique();
+            });
+
+            modelBuilder.Entity<TesteControle>(entity =>
+            {
+                entity.HasKey(t => t.Id);
+                entity.ToTable("grc_cia_teste_controle");
+                entity.HasIndex(t => t.ControleId);
+            });
+
+            modelBuilder.Entity<Achado>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                entity.ToTable("grc_cia_achado");
+                entity.HasIndex(a => new { a.Severidade, a.Status });
+            });
+
+            modelBuilder.Entity<PlanoAcaoAuditoria>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.ToTable("grc_cia_plano_acao");
+                entity.HasIndex(p => new { p.ResponsavelId, p.Status });
+            });
+
+            // ===================== GRC-SOD =====================
+            modelBuilder.Entity<FuncaoSoD>(entity =>
+            {
+                entity.HasKey(f => f.Id);
+                entity.ToTable("grc_sod_funcao");
+                entity.HasIndex(f => new { f.TenantId, f.Codigo }).IsUnique();
+            });
+
+            modelBuilder.Entity<RegraSoD>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.ToTable("grc_sod_regra");
+                entity.HasIndex(r => new { r.TenantId, r.FuncaoAId, r.FuncaoBId, r.VigenciaInicio }).IsUnique();
+            });
+
+            modelBuilder.Entity<SimulacaoSoD>(entity =>
+            {
+                entity.HasKey(s => s.Id);
+                entity.ToTable("grc_sod_simulacao");
+            });
+
+            modelBuilder.Entity<ViolacaoSoD>(entity =>
+            {
+                entity.HasKey(v => v.Id);
+                entity.ToTable("grc_sod_violacao");
+                entity.HasIndex(v => new { v.RegraId, v.Status });
+            });
+
+            modelBuilder.Entity<ExcecaoSoD>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("grc_sod_excecao");
+                entity.HasIndex(e => e.ViolacaoId);
+            });
+
+            modelBuilder.Entity<OutboxMessage>(entity =>
+            {
+                entity.HasKey(o => o.Id);
+                entity.ToTable("outbox_messages", "grc");
+            });
+
+            base.OnModelCreating(modelBuilder);
+        }
+    }
+}

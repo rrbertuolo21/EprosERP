@@ -1,0 +1,38 @@
+using System.Threading.Tasks;
+using Epros.Shared.Application.Contracts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+
+namespace Epros.Modules.Producao.Infrastructure.Data
+{
+    /// <summary>
+    /// Fábrica de design-time usada SOMENTE pelas ferramentas de migração (dotnet ef).
+    /// Permite gerar migrations deste Context de forma isolada, sem depender do startup da API.
+    /// Não é registrada em runtime.
+    /// </summary>
+    public class ContextProducaoDesignTimeFactory : IDesignTimeDbContextFactory<ContextProducao>
+    {
+        public ContextProducao CreateDbContext(string[] args)
+        {
+            var conn = System.Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? "Host=localhost;Database=epros_design;Username=postgres;Password=postgres";
+            var options = new DbContextOptionsBuilder<ContextProducao>()
+                .UseNpgsql(conn)
+                .Options;
+
+            return new ContextProducao(options, new DesignTenantProvider(), new DesignCurrentUser());
+        }
+
+        private sealed class DesignTenantProvider : ITenantProvider
+        {
+            public string GetTenantId() => "design-time";
+        }
+
+        private sealed class DesignCurrentUser : ICurrentUser
+        {
+            public string? GetUserId() => "design-time";
+            public string? GetUserName() => "design-time";
+            public string? GetUserEmail() => "design-time@epros.local";
+        }
+    }
+}
