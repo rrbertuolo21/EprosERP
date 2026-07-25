@@ -49,6 +49,29 @@ namespace Epros.Modules.Manutencao.Infrastructure.Data
         public DbSet<EquipamentoServico> EquipamentoServicos => Set<EquipamentoServico>();
         public DbSet<EquipamentoAtributo> EquipamentoAtributos => Set<EquipamentoAtributo>();
 
+        // MAN-CRV (Confiabilidade e Revisao)
+        public DbSet<RevisaoConfiabilidade> RevisoesConfiabilidade => Set<RevisaoConfiabilidade>();
+        public DbSet<ModoFalhaConfiabilidade> ModosFalhaConfiabilidade => Set<ModoFalhaConfiabilidade>();
+        public DbSet<IndicadorConfiabilidade> IndicadoresConfiabilidade => Set<IndicadorConfiabilidade>();
+        public DbSet<RecomendacaoEstrategia> RecomendacoesEstrategia => Set<RecomendacaoEstrategia>();
+        public DbSet<HistoricoConfiabilidade> HistoricosConfiabilidade => Set<HistoricoConfiabilidade>();
+        public DbSet<AnexoConfiabilidade> AnexosConfiabilidade => Set<AnexoConfiabilidade>();
+        public DbSet<ParametroConfiabilidade> ParametrosConfiabilidade => Set<ParametroConfiabilidade>();
+        public DbSet<EventoIntegracaoConfiabilidade> EventosIntegracaoConfiabilidade => Set<EventoIntegracaoConfiabilidade>();
+
+        // MAN-PDT (Manutencao Preditiva)
+        public DbSet<MonitoramentoPreditivo> MonitoramentosPreditivos => Set<MonitoramentoPreditivo>();
+        public DbSet<ItemMonitoramentoPreditivo> ItensMonitoramentoPreditivo => Set<ItemMonitoramentoPreditivo>();
+        public DbSet<PontoMedicao> PontosMedicao => Set<PontoMedicao>();
+        public DbSet<LeituraCondicao> LeiturasCondicao => Set<LeituraCondicao>();
+        public DbSet<RegraMonitoramento> RegrasMonitoramento => Set<RegraMonitoramento>();
+        public DbSet<AlarmePreditivo> AlarmesPreditivos => Set<AlarmePreditivo>();
+        public DbSet<VinculoOrdemTrabalhoPreditivo> VinculosOrdemTrabalhoPreditivo => Set<VinculoOrdemTrabalhoPreditivo>();
+        public DbSet<HistoricoPreditivo> HistoricosPreditivos => Set<HistoricoPreditivo>();
+        public DbSet<AnexoPreditivo> AnexosPreditivos => Set<AnexoPreditivo>();
+        public DbSet<ParametroPreditivo> ParametrosPreditivos => Set<ParametroPreditivo>();
+        public DbSet<EventoIntegracaoPreditivo> EventosIntegracaoPreditivo => Set<EventoIntegracaoPreditivo>();
+
         public ContextManutencao(
             DbContextOptions<ContextManutencao> options,
             ITenantProvider tenantProvider,
@@ -401,6 +424,242 @@ namespace Epros.Modules.Manutencao.Infrastructure.Data
                 entity.Property(e => e.Chave).HasMaxLength(120);
                 entity.Property(e => e.Valor).HasMaxLength(2000);
                 entity.Property(e => e.OrigemFuncional).HasMaxLength(60);
+            });
+
+            // ===================== MAN-CRV =====================
+            modelBuilder.Entity<RevisaoConfiabilidade>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_crv_revisao");
+                entity.HasIndex(e => new { e.TenantId, e.Codigo }).IsUnique();
+                entity.HasIndex(e => new { e.TenantId, e.Status });
+                entity.HasIndex(e => new { e.TenantId, e.AtivoId });
+                entity.Property(e => e.Codigo).HasMaxLength(30);
+                entity.Property(e => e.Descricao).HasMaxLength(500);
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.FuncaoOperacional).HasMaxLength(200);
+                entity.Property(e => e.EstadoConservacao).HasMaxLength(60);
+                entity.Property(e => e.CriticidadeOperacional).HasMaxLength(30);
+                entity.Property(e => e.MotivoRejeicao).HasMaxLength(1000);
+                entity.Property(e => e.MotivoSuspensao).HasMaxLength(1000);
+                entity.Property(e => e.MotivoEncerramento).HasMaxLength(1000);
+
+                entity.HasMany(e => e.ModosFalha).WithOne().HasForeignKey(i => i.RevisaoId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(e => e.Indicadores).WithOne().HasForeignKey(i => i.RevisaoId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(e => e.Recomendacoes).WithOne().HasForeignKey(i => i.RevisaoId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(e => e.Historicos).WithOne().HasForeignKey(i => i.RevisaoId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(e => e.Anexos).WithOne().HasForeignKey(i => i.RevisaoId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<ModoFalhaConfiabilidade>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_crv_modo_falha");
+                entity.HasIndex(e => new { e.RevisaoId, e.Sequencia });
+                entity.HasIndex(e => new { e.RevisaoId, e.Rpn });
+                entity.Property(e => e.Componente).HasMaxLength(200);
+                entity.Property(e => e.ModoFalha).HasMaxLength(500);
+                entity.Property(e => e.EfeitoFalha).HasMaxLength(1000);
+                entity.Property(e => e.CausaFalha).HasMaxLength(1000);
+                entity.Property(e => e.ControleAtual).HasMaxLength(1000);
+                entity.Property(e => e.Observacao).HasMaxLength(1000);
+            });
+
+            modelBuilder.Entity<IndicadorConfiabilidade>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_crv_indicador");
+                entity.HasIndex(e => new { e.RevisaoId, e.TipoIndicador });
+                entity.Property(e => e.TipoIndicador).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.CalculadoPor).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.Unidade).HasMaxLength(20);
+                entity.Property(e => e.FormulaAplicada).HasMaxLength(200);
+                entity.Property(e => e.OrigemDados).HasMaxLength(1000);
+            });
+
+            modelBuilder.Entity<RecomendacaoEstrategia>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_crv_recomendacao");
+                entity.HasIndex(e => new { e.RevisaoId, e.Status });
+                entity.Property(e => e.Estrategia).HasConversion<string>().HasMaxLength(30);
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.Justificativa).HasMaxLength(2000);
+            });
+
+            modelBuilder.Entity<HistoricoConfiabilidade>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_crv_historico");
+                entity.HasIndex(e => new { e.RevisaoId, e.DataHora });
+                entity.Property(e => e.Acao).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.IpOrigem).HasMaxLength(60);
+                entity.Property(e => e.Justificativa).HasMaxLength(1000);
+                entity.Property(e => e.PayloadJson).HasColumnType("jsonb");
+            });
+
+            modelBuilder.Entity<AnexoConfiabilidade>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_crv_anexo");
+                entity.HasIndex(e => e.RevisaoId);
+                entity.Property(e => e.TipoDocumento).HasMaxLength(60);
+                entity.Property(e => e.Descricao).HasMaxLength(500);
+            });
+
+            modelBuilder.Entity<ParametroConfiabilidade>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_crv_parametro");
+                entity.HasIndex(e => new { e.TenantId, e.Chave }).IsUnique();
+                entity.Property(e => e.Chave).HasMaxLength(120);
+                entity.Property(e => e.ValorJson).HasColumnType("jsonb");
+                entity.Property(e => e.Descricao).HasMaxLength(500);
+            });
+
+            modelBuilder.Entity<EventoIntegracaoConfiabilidade>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_crv_evento_integracao");
+                entity.HasIndex(e => new { e.RevisaoId, e.TipoEvento, e.StatusEnvio });
+                entity.Property(e => e.TipoEvento).HasMaxLength(120);
+                entity.Property(e => e.DestinoFuncional).HasMaxLength(120);
+                entity.Property(e => e.StatusEnvio).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.PayloadJson).HasColumnType("jsonb");
+                entity.Property(e => e.UltimoErro).HasMaxLength(1000);
+            });
+
+            // ===================== MAN-PDT =====================
+            modelBuilder.Entity<MonitoramentoPreditivo>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_pdt_monitoramento");
+                entity.HasIndex(e => new { e.TenantId, e.Codigo }).IsUnique();
+                entity.HasIndex(e => new { e.TenantId, e.Status });
+                entity.HasIndex(e => new { e.TenantId, e.EquipamentoId });
+                entity.Property(e => e.Codigo).HasMaxLength(30);
+                entity.Property(e => e.Descricao).HasMaxLength(500);
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.Observacao).HasMaxLength(1000);
+
+                entity.HasMany(e => e.Itens).WithOne().HasForeignKey(i => i.MonitoramentoId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(e => e.PontosMedicao).WithOne().HasForeignKey(i => i.MonitoramentoId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(e => e.Alarmes).WithOne().HasForeignKey(i => i.MonitoramentoId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(e => e.Historicos).WithOne().HasForeignKey(i => i.MonitoramentoId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(e => e.Anexos).WithOne().HasForeignKey(i => i.MonitoramentoId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<ItemMonitoramentoPreditivo>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_pdt_item");
+                entity.HasIndex(e => new { e.MonitoramentoId, e.Sequencia });
+                entity.Property(e => e.Observacao).HasMaxLength(1000);
+            });
+
+            modelBuilder.Entity<PontoMedicao>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_pdt_ponto_medicao");
+                entity.HasIndex(e => new { e.MonitoramentoId, e.Variavel, e.LocalTecnico });
+                entity.Property(e => e.CodigoPonto).HasMaxLength(60);
+                entity.Property(e => e.Variavel).HasMaxLength(60);
+                entity.Property(e => e.Unidade).HasMaxLength(20);
+                entity.Property(e => e.LocalTecnico).HasMaxLength(120);
+                entity.Property(e => e.Periodicidade).HasMaxLength(60);
+                entity.Property(e => e.Situacao).HasConversion<string>().HasMaxLength(20);
+
+                entity.HasMany(e => e.Leituras).WithOne().HasForeignKey(i => i.PontoMedicaoId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(e => e.Regras).WithOne().HasForeignKey(i => i.PontoMedicaoId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<LeituraCondicao>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_pdt_leitura_condicao");
+                entity.HasIndex(e => new { e.PontoMedicaoId, e.DataHoraMedicao });
+                entity.Property(e => e.Unidade).HasMaxLength(20);
+                entity.Property(e => e.Origem).HasMaxLength(120);
+                entity.Property(e => e.PayloadJson).HasColumnType("jsonb");
+            });
+
+            modelBuilder.Entity<RegraMonitoramento>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_pdt_regra_monitoramento");
+                entity.HasIndex(e => new { e.PontoMedicaoId, e.Situacao });
+                entity.Property(e => e.TipoRegra).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.Operador).HasMaxLength(30);
+                entity.Property(e => e.JanelaAvaliacao).HasMaxLength(60);
+                entity.Property(e => e.Severidade).HasMaxLength(30);
+                entity.Property(e => e.AcaoEsperada).HasMaxLength(30);
+                entity.Property(e => e.Situacao).HasConversion<string>().HasMaxLength(20);
+            });
+
+            modelBuilder.Entity<AlarmePreditivo>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_pdt_alarme");
+                entity.HasIndex(e => new { e.TenantId, e.Status, e.DataHoraDisparo });
+                entity.HasIndex(e => e.PontoMedicaoId);
+                entity.Property(e => e.Severidade).HasMaxLength(30);
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.Descricao).HasMaxLength(1000);
+                entity.Property(e => e.MotivoEncerramento).HasMaxLength(1000);
+
+                entity.HasMany(e => e.Vinculos).WithOne().HasForeignKey(i => i.AlarmeId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<VinculoOrdemTrabalhoPreditivo>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_pdt_ordem_trabalho_vinculo");
+                entity.HasIndex(e => e.AlarmeId);
+                entity.Property(e => e.StatusRetorno).HasMaxLength(60);
+                entity.Property(e => e.PayloadRetorno).HasColumnType("jsonb");
+            });
+
+            modelBuilder.Entity<HistoricoPreditivo>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_pdt_historico");
+                entity.HasIndex(e => new { e.MonitoramentoId, e.DataHora });
+                entity.HasIndex(e => e.AlarmeId);
+                entity.Property(e => e.Acao).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.Ip).HasMaxLength(60);
+                entity.Property(e => e.PayloadJson).HasColumnType("jsonb");
+            });
+
+            modelBuilder.Entity<AnexoPreditivo>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_pdt_anexo");
+                entity.HasIndex(e => e.MonitoramentoId);
+                entity.Property(e => e.TipoDocumento).HasMaxLength(60);
+            });
+
+            modelBuilder.Entity<ParametroPreditivo>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_pdt_parametro");
+                entity.HasIndex(e => new { e.TenantId, e.Chave }).IsUnique();
+                entity.Property(e => e.Chave).HasMaxLength(120);
+                entity.Property(e => e.ValorJson).HasColumnType("jsonb");
+                entity.Property(e => e.Situacao).HasConversion<string>().HasMaxLength(20);
+            });
+
+            modelBuilder.Entity<EventoIntegracaoPreditivo>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("man_pdt_evento_integracao");
+                entity.HasIndex(e => new { e.TenantId, e.TipoEvento, e.Status });
+                entity.HasIndex(e => new { e.EntidadeOrigem, e.EntidadeOrigemId });
+                entity.Property(e => e.EntidadeOrigem).HasMaxLength(120);
+                entity.Property(e => e.TipoEvento).HasMaxLength(120);
+                entity.Property(e => e.Direcao).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.PayloadJson).HasColumnType("jsonb");
+                entity.Property(e => e.MensagemErro).HasMaxLength(1000);
             });
 
             base.OnModelCreating(modelBuilder);

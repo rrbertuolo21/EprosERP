@@ -64,10 +64,12 @@ namespace Epros.Modules.RH.Infrastructure.Data
             });
 
             ConfigurarFrente12(modelBuilder);
+            ConfigurarFrentePendente(modelBuilder);
 
             base.OnModelCreating(modelBuilder);
         }
 
         partial void ConfigurarFrente12(ModelBuilder modelBuilder);
+        partial void ConfigurarFrentePendente(ModelBuilder modelBuilder);
     }
 }

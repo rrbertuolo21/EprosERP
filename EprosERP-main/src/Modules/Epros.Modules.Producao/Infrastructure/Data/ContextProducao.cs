@@ -48,6 +48,29 @@ namespace Epros.Modules.Producao.Infrastructure.Data
         public DbSet<EstimativaHistorico> EstimativaHistoricos => Set<EstimativaHistorico>();
         public DbSet<EstimativaAnexo> EstimativaAnexos => Set<EstimativaAnexo>();
 
+        // PRD-MES — Execução de Manufatura MES
+        public DbSet<MesOrdem> MesOrdens => Set<MesOrdem>();
+        public DbSet<MesOrdemItem> MesOrdemItens => Set<MesOrdemItem>();
+        public DbSet<MesServico> MesServicos => Set<MesServico>();
+        public DbSet<MesServicoEquipamento> MesServicoEquipamentos => Set<MesServicoEquipamento>();
+        public DbSet<MesConsumoMaterial> MesConsumos => Set<MesConsumoMaterial>();
+        public DbSet<MesMovimentoProducao> MesMovimentos => Set<MesMovimentoProducao>();
+        public DbSet<MesParametro> MesParametros => Set<MesParametro>();
+        public DbSet<MesHistorico> MesHistoricos => Set<MesHistorico>();
+        public DbSet<MesAnexo> MesAnexos => Set<MesAnexo>();
+
+        // PRD-MRP — MRP / Planejamento Integrado IBP
+        public DbSet<MrpPlanejamento> MrpPlanejamentos => Set<MrpPlanejamento>();
+        public DbSet<MrpPlanejamentoHistorico> MrpHistoricos => Set<MrpPlanejamentoHistorico>();
+        public DbSet<MrpPlanejamentoAnexo> MrpAnexos => Set<MrpPlanejamentoAnexo>();
+
+        // PRD-ESC — Escalonamento e Programação
+        public DbSet<EscProgramacao> EscProgramacoes => Set<EscProgramacao>();
+        public DbSet<EscOperacao> EscOperacoes => Set<EscOperacao>();
+        public DbSet<EscParametro> EscParametros => Set<EscParametro>();
+        public DbSet<EscHistorico> EscHistoricos => Set<EscHistorico>();
+        public DbSet<EscAnexo> EscAnexos => Set<EscAnexo>();
+
         public ContextProducao(
             DbContextOptions<ContextProducao> options,
             ITenantProvider tenantProvider,
@@ -380,6 +403,209 @@ namespace Epros.Modules.Producao.Infrastructure.Data
                 entity.HasKey(e => e.Id);
                 entity.ToTable("prd_est_anexo");
                 entity.HasIndex(e => new { e.TenantId, e.EstimativaId });
+                entity.Property(e => e.Descricao).HasMaxLength(500);
+                entity.Property(e => e.UsuarioId).HasMaxLength(100);
+            });
+
+            // ===================== PRD-MES =====================
+            modelBuilder.Entity<MesOrdem>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_mes_ordem");
+                entity.HasIndex(e => new { e.TenantId, e.Referencia });
+                entity.HasIndex(e => new { e.TenantId, e.Status });
+                entity.HasIndex(e => new { e.TenantId, e.EmpresaId });
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.Referencia).HasMaxLength(80);
+                entity.Property(e => e.TipoCustoProducao).HasMaxLength(50);
+                entity.Property(e => e.Lote).HasMaxLength(100);
+                entity.Property(e => e.MotivoRejeicao).HasMaxLength(1000);
+                entity.Property(e => e.CustoTotalPrevisto).HasPrecision(18, 6);
+                entity.Property(e => e.CustoTotalRealizado).HasPrecision(18, 6);
+                entity.Property(e => e.ValorTotalFinal).HasPrecision(18, 6);
+                entity.Property(e => e.CustoProducao).HasPrecision(18, 6);
+                entity.Property(e => e.DesperdicioUnidades).HasPrecision(18, 6);
+                entity.Property(e => e.PercentualVenda).HasPrecision(9, 4);
+                entity.Property(e => e.PercentualEstoque).HasPrecision(9, 4);
+                entity.HasMany(e => e.Itens)
+                    .WithOne()
+                    .HasForeignKey(i => i.OrdemId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<MesOrdemItem>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_mes_ordem_item");
+                entity.HasIndex(e => new { e.TenantId, e.OrdemId });
+                entity.HasIndex(e => new { e.TenantId, e.ProdutoId });
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.QuantidadeProduzir).HasPrecision(18, 6);
+                entity.Property(e => e.QuantidadeProduzida).HasPrecision(18, 6);
+                entity.Property(e => e.QuantidadeEntregue).HasPrecision(18, 6);
+                entity.Property(e => e.CustoPrevisto).HasPrecision(18, 6);
+                entity.Property(e => e.CustoRealizado).HasPrecision(18, 6);
+            });
+
+            modelBuilder.Entity<MesServico>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_mes_servico");
+                entity.HasIndex(e => new { e.TenantId, e.ItemOrdemId });
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.CustoPrevisto).HasPrecision(18, 6);
+                entity.Property(e => e.CustoRealizado).HasPrecision(18, 6);
+            });
+
+            modelBuilder.Entity<MesServicoEquipamento>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_mes_servico_equipamento");
+                entity.HasIndex(e => new { e.TenantId, e.ServicoId });
+                entity.HasIndex(e => new { e.TenantId, e.EquipamentoId });
+            });
+
+            modelBuilder.Entity<MesConsumoMaterial>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_mes_consumo_material");
+                entity.HasIndex(e => new { e.TenantId, e.OrdemId });
+                entity.HasIndex(e => new { e.TenantId, e.EstruturaId });
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.QuantidadePrevista).HasPrecision(18, 6);
+                entity.Property(e => e.QuantidadeConsumida).HasPrecision(18, 6);
+                entity.Property(e => e.PercentualDesperdicio).HasPrecision(9, 4);
+                entity.Property(e => e.CustoConsumo).HasPrecision(18, 6);
+            });
+
+            modelBuilder.Entity<MesMovimentoProducao>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_mes_movimento_producao");
+                entity.HasIndex(e => new { e.TenantId, e.OrdemId });
+                entity.HasIndex(e => new { e.TenantId, e.MovimentoPaiId });
+                entity.Property(e => e.TipoMovimento).HasConversion<string>().HasMaxLength(30);
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.Quantidade).HasPrecision(18, 6);
+                entity.Property(e => e.ValorUnitario).HasPrecision(18, 6);
+                entity.Property(e => e.ValorTotal).HasPrecision(18, 6);
+            });
+
+            modelBuilder.Entity<MesParametro>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_mes_parametro");
+                entity.HasIndex(e => new { e.TenantId });
+                entity.Property(e => e.PrefixoReferencia).HasMaxLength(50);
+                entity.Property(e => e.VersaoParametro).HasMaxLength(50);
+            });
+
+            modelBuilder.Entity<MesHistorico>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_mes_historico");
+                entity.HasIndex(e => new { e.TenantId, e.OrdemId });
+                entity.Property(e => e.Acao).HasMaxLength(100);
+                entity.Property(e => e.UsuarioId).HasMaxLength(100);
+                entity.Property(e => e.OrigemIp).HasMaxLength(60);
+                entity.Property(e => e.StatusAnterior).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.StatusNovo).HasConversion<string>().HasMaxLength(20);
+            });
+
+            modelBuilder.Entity<MesAnexo>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_mes_anexo");
+                entity.HasIndex(e => new { e.TenantId, e.OrdemId });
+                entity.Property(e => e.Descricao).HasMaxLength(500);
+                entity.Property(e => e.UsuarioId).HasMaxLength(100);
+            });
+
+            // ===================== PRD-MRP =====================
+            modelBuilder.Entity<MrpPlanejamento>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_mrp_planejamento");
+                entity.HasIndex(e => new { e.TenantId, e.Codigo }).IsUnique();
+                entity.HasIndex(e => new { e.TenantId, e.Status });
+                entity.Property(e => e.Codigo).HasMaxLength(50);
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.MotivoRejeicao).HasMaxLength(1000);
+            });
+
+            modelBuilder.Entity<MrpPlanejamentoHistorico>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_mrp_planejamento_historico");
+                entity.HasIndex(e => new { e.TenantId, e.PlanejamentoId });
+                entity.Property(e => e.Acao).HasMaxLength(100);
+                entity.Property(e => e.UsuarioId).HasMaxLength(100);
+                entity.Property(e => e.Ip).HasMaxLength(60);
+                entity.Property(e => e.StatusAnterior).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.StatusNovo).HasConversion<string>().HasMaxLength(20);
+            });
+
+            modelBuilder.Entity<MrpPlanejamentoAnexo>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_mrp_planejamento_anexo");
+                entity.HasIndex(e => new { e.TenantId, e.PlanejamentoId });
+                entity.Property(e => e.Descricao).HasMaxLength(500);
+                entity.Property(e => e.UsuarioId).HasMaxLength(100);
+            });
+
+            // ===================== PRD-ESC =====================
+            modelBuilder.Entity<EscProgramacao>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_esc_programacao");
+                entity.HasIndex(e => new { e.TenantId, e.Codigo }).IsUnique();
+                entity.HasIndex(e => new { e.TenantId, e.Status });
+                entity.HasIndex(e => new { e.TenantId, e.CentroTrabalhoId });
+                entity.Property(e => e.Codigo).HasMaxLength(50);
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.MotivoRejeicao).HasMaxLength(1000);
+                entity.HasMany(e => e.Operacoes)
+                    .WithOne()
+                    .HasForeignKey(o => o.ProgramacaoId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<EscOperacao>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_esc_operacao");
+                entity.HasIndex(e => new { e.TenantId, e.ProgramacaoId });
+                entity.Property(e => e.CustoPrevisto).HasPrecision(18, 6);
+                entity.Property(e => e.CustoRealizado).HasPrecision(18, 6);
+            });
+
+            modelBuilder.Entity<EscParametro>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_esc_parametro");
+                entity.HasIndex(e => new { e.TenantId, e.Chave }).IsUnique();
+                entity.Property(e => e.Chave).HasMaxLength(150);
+                entity.Property(e => e.Valor).HasMaxLength(4000);
+            });
+
+            modelBuilder.Entity<EscHistorico>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_esc_historico");
+                entity.HasIndex(e => new { e.TenantId, e.ProgramacaoId });
+                entity.Property(e => e.Acao).HasMaxLength(100);
+                entity.Property(e => e.UsuarioId).HasMaxLength(100);
+                entity.Property(e => e.IpOrigem).HasMaxLength(60);
+                entity.Property(e => e.StatusAnterior).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.StatusNovo).HasConversion<string>().HasMaxLength(20);
+            });
+
+            modelBuilder.Entity<EscAnexo>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_esc_anexo");
+                entity.HasIndex(e => new { e.TenantId, e.ProgramacaoId });
                 entity.Property(e => e.Descricao).HasMaxLength(500);
                 entity.Property(e => e.UsuarioId).HasMaxLength(100);
             });

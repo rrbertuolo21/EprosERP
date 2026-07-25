@@ -181,4 +181,118 @@ namespace Epros.Modules.Manutencao.Domain.Enums
         Reprocessado = 3,
         Cancelado = 4
     }
+
+    // ===== MAN-CRV (Confiabilidade e Revisao) =====
+    // Ciclo de vida da revisao reutiliza EStatusRegistroManutencao (Rascunho..Inativo).
+    public enum ETipoIndicadorConfiabilidade
+    {
+        Mttr = 0,
+        Mtbf = 1,
+        Disponibilidade = 2,
+        Rpn = 3,
+        Outro = 4
+    }
+
+    public enum ECalculadoPorConfiabilidade
+    {
+        Sistema = 0,
+        Usuario = 1
+    }
+
+    public enum EEstrategiaManutencao
+    {
+        Preventiva = 0,
+        Preditiva = 1,
+        CorretivaControlada = 2,
+        OperacaoAteFalha = 3,
+        RevisarPlano = 4,
+        ManterPlano = 5
+    }
+
+    public enum EStatusRecomendacaoEstrategia
+    {
+        Proposta = 0,
+        Aprovada = 1,
+        Rejeitada = 2,
+        Substituida = 3
+    }
+
+    public enum EAcaoHistoricoConfiabilidade
+    {
+        Criado = 0,
+        Alterado = 1,
+        Aprovado = 2,
+        Rejeitado = 3,
+        Suspenso = 4,
+        Retomado = 5,
+        Encerrado = 6,
+        Inativado = 7,
+        Parametrizado = 8
+    }
+
+    // ===== MAN-PDT (Manutencao Preditiva) =====
+    // Ciclo de vida do monitoramento reutiliza EStatusRegistroManutencao (Rascunho..Inativo).
+    public enum ESituacaoPontoMedicao
+    {
+        Ativo = 0,
+        Suspenso = 1,
+        Inativo = 2
+    }
+
+    public enum ETipoRegraMonitoramento
+    {
+        Limite = 0,
+        Tendencia = 1,
+        Desvio = 2,
+        Sla = 3,
+        Outro = 4
+    }
+
+    public enum ESituacaoRegraMonitoramento
+    {
+        Rascunho = 0,
+        EmAnalise = 1,
+        Ativo = 2,
+        Suspenso = 3,
+        Inativo = 4
+    }
+
+    public enum EStatusAlarmePreditivo
+    {
+        Aberto = 0,
+        EmAnalise = 1,
+        ConvertidoEmOrdem = 2,
+        Descartado = 3,
+        Encerrado = 4
+    }
+
+    public enum EAcaoHistoricoPreditivo
+    {
+        Criado = 0,
+        Alterado = 1,
+        Aprovado = 2,
+        Rejeitado = 3,
+        Disparado = 4,
+        Encerrado = 5
+    }
+
+    public enum EDirecaoEventoPreditivo
+    {
+        Recebido = 0,
+        Publicado = 1
+    }
+
+    public enum EStatusEventoPreditivo
+    {
+        Pendente = 0,
+        Processado = 1,
+        Erro = 2,
+        Reprocessado = 3
+    }
+
+    public enum ESituacaoParametroManutencao
+    {
+        Ativo = 0,
+        Inativo = 1
+    }
 }

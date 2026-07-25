@@ -108,6 +108,28 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
         public DbSet<LdeDocumentoEntradaFatura> LdeDocumentoEntradaFaturas => Set<LdeDocumentoEntradaFatura>();
         public DbSet<LdeHistorico> LdeHistoricos => Set<LdeHistorico>();
 
+        // ============ GESTÃO DE ARMAZÉM WMS (EST-WMS) ============
+        public DbSet<WmsArmazem> WmsArmazens => Set<WmsArmazem>();
+        public DbSet<WmsEnderecoOperacional> WmsEnderecosOperacionais => Set<WmsEnderecoOperacional>();
+
+        // ============ GESTÃO DE CONTRATOS DE COMPRA (EST-GCC) ============
+        public DbSet<GccContratoCompra> GccContratosCompra => Set<GccContratoCompra>();
+        public DbSet<GccContratoCompraItem> GccContratosCompraItens => Set<GccContratoCompraItem>();
+        public DbSet<GccContratoCompraAditivo> GccContratosCompraAditivos => Set<GccContratoCompraAditivo>();
+        public DbSet<GccConsumoContrato> GccConsumosContrato => Set<GccConsumoContrato>();
+
+        // ============ SUBCONTRATAÇÃO (EST-SUB) ============
+        public DbSet<SubOrdem> SubOrdens => Set<SubOrdem>();
+        public DbSet<SubOrdemItem> SubOrdemItens => Set<SubOrdemItem>();
+        public DbSet<SubEnvio> SubEnvios => Set<SubEnvio>();
+        public DbSet<SubEnvioItem> SubEnvioItens => Set<SubEnvioItem>();
+        public DbSet<SubRetorno> SubRetornos => Set<SubRetorno>();
+        public DbSet<SubRetornoItem> SubRetornoItens => Set<SubRetornoItem>();
+        public DbSet<SubSaldoTerceiro> SubSaldosTerceiro => Set<SubSaldoTerceiro>();
+        public DbSet<SubDocumentoFiscal> SubDocumentosFiscais => Set<SubDocumentoFiscal>();
+        public DbSet<SubServicoCobranca> SubServicosCobranca => Set<SubServicoCobranca>();
+        public DbSet<SubHistorico> SubHistoricos => Set<SubHistorico>();
+
         // Lookup somente leitura (dono: módulo Fiscal, schema plataforma).
         public DbSet<ServicoLookup> ServicosLookup => Set<ServicoLookup>();
 
@@ -1452,6 +1474,200 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
                 entity.Property(h => h.Motivo).HasMaxLength(1000);
                 entity.Property(h => h.UsuarioId).HasMaxLength(120);
                 entity.HasIndex(h => new { h.TenantId, h.EntradaId });
+                entity.HasIndex(h => h.SyncId).IsUnique();
+            });
+
+            // ============ GESTÃO DE ARMAZÉM WMS (EST-WMS) ============
+
+            modelBuilder.Entity<WmsArmazem>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                entity.Property(a => a.Nome).HasMaxLength(120);
+                entity.Property(a => a.Endereco).HasMaxLength(200);
+                entity.Property(a => a.Cidade).HasMaxLength(120);
+                entity.Property(a => a.Cep).HasMaxLength(9);
+                entity.Property(a => a.Telefone).HasMaxLength(20);
+                entity.Property(a => a.Email).HasMaxLength(120);
+                entity.HasMany(a => a.Enderecos)
+                      .WithOne(e => e.Armazem)
+                      .HasForeignKey(e => e.ArmazemId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(a => new { a.TenantId, a.Nome });
+                entity.HasIndex(a => new { a.TenantId, a.Cidade });
+                entity.HasIndex(a => new { a.TenantId, a.UsuarioDonoId });
+                entity.HasIndex(a => a.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<WmsEnderecoOperacional>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Rua).HasMaxLength(120);
+                entity.Property(e => e.Estante).HasMaxLength(60);
+                entity.Property(e => e.Caixa).HasMaxLength(60);
+                entity.HasIndex(e => new { e.TenantId, e.ArmazemId });
+                entity.HasIndex(e => e.SyncId).IsUnique();
+            });
+
+            // ============ GESTÃO DE CONTRATOS DE COMPRA (EST-GCC) ============
+
+            modelBuilder.Entity<GccContratoCompra>(entity =>
+            {
+                entity.HasKey(c => c.Id);
+                entity.Property(c => c.NumeroContrato).HasMaxLength(60);
+                entity.Property(c => c.ValorTotal).HasPrecision(18, 2);
+                entity.Property(c => c.Observacao).HasMaxLength(2000);
+                entity.HasMany(c => c.Itens)
+                      .WithOne(i => i.Contrato)
+                      .HasForeignKey(i => i.ContratoCompraId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(c => c.Aditivos)
+                      .WithOne(a => a.Contrato)
+                      .HasForeignKey(a => a.ContratoCompraId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(c => c.Consumos)
+                      .WithOne(co => co.Contrato)
+                      .HasForeignKey(co => co.ContratoCompraId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(c => new { c.TenantId, c.FornecedorId });
+                entity.HasIndex(c => new { c.TenantId, c.Situacao });
+                entity.HasIndex(c => c.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<GccContratoCompraItem>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.PrecoUnitario).HasPrecision(18, 2);
+                entity.Property(i => i.QuantidadeComprometida).HasPrecision(18, 4);
+                entity.Property(i => i.QuantidadeConsumida).HasPrecision(18, 4);
+                entity.Property(i => i.ValorConsumido).HasPrecision(18, 2);
+                entity.Property(i => i.SaldoQuantidade).HasPrecision(18, 4);
+                entity.Property(i => i.SaldoValor).HasPrecision(18, 2);
+                entity.HasIndex(i => new { i.TenantId, i.ContratoCompraId });
+                entity.HasIndex(i => i.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<GccContratoCompraAditivo>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                entity.Property(a => a.NumeroAditivo).HasMaxLength(60);
+                entity.Property(a => a.Justificativa).HasMaxLength(2000);
+                entity.HasIndex(a => new { a.TenantId, a.ContratoCompraId });
+                entity.HasIndex(a => a.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<GccConsumoContrato>(entity =>
+            {
+                entity.HasKey(c => c.Id);
+                entity.Property(c => c.QuantidadeConsumida).HasPrecision(18, 4);
+                entity.Property(c => c.ValorConsumido).HasPrecision(18, 2);
+                entity.HasIndex(c => new { c.TenantId, c.ContratoCompraId });
+                entity.HasIndex(c => new { c.TenantId, c.ContratoCompraItemId });
+                entity.HasIndex(c => c.SyncId).IsUnique();
+            });
+
+            // ============ SUBCONTRATAÇÃO (EST-SUB) ============
+
+            modelBuilder.Entity<SubOrdem>(entity =>
+            {
+                entity.HasKey(o => o.Id);
+                entity.Property(o => o.NumeroOrdem).HasMaxLength(60);
+                entity.Property(o => o.Observacao).HasMaxLength(2000);
+                entity.HasMany(o => o.Itens)
+                      .WithOne(i => i.Ordem)
+                      .HasForeignKey(i => i.OrdemId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(o => new { o.TenantId, o.FornecedorId });
+                entity.HasIndex(o => new { o.TenantId, o.Status });
+                entity.HasIndex(o => o.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<SubOrdemItem>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.QuantidadePlanejada).HasPrecision(18, 4);
+                entity.Property(i => i.Unidade).HasMaxLength(6);
+                entity.Property(i => i.OperacaoTerceirizada).HasMaxLength(120);
+                entity.HasIndex(i => new { i.TenantId, i.OrdemId });
+                entity.HasIndex(i => i.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<SubEnvio>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasMany(e => e.Itens)
+                      .WithOne(i => i.Envio)
+                      .HasForeignKey(i => i.EnvioId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(e => new { e.TenantId, e.OrdemId });
+                entity.HasIndex(e => e.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<SubEnvioItem>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.QuantidadeEnviada).HasPrecision(18, 4);
+                entity.HasIndex(i => new { i.TenantId, i.EnvioId });
+                entity.HasIndex(i => i.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<SubRetorno>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.HasMany(r => r.Itens)
+                      .WithOne(i => i.Retorno)
+                      .HasForeignKey(i => i.RetornoId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(r => new { r.TenantId, r.OrdemId });
+                entity.HasIndex(r => r.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<SubRetornoItem>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.QuantidadeRetorno).HasPrecision(18, 4);
+                entity.Property(i => i.QuantidadeAprovada).HasPrecision(18, 4);
+                entity.Property(i => i.QuantidadePerda).HasPrecision(18, 4);
+                entity.Property(i => i.QuantidadeSucata).HasPrecision(18, 4);
+                entity.Property(i => i.Rendimento).HasPrecision(18, 4);
+                entity.HasIndex(i => new { i.TenantId, i.RetornoId });
+                entity.HasIndex(i => i.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<SubSaldoTerceiro>(entity =>
+            {
+                entity.HasKey(s => s.Id);
+                entity.Property(s => s.QuantidadeEnviada).HasPrecision(18, 4);
+                entity.Property(s => s.QuantidadeRetornada).HasPrecision(18, 4);
+                entity.Property(s => s.QuantidadeEmPoderTerceiro).HasPrecision(18, 4);
+                entity.Property(s => s.QuantidadePerda).HasPrecision(18, 4);
+                entity.HasIndex(s => new { s.TenantId, s.FornecedorId, s.ProdutoId, s.OrdemId });
+                entity.HasIndex(s => s.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<SubDocumentoFiscal>(entity =>
+            {
+                entity.HasKey(d => d.Id);
+                entity.Property(d => d.CfopRemessa).HasMaxLength(4);
+                entity.Property(d => d.CfopRetorno).HasMaxLength(4);
+                entity.HasIndex(d => new { d.TenantId, d.OrdemId });
+                entity.HasIndex(d => d.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<SubServicoCobranca>(entity =>
+            {
+                entity.HasKey(s => s.Id);
+                entity.Property(s => s.ValorServico).HasPrecision(18, 2);
+                entity.HasIndex(s => new { s.TenantId, s.OrdemId });
+                entity.HasIndex(s => s.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<SubHistorico>(entity =>
+            {
+                entity.HasKey(h => h.Id);
+                entity.Property(h => h.Evento).HasMaxLength(120);
+                entity.Property(h => h.DadosAnteriores).HasMaxLength(4000);
+                entity.Property(h => h.DadosNovos).HasMaxLength(4000);
+                entity.HasIndex(h => new { h.TenantId, h.OrdemId });
                 entity.HasIndex(h => h.SyncId).IsUnique();
             });
 

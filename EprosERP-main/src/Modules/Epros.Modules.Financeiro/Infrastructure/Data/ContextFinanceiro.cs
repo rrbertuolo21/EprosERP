@@ -53,6 +53,63 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
         public DbSet<RemessaBoleto> RemessaBoletos => Set<RemessaBoleto>();
         public DbSet<CobrancaEmail> CobrancasEmail => Set<CobrancaEmail>();
 
+        // ----- FIN-CAM: Câmbio e Risco de Mercado -----
+        public DbSet<Moeda> Moedas => Set<Moeda>();
+        public DbSet<TaxaCambio> TaxasCambio => Set<TaxaCambio>();
+        public DbSet<ExposicaoCambial> ExposicoesCambiais => Set<ExposicaoCambial>();
+        public DbSet<ReavaliacaoTitulo> ReavaliacoesTitulo => Set<ReavaliacaoTitulo>();
+        public DbSet<ReavaliacaoItem> ReavaliacoesItem => Set<ReavaliacaoItem>();
+
+        // ----- FIN-AFX: Ativos Fixos -----
+        public DbSet<AtivoFixo> AtivosFixos => Set<AtivoFixo>();
+        public DbSet<GrupoBem> GruposBem => Set<GrupoBem>();
+        public DbSet<DepreciacaoMensal> DepreciacoesMensais => Set<DepreciacaoMensal>();
+        public DbSet<MovimentacaoAtivo> MovimentacoesAtivo => Set<MovimentacaoAtivo>();
+
+        // ----- FIN-CMG: Contabilidade Gerencial -----
+        public DbSet<CentroCusto> CentrosCusto => Set<CentroCusto>();
+        public DbSet<AlocacaoCentroCusto> AlocacoesCentroCusto => Set<AlocacaoCentroCusto>();
+        public DbSet<DimensaoAnalitica> DimensoesAnaliticas => Set<DimensaoAnalitica>();
+        public DbSet<AlocacaoDimensao> AlocacoesDimensao => Set<AlocacaoDimensao>();
+
+        // ----- FIN-GCF: Gestão de Contratos Financeiros -----
+        public DbSet<PlanoContrato> PlanosContrato => Set<PlanoContrato>();
+        public DbSet<ContratoFinanceiro> ContratosFinanceiros => Set<ContratoFinanceiro>();
+        public DbSet<FaturaRecorrente> FaturasRecorrentes => Set<FaturaRecorrente>();
+        public DbSet<ReajusteContrato> ReajustesContrato => Set<ReajusteContrato>();
+
+        // ----- FIN-SBF: Subsídios e Fundos -----
+        public DbSet<ProgramaSubsidio> ProgramasSubsidio => Set<ProgramaSubsidio>();
+        public DbSet<UtilizacaoSubsidio> UtilizacoesSubsidio => Set<UtilizacaoSubsidio>();
+
+        // ----- FIN-CON: Consolidação e Relatórios -----
+        public DbSet<GrupoConsolidacao> GruposConsolidacao => Set<GrupoConsolidacao>();
+        public DbSet<GrupoEmpresa> GruposEmpresa => Set<GrupoEmpresa>();
+        public DbSet<Demonstrativo> Demonstrativos => Set<Demonstrativo>();
+        public DbSet<DemonstrativoLinha> DemonstrativoLinhas => Set<DemonstrativoLinha>();
+        public DbSet<BalanceteConsolidado> BalancetesConsolidados => Set<BalanceteConsolidado>();
+        public DbSet<BalanceteLinha> BalanceteLinhas => Set<BalanceteLinha>();
+        public DbSet<EliminacaoIntercompany> EliminacoesIntercompany => Set<EliminacaoIntercompany>();
+
+        // ----- FIN-PO: Planejamento e Orçamento -----
+        public DbSet<VersaoOrcamentaria> VersoesOrcamentarias => Set<VersaoOrcamentaria>();
+        public DbSet<LinhaOrcamento> LinhasOrcamento => Set<LinhaOrcamento>();
+        public DbSet<PeriodoOrcamentario> PeriodosOrcamentarios => Set<PeriodoOrcamentario>();
+        public DbSet<Budget> Budgets => Set<Budget>();
+        public DbSet<BudgetAlocacao> BudgetAlocacoes => Set<BudgetAlocacao>();
+        public DbSet<MetaCategoria> MetaCategorias => Set<MetaCategoria>();
+        public DbSet<Meta> Metas => Set<Meta>();
+        public DbSet<MetaMilestone> MetaMilestones => Set<MetaMilestone>();
+        public DbSet<MetaContribuicao> MetaContribuicoes => Set<MetaContribuicao>();
+        public DbSet<MetaTracking> MetaTrackings => Set<MetaTracking>();
+
+        // ----- FIN-TS: Tesouraria e Gestão de Liquidez -----
+        public DbSet<ContaFinanceira> ContasFinanceiras => Set<ContaFinanceira>();
+        public DbSet<TransacaoContaFinanceira> TransacoesContaFinanceira => Set<TransacaoContaFinanceira>();
+        public DbSet<MovimentoFinanceiro> MovimentosFinanceiros => Set<MovimentoFinanceiro>();
+        public DbSet<Cheque> Cheques => Set<Cheque>();
+        public DbSet<CaixaOperacional> CaixasOperacionais => Set<CaixaOperacional>();
+
         public ContextFinanceiro(
             DbContextOptions<ContextFinanceiro> options,
             ITenantProvider tenantProvider,
@@ -636,6 +693,400 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
                 entity.Property(c => c.Nome).HasMaxLength(255);
                 entity.Property(c => c.Valor).HasPrecision(18, 2);
                 entity.HasIndex(c => new { c.TenantId, c.Status }).HasDatabaseName("ix_cobranca_email_tenant_status");
+            });
+
+            // ===== FIN-CAM: Câmbio e Risco de Mercado =====
+            modelBuilder.Entity<Moeda>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.CodigoIso).HasMaxLength(10);
+                e.Property(x => x.Simbolo).HasMaxLength(10);
+                e.Property(x => x.Nome).HasMaxLength(100);
+                e.HasIndex(x => new { x.TenantId, x.CodigoIso }).HasDatabaseName("ix_moeda_tenant_codigo");
+            });
+
+            modelBuilder.Entity<TaxaCambio>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.TaxaCompra).HasPrecision(18, 6);
+                e.Property(x => x.TaxaVenda).HasPrecision(18, 6);
+                e.Property(x => x.Observacao).HasMaxLength(500);
+                e.HasOne<Moeda>().WithMany().HasForeignKey(x => x.MoedaId).HasConstraintName("fk_taxa_cambio_moeda").OnDelete(DeleteBehavior.Restrict);
+                e.HasIndex(x => new { x.MoedaId, x.DataTaxa }).HasDatabaseName("ix_taxa_cambio_moeda_data");
+            });
+
+            modelBuilder.Entity<ExposicaoCambial>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.ValorExposto).HasPrecision(18, 2);
+                e.Property(x => x.ValorMoedaBase).HasPrecision(18, 2);
+                e.Property(x => x.OrigemExposicao).HasMaxLength(100);
+                e.Property(x => x.EntidadeOrigemTipo).HasMaxLength(100);
+                e.HasIndex(x => new { x.TenantId, x.MoedaId, x.Status }).HasDatabaseName("ix_exposicao_cambial_moeda_status");
+            });
+
+            modelBuilder.Entity<ReavaliacaoTitulo>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.TotalValorOriginal).HasPrecision(18, 2);
+                e.Property(x => x.TotalValorReavaliado).HasPrecision(18, 2);
+                e.Property(x => x.TotalVariacao).HasPrecision(18, 2);
+                e.Property(x => x.Observacao).HasMaxLength(500);
+                e.HasMany(x => x.Itens).WithOne(i => i.Reavaliacao).HasForeignKey(i => i.ReavaliacaoId).OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => new { x.TenantId, x.DataReavaliacao }).HasDatabaseName("ix_reavaliacao_titulo_data");
+            });
+
+            modelBuilder.Entity<ReavaliacaoItem>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.TituloTipo).HasMaxLength(50);
+                e.Property(x => x.ValorOriginalMoeda).HasPrecision(18, 2);
+                e.Property(x => x.ValorReavaliadoBase).HasPrecision(18, 2);
+                e.Property(x => x.ValorVariacao).HasPrecision(18, 2);
+                e.HasIndex(x => x.ReavaliacaoId).HasDatabaseName("ix_reavaliacao_item_reavaliacao");
+            });
+
+            // ===== FIN-AFX: Ativos Fixos =====
+            modelBuilder.Entity<AtivoFixo>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.NumeroNb).HasMaxLength(50);
+                e.Property(x => x.Nome).HasMaxLength(150);
+                e.Property(x => x.Descricao).HasMaxLength(255);
+                e.Property(x => x.NumeroSerie).HasMaxLength(100);
+                e.Property(x => x.Funcao).HasMaxLength(100);
+                e.Property(x => x.NumeroNotaFiscal).HasMaxLength(50);
+                e.Property(x => x.ChaveNfe).HasMaxLength(50);
+                e.Property(x => x.MetodoDepreciacao).HasMaxLength(50);
+                e.Property(x => x.ValorOriginal).HasPrecision(18, 2);
+                e.Property(x => x.ValorCompra).HasPrecision(18, 2);
+                e.Property(x => x.ValorAtualizado).HasPrecision(18, 2);
+                e.Property(x => x.ValorBaixa).HasPrecision(18, 2);
+                e.Property(x => x.TaxaAnual).HasPrecision(18, 4);
+                e.Property(x => x.TaxaMensal).HasPrecision(18, 4);
+                e.Property(x => x.TaxaAcelerada).HasPrecision(18, 4);
+                e.Property(x => x.TaxaIncentivada).HasPrecision(18, 4);
+                e.HasIndex(x => new { x.TenantId, x.NumeroNb }).HasDatabaseName("ix_ativo_fixo_tenant_nb");
+                e.HasIndex(x => new { x.TenantId, x.Status }).HasDatabaseName("ix_ativo_fixo_tenant_status");
+            });
+
+            modelBuilder.Entity<GrupoBem>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Codigo).HasMaxLength(50);
+                e.Property(x => x.Nome).HasMaxLength(150);
+                e.HasIndex(x => new { x.TenantId, x.Codigo }).HasDatabaseName("ix_grupo_bem_tenant_codigo");
+            });
+
+            modelBuilder.Entity<DepreciacaoMensal>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Competencia).HasMaxLength(7);
+                e.Property(x => x.Valor).HasPrecision(18, 2);
+                e.Property(x => x.TaxaAplicada).HasPrecision(18, 4);
+                e.Property(x => x.MetodoDepreciacao).HasMaxLength(50);
+                e.HasIndex(x => new { x.AtivoId, x.Competencia }).HasDatabaseName("ix_depreciacao_ativo_competencia");
+            });
+
+            modelBuilder.Entity<MovimentacaoAtivo>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Valor).HasPrecision(18, 2);
+                e.Property(x => x.Observacao).HasMaxLength(500);
+                e.HasIndex(x => new { x.AtivoId, x.DataMovimentacao }).HasDatabaseName("ix_movimentacao_ativo_data");
+            });
+
+            // ===== FIN-CMG: Contabilidade Gerencial =====
+            modelBuilder.Entity<CentroCusto>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Codigo).HasMaxLength(50);
+                e.Property(x => x.Descricao).HasMaxLength(150);
+                e.HasOne(x => x.Pai).WithMany().HasForeignKey(x => x.PaiId).HasConstraintName("fk_centro_custo_pai").OnDelete(DeleteBehavior.Restrict);
+                e.HasIndex(x => new { x.TenantId, x.Codigo }).HasDatabaseName("ix_centro_custo_tenant_codigo");
+            });
+
+            modelBuilder.Entity<AlocacaoCentroCusto>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Percentual).HasPrecision(18, 4);
+                e.Property(x => x.ValorRateado).HasPrecision(18, 2);
+                e.HasOne<CentroCusto>().WithMany().HasForeignKey(x => x.CentroCustoId).HasConstraintName("fk_alocacao_centro_custo").OnDelete(DeleteBehavior.Restrict);
+                e.HasIndex(x => x.TituloId).HasDatabaseName("ix_alocacao_cc_titulo");
+            });
+
+            modelBuilder.Entity<DimensaoAnalitica>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Tipo).HasMaxLength(100);
+                e.Property(x => x.Valor).HasMaxLength(255);
+                e.HasIndex(x => new { x.TenantId, x.Tipo }).HasDatabaseName("ix_dimensao_analitica_tenant_tipo");
+            });
+
+            modelBuilder.Entity<AlocacaoDimensao>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.HasOne<AlocacaoCentroCusto>().WithMany().HasForeignKey(x => x.AlocacaoCentroCustoId).HasConstraintName("fk_alocacao_dimensao_alocacao").OnDelete(DeleteBehavior.Cascade);
+                e.HasOne<DimensaoAnalitica>().WithMany().HasForeignKey(x => x.DimensaoAnaliticaId).HasConstraintName("fk_alocacao_dimensao_dimensao").OnDelete(DeleteBehavior.Restrict);
+                e.HasIndex(x => new { x.AlocacaoCentroCustoId, x.DimensaoAnaliticaId }).HasDatabaseName("ix_alocacao_dimensao_vinculo");
+            });
+
+            // ===== FIN-GCF: Gestão de Contratos Financeiros =====
+            modelBuilder.Entity<PlanoContrato>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Descricao).HasMaxLength(255);
+                e.Property(x => x.Valor).HasPrecision(18, 2);
+                e.HasIndex(x => new { x.TenantId, x.Status }).HasDatabaseName("ix_plano_contrato_tenant_status");
+            });
+
+            modelBuilder.Entity<ContratoFinanceiro>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.MotivoCancelamento).HasMaxLength(500);
+                e.HasOne(x => x.Plano).WithMany().HasForeignKey(x => x.PlanoId).HasConstraintName("fk_contrato_financeiro_plano").OnDelete(DeleteBehavior.Restrict);
+                e.HasIndex(x => new { x.TenantId, x.PessoaId }).HasDatabaseName("ix_contrato_financeiro_pessoa");
+                e.HasIndex(x => new { x.TenantId, x.Status }).HasDatabaseName("ix_contrato_financeiro_status");
+            });
+
+            modelBuilder.Entity<FaturaRecorrente>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Competencia).HasMaxLength(20);
+                e.Property(x => x.Valor).HasPrecision(18, 2);
+                e.HasOne<ContratoFinanceiro>().WithMany().HasForeignKey(x => x.ContratoId).HasConstraintName("fk_fatura_recorrente_contrato").OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => new { x.ContratoId, x.Competencia }).HasDatabaseName("ix_fatura_recorrente_contrato_comp");
+            });
+
+            modelBuilder.Entity<ReajusteContrato>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.ValorAnterior).HasPrecision(18, 2);
+                e.Property(x => x.ValorNovo).HasPrecision(18, 2);
+                e.Property(x => x.Motivo).HasMaxLength(500);
+                e.HasOne<ContratoFinanceiro>().WithMany().HasForeignKey(x => x.ContratoId).HasConstraintName("fk_reajuste_contrato").OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => x.ContratoId).HasDatabaseName("ix_reajuste_contrato");
+            });
+
+            // ===== FIN-SBF: Subsídios e Fundos =====
+            modelBuilder.Entity<ProgramaSubsidio>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Orgao).HasMaxLength(255);
+                e.Property(x => x.ValorTotal).HasPrecision(18, 2);
+                e.HasIndex(x => new { x.TenantId, x.Estado }).HasDatabaseName("ix_programa_subsidio_tenant_estado");
+            });
+
+            modelBuilder.Entity<UtilizacaoSubsidio>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.ValorElegivel).HasPrecision(18, 2);
+                e.HasOne(x => x.ProgramaSubsidio).WithMany().HasForeignKey(x => x.ProgramaSubsidioId).HasConstraintName("fk_utilizacao_subsidio_programa").OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => x.ProgramaSubsidioId).HasDatabaseName("ix_utilizacao_subsidio_programa");
+            });
+
+            // ===== FIN-CON: Consolidação e Relatórios =====
+            modelBuilder.Entity<GrupoConsolidacao>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Codigo).HasMaxLength(50);
+                e.Property(x => x.Nome).HasMaxLength(150);
+                e.Property(x => x.Descricao).HasMaxLength(500);
+                e.HasMany(x => x.Empresas).WithOne(g => g.GrupoConsolidacao).HasForeignKey(g => g.GrupoConsolidacaoId).OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => new { x.TenantId, x.Codigo }).HasDatabaseName("ix_grupo_consolidacao_tenant_codigo");
+            });
+
+            modelBuilder.Entity<GrupoEmpresa>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.HasIndex(x => new { x.GrupoConsolidacaoId, x.EmpresaId }).HasDatabaseName("ix_grupo_empresa_vinculo");
+            });
+
+            modelBuilder.Entity<Demonstrativo>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Periodo).HasMaxLength(20);
+                e.Property(x => x.TotalAgregado).HasPrecision(18, 2);
+                e.HasMany(x => x.Linhas).WithOne(l => l.Demonstrativo).HasForeignKey(l => l.DemonstrativoId).OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => new { x.GrupoConsolidacaoId, x.Periodo }).HasDatabaseName("ix_demonstrativo_grupo_periodo");
+            });
+
+            modelBuilder.Entity<DemonstrativoLinha>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.CodigoLinha).HasMaxLength(50);
+                e.Property(x => x.DescricaoLinha).HasMaxLength(255);
+                e.Property(x => x.Valor).HasPrecision(18, 2);
+                e.Property(x => x.TipoLinha).HasMaxLength(50);
+                e.HasIndex(x => x.DemonstrativoId).HasDatabaseName("ix_demonstrativo_linha_demo");
+            });
+
+            modelBuilder.Entity<BalanceteConsolidado>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Periodo).HasMaxLength(20);
+                e.Property(x => x.TotalDebito).HasPrecision(18, 2);
+                e.Property(x => x.TotalCredito).HasPrecision(18, 2);
+                e.Property(x => x.SaldoFinal).HasPrecision(18, 2);
+                e.HasMany(x => x.Linhas).WithOne(l => l.BalanceteConsolidado).HasForeignKey(l => l.BalanceteConsolidadoId).OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => new { x.GrupoConsolidacaoId, x.Periodo }).HasDatabaseName("ix_balancete_grupo_periodo");
+            });
+
+            modelBuilder.Entity<BalanceteLinha>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.CodigoConta).HasMaxLength(50);
+                e.Property(x => x.NomeConta).HasMaxLength(150);
+                e.Property(x => x.SaldoAnterior).HasPrecision(18, 2);
+                e.Property(x => x.Debito).HasPrecision(18, 2);
+                e.Property(x => x.Credito).HasPrecision(18, 2);
+                e.Property(x => x.SaldoFinal).HasPrecision(18, 2);
+                e.HasIndex(x => x.BalanceteConsolidadoId).HasDatabaseName("ix_balancete_linha_balancete");
+            });
+
+            modelBuilder.Entity<EliminacaoIntercompany>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Periodo).HasMaxLength(20);
+                e.Property(x => x.Valor).HasPrecision(18, 2);
+                e.Property(x => x.Descricao).HasMaxLength(500);
+                e.Property(x => x.Estado).HasMaxLength(50);
+                e.HasIndex(x => new { x.GrupoConsolidacaoId, x.Periodo }).HasDatabaseName("ix_eliminacao_grupo_periodo");
+            });
+
+            // ===== FIN-PO: Planejamento e Orçamento =====
+            modelBuilder.Entity<VersaoOrcamentaria>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Nome).HasMaxLength(150);
+                e.HasMany(x => x.Linhas).WithOne(l => l.Versao).HasForeignKey(l => l.VersaoId).OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => new { x.TenantId, x.Status }).HasDatabaseName("ix_versao_orcamentaria_tenant_status");
+            });
+
+            modelBuilder.Entity<LinhaOrcamento>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Periodo).HasMaxLength(20);
+                e.Property(x => x.ValorOrcado).HasPrecision(18, 2);
+                e.Property(x => x.ValorRealizado).HasPrecision(18, 2);
+                e.Property(x => x.VariacaoValor).HasPrecision(18, 2);
+                e.Property(x => x.VariacaoPercentual).HasPrecision(18, 4);
+                e.HasIndex(x => x.VersaoId).HasDatabaseName("ix_linha_orcamento_versao");
+            });
+
+            modelBuilder.Entity<PeriodoOrcamentario>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.HasIndex(x => new { x.TenantId, x.Status }).HasDatabaseName("ix_periodo_orcamentario_tenant_status");
+            });
+
+            modelBuilder.Entity<Budget>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Tipo).HasMaxLength(50);
+                e.Property(x => x.Valor).HasPrecision(18, 2);
+                e.HasOne(x => x.Periodo).WithMany().HasForeignKey(x => x.PeriodoId).HasConstraintName("fk_budget_periodo").OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => x.PeriodoId).HasDatabaseName("ix_budget_periodo");
+            });
+
+            modelBuilder.Entity<BudgetAlocacao>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.ValorAlocado).HasPrecision(18, 2);
+                e.HasOne<Budget>().WithMany().HasForeignKey(x => x.BudgetId).HasConstraintName("fk_budget_alocacao_budget").OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => x.BudgetId).HasDatabaseName("ix_budget_alocacao_budget");
+            });
+
+            modelBuilder.Entity<MetaCategoria>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Nome).HasMaxLength(150);
+                e.Property(x => x.Codigo).HasMaxLength(50);
+                e.HasIndex(x => new { x.TenantId, x.Codigo }).HasDatabaseName("ix_meta_categoria_tenant_codigo");
+            });
+
+            modelBuilder.Entity<Meta>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Tipo).HasMaxLength(50);
+                e.Property(x => x.Prioridade).HasMaxLength(50);
+                e.HasOne<MetaCategoria>().WithMany().HasForeignKey(x => x.CategoriaId).HasConstraintName("fk_meta_categoria").OnDelete(DeleteBehavior.Restrict);
+                e.HasMany(x => x.Milestones).WithOne(m => m.Meta).HasForeignKey(m => m.MetaId).OnDelete(DeleteBehavior.Cascade);
+                e.HasMany(x => x.Contribuicoes).WithOne(c => c.Meta).HasForeignKey(c => c.MetaId).OnDelete(DeleteBehavior.Cascade);
+                e.HasMany(x => x.Trackings).WithOne(t => t.Meta).HasForeignKey(t => t.MetaId).OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => x.CategoriaId).HasDatabaseName("ix_meta_categoria_ref");
+            });
+
+            modelBuilder.Entity<MetaMilestone>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Descricao).HasMaxLength(255);
+                e.HasIndex(x => x.MetaId).HasDatabaseName("ix_meta_milestone_meta");
+            });
+
+            modelBuilder.Entity<MetaContribuicao>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Valor).HasPrecision(18, 2);
+                e.Property(x => x.Tipo).HasMaxLength(50);
+                e.HasIndex(x => x.MetaId).HasDatabaseName("ix_meta_contribuicao_meta");
+            });
+
+            modelBuilder.Entity<MetaTracking>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Percentual).HasPrecision(18, 4);
+                e.Property(x => x.StatusProgresso).HasMaxLength(50);
+                e.HasIndex(x => x.MetaId).HasDatabaseName("ix_meta_tracking_meta");
+            });
+
+            // ===== FIN-TS: Tesouraria e Gestão de Liquidez =====
+            modelBuilder.Entity<ContaFinanceira>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Nome).HasMaxLength(150);
+                e.Property(x => x.NumeroConta).HasMaxLength(50);
+                e.Property(x => x.Nota).HasMaxLength(500);
+                e.Property(x => x.SaldoAbertura).HasPrecision(18, 2);
+                e.HasMany(x => x.Transacoes).WithOne(t => t.ContaFinanceira).HasForeignKey(t => t.ContaFinanceiraId).OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => new { x.TenantId, x.Fechada }).HasDatabaseName("ix_conta_financeira_tenant_fechada");
+            });
+
+            modelBuilder.Entity<TransacaoContaFinanceira>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Valor).HasPrecision(18, 2);
+                e.Property(x => x.Subtipo).HasMaxLength(50);
+                e.Property(x => x.Nota).HasMaxLength(500);
+                e.HasIndex(x => new { x.ContaFinanceiraId, x.DataOperacao }).HasDatabaseName("ix_transacao_conta_data");
+            });
+
+            modelBuilder.Entity<MovimentoFinanceiro>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Credito).HasPrecision(18, 2);
+                e.Property(x => x.Debito).HasPrecision(18, 2);
+                e.HasIndex(x => new { x.TenantId, x.Conciliado }).HasDatabaseName("ix_movimento_financeiro_conciliado");
+                e.HasIndex(x => x.Emissao).HasDatabaseName("ix_movimento_financeiro_emissao");
+            });
+
+            modelBuilder.Entity<Cheque>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Valor).HasPrecision(18, 2);
+                e.HasIndex(x => new { x.TenantId, x.Situacao }).HasDatabaseName("ix_cheque_tenant_situacao");
+                e.HasIndex(x => x.Vencimento).HasDatabaseName("ix_cheque_vencimento");
+            });
+
+            modelBuilder.Entity<CaixaOperacional>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.ValorInicial).HasPrecision(18, 2);
+                e.Property(x => x.ValorFechamento).HasPrecision(18, 2);
+                e.Property(x => x.TotalComprovantesCartao).HasPrecision(18, 2);
+                e.Property(x => x.TotalCheques).HasPrecision(18, 2);
+                e.Property(x => x.ObservacaoFechamento).HasMaxLength(500);
+                e.HasIndex(x => new { x.TenantId, x.Status }).HasDatabaseName("ix_caixa_operacional_tenant_status");
             });
 
             // Aplica convenções globais do ContextBase (snake_case, tenant filter, soft-delete)

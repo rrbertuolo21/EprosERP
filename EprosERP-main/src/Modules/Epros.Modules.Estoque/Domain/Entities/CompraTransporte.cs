@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Epros.Modules.Estoque.Domain.Enums;
 using Epros.Shared.Domain.Enums;
 using Epros.Shared.Domain.Entities;
 
@@ -8,11 +9,15 @@ namespace Epros.Modules.Estoque.Domain.Entities
 {
     /// <summary>
     /// Transporte da compra (transportadora, veículo, volumes, reboques). Porte fiel do legado
-    /// Epros.ERP.Domain.Entities.Compras.CompraTransporte.
+    /// Epros.ERP.Domain.Entities.Compras.CompraTransporte, expandido conforme a EF Transporte e Frete TMS
+    /// (EST-TMS): estados funcionais §8 (Situacao) e regra de consistência TMS-001 (§7).
     /// </summary>
     public class CompraTransporte : EntidadeSaaSBase
     {
         public Guid CompraId { get; private set; }
+
+        /// <summary>Estado funcional do transporte da compra — EF TMS §8/§9.1.</summary>
+        public ETmsStatusTransporte Situacao { get; private set; } = ETmsStatusTransporte.Rascunho;
 
         // Navegação intra-módulo
         public CompraTransporteTransportadora? Transportadora { get; private set; }
@@ -121,6 +126,34 @@ namespace Epros.Modules.Estoque.Domain.Entities
         {
             var localizado = Reboques.FirstOrDefault(x => x.Id == reboqueId);
             localizado?.Deletar(usuario);
+        }
+
+        /// <summary>Confirma os dados de transporte para uso fiscal/operacional — EF TMS §8.</summary>
+        public void Confirmar(string usuario)
+        {
+            Situacao = ETmsStatusTransporte.Confirmado;
+            MarcarAlterado(usuario);
+        }
+
+        /// <summary>Marca o transporte como faturado (documento fiscal emitido/registrado) — EF TMS §8.</summary>
+        public void Faturar(string usuario)
+        {
+            Situacao = ETmsStatusTransporte.Faturado;
+            MarcarAlterado(usuario);
+        }
+
+        /// <summary>Cancela os dados de transporte por reflexo do cancelamento do documento principal — EF TMS §8.</summary>
+        public void Cancelar(string usuario)
+        {
+            Situacao = ETmsStatusTransporte.Cancelado;
+            MarcarAlterado(usuario);
+        }
+
+        /// <summary>Reverte os dados de transporte por estorno do processo principal — EF TMS §8.</summary>
+        public void Estornar(string usuario)
+        {
+            Situacao = ETmsStatusTransporte.Estornado;
+            MarcarAlterado(usuario);
         }
     }
 }

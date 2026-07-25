@@ -532,6 +532,14 @@ namespace Epros.Modules.GRC.Migrations
                         .HasColumnType("text")
                         .HasColumnName("alterado_por");
 
+                    b.Property<bool>("Anonima")
+                        .HasColumnType("boolean")
+                        .HasColumnName("anonima");
+
+                    b.Property<Guid?>("CategoriaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("categoria_id");
+
                     b.Property<string>("CodigoAcompanhamento")
                         .IsRequired()
                         .HasColumnType("text")
@@ -557,10 +565,361 @@ namespace Epros.Modules.GRC.Migrations
                         .HasColumnType("text")
                         .HasColumnName("parecer_final");
 
+                    b.Property<string>("Prioridade")
+                        .HasColumnType("text")
+                        .HasColumnName("prioridade");
+
                     b.Property<string>("Relato")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("relato");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Titulo")
+                        .HasColumnType("text")
+                        .HasColumnName("titulo");
+
+                    b.Property<string>("TokenAcompanhamentoHash")
+                        .HasColumnType("text")
+                        .HasColumnName("token_acompanhamento_hash");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_denuncias");
+
+                    b.HasIndex("CategoriaId")
+                        .HasDatabaseName("i_x_denuncias_categoria_id");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__denuncia_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__denuncia_tenant_id");
+
+                    b.HasIndex("TenantId", "CodigoAcompanhamento")
+                        .IsUnique()
+                        .HasDatabaseName("i_x_denuncias_tenant_id_codigo_acompanhamento");
+
+                    b.HasIndex("TenantId", "Status")
+                        .HasDatabaseName("i_x_denuncias_tenant_id_status");
+
+                    b.ToTable("denuncias", "grc");
+                });
+
+            modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.DenunciaAnexo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<Guid>("ArquivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("arquivo_id");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<Guid?>("CriadoPorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("criado_por_id");
+
+                    b.Property<DateTime>("DataCriacao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("data_criacao");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<Guid>("DenunciaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("denuncia_id");
+
+                    b.Property<Guid?>("RespostaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resposta_id");
+
+                    b.Property<bool>("Sigiloso")
+                        .HasColumnType("boolean")
+                        .HasColumnName("sigiloso");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_grc_den_anexo");
+
+                    b.HasIndex("DenunciaId")
+                        .HasDatabaseName("i_x_grc_den_anexo_denuncia_id");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__denuncia_anexo_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__denuncia_anexo_tenant_id");
+
+                    b.ToTable("grc_den_anexo", "grc");
+                });
+
+            modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.DenunciaCategoria", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<bool>("Ativa")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ativa");
+
+                    b.Property<string>("Cor")
+                        .HasColumnType("text")
+                        .HasColumnName("cor");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<Guid?>("CriadorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("criador_id");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<string>("Descricao")
+                        .HasColumnType("text")
+                        .HasColumnName("descricao");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("nome");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_grc_den_categoria");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__denuncia_categoria_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__denuncia_categoria_tenant_id");
+
+                    b.HasIndex("TenantId", "Nome")
+                        .IsUnique()
+                        .HasDatabaseName("i_x_grc_den_categoria_tenant_id_nome");
+
+                    b.ToTable("grc_den_categoria", "grc");
+                });
+
+            modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.DenunciaHistorico", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Acao")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("acao");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<DateTime>("DataHora")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("data_hora");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<Guid>("DenunciaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("denuncia_id");
+
+                    b.Property<string>("Ip")
+                        .HasColumnType("text")
+                        .HasColumnName("ip");
+
+                    b.Property<string>("Justificativa")
+                        .HasColumnType("text")
+                        .HasColumnName("justificativa");
+
+                    b.Property<string>("PayloadJson")
+                        .HasColumnType("text")
+                        .HasColumnName("payload_json");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<Guid?>("UsuarioId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("usuario_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_grc_den_historico");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__denuncia_historico_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__denuncia_historico_tenant_id");
+
+                    b.HasIndex("DenunciaId", "DataHora")
+                        .HasDatabaseName("i_x_grc_den_historico_denuncia_id_data_hora");
+
+                    b.ToTable("grc_den_historico", "grc");
+                });
+
+            modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.DenunciaInvestigacao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<string>("ConclusaoProposta")
+                        .HasColumnType("text")
+                        .HasColumnName("conclusao_proposta");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<DateTime?>("DataConclusao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("data_conclusao");
+
+                    b.Property<DateTime?>("DataInicio")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("data_inicio");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<Guid>("DenunciaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("denuncia_id");
+
+                    b.Property<Guid>("InvestigadorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("investigador_id");
+
+                    b.Property<DateTime?>("PrazoSla")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("prazo_sla");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -581,20 +940,251 @@ namespace Epros.Modules.GRC.Migrations
                         .HasColumnName("tenant_id");
 
                     b.HasKey("Id")
-                        .HasName("p_k_denuncias");
+                        .HasName("p_k_grc_den_investigacao");
+
+                    b.HasIndex("InvestigadorId")
+                        .HasDatabaseName("i_x_grc_den_investigacao_investigador_id");
 
                     b.HasIndex("SyncId")
                         .IsUnique()
-                        .HasDatabaseName("ix__denuncia_sync_id");
+                        .HasDatabaseName("ix__denuncia_investigacao_sync_id");
 
                     b.HasIndex("TenantId")
-                        .HasDatabaseName("ix__denuncia_tenant_id");
+                        .HasDatabaseName("ix__denuncia_investigacao_tenant_id");
 
-                    b.HasIndex("TenantId", "CodigoAcompanhamento")
+                    b.HasIndex("DenunciaId", "Status")
+                        .HasDatabaseName("i_x_grc_den_investigacao_denuncia_id_status");
+
+                    b.ToTable("grc_den_investigacao", "grc");
+                });
+
+            modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.DenunciaParametro", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ativo");
+
+                    b.Property<string>("Chave")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("chave");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<DateTime>("DataAlteracao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("data_alteracao");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("ValorJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("valor_json");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_grc_den_parametro");
+
+                    b.HasIndex("SyncId")
                         .IsUnique()
-                        .HasDatabaseName("i_x_denuncias_tenant_id_codigo_acompanhamento");
+                        .HasDatabaseName("ix__denuncia_parametro_sync_id");
 
-                    b.ToTable("denuncias", "grc");
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__denuncia_parametro_tenant_id");
+
+                    b.HasIndex("TenantId", "Chave")
+                        .IsUnique()
+                        .HasDatabaseName("i_x_grc_den_parametro_tenant_id_chave");
+
+                    b.ToTable("grc_den_parametro", "grc");
+                });
+
+            modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.DenunciaParticipante", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<Guid>("DenunciaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("denuncia_id");
+
+                    b.Property<string>("NomeDeclarado")
+                        .HasColumnType("text")
+                        .HasColumnName("nome_declarado");
+
+                    b.Property<string>("Papel")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("papel");
+
+                    b.Property<Guid?>("PessoaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pessoa_id");
+
+                    b.Property<bool>("Sigiloso")
+                        .HasColumnType("boolean")
+                        .HasColumnName("sigiloso");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_grc_den_participante");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__denuncia_participante_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__denuncia_participante_tenant_id");
+
+                    b.HasIndex("DenunciaId", "Papel")
+                        .HasDatabaseName("i_x_grc_den_participante_denuncia_id_papel");
+
+                    b.ToTable("grc_den_participante", "grc");
+                });
+
+            modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.DenunciaResposta", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<Guid?>("CriadoPorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("criado_por_id");
+
+                    b.Property<DateTime>("DataCriacao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("data_criacao");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<Guid>("DenunciaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("denuncia_id");
+
+                    b.Property<bool>("Interna")
+                        .HasColumnType("boolean")
+                        .HasColumnName("interna");
+
+                    b.Property<string>("Mensagem")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("mensagem");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_grc_den_resposta");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__denuncia_resposta_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__denuncia_resposta_tenant_id");
+
+                    b.HasIndex("DenunciaId", "Interna")
+                        .HasDatabaseName("i_x_grc_den_resposta_denuncia_id_interna");
+
+                    b.ToTable("grc_den_resposta", "grc");
                 });
 
             modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.ExcecaoSoD", b =>

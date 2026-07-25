@@ -1271,6 +1271,482 @@ namespace Epros.Modules.Producao.Migrations
                     b.ToTable("prd_cst_custo_referencia", "producao");
                 });
 
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.EscAnexo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<Guid>("ArquivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("arquivo_id");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<DateTime>("DataAnexo")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("data_anexo");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<string>("Descricao")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("descricao");
+
+                    b.Property<Guid>("ProgramacaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("programacao_id");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("usuario_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_prd_esc_anexo");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__esc_anexo_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__esc_anexo_tenant_id");
+
+                    b.HasIndex("TenantId", "ProgramacaoId")
+                        .HasDatabaseName("i_x_prd_esc_anexo_tenant_id_programacao_id");
+
+                    b.ToTable("prd_esc_anexo", "producao");
+                });
+
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.EscHistorico", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Acao")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("acao");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<DateTime>("DataEvento")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("data_evento");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<string>("IpOrigem")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("ip_origem");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("payload_json");
+
+                    b.Property<Guid>("ProgramacaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("programacao_id");
+
+                    b.Property<string>("StatusAnterior")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status_anterior");
+
+                    b.Property<string>("StatusNovo")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status_novo");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("usuario_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_prd_esc_historico");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__esc_historico_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__esc_historico_tenant_id");
+
+                    b.HasIndex("TenantId", "ProgramacaoId")
+                        .HasDatabaseName("i_x_prd_esc_historico_tenant_id_programacao_id");
+
+                    b.ToTable("prd_esc_historico", "producao");
+                });
+
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.EscOperacao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<Guid?>("ColaboradorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("colaborador_id");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<decimal>("CustoPrevisto")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("custo_previsto");
+
+                    b.Property<decimal>("CustoRealizado")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("custo_realizado");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<Guid?>("EquipamentoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("equipamento_id");
+
+                    b.Property<int>("HorasPrevistas")
+                        .HasColumnType("integer")
+                        .HasColumnName("horas_previstas");
+
+                    b.Property<int>("HorasRealizadas")
+                        .HasColumnType("integer")
+                        .HasColumnName("horas_realizadas");
+
+                    b.Property<DateTime?>("InicioPrevisto")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("inicio_previsto");
+
+                    b.Property<DateTime?>("InicioRealizado")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("inicio_realizado");
+
+                    b.Property<int>("MinutosPrevistos")
+                        .HasColumnType("integer")
+                        .HasColumnName("minutos_previstos");
+
+                    b.Property<int>("MinutosRealizados")
+                        .HasColumnType("integer")
+                        .HasColumnName("minutos_realizados");
+
+                    b.Property<Guid>("ProgramacaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("programacao_id");
+
+                    b.Property<int>("SegundosPrevistos")
+                        .HasColumnType("integer")
+                        .HasColumnName("segundos_previstos");
+
+                    b.Property<int>("SegundosRealizados")
+                        .HasColumnType("integer")
+                        .HasColumnName("segundos_realizados");
+
+                    b.Property<int>("Sequencia")
+                        .HasColumnType("integer")
+                        .HasColumnName("sequencia");
+
+                    b.Property<Guid?>("ServicoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("servico_id");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("TerminoPrevisto")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("termino_previsto");
+
+                    b.Property<DateTime?>("TerminoRealizado")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("termino_realizado");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_prd_esc_operacao");
+
+                    b.HasIndex("ProgramacaoId")
+                        .HasDatabaseName("i_x_prd_esc_operacao_programacao_id");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__esc_operacao_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__esc_operacao_tenant_id");
+
+                    b.HasIndex("TenantId", "ProgramacaoId")
+                        .HasDatabaseName("i_x_prd_esc_operacao_tenant_id_programacao_id");
+
+                    b.ToTable("prd_esc_operacao", "producao");
+                });
+
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.EscParametro", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ativo");
+
+                    b.Property<string>("Chave")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("chave");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("Valor")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("valor");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_prd_esc_parametro");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__esc_parametro_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__esc_parametro_tenant_id");
+
+                    b.HasIndex("TenantId", "Chave")
+                        .IsUnique()
+                        .HasDatabaseName("i_x_prd_esc_parametro_tenant_id_chave");
+
+                    b.ToTable("prd_esc_parametro", "producao");
+                });
+
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.EscProgramacao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<Guid?>("CentroTrabalhoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("centro_trabalho_id");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("codigo");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<string>("MotivoRejeicao")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("motivo_rejeicao");
+
+                    b.Property<Guid?>("OrdemProducaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ordem_producao_id");
+
+                    b.Property<Guid?>("PlanoProducaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("plano_producao_id");
+
+                    b.Property<int?>("Prioridade")
+                        .HasColumnType("integer")
+                        .HasColumnName("prioridade");
+
+                    b.Property<Guid>("ResponsavelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("responsavel_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_prd_esc_programacao");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__esc_programacao_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__esc_programacao_tenant_id");
+
+                    b.HasIndex("TenantId", "CentroTrabalhoId")
+                        .HasDatabaseName("i_x_prd_esc_programacao_tenant_id_centro_trabalho_id");
+
+                    b.HasIndex("TenantId", "Codigo")
+                        .IsUnique()
+                        .HasDatabaseName("i_x_prd_esc_programacao_tenant_id_codigo");
+
+                    b.HasIndex("TenantId", "Status")
+                        .HasDatabaseName("i_x_prd_esc_programacao_tenant_id_status");
+
+                    b.ToTable("prd_esc_programacao", "producao");
+                });
+
             modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.Estimativa", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2089,6 +2565,1186 @@ namespace Epros.Modules.Producao.Migrations
                     b.ToTable("listas_materiais", "producao");
                 });
 
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.MesAnexo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<DateTime>("AnexadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("anexado_em");
+
+                    b.Property<Guid>("ArquivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("arquivo_id");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<string>("Descricao")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("descricao");
+
+                    b.Property<Guid>("OrdemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ordem_id");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("usuario_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_prd_mes_anexo");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__mes_anexo_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__mes_anexo_tenant_id");
+
+                    b.HasIndex("TenantId", "OrdemId")
+                        .HasDatabaseName("i_x_prd_mes_anexo_tenant_id_ordem_id");
+
+                    b.ToTable("prd_mes_anexo", "producao");
+                });
+
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.MesConsumoMaterial", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<Guid>("ComponenteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("componente_id");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<decimal?>("CustoConsumo")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("custo_consumo");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<Guid>("EstruturaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("estrutura_id");
+
+                    b.Property<Guid>("OrdemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ordem_id");
+
+                    b.Property<decimal?>("PercentualDesperdicio")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("percentual_desperdicio");
+
+                    b.Property<Guid>("ProdutoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("produto_id");
+
+                    b.Property<decimal>("QuantidadeConsumida")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("quantidade_consumida");
+
+                    b.Property<decimal>("QuantidadePrevista")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("quantidade_prevista");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<Guid?>("UnidadeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("unidade_id");
+
+                    b.Property<Guid?>("VariacaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("variacao_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_prd_mes_consumo_material");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__mes_consumo_material_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__mes_consumo_material_tenant_id");
+
+                    b.HasIndex("TenantId", "EstruturaId")
+                        .HasDatabaseName("i_x_prd_mes_consumo_material_tenant_id_estrutura_id");
+
+                    b.HasIndex("TenantId", "OrdemId")
+                        .HasDatabaseName("i_x_prd_mes_consumo_material_tenant_id_ordem_id");
+
+                    b.ToTable("prd_mes_consumo_material", "producao");
+                });
+
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.MesHistorico", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Acao")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("acao");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<string>("ConteudoJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("conteudo_json");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<Guid>("OrdemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ordem_id");
+
+                    b.Property<string>("OrigemIp")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("origem_ip");
+
+                    b.Property<DateTime>("RegistradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("registrado_em");
+
+                    b.Property<string>("StatusAnterior")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status_anterior");
+
+                    b.Property<string>("StatusNovo")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status_novo");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("usuario_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_prd_mes_historico");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__mes_historico_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__mes_historico_tenant_id");
+
+                    b.HasIndex("TenantId", "OrdemId")
+                        .HasDatabaseName("i_x_prd_mes_historico_tenant_id_ordem_id");
+
+                    b.ToTable("prd_mes_historico", "producao");
+                });
+
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.MesMovimentoProducao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<DateTime?>("ConfirmadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("confirmado_em");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<Guid>("LocalEstoqueId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("local_estoque_id");
+
+                    b.Property<Guid?>("MovimentoPaiId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("movimento_pai_id");
+
+                    b.Property<Guid>("OrdemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ordem_id");
+
+                    b.Property<Guid>("ProdutoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("produto_id");
+
+                    b.Property<decimal>("Quantidade")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("quantidade");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("TipoMovimento")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("tipo_movimento");
+
+                    b.Property<decimal?>("ValorTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("valor_total");
+
+                    b.Property<decimal?>("ValorUnitario")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("valor_unitario");
+
+                    b.Property<Guid?>("VariacaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("variacao_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_prd_mes_movimento_producao");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__mes_movimento_producao_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__mes_movimento_producao_tenant_id");
+
+                    b.HasIndex("TenantId", "MovimentoPaiId")
+                        .HasDatabaseName("i_x_prd_mes_movimento_producao_tenant_id_movimento_pai_id");
+
+                    b.HasIndex("TenantId", "OrdemId")
+                        .HasDatabaseName("i_x_prd_mes_movimento_producao_tenant_id_ordem_id");
+
+                    b.ToTable("prd_mes_movimento_producao", "producao");
+                });
+
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.MesOrdem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<decimal?>("CustoProducao")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("custo_producao");
+
+                    b.Property<decimal>("CustoTotalPrevisto")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("custo_total_previsto");
+
+                    b.Property<decimal>("CustoTotalRealizado")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("custo_total_realizado");
+
+                    b.Property<DateTime?>("DataTransacao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("data_transacao");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<decimal>("DesperdicioUnidades")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("desperdicio_unidades");
+
+                    b.Property<Guid>("EmpresaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("empresa_id");
+
+                    b.Property<Guid?>("EstruturaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("estrutura_id");
+
+                    b.Property<bool>("Finalizada")
+                        .HasColumnType("boolean")
+                        .HasColumnName("finalizada");
+
+                    b.Property<DateTime?>("Inicio")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("inicio");
+
+                    b.Property<Guid?>("LocalEstoqueId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("local_estoque_id");
+
+                    b.Property<string>("Lote")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("lote");
+
+                    b.Property<string>("MotivoRejeicao")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("motivo_rejeicao");
+
+                    b.Property<decimal?>("PercentualEstoque")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("percentual_estoque");
+
+                    b.Property<decimal?>("PercentualVenda")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("percentual_venda");
+
+                    b.Property<DateTime?>("PrevisaoEntrega")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("previsao_entrega");
+
+                    b.Property<Guid?>("ProdutoAcabadoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("produto_acabado_id");
+
+                    b.Property<string>("Referencia")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("referencia");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("Termino")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("termino");
+
+                    b.Property<string>("TipoCustoProducao")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("tipo_custo_producao");
+
+                    b.Property<DateTime?>("Validade")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("validade");
+
+                    b.Property<decimal?>("ValorTotalFinal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("valor_total_final");
+
+                    b.Property<Guid?>("VariacaoProdutoAcabadoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("variacao_produto_acabado_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_prd_mes_ordem");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__mes_ordem_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__mes_ordem_tenant_id");
+
+                    b.HasIndex("TenantId", "EmpresaId")
+                        .HasDatabaseName("i_x_prd_mes_ordem_tenant_id_empresa_id");
+
+                    b.HasIndex("TenantId", "Referencia")
+                        .HasDatabaseName("i_x_prd_mes_ordem_tenant_id_referencia");
+
+                    b.HasIndex("TenantId", "Status")
+                        .HasDatabaseName("i_x_prd_mes_ordem_tenant_id_status");
+
+                    b.ToTable("prd_mes_ordem", "producao");
+                });
+
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.MesOrdemItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<decimal>("CustoPrevisto")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("custo_previsto");
+
+                    b.Property<decimal>("CustoRealizado")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("custo_realizado");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<Guid>("OrdemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ordem_id");
+
+                    b.Property<Guid>("ProdutoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("produto_id");
+
+                    b.Property<decimal>("QuantidadeEntregue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("quantidade_entregue");
+
+                    b.Property<decimal>("QuantidadeProduzida")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("quantidade_produzida");
+
+                    b.Property<decimal>("QuantidadeProduzir")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("quantidade_produzir");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<Guid?>("VariacaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("variacao_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_prd_mes_ordem_item");
+
+                    b.HasIndex("OrdemId")
+                        .HasDatabaseName("i_x_prd_mes_ordem_item_ordem_id");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__mes_ordem_item_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__mes_ordem_item_tenant_id");
+
+                    b.HasIndex("TenantId", "OrdemId")
+                        .HasDatabaseName("i_x_prd_mes_ordem_item_tenant_id_ordem_id");
+
+                    b.HasIndex("TenantId", "ProdutoId")
+                        .HasDatabaseName("i_x_prd_mes_ordem_item_tenant_id_produto_id");
+
+                    b.ToTable("prd_mes_ordem_item", "producao");
+                });
+
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.MesParametro", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<bool>("AtualizarPrecoProdutoFinal")
+                        .HasColumnType("boolean")
+                        .HasColumnName("atualizar_preco_produto_final");
+
+                    b.Property<bool>("BloquearEdicaoQuantidadeInsumo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("bloquear_edicao_quantidade_insumo");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<bool>("ExigirEstruturaAtiva")
+                        .HasColumnType("boolean")
+                        .HasColumnName("exigir_estrutura_ativa");
+
+                    b.Property<string>("PrefixoReferencia")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("prefixo_referencia");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("VersaoParametro")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("versao_parametro");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_prd_mes_parametro");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__mes_parametro_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__mes_parametro_tenant_id");
+
+                    b.ToTable("prd_mes_parametro", "producao");
+                });
+
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.MesServico", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<decimal>("CustoPrevisto")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("custo_previsto");
+
+                    b.Property<decimal>("CustoRealizado")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("custo_realizado");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<int>("HorasPrevisto")
+                        .HasColumnType("integer")
+                        .HasColumnName("horas_previsto");
+
+                    b.Property<int>("HorasRealizado")
+                        .HasColumnType("integer")
+                        .HasColumnName("horas_realizado");
+
+                    b.Property<DateTime?>("InicioPrevisto")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("inicio_previsto");
+
+                    b.Property<DateTime?>("InicioRealizado")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("inicio_realizado");
+
+                    b.Property<Guid>("ItemOrdemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("item_ordem_id");
+
+                    b.Property<int>("MinutosPrevisto")
+                        .HasColumnType("integer")
+                        .HasColumnName("minutos_previsto");
+
+                    b.Property<int>("MinutosRealizado")
+                        .HasColumnType("integer")
+                        .HasColumnName("minutos_realizado");
+
+                    b.Property<int>("SegundosPrevisto")
+                        .HasColumnType("integer")
+                        .HasColumnName("segundos_previsto");
+
+                    b.Property<int>("SegundosRealizado")
+                        .HasColumnType("integer")
+                        .HasColumnName("segundos_realizado");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("TerminoPrevisto")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("termino_previsto");
+
+                    b.Property<DateTime?>("TerminoRealizado")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("termino_realizado");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_prd_mes_servico");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__mes_servico_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__mes_servico_tenant_id");
+
+                    b.HasIndex("TenantId", "ItemOrdemId")
+                        .HasDatabaseName("i_x_prd_mes_servico_tenant_id_item_ordem_id");
+
+                    b.ToTable("prd_mes_servico", "producao");
+                });
+
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.MesServicoEquipamento", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<Guid>("EquipamentoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("equipamento_id");
+
+                    b.Property<Guid>("ServicoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("servico_id");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_prd_mes_servico_equipamento");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__mes_servico_equipamento_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__mes_servico_equipamento_tenant_id");
+
+                    b.HasIndex("TenantId", "EquipamentoId")
+                        .HasDatabaseName("i_x_prd_mes_servico_equipamento_tenant_id_equipamento_id");
+
+                    b.HasIndex("TenantId", "ServicoId")
+                        .HasDatabaseName("i_x_prd_mes_servico_equipamento_tenant_id_servico_id");
+
+                    b.ToTable("prd_mes_servico_equipamento", "producao");
+                });
+
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.MrpPlanejamento", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("codigo");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<string>("MotivoRejeicao")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("motivo_rejeicao");
+
+                    b.Property<Guid>("ResponsavelId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("responsavel_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_prd_mrp_planejamento");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__mrp_planejamento_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__mrp_planejamento_tenant_id");
+
+                    b.HasIndex("TenantId", "Codigo")
+                        .IsUnique()
+                        .HasDatabaseName("i_x_prd_mrp_planejamento_tenant_id_codigo");
+
+                    b.HasIndex("TenantId", "Status")
+                        .HasDatabaseName("i_x_prd_mrp_planejamento_tenant_id_status");
+
+                    b.ToTable("prd_mrp_planejamento", "producao");
+                });
+
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.MrpPlanejamentoAnexo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<DateTime>("AnexadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("anexado_em");
+
+                    b.Property<Guid>("ArquivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("arquivo_id");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<string>("Descricao")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("descricao");
+
+                    b.Property<Guid>("PlanejamentoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("planejamento_id");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("usuario_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_prd_mrp_planejamento_anexo");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__mrp_planejamento_anexo_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__mrp_planejamento_anexo_tenant_id");
+
+                    b.HasIndex("TenantId", "PlanejamentoId")
+                        .HasDatabaseName("i_x_prd_mrp_planejamento_anexo_tenant_id_planejamento_id");
+
+                    b.ToTable("prd_mrp_planejamento_anexo", "producao");
+                });
+
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.MrpPlanejamentoHistorico", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Acao")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("acao");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<string>("Ip")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("ip");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("payload_json");
+
+                    b.Property<Guid>("PlanejamentoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("planejamento_id");
+
+                    b.Property<string>("StatusAnterior")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status_anterior");
+
+                    b.Property<string>("StatusNovo")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status_novo");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp");
+
+                    b.Property<string>("UsuarioId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("usuario_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_prd_mrp_planejamento_historico");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__mrp_planejamento_historico_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__mrp_planejamento_historico_tenant_id");
+
+                    b.HasIndex("TenantId", "PlanejamentoId")
+                        .HasDatabaseName("i_x_prd_mrp_planejamento_historico_tenant_id_planejamento_id");
+
+                    b.ToTable("prd_mrp_planejamento_historico", "producao");
+                });
+
             modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.OrdemProducao", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2612,6 +4268,16 @@ namespace Epros.Modules.Producao.Migrations
                         .HasConstraintName("f_k_prd_cst_custo_referencia_prd_cst_custo_producao_custo_produ~");
                 });
 
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.EscOperacao", b =>
+                {
+                    b.HasOne("Epros.Modules.Producao.Domain.Entities.EscProgramacao", null)
+                        .WithMany("Operacoes")
+                        .HasForeignKey("ProgramacaoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("f_k_prd_esc_operacao_prd_esc_programacao_programacao_id");
+                });
+
             modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.EstimativaComponente", b =>
                 {
                     b.HasOne("Epros.Modules.Producao.Domain.Entities.Estimativa", null)
@@ -2620,6 +4286,16 @@ namespace Epros.Modules.Producao.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("f_k_prd_est_componente_prd_est_estimativa_estimativa_id");
+                });
+
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.MesOrdemItem", b =>
+                {
+                    b.HasOne("Epros.Modules.Producao.Domain.Entities.MesOrdem", null)
+                        .WithMany("Itens")
+                        .HasForeignKey("OrdemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("f_k_prd_mes_ordem_item_prd_mes_ordem_ordem_id");
                 });
 
             modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.PlanejamentoSnapshotOp", b =>
@@ -2642,12 +4318,22 @@ namespace Epros.Modules.Producao.Migrations
                     b.Navigation("Referencias");
                 });
 
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.EscProgramacao", b =>
+                {
+                    b.Navigation("Operacoes");
+                });
+
             modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.Estimativa", b =>
                 {
                     b.Navigation("Componentes");
                 });
 
             modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.ListaMateriais", b =>
+                {
+                    b.Navigation("Itens");
+                });
+
+            modelBuilder.Entity("Epros.Modules.Producao.Domain.Entities.MesOrdem", b =>
                 {
                     b.Navigation("Itens");
                 });

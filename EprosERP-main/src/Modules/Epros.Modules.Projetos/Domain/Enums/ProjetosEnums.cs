@@ -83,4 +83,80 @@ namespace Epros.Modules.Projetos.Domain.Enums
         Parcela = 3,
         Ajuste = 4
     }
+
+    // ===================== PRJ-ENC (Encerramento) =====================
+
+    /// <summary>
+    /// Status final aplicado ao projeto no encerramento. Origem: EF PRJ-ENC 11.1 (StatusFinalProjeto),
+    /// dominio not_started/in_progress/on_hold/cancelled/completed/archived (RN-ENC-006/007).
+    /// </summary>
+    public enum EStatusFinalProjeto
+    {
+        NaoIniciado = 0,
+        EmAndamento = 1,
+        Suspenso = 2,
+        Cancelado = 3,
+        Concluido = 4,
+        Arquivado = 5
+    }
+
+    /// <summary>Acao registrada no historico de encerramento. Origem: EF PRJ-ENC 11.3.</summary>
+    public enum EAcaoEncerramento
+    {
+        Criado = 0,
+        Alterado = 1,
+        Submetido = 2,
+        Aprovado = 3,
+        Rejeitado = 4,
+        Suspenso = 5,
+        Retomado = 6,
+        Encerrado = 7,
+        Inativado = 8,
+        Arquivado = 9
+    }
+
+    // ===================== PRJ-RSK (Gestao de Riscos de Projeto) =====================
+
+    /// <summary>Prioridade operacional do risco/issue. Origem: EF PRJ-RSK RN-RSK-003 (Low/Medium/High).</summary>
+    public enum EPrioridadeRisco
+    {
+        Low = 0,
+        Medium = 1,
+        High = 2
+    }
+
+    /// <summary>Estrategia de resposta ao risco. Origem: EF PRJ-RSK 4 (glossario) / 11.1 (Resposta). Lacuna DP-RSK-003.</summary>
+    public enum ERespostaRisco
+    {
+        Mitigar = 0,
+        Transferir = 1,
+        Aceitar = 2,
+        Evitar = 3
+    }
+
+    /// <summary>Acao registrada no historico de risco. Origem: EF PRJ-RSK 11.4 (Acao).</summary>
+    public enum EAcaoRisco
+    {
+        Criado = 0,
+        Alterado = 1,
+        Movido = 2,
+        Comentado = 3,
+        Escalonado = 4,
+        Encerrado = 5
+    }
+
+    // ===================== PRJ-PRT (Portfolio e Priorizacao) =====================
+
+    /// <summary>Acao registrada no historico de portfolio. Origem: EF PRJ-PRT 14.3 (acao).</summary>
+    public enum EAcaoPortfolio
+    {
+        Criado = 0,
+        Alterado = 1,
+        Aprovado = 2,
+        Rejeitado = 3,
+        Suspenso = 4,
+        Encerrado = 5,
+        Inativado = 6,
+        Reativado = 7
+    }
 }

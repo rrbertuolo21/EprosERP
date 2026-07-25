@@ -14,6 +14,15 @@ namespace Epros.Modules.GRC.Infrastructure.Data
         public DbSet<IncidenteCompliance> IncidentesCompliance => Set<IncidenteCompliance>();
         public DbSet<Denuncia> Denuncias => Set<Denuncia>();
 
+        // GRC-DEN (Investigacoes e Denuncias)
+        public DbSet<DenunciaCategoria> DenunciaCategorias => Set<DenunciaCategoria>();
+        public DbSet<DenunciaResposta> DenunciaRespostas => Set<DenunciaResposta>();
+        public DbSet<DenunciaParticipante> DenunciaParticipantes => Set<DenunciaParticipante>();
+        public DbSet<DenunciaInvestigacao> DenunciaInvestigacoes => Set<DenunciaInvestigacao>();
+        public DbSet<DenunciaAnexo> DenunciaAnexos => Set<DenunciaAnexo>();
+        public DbSet<DenunciaHistorico> DenunciaHistoricos => Set<DenunciaHistorico>();
+        public DbSet<DenunciaParametro> DenunciaParametros => Set<DenunciaParametro>();
+
         // GRC-POL (Gestao de Politicas)
         public DbSet<Politica> Politicas => Set<Politica>();
         public DbSet<PoliticaVersao> PoliticaVersoes => Set<PoliticaVersao>();
@@ -83,6 +92,59 @@ namespace Epros.Modules.GRC.Infrastructure.Data
                 entity.HasKey(d => d.Id);
                 entity.ToTable("denuncias");
                 entity.HasIndex(d => new { d.TenantId, d.CodigoAcompanhamento }).IsUnique();
+                entity.HasIndex(d => new { d.TenantId, d.Status });
+                entity.HasIndex(d => d.CategoriaId);
+            });
+
+            // ===================== GRC-DEN (Investigacoes e Denuncias) =====================
+            modelBuilder.Entity<DenunciaCategoria>(entity =>
+            {
+                entity.HasKey(c => c.Id);
+                entity.ToTable("grc_den_categoria");
+                entity.HasIndex(c => new { c.TenantId, c.Nome }).IsUnique();
+            });
+
+            modelBuilder.Entity<DenunciaResposta>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.ToTable("grc_den_resposta");
+                entity.HasIndex(r => new { r.DenunciaId, r.Interna });
+            });
+
+            modelBuilder.Entity<DenunciaParticipante>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.ToTable("grc_den_participante");
+                entity.HasIndex(p => new { p.DenunciaId, p.Papel });
+            });
+
+            modelBuilder.Entity<DenunciaInvestigacao>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.ToTable("grc_den_investigacao");
+                entity.HasIndex(i => new { i.DenunciaId, i.Status });
+                entity.HasIndex(i => i.InvestigadorId);
+            });
+
+            modelBuilder.Entity<DenunciaAnexo>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                entity.ToTable("grc_den_anexo");
+                entity.HasIndex(a => a.DenunciaId);
+            });
+
+            modelBuilder.Entity<DenunciaHistorico>(entity =>
+            {
+                entity.HasKey(h => h.Id);
+                entity.ToTable("grc_den_historico");
+                entity.HasIndex(h => new { h.DenunciaId, h.DataHora });
+            });
+
+            modelBuilder.Entity<DenunciaParametro>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.ToTable("grc_den_parametro");
+                entity.HasIndex(p => new { p.TenantId, p.Chave }).IsUnique();
             });
 
             // ===================== GRC-POL =====================

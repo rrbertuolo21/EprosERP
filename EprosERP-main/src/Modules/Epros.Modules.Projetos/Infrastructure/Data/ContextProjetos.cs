@@ -5,6 +5,9 @@ using Epros.Modules.Projetos.Domain.Entities.Orcamento;
 using Epros.Modules.Projetos.Domain.Entities.Recursos;
 using Epros.Modules.Projetos.Domain.Entities.Rastreamento;
 using Epros.Modules.Projetos.Domain.Entities.Faturamento;
+using Epros.Modules.Projetos.Domain.Entities.Encerramento;
+using Epros.Modules.Projetos.Domain.Entities.Risco;
+using Epros.Modules.Projetos.Domain.Entities.Portfolio;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Domain.Events;
 using Microsoft.EntityFrameworkCore;
@@ -42,6 +45,29 @@ namespace Epros.Modules.Projetos.Infrastructure.Data
         // PRJ-FAT
         public DbSet<FaturamentoProjeto> Faturamentos => Set<FaturamentoProjeto>();
         public DbSet<ItemFaturamentoProjeto> ItensFaturamento => Set<ItemFaturamentoProjeto>();
+
+        // PRJ-ENC (Encerramento)
+        public DbSet<EncerramentoProjeto> Encerramentos => Set<EncerramentoProjeto>();
+        public DbSet<ItemEncerramento> ItensEncerramento => Set<ItemEncerramento>();
+        public DbSet<HistoricoEncerramento> HistoricosEncerramento => Set<HistoricoEncerramento>();
+        public DbSet<AnexoEncerramento> AnexosEncerramento => Set<AnexoEncerramento>();
+        public DbSet<ParametroEncerramento> ParametrosEncerramento => Set<ParametroEncerramento>();
+
+        // PRJ-RSK (Gestao de Riscos de Projeto)
+        public DbSet<RiscoProjeto> Riscos => Set<RiscoProjeto>();
+        public DbSet<EstagioRisco> EstagiosRisco => Set<EstagioRisco>();
+        public DbSet<ResponsavelRisco> ResponsaveisRisco => Set<ResponsavelRisco>();
+        public DbSet<ComentarioRisco> ComentariosRisco => Set<ComentarioRisco>();
+        public DbSet<HistoricoRisco> HistoricosRisco => Set<HistoricoRisco>();
+        public DbSet<AnexoRisco> AnexosRisco => Set<AnexoRisco>();
+        public DbSet<ParametroRisco> ParametrosRisco => Set<ParametroRisco>();
+
+        // PRJ-PRT (Portfolio e Priorizacao)
+        public DbSet<Portfolio> Portfolios => Set<Portfolio>();
+        public DbSet<PortfolioItem> ItensPortfolio => Set<PortfolioItem>();
+        public DbSet<HistoricoPortfolio> HistoricosPortfolio => Set<HistoricoPortfolio>();
+        public DbSet<AnexoPortfolio> AnexosPortfolio => Set<AnexoPortfolio>();
+        public DbSet<ParametroPortfolio> ParametrosPortfolio => Set<ParametroPortfolio>();
 
         public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
@@ -268,6 +294,210 @@ namespace Epros.Modules.Projetos.Infrastructure.Data
                 entity.Property(x => x.OrigemTipo).HasMaxLength(50);
                 entity.Property(x => x.TipoItem).HasConversion<string>().HasMaxLength(30);
                 entity.HasIndex(x => new { x.TenantId, x.FaturamentoProjetoId, x.Sequencia });
+            });
+
+            // ===================== PRJ-ENC (Encerramento) =====================
+            modelBuilder.Entity<EncerramentoProjeto>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_enc_encerramento");
+                entity.Property(x => x.Codigo).HasMaxLength(30);
+                entity.Property(x => x.Descricao).HasMaxLength(500);
+                entity.Property(x => x.MotivoRejeicao).HasMaxLength(1000);
+                entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(30);
+                entity.Property(x => x.StatusFinalProjeto).HasConversion<string>().HasMaxLength(30);
+                entity.HasIndex(x => new { x.TenantId, x.Codigo }).IsUnique();
+                entity.HasIndex(x => new { x.TenantId, x.ProjetoId });
+
+                entity.HasMany(x => x.Itens)
+                    .WithOne()
+                    .HasForeignKey(i => i.EncerramentoId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(x => x.Historicos)
+                    .WithOne()
+                    .HasForeignKey(h => h.EncerramentoId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(x => x.Anexos)
+                    .WithOne()
+                    .HasForeignKey(a => a.EncerramentoId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<ItemEncerramento>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_enc_encerramento_item");
+                entity.Property(x => x.Observacao).HasMaxLength(2000);
+                entity.HasIndex(x => new { x.TenantId, x.EncerramentoId, x.Sequencia });
+            });
+
+            modelBuilder.Entity<HistoricoEncerramento>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_enc_encerramento_historico");
+                entity.Property(x => x.Acao).HasConversion<string>().HasMaxLength(30);
+                entity.Property(x => x.Ip).HasMaxLength(60);
+                entity.HasIndex(x => new { x.TenantId, x.EncerramentoId });
+            });
+
+            modelBuilder.Entity<AnexoEncerramento>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_enc_encerramento_anexo");
+                entity.HasIndex(x => new { x.TenantId, x.EncerramentoId });
+            });
+
+            modelBuilder.Entity<ParametroEncerramento>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_enc_parametro");
+                entity.Property(x => x.Chave).HasMaxLength(120);
+                entity.HasIndex(x => new { x.TenantId, x.Chave }).IsUnique();
+            });
+
+            // ===================== PRJ-RSK (Gestao de Riscos de Projeto) =====================
+            modelBuilder.Entity<RiscoProjeto>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_risco_projeto");
+                entity.Property(x => x.Titulo).HasMaxLength(255);
+                entity.Property(x => x.Descricao).HasMaxLength(4000);
+                entity.Property(x => x.RiscoResidual).HasMaxLength(2000);
+                entity.Property(x => x.MotivoRejeicao).HasMaxLength(1000);
+                entity.Property(x => x.Prioridade).HasConversion<string>().HasMaxLength(30);
+                entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(30);
+                entity.Property(x => x.Resposta).HasConversion<string>().HasMaxLength(30);
+                entity.HasIndex(x => new { x.TenantId, x.ProjetoId, x.EstagioId });
+
+                entity.HasMany(x => x.Responsaveis)
+                    .WithOne()
+                    .HasForeignKey(r => r.RiscoId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(x => x.Comentarios)
+                    .WithOne()
+                    .HasForeignKey(c => c.RiscoId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(x => x.Historicos)
+                    .WithOne()
+                    .HasForeignKey(h => h.RiscoId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(x => x.Anexos)
+                    .WithOne()
+                    .HasForeignKey(a => a.RiscoId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<EstagioRisco>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_risco_estagio");
+                entity.Property(x => x.Nome).HasMaxLength(255);
+                entity.Property(x => x.Cor).HasMaxLength(7);
+                entity.HasIndex(x => new { x.TenantId, x.Ordem });
+            });
+
+            modelBuilder.Entity<ResponsavelRisco>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_risco_responsavel");
+                entity.HasIndex(x => new { x.TenantId, x.RiscoId, x.UsuarioId });
+            });
+
+            modelBuilder.Entity<ComentarioRisco>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_risco_comentario");
+                entity.Property(x => x.Comentario).HasMaxLength(4000);
+                entity.HasIndex(x => new { x.TenantId, x.RiscoId });
+            });
+
+            modelBuilder.Entity<HistoricoRisco>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_risco_historico");
+                entity.Property(x => x.Acao).HasConversion<string>().HasMaxLength(30);
+                entity.Property(x => x.Ip).HasMaxLength(60);
+                entity.HasIndex(x => new { x.TenantId, x.RiscoId });
+            });
+
+            modelBuilder.Entity<AnexoRisco>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_risco_anexo");
+                entity.Property(x => x.TipoDocumento).HasMaxLength(50);
+                entity.HasIndex(x => new { x.TenantId, x.RiscoId });
+            });
+
+            modelBuilder.Entity<ParametroRisco>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_risco_parametro");
+                entity.Property(x => x.Chave).HasMaxLength(120);
+                entity.HasIndex(x => new { x.TenantId, x.Chave }).IsUnique();
+            });
+
+            // ===================== PRJ-PRT (Portfolio e Priorizacao) =====================
+            modelBuilder.Entity<Portfolio>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_portfolio");
+                entity.Property(x => x.Codigo).HasMaxLength(30);
+                entity.Property(x => x.Descricao).HasMaxLength(500);
+                entity.Property(x => x.TipoPortfolio).HasMaxLength(50);
+                entity.Property(x => x.Justificativa).HasMaxLength(4000);
+                entity.Property(x => x.MotivoRejeicao).HasMaxLength(1000);
+                entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(30);
+                entity.HasIndex(x => new { x.TenantId, x.Codigo }).IsUnique();
+
+                entity.HasMany(x => x.Itens)
+                    .WithOne()
+                    .HasForeignKey(i => i.PortfolioId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(x => x.Historicos)
+                    .WithOne()
+                    .HasForeignKey(h => h.PortfolioId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(x => x.Anexos)
+                    .WithOne()
+                    .HasForeignKey(a => a.PortfolioId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<PortfolioItem>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_portfolio_item");
+                entity.Property(x => x.TipoItem).HasMaxLength(50);
+                entity.Property(x => x.Titulo).HasMaxLength(255);
+                entity.Property(x => x.JustificativaPrioridade).HasMaxLength(4000);
+                entity.Property(x => x.Observacao).HasMaxLength(4000);
+                entity.HasIndex(x => new { x.TenantId, x.PortfolioId, x.Sequencia });
+            });
+
+            modelBuilder.Entity<HistoricoPortfolio>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_portfolio_historico");
+                entity.Property(x => x.Acao).HasConversion<string>().HasMaxLength(30);
+                entity.Property(x => x.Ip).HasMaxLength(60);
+                entity.Property(x => x.Motivo).HasMaxLength(1000);
+                entity.HasIndex(x => new { x.TenantId, x.PortfolioId });
+            });
+
+            modelBuilder.Entity<AnexoPortfolio>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_portfolio_anexo");
+                entity.Property(x => x.TipoAnexo).HasMaxLength(50);
+                entity.HasIndex(x => new { x.TenantId, x.PortfolioId });
+            });
+
+            modelBuilder.Entity<ParametroPortfolio>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_portfolio_parametro");
+                entity.Property(x => x.Chave).HasMaxLength(120);
+                entity.HasIndex(x => new { x.TenantId, x.Chave }).IsUnique();
             });
 
             modelBuilder.Entity<OutboxMessage>(entity =>

@@ -164,5 +164,107 @@ namespace Epros.API.Controllers
         [AbacAuthorize("SegregacaoFuncoes", "Ler")]
         public async Task<IActionResult> ListarViolacoes()
             => Ok(await _mediator.Send(new ObterViolacoesSoDQuery()));
+
+        // ===================== GRC-DEN (Investigacoes e Denuncias) =====================
+        // Recurso ABAC "InvestigacoesDenuncias" nao e semeado: sobe DESABILITADO (nega por padrao).
+
+        [HttpGet("denuncias/categorias")]
+        [AbacAuthorize("InvestigacoesDenuncias", "Ler")]
+        public async Task<IActionResult> ListarCategoriasDenuncia()
+            => Ok(await _mediator.Send(new ObterCategoriasDenunciaQuery()));
+
+        [HttpPost("denuncias/categorias")]
+        [AbacAuthorize("InvestigacoesDenuncias", "Configurar")]
+        public async Task<ActionResult<CommandResult>> CriarCategoriaDenuncia([FromBody] CriarCategoriaDenunciaCommand command)
+            => Resultado(await _mediator.Send(command));
+
+        [HttpPost("denuncias/categorias/{categoriaId}/inativar")]
+        [AbacAuthorize("InvestigacoesDenuncias", "Configurar")]
+        public async Task<ActionResult<CommandResult>> InativarCategoriaDenuncia(Guid categoriaId)
+            => Resultado(await _mediator.Send(new InativarCategoriaDenunciaCommand(categoriaId)));
+
+        [HttpPost("denuncias/detalhada")]
+        [AbacAuthorize("InvestigacoesDenuncias", "Criar")]
+        public async Task<ActionResult<CommandResult>> RegistrarDenunciaDetalhada([FromBody] RegistrarDenunciaDetalhadaCommand command)
+            => Resultado(await _mediator.Send(command));
+
+        [HttpGet("denuncias/{denunciaId}/detalhe")]
+        [AbacAuthorize("InvestigacoesDenuncias", "Ler")]
+        public async Task<IActionResult> ObterDenunciaDetalhe(Guid denunciaId)
+            => Ok(await _mediator.Send(new ObterDenunciaDetalheQuery(denunciaId)));
+
+        [HttpPost("denuncias/{denunciaId}/triar")]
+        [AbacAuthorize("InvestigacoesDenuncias", "Triar")]
+        public async Task<ActionResult<CommandResult>> TriarDenuncia(Guid denunciaId, [FromBody] TriarDenunciaRequest request)
+            => Resultado(await _mediator.Send(new TriarDenunciaCommand(denunciaId, request.CategoriaId, request.Prioridade)));
+
+        public record TriarDenunciaRequest(Guid? CategoriaId, string? Prioridade);
+
+        [HttpPost("denuncias/{denunciaId}/participantes")]
+        [AbacAuthorize("InvestigacoesDenuncias", "Triar")]
+        public async Task<ActionResult<CommandResult>> AdicionarParticipante(Guid denunciaId, [FromBody] AdicionarParticipanteRequest request)
+            => Resultado(await _mediator.Send(new AdicionarParticipanteDenunciaCommand(denunciaId, request.PessoaId, request.Papel, request.NomeDeclarado, request.Sigiloso)));
+
+        public record AdicionarParticipanteRequest(Guid? PessoaId, string Papel, string? NomeDeclarado, bool Sigiloso);
+
+        [HttpGet("denuncias/{denunciaId}/participantes")]
+        [AbacAuthorize("InvestigacoesDenuncias", "Ler")]
+        public async Task<IActionResult> ListarParticipantes(Guid denunciaId)
+            => Ok(await _mediator.Send(new ObterParticipantesDenunciaQuery(denunciaId)));
+
+        [HttpPost("denuncias/{denunciaId}/investigacoes")]
+        [AbacAuthorize("InvestigacoesDenuncias", "Atribuir")]
+        public async Task<ActionResult<CommandResult>> AtribuirInvestigacao(Guid denunciaId, [FromBody] AtribuirInvestigacaoRequest request)
+            => Resultado(await _mediator.Send(new AtribuirInvestigacaoCommand(denunciaId, request.InvestigadorId, request.PrazoSla)));
+
+        public record AtribuirInvestigacaoRequest(Guid InvestigadorId, DateTime? PrazoSla);
+
+        [HttpGet("denuncias/{denunciaId}/investigacoes")]
+        [AbacAuthorize("InvestigacoesDenuncias", "Ler")]
+        public async Task<IActionResult> ListarInvestigacoes(Guid denunciaId)
+            => Ok(await _mediator.Send(new ObterInvestigacoesDenunciaQuery(denunciaId)));
+
+        [HttpPost("denuncias/investigacoes/{investigacaoId}/concluir")]
+        [AbacAuthorize("InvestigacoesDenuncias", "Concluir")]
+        public async Task<ActionResult<CommandResult>> ConcluirInvestigacao(Guid investigacaoId, [FromBody] ConcluirInvestigacaoRequest request)
+            => Resultado(await _mediator.Send(new ConcluirInvestigacaoCommand(investigacaoId, request.ConclusaoProposta, request.DataConclusao)));
+
+        public record ConcluirInvestigacaoRequest(string ConclusaoProposta, DateTime DataConclusao);
+
+        [HttpPost("denuncias/{denunciaId}/respostas")]
+        [AbacAuthorize("InvestigacoesDenuncias", "Responder")]
+        public async Task<ActionResult<CommandResult>> ResponderDenuncia(Guid denunciaId, [FromBody] ResponderDenunciaRequest request)
+            => Resultado(await _mediator.Send(new ResponderDenunciaCommand(denunciaId, request.Mensagem, request.Interna)));
+
+        public record ResponderDenunciaRequest(string Mensagem, bool Interna);
+
+        [HttpGet("denuncias/{denunciaId}/respostas")]
+        [AbacAuthorize("InvestigacoesDenuncias", "Ler")]
+        public async Task<IActionResult> ListarRespostas(Guid denunciaId, [FromQuery] bool incluirInternas = false)
+            => Ok(await _mediator.Send(new ObterRespostasDenunciaQuery(denunciaId, incluirInternas)));
+
+        [HttpPost("denuncias/{denunciaId}/anexos")]
+        [AbacAuthorize("InvestigacoesDenuncias", "Responder")]
+        public async Task<ActionResult<CommandResult>> AnexarEvidencia(Guid denunciaId, [FromBody] AnexarEvidenciaRequest request)
+            => Resultado(await _mediator.Send(new AnexarEvidenciaDenunciaCommand(denunciaId, request.RespostaId, request.ArquivoId, request.Sigiloso)));
+
+        public record AnexarEvidenciaRequest(Guid? RespostaId, Guid ArquivoId, bool Sigiloso);
+
+        [HttpPost("denuncias/{denunciaId}/concluir")]
+        [AbacAuthorize("InvestigacoesDenuncias", "Concluir")]
+        public async Task<ActionResult<CommandResult>> ConcluirDenuncia(Guid denunciaId, [FromBody] ConcluirDenunciaRequest request)
+            => Resultado(await _mediator.Send(new ConcluirDenunciaCommand(denunciaId, request.ResolvedAt, request.ParecerFinal)));
+
+        public record ConcluirDenunciaRequest(DateTime ResolvedAt, string? ParecerFinal);
+
+        [HttpGet("denuncias/parametros")]
+        [AbacAuthorize("InvestigacoesDenuncias", "Configurar")]
+        public async Task<IActionResult> ListarParametrosDenuncia()
+            => Ok(await _mediator.Send(new ObterParametrosDenunciaQuery()));
+
+        [HttpPost("denuncias/parametros")]
+        [AbacAuthorize("InvestigacoesDenuncias", "Configurar")]
+        public async Task<ActionResult<CommandResult>> DefinirParametroDenuncia([FromBody] DefinirParametroDenunciaCommand command)
+            => Resultado(await _mediator.Send(command));
     }
 }

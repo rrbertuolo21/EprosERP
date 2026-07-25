@@ -98,6 +98,65 @@ namespace Epros.Modules.Vendas.Infrastructure.Data
         public DbSet<CrmPagamentoPixRelacional> CrmPagamentosPixRelacional => Set<CrmPagamentoPixRelacional>();
         public DbSet<CrmHistorico> CrmHistoricos => Set<CrmHistorico>();
 
+        // Garantias (VEN-GAR)
+        public DbSet<GarantiaPolitica> GarantiaPoliticas => Set<GarantiaPolitica>();
+        public DbSet<GarantiaCobertura> GarantiaCoberturas => Set<GarantiaCobertura>();
+        public DbSet<GarantiaHistorico> GarantiaHistoricos => Set<GarantiaHistorico>();
+
+        // Planejamento de Demanda (VEN-PDM)
+        public DbSet<DemandaPrevisao> DemandaPrevisoes => Set<DemandaPrevisao>();
+        public DbSet<DemandaCenario> DemandaCenarios => Set<DemandaCenario>();
+        public DbSet<DemandaVersao> DemandaVersoes => Set<DemandaVersao>();
+        public DbSet<DemandaItem> DemandaItens => Set<DemandaItem>();
+        public DbSet<DemandaConsenso> DemandaConsensos => Set<DemandaConsenso>();
+        public DbSet<DemandaIntegracao> DemandaIntegracoes => Set<DemandaIntegracao>();
+        public DbSet<DemandaHistorico> DemandaHistoricos => Set<DemandaHistorico>();
+
+        // Gestão de Contratos de Venda (VEN-GCV)
+        public DbSet<ContratoTipo> ContratoTipos => Set<ContratoTipo>();
+        public DbSet<Contrato> Contratos => Set<Contrato>();
+        public DbSet<ContratoModelo> ContratoModelos => Set<ContratoModelo>();
+        public DbSet<ContratoAnexo> ContratoAnexos => Set<ContratoAnexo>();
+        public DbSet<ContratoComentario> ContratoComentarios => Set<ContratoComentario>();
+        public DbSet<ContratoNota> ContratoNotas => Set<ContratoNota>();
+        public DbSet<ContratoRenovacao> ContratoRenovacoes => Set<ContratoRenovacao>();
+        public DbSet<ContratoAssinatura> ContratoAssinaturas => Set<ContratoAssinatura>();
+        public DbSet<ContratoConfiguracao> ContratoConfiguracoes => Set<ContratoConfiguracao>();
+        public DbSet<ContratoHistorico> ContratoHistoricos => Set<ContratoHistorico>();
+
+        // Logística de Saída (VEN-LDS)
+        public DbSet<Expedicao> Expedicoes => Set<Expedicao>();
+        public DbSet<ExpedicaoLocalEntrega> ExpedicaoLocaisEntrega => Set<ExpedicaoLocalEntrega>();
+        public DbSet<ExpedicaoTransporte> ExpedicaoTransportes => Set<ExpedicaoTransporte>();
+        public DbSet<ExpedicaoTransportadora> ExpedicaoTransportadoras => Set<ExpedicaoTransportadora>();
+        public DbSet<ExpedicaoVeiculo> ExpedicaoVeiculos => Set<ExpedicaoVeiculo>();
+        public DbSet<ExpedicaoReboque> ExpedicaoReboques => Set<ExpedicaoReboque>();
+        public DbSet<ExpedicaoVolume> ExpedicaoVolumes => Set<ExpedicaoVolume>();
+        public DbSet<ExpedicaoItemEntrega> ExpedicaoItensEntrega => Set<ExpedicaoItemEntrega>();
+        public DbSet<ExpedicaoHistorico> ExpedicaoHistoricos => Set<ExpedicaoHistorico>();
+
+        // Portal do Cliente (VEN-PCL)
+        public DbSet<PortalUsuarioCliente> PortalUsuariosCliente => Set<PortalUsuarioCliente>();
+        public DbSet<PortalFormulario> PortalFormularios => Set<PortalFormulario>();
+        public DbSet<PortalFormularioResponsavel> PortalFormularioResponsaveis => Set<PortalFormularioResponsavel>();
+        public DbSet<PortalSolicitacao> PortalSolicitacoes => Set<PortalSolicitacao>();
+        public DbSet<PortalPermissao> PortalPermissoes => Set<PortalPermissao>();
+        public DbSet<PortalAuditoria> PortalAuditorias => Set<PortalAuditoria>();
+
+        // Comércio Eletrônico (VEN-ECM)
+        public DbSet<EcoConfiguracaoLoja> EcoConfiguracoesLoja => Set<EcoConfiguracaoLoja>();
+        public DbSet<EcoCliente> EcoClientes => Set<EcoCliente>();
+        public DbSet<EcoEnderecoCliente> EcoEnderecosCliente => Set<EcoEnderecoCliente>();
+        public DbSet<EcoPedido> EcoPedidos => Set<EcoPedido>();
+        public DbSet<EcoPedidoItem> EcoPedidoItens => Set<EcoPedidoItem>();
+        public DbSet<EcoCarrossel> EcoCarrosseis => Set<EcoCarrossel>();
+        public DbSet<EcoCupom> EcoCupons => Set<EcoCupom>();
+        public DbSet<EcoFreteGratisCidade> EcoFreteGratisCidades => Set<EcoFreteGratisCidade>();
+        public DbSet<EcoContato> EcoContatos => Set<EcoContato>();
+        public DbSet<EcoNewsletter> EcoNewsletters => Set<EcoNewsletter>();
+        public DbSet<EcoFavoritoProduto> EcoFavoritosProduto => Set<EcoFavoritoProduto>();
+        public DbSet<EcoHistorico> EcoHistoricos => Set<EcoHistorico>();
+
         public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
         // Lookups read-only cross-module (Guid FK) — ver VendasLookups.cs e seção 6.4 da convenção.
@@ -231,6 +290,12 @@ namespace Epros.Modules.Vendas.Infrastructure.Data
             ConfigurarCaixa(modelBuilder);
             ConfigurarGestaoServicos(modelBuilder);
             ConfigurarCrm(modelBuilder);
+            ConfigurarGarantias(modelBuilder);
+            ConfigurarPlanejamentoDemanda(modelBuilder);
+            ConfigurarContratosVenda(modelBuilder);
+            ConfigurarLogisticaSaida(modelBuilder);
+            ConfigurarPortalCliente(modelBuilder);
+            ConfigurarComercioEletronico(modelBuilder);
 
             modelBuilder.Entity<OutboxMessage>(entity =>
             {
@@ -1134,6 +1199,641 @@ namespace Epros.Modules.Vendas.Infrastructure.Data
                 e.Property(x => x.Observacao).HasMaxLength(500);
                 e.HasIndex(x => new { x.TenantId, x.EntidadeId }).HasDatabaseName("ix_crm_historicos_tenant_entidade");
                 e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_crm_historicos_sync_id");
+            });
+        }
+
+        /// <summary>Mapping do submódulo Garantias (VEN-GAR). Schema "vendas" (herdado). Fonte: EF §10.</summary>
+        private static void ConfigurarGarantias(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<GarantiaPolitica>(e =>
+            {
+                e.ToTable("ven_garantia_politicas");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Nome).HasMaxLength(200);
+                e.Property(x => x.Descricao).HasMaxLength(2000);
+                e.Property(x => x.TipoDuracao).HasConversion<int>();
+                e.HasIndex(x => x.TenantId).HasDatabaseName("ix_ven_garantia_politicas_tenant");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_garantia_politicas_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<GarantiaCobertura>(e =>
+            {
+                e.ToTable("ven_garantia_coberturas");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.NumeroSerieLote).HasMaxLength(120);
+                e.Property(x => x.Observacao).HasMaxLength(2000);
+                e.Property(x => x.Situacao).HasConversion<int>();
+                e.HasIndex(x => new { x.TenantId, x.GarantiaPoliticaId }).HasDatabaseName("ix_ven_garantia_coberturas_tenant_politica");
+                e.HasIndex(x => new { x.TenantId, x.VendaId }).HasDatabaseName("ix_ven_garantia_coberturas_tenant_venda");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_garantia_coberturas_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<GarantiaHistorico>(e =>
+            {
+                e.ToTable("ven_garantia_historicos");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.EntidadeTipo).HasConversion<int>();
+                e.Property(x => x.Evento).HasConversion<int>();
+                e.Property(x => x.DadosAnterioresJson).HasColumnType("jsonb");
+                e.Property(x => x.DadosNovosJson).HasColumnType("jsonb");
+                e.HasIndex(x => new { x.TenantId, x.EntidadeId }).HasDatabaseName("ix_ven_garantia_historicos_tenant_entidade");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_garantia_historicos_sync_id");
+            });
+        }
+
+        /// <summary>Mapping do submódulo Planejamento de Demanda (VEN-PDM). Fonte: EF §14.</summary>
+        private static void ConfigurarPlanejamentoDemanda(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<DemandaPrevisao>(e =>
+            {
+                e.ToTable("ven_demanda_previsoes");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Codigo).HasMaxLength(60);
+                e.Property(x => x.Nome).HasMaxLength(200);
+                e.Property(x => x.Status).HasConversion<int>();
+                e.Property(x => x.Observacoes).HasMaxLength(2000);
+                e.HasIndex(x => new { x.TenantId, x.Status }).HasDatabaseName("ix_ven_demanda_previsoes_tenant_status");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_demanda_previsoes_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<DemandaCenario>(e =>
+            {
+                e.ToTable("ven_demanda_cenarios");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Nome).HasMaxLength(200);
+                e.Property(x => x.Tipo).HasMaxLength(60);
+                e.Property(x => x.Descricao).HasMaxLength(2000);
+                e.HasIndex(x => new { x.TenantId, x.PrevisaoId }).HasDatabaseName("ix_ven_demanda_cenarios_tenant_previsao");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_demanda_cenarios_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<DemandaVersao>(e =>
+            {
+                e.ToTable("ven_demanda_versoes");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.NumeroVersao).HasMaxLength(60);
+                e.Property(x => x.Status).HasConversion<int>();
+                e.Property(x => x.Observacoes).HasMaxLength(2000);
+                e.HasIndex(x => new { x.TenantId, x.PrevisaoId }).HasDatabaseName("ix_ven_demanda_versoes_tenant_previsao");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_demanda_versoes_sync_id");
+            });
+
+            modelBuilder.Entity<DemandaItem>(e =>
+            {
+                e.ToTable("ven_demanda_itens");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Periodo).HasMaxLength(60);
+                e.Property(x => x.QuantidadeHistorica).HasPrecision(18, 4);
+                e.Property(x => x.QuantidadePrevista).HasPrecision(18, 4);
+                e.Property(x => x.QuantidadeAjustada).HasPrecision(18, 4);
+                e.Property(x => x.QuantidadeAprovada).HasPrecision(18, 4);
+                e.Property(x => x.Observacoes).HasMaxLength(2000);
+                e.HasIndex(x => new { x.TenantId, x.PrevisaoId }).HasDatabaseName("ix_ven_demanda_itens_tenant_previsao");
+                e.HasIndex(x => new { x.TenantId, x.ProdutoId }).HasDatabaseName("ix_ven_demanda_itens_tenant_produto");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_demanda_itens_sync_id");
+            });
+
+            modelBuilder.Entity<DemandaConsenso>(e =>
+            {
+                e.ToTable("ven_demanda_consensos");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Status).HasMaxLength(60);
+                e.Property(x => x.Observacoes).HasMaxLength(2000);
+                e.HasIndex(x => new { x.TenantId, x.PrevisaoId }).HasDatabaseName("ix_ven_demanda_consensos_tenant_previsao");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_demanda_consensos_sync_id");
+            });
+
+            modelBuilder.Entity<DemandaIntegracao>(e =>
+            {
+                e.ToTable("ven_demanda_integracoes");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Destino).HasConversion<int>();
+                e.Property(x => x.Direcao).HasConversion<int>();
+                e.Property(x => x.Status).HasConversion<int>();
+                e.Property(x => x.Mensagem).HasMaxLength(2000);
+                e.HasIndex(x => new { x.TenantId, x.PrevisaoId }).HasDatabaseName("ix_ven_demanda_integracoes_tenant_previsao");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_demanda_integracoes_sync_id");
+            });
+
+            modelBuilder.Entity<DemandaHistorico>(e =>
+            {
+                e.ToTable("ven_demanda_historicos");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Evento).HasMaxLength(120);
+                e.Property(x => x.Detalhe).HasMaxLength(2000);
+                e.Property(x => x.ValoresAnteriores).HasColumnType("jsonb");
+                e.Property(x => x.ValoresNovos).HasColumnType("jsonb");
+                e.HasIndex(x => new { x.TenantId, x.PrevisaoId }).HasDatabaseName("ix_ven_demanda_historicos_tenant_previsao");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_demanda_historicos_sync_id");
+            });
+        }
+
+        /// <summary>Mapping do submódulo Gestão de Contratos de Venda (VEN-GCV). Fonte: EF §10.</summary>
+        private static void ConfigurarContratosVenda(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<ContratoTipo>(e =>
+            {
+                e.ToTable("ven_contrato_tipos");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Nome).HasMaxLength(200);
+                e.HasIndex(x => x.TenantId).HasDatabaseName("ix_ven_contrato_tipos_tenant");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_contrato_tipos_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<Contrato>(e =>
+            {
+                e.ToTable("ven_contratos");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.IdentificadorPublico).HasMaxLength(80);
+                e.Property(x => x.Assunto).HasMaxLength(300);
+                e.Property(x => x.NumeroContrato).HasMaxLength(40);
+                e.Property(x => x.TipoOrigem).HasConversion<int>();
+                e.Property(x => x.NumeroModelo).HasMaxLength(40);
+                e.Property(x => x.Valor).HasPrecision(18, 2);
+                e.Property(x => x.Descricao).HasMaxLength(4000);
+                e.Property(x => x.Status).HasConversion<int>();
+                e.Property(x => x.AutomacaoConfigJson).HasColumnType("jsonb");
+                e.Property(x => x.AutomacaoResultadoJson).HasColumnType("jsonb");
+                e.HasIndex(x => new { x.TenantId, x.Status }).HasDatabaseName("ix_ven_contratos_tenant_status");
+                e.HasIndex(x => new { x.TenantId, x.ClienteId }).HasDatabaseName("ix_ven_contratos_tenant_cliente");
+                e.HasIndex(x => new { x.TenantId, x.NumeroContrato }).IsUnique().HasDatabaseName("uq_ven_contratos_tenant_numero");
+                e.HasIndex(x => x.IdentificadorPublico).IsUnique().HasDatabaseName("uq_ven_contratos_identificador_publico");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_contratos_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<ContratoModelo>(e =>
+            {
+                e.ToTable("ven_contrato_modelos");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Titulo).HasMaxLength(300);
+                e.Property(x => x.CorCabecalho).HasMaxLength(20);
+                e.HasIndex(x => x.TenantId).HasDatabaseName("ix_ven_contrato_modelos_tenant");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_contrato_modelos_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<ContratoAnexo>(e =>
+            {
+                e.ToTable("ven_contrato_anexos");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.NomeArquivo).HasMaxLength(300);
+                e.Property(x => x.ReferenciaArquivo).HasMaxLength(500);
+                e.HasIndex(x => new { x.TenantId, x.ContratoId }).HasDatabaseName("ix_ven_contrato_anexos_tenant_contrato");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_contrato_anexos_sync_id");
+            });
+
+            modelBuilder.Entity<ContratoComentario>(e =>
+            {
+                e.ToTable("ven_contrato_comentarios");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Comentario).HasMaxLength(1000);
+                e.HasIndex(x => new { x.TenantId, x.ContratoId }).HasDatabaseName("ix_ven_contrato_comentarios_tenant_contrato");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_contrato_comentarios_sync_id");
+            });
+
+            modelBuilder.Entity<ContratoNota>(e =>
+            {
+                e.ToTable("ven_contrato_notas");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Nota).HasMaxLength(1000);
+                e.HasIndex(x => new { x.TenantId, x.ContratoId }).HasDatabaseName("ix_ven_contrato_notas_tenant_contrato");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_contrato_notas_sync_id");
+            });
+
+            modelBuilder.Entity<ContratoRenovacao>(e =>
+            {
+                e.ToTable("ven_contrato_renovacoes");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Valor).HasPrecision(18, 2);
+                e.Property(x => x.Notas).HasMaxLength(2000);
+                e.Property(x => x.Status).HasConversion<int>();
+                e.HasIndex(x => new { x.TenantId, x.ContratoId }).HasDatabaseName("ix_ven_contrato_renovacoes_tenant_contrato");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_contrato_renovacoes_sync_id");
+            });
+
+            modelBuilder.Entity<ContratoAssinatura>(e =>
+            {
+                e.ToTable("ven_contrato_assinaturas");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Parte).HasConversion<int>();
+                e.Property(x => x.TipoAssinatura).HasConversion<int>();
+                e.Property(x => x.DadosAssinatura).HasMaxLength(8000);
+                // GCV-030: uma assinatura por usuário e contrato.
+                e.HasIndex(x => new { x.TenantId, x.ContratoId, x.UsuarioId }).IsUnique().HasDatabaseName("uq_ven_contrato_assinaturas_contrato_usuario");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_contrato_assinaturas_sync_id");
+            });
+
+            modelBuilder.Entity<ContratoConfiguracao>(e =>
+            {
+                e.ToTable("ven_contrato_configuracoes");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.PrefixoContrato).HasMaxLength(10);
+                e.Property(x => x.AutomacaoPadraoJson).HasColumnType("jsonb");
+                e.Property(x => x.UsuariosPadraoJson).HasColumnType("jsonb");
+                e.HasIndex(x => x.TenantId).IsUnique().HasDatabaseName("uq_ven_contrato_configuracoes_tenant");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_contrato_configuracoes_sync_id");
+            });
+
+            modelBuilder.Entity<ContratoHistorico>(e =>
+            {
+                e.ToTable("ven_contrato_historicos");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Evento).HasConversion<int>();
+                e.Property(x => x.DadosAnterioresJson).HasColumnType("jsonb");
+                e.Property(x => x.DadosNovosJson).HasColumnType("jsonb");
+                e.HasIndex(x => new { x.TenantId, x.ContratoId }).HasDatabaseName("ix_ven_contrato_historicos_tenant_contrato");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_contrato_historicos_sync_id");
+            });
+        }
+
+        /// <summary>Mapping do submódulo Logística de Saída (VEN-LDS). Fonte: EF §19.</summary>
+        private static void ConfigurarLogisticaSaida(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Expedicao>(e =>
+            {
+                e.ToTable("ven_expedicoes");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Status).HasConversion<int>();
+                e.Property(x => x.Observacoes).HasMaxLength(5000);
+                e.Property(x => x.TraceId).HasMaxLength(80);
+                e.HasIndex(x => new { x.TenantId, x.PedidoId }).HasDatabaseName("ix_ven_expedicoes_tenant_pedido");
+                e.HasIndex(x => new { x.TenantId, x.Status }).HasDatabaseName("ix_ven_expedicoes_tenant_status");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_expedicoes_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<ExpedicaoLocalEntrega>(e =>
+            {
+                e.ToTable("ven_expedicao_locais_entrega");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.CpfCnpj).HasMaxLength(14);
+                e.Property(x => x.Logradouro).HasMaxLength(120);
+                e.Property(x => x.Numero).HasMaxLength(20);
+                e.Property(x => x.Complemento).HasMaxLength(120);
+                e.Property(x => x.Bairro).HasMaxLength(60);
+                e.Property(x => x.CodigoMunicipio).HasMaxLength(10);
+                e.Property(x => x.NomeMunicipio).HasMaxLength(60);
+                e.Property(x => x.Uf).HasMaxLength(2);
+                e.HasIndex(x => new { x.TenantId, x.ExpedicaoId }).HasDatabaseName("ix_ven_expedicao_locais_tenant_exp");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_expedicao_locais_sync_id");
+            });
+
+            modelBuilder.Entity<ExpedicaoTransporte>(e =>
+            {
+                e.ToTable("ven_expedicao_transportes");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.ModalidadeFrete).HasMaxLength(60);
+                e.Property(x => x.ConhecimentoTransporte).HasMaxLength(120);
+                e.HasIndex(x => new { x.TenantId, x.ExpedicaoId }).HasDatabaseName("ix_ven_expedicao_transportes_tenant_exp");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_expedicao_transportes_sync_id");
+            });
+
+            modelBuilder.Entity<ExpedicaoTransportadora>(e =>
+            {
+                e.ToTable("ven_expedicao_transportadoras");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Cnpj).HasMaxLength(14);
+                e.Property(x => x.Cpf).HasMaxLength(11);
+                e.Property(x => x.RazaoSocial).HasMaxLength(60);
+                e.Property(x => x.InscricaoEstadual).HasMaxLength(20);
+                e.Property(x => x.EnderecoCompleto).HasMaxLength(60);
+                e.Property(x => x.NomeMunicipio).HasMaxLength(60);
+                e.Property(x => x.Uf).HasMaxLength(2);
+                e.HasIndex(x => new { x.TenantId, x.TransporteId }).HasDatabaseName("ix_ven_expedicao_transportadoras_tenant_transp");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_expedicao_transportadoras_sync_id");
+            });
+
+            modelBuilder.Entity<ExpedicaoVeiculo>(e =>
+            {
+                e.ToTable("ven_expedicao_veiculos");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Placa).HasMaxLength(8);
+                e.Property(x => x.Rntrc).HasMaxLength(14);
+                e.Property(x => x.Uf).HasMaxLength(2);
+                e.HasIndex(x => new { x.TenantId, x.TransporteId }).HasDatabaseName("ix_ven_expedicao_veiculos_tenant_transp");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_expedicao_veiculos_sync_id");
+            });
+
+            modelBuilder.Entity<ExpedicaoReboque>(e =>
+            {
+                e.ToTable("ven_expedicao_reboques");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Placa).HasMaxLength(8);
+                e.Property(x => x.Rntrc).HasMaxLength(14);
+                e.Property(x => x.Uf).HasMaxLength(2);
+                e.HasIndex(x => new { x.TenantId, x.TransporteId }).HasDatabaseName("ix_ven_expedicao_reboques_tenant_transp");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_expedicao_reboques_sync_id");
+            });
+
+            modelBuilder.Entity<ExpedicaoVolume>(e =>
+            {
+                e.ToTable("ven_expedicao_volumes");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.QuantidadeVolumes).HasPrecision(18, 3);
+                e.Property(x => x.Especie).HasMaxLength(60);
+                e.Property(x => x.Marca).HasMaxLength(60);
+                e.Property(x => x.NumeroVolumes).HasMaxLength(60);
+                e.Property(x => x.PesoLiquido).HasPrecision(18, 3);
+                e.Property(x => x.PesoBruto).HasPrecision(18, 3);
+                e.HasIndex(x => new { x.TenantId, x.TransporteId }).HasDatabaseName("ix_ven_expedicao_volumes_tenant_transp");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_expedicao_volumes_sync_id");
+            });
+
+            modelBuilder.Entity<ExpedicaoItemEntrega>(e =>
+            {
+                e.ToTable("ven_expedicao_itens_entrega");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.QuantidadeVendida).HasPrecision(18, 4);
+                e.Property(x => x.QuantidadeEntregue).HasPrecision(18, 4);
+                e.Property(x => x.SaldoEntrega).HasPrecision(18, 4);
+                e.HasIndex(x => new { x.TenantId, x.ExpedicaoId }).HasDatabaseName("ix_ven_expedicao_itens_tenant_exp");
+                e.HasIndex(x => new { x.TenantId, x.PedidoItemId }).HasDatabaseName("ix_ven_expedicao_itens_tenant_pedido_item");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_expedicao_itens_sync_id");
+            });
+
+            modelBuilder.Entity<ExpedicaoHistorico>(e =>
+            {
+                e.ToTable("ven_expedicao_historicos");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Evento).HasMaxLength(120);
+                e.Property(x => x.StatusAnterior).HasMaxLength(60);
+                e.Property(x => x.StatusNovo).HasMaxLength(60);
+                e.Property(x => x.Detalhe).HasMaxLength(2000);
+                e.Property(x => x.TraceId).HasMaxLength(80);
+                e.HasIndex(x => new { x.TenantId, x.ExpedicaoId }).HasDatabaseName("ix_ven_expedicao_historicos_tenant_exp");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_expedicao_historicos_sync_id");
+            });
+        }
+
+        /// <summary>Mapping do submódulo Portal do Cliente (VEN-PCL). Fonte: EF §16.</summary>
+        private static void ConfigurarPortalCliente(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<PortalUsuarioCliente>(e =>
+            {
+                e.ToTable("ven_portal_usuarios_cliente");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Nome).HasMaxLength(200);
+                e.Property(x => x.Email).HasMaxLength(160);
+                e.Property(x => x.Telefone).HasMaxLength(40);
+                e.Property(x => x.Status).HasConversion<int>();
+                e.HasIndex(x => new { x.TenantId, x.ClienteId }).HasDatabaseName("ix_ven_portal_usuarios_tenant_cliente");
+                e.HasIndex(x => new { x.TenantId, x.Email }).IsUnique().HasDatabaseName("uq_ven_portal_usuarios_tenant_email");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_portal_usuarios_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<PortalFormulario>(e =>
+            {
+                e.ToTable("ven_portal_formularios");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Codigo).HasMaxLength(60);
+                e.Property(x => x.Nome).HasMaxLength(200);
+                e.Property(x => x.Descricao).HasMaxLength(2000);
+                e.Property(x => x.Status).HasConversion<int>();
+                e.Property(x => x.ConfiguracaoCampos).HasColumnType("jsonb");
+                e.HasIndex(x => x.TenantId).HasDatabaseName("ix_ven_portal_formularios_tenant");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_portal_formularios_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<PortalFormularioResponsavel>(e =>
+            {
+                e.ToTable("ven_portal_formulario_responsaveis");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Papel).HasMaxLength(60);
+                e.HasIndex(x => new { x.TenantId, x.FormularioId }).HasDatabaseName("ix_ven_portal_form_resp_tenant_form");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_portal_form_resp_sync_id");
+            });
+
+            modelBuilder.Entity<PortalSolicitacao>(e =>
+            {
+                e.ToTable("ven_portal_solicitacoes");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Assunto).HasMaxLength(250);
+                e.Property(x => x.Descricao).HasMaxLength(4000);
+                e.Property(x => x.DadosFormulario).HasColumnType("jsonb");
+                e.Property(x => x.Status).HasConversion<int>();
+                e.HasIndex(x => new { x.TenantId, x.ClienteId }).HasDatabaseName("ix_ven_portal_solicitacoes_tenant_cliente");
+                e.HasIndex(x => new { x.TenantId, x.Status }).HasDatabaseName("ix_ven_portal_solicitacoes_tenant_status");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_portal_solicitacoes_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<PortalPermissao>(e =>
+            {
+                e.ToTable("ven_portal_permissoes");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Recurso).HasConversion<int>();
+                e.HasIndex(x => new { x.TenantId, x.UsuarioClienteId, x.Recurso }).IsUnique().HasDatabaseName("uq_ven_portal_permissoes_usuario_recurso");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_portal_permissoes_sync_id");
+            });
+
+            modelBuilder.Entity<PortalAuditoria>(e =>
+            {
+                e.ToTable("ven_portal_auditorias");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Recurso).HasMaxLength(60);
+                e.Property(x => x.Acao).HasMaxLength(60);
+                e.Property(x => x.Detalhe).HasMaxLength(2000);
+                e.HasIndex(x => new { x.TenantId, x.UsuarioClienteId }).HasDatabaseName("ix_ven_portal_auditorias_tenant_usuario");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_portal_auditorias_sync_id");
+            });
+        }
+
+        /// <summary>Mapping do submódulo Comércio Eletrônico (VEN-ECM). Fonte: EF §8.</summary>
+        private static void ConfigurarComercioEletronico(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<EcoConfiguracaoLoja>(e =>
+            {
+                e.ToTable("ven_eco_configuracoes_loja");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Nome).HasMaxLength(200);
+                e.Property(x => x.Rua).HasMaxLength(200);
+                e.Property(x => x.Numero).HasMaxLength(20);
+                e.Property(x => x.Bairro).HasMaxLength(120);
+                e.Property(x => x.Cidade).HasMaxLength(120);
+                e.Property(x => x.Uf).HasMaxLength(2);
+                e.Property(x => x.Cep).HasMaxLength(9);
+                e.Property(x => x.Telefone).HasMaxLength(40);
+                e.Property(x => x.Email).HasMaxLength(160);
+                e.Property(x => x.LinkFacebook).HasMaxLength(300);
+                e.Property(x => x.LinkTwitter).HasMaxLength(300);
+                e.Property(x => x.LinkInstagram).HasMaxLength(300);
+                e.Property(x => x.FreteGratisValor).HasPrecision(18, 2);
+                e.Property(x => x.PagamentoPublicKey).HasMaxLength(500);
+                e.Property(x => x.PagamentoAccessToken).HasMaxLength(500);
+                e.Property(x => x.Latitude).HasPrecision(10, 7);
+                e.Property(x => x.Longitude).HasPrecision(10, 7);
+                e.Property(x => x.MapaUrl).HasMaxLength(500);
+                e.Property(x => x.MapaApiKey).HasMaxLength(200);
+                e.Property(x => x.TokenLoja).HasMaxLength(80);
+                e.Property(x => x.CorFundo).HasMaxLength(20);
+                e.Property(x => x.CorBotao).HasMaxLength(20);
+                e.Property(x => x.Logo).HasMaxLength(500);
+                e.Property(x => x.ImagemContato).HasMaxLength(500);
+                e.Property(x => x.Icone).HasMaxLength(500);
+                e.HasIndex(x => x.TenantId).HasDatabaseName("ix_ven_eco_config_tenant");
+                e.HasIndex(x => x.TokenLoja).IsUnique().HasDatabaseName("uq_ven_eco_config_token_loja");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_eco_config_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<EcoCliente>(e =>
+            {
+                e.ToTable("ven_eco_clientes");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Nome).HasMaxLength(200);
+                e.Property(x => x.Sobrenome).HasMaxLength(200);
+                e.Property(x => x.Cpf).HasMaxLength(14);
+                e.Property(x => x.InscricaoEstadual).HasMaxLength(20);
+                e.Property(x => x.Email).HasMaxLength(160);
+                e.Property(x => x.Telefone).HasMaxLength(40);
+                e.Property(x => x.SenhaHash).HasMaxLength(500);
+                e.Property(x => x.TokenCliente).HasMaxLength(20);
+                e.HasIndex(x => new { x.TenantId, x.Email }).IsUnique().HasDatabaseName("uq_ven_eco_clientes_tenant_email");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_eco_clientes_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<EcoEnderecoCliente>(e =>
+            {
+                e.ToTable("ven_eco_enderecos_cliente");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Rua).HasMaxLength(200);
+                e.Property(x => x.Numero).HasMaxLength(20);
+                e.Property(x => x.Bairro).HasMaxLength(120);
+                e.Property(x => x.Cep).HasMaxLength(9);
+                e.Property(x => x.Cidade).HasMaxLength(120);
+                e.Property(x => x.Uf).HasMaxLength(2);
+                e.Property(x => x.Complemento).HasMaxLength(120);
+                e.HasIndex(x => new { x.TenantId, x.ClienteId }).HasDatabaseName("ix_ven_eco_enderecos_tenant_cliente");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_eco_enderecos_sync_id");
+            });
+
+            modelBuilder.Entity<EcoPedido>(e =>
+            {
+                e.ToTable("ven_eco_pedidos");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.StatusPagamentoCodigo).HasConversion<int>();
+                e.Property(x => x.StatusPreparacaoCodigo).HasConversion<int>();
+                e.Property(x => x.ValorTotal).HasPrecision(18, 2);
+                e.Property(x => x.ValorFrete).HasPrecision(18, 2);
+                e.Property(x => x.ValorDesconto).HasPrecision(18, 2);
+                e.Property(x => x.TipoFrete).HasMaxLength(10);
+                e.Property(x => x.NumeroNfe).HasMaxLength(20);
+                e.Property(x => x.Observacao).HasMaxLength(2000);
+                e.Property(x => x.RandPedido).HasMaxLength(20);
+                e.Property(x => x.Hash).HasMaxLength(120);
+                e.Property(x => x.TokenPedido).HasMaxLength(20);
+                e.Property(x => x.CupomDesconto).HasMaxLength(6);
+                e.Property(x => x.TransacaoId).HasMaxLength(120);
+                e.Property(x => x.FormaPagamento).HasConversion<int?>();
+                e.Property(x => x.StatusPagamento).HasMaxLength(30);
+                e.Property(x => x.StatusDetalhe).HasMaxLength(120);
+                e.Property(x => x.LinkBoleto).HasMaxLength(500);
+                e.Property(x => x.QrCode).HasMaxLength(1000);
+                e.Property(x => x.QrCodeBase64).HasColumnType("text");
+                e.Property(x => x.CodigoRastreio).HasMaxLength(60);
+                e.HasIndex(x => new { x.TenantId, x.ClienteId }).HasDatabaseName("ix_ven_eco_pedidos_tenant_cliente");
+                e.HasIndex(x => new { x.TenantId, x.StatusPagamentoCodigo }).HasDatabaseName("ix_ven_eco_pedidos_tenant_status_pag");
+                e.HasIndex(x => x.TokenPedido).IsUnique().HasDatabaseName("uq_ven_eco_pedidos_token");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_eco_pedidos_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<EcoPedidoItem>(e =>
+            {
+                e.ToTable("ven_eco_pedido_itens");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Quantidade).HasPrecision(18, 4);
+                e.Property(x => x.ValorUnitario).HasPrecision(18, 2);
+                e.Property(x => x.ValorTotal).HasPrecision(18, 2);
+                e.HasIndex(x => new { x.TenantId, x.PedidoId }).HasDatabaseName("ix_ven_eco_pedido_itens_tenant_pedido");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_eco_pedido_itens_sync_id");
+            });
+
+            modelBuilder.Entity<EcoCarrossel>(e =>
+            {
+                e.ToTable("ven_eco_carrosseis");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Titulo).HasMaxLength(200);
+                e.Property(x => x.Descricao).HasMaxLength(500);
+                e.Property(x => x.LinkAcao).HasMaxLength(500);
+                e.Property(x => x.NomeBotao).HasMaxLength(60);
+                e.Property(x => x.Imagem).HasMaxLength(500);
+                e.Property(x => x.CorFundo).HasMaxLength(20);
+                e.HasIndex(x => x.TenantId).HasDatabaseName("ix_ven_eco_carrosseis_tenant");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_eco_carrosseis_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<EcoCupom>(e =>
+            {
+                e.ToTable("ven_eco_cupons");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Codigo).HasMaxLength(6);
+                e.Property(x => x.Valor).HasPrecision(18, 2);
+                e.Property(x => x.Tipo).HasConversion<int>();
+                e.HasIndex(x => new { x.TenantId, x.Codigo }).IsUnique().HasDatabaseName("uq_ven_eco_cupons_tenant_codigo");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_eco_cupons_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<EcoFreteGratisCidade>(e =>
+            {
+                e.ToTable("ven_eco_frete_gratis_cidades");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Nome).HasMaxLength(120);
+                e.Property(x => x.Uf).HasMaxLength(2);
+                e.HasIndex(x => x.TenantId).HasDatabaseName("ix_ven_eco_frete_gratis_tenant");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_eco_frete_gratis_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<EcoContato>(e =>
+            {
+                e.ToTable("ven_eco_contatos");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Nome).HasMaxLength(200);
+                e.Property(x => x.Email).HasMaxLength(160);
+                e.Property(x => x.Texto).HasMaxLength(4000);
+                e.HasIndex(x => x.TenantId).HasDatabaseName("ix_ven_eco_contatos_tenant");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_eco_contatos_sync_id");
+            });
+
+            modelBuilder.Entity<EcoNewsletter>(e =>
+            {
+                e.ToTable("ven_eco_newsletters");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Email).HasMaxLength(160);
+                e.HasIndex(x => new { x.TenantId, x.Email }).HasDatabaseName("ix_ven_eco_newsletters_tenant_email");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_eco_newsletters_sync_id");
+            });
+
+            modelBuilder.Entity<EcoFavoritoProduto>(e =>
+            {
+                e.ToTable("ven_eco_favoritos_produto");
+                e.HasKey(x => x.Id);
+                e.HasIndex(x => new { x.TenantId, x.ClienteId }).HasDatabaseName("ix_ven_eco_favoritos_tenant_cliente");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_eco_favoritos_sync_id");
+            });
+
+            modelBuilder.Entity<EcoHistorico>(e =>
+            {
+                e.ToTable("ven_eco_historicos");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Entidade).HasMaxLength(60);
+                e.Property(x => x.Evento).HasMaxLength(120);
+                e.Property(x => x.DadosAnteriores).HasColumnType("jsonb");
+                e.Property(x => x.DadosNovos).HasColumnType("jsonb");
+                e.HasIndex(x => new { x.TenantId, x.EntidadeId }).HasDatabaseName("ix_ven_eco_historicos_tenant_entidade");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_eco_historicos_sync_id");
             });
         }
 
