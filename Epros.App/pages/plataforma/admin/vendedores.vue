@@ -200,7 +200,7 @@ onMounted(async () => {
 
 const checkApiConnection = async () => {
   try {
-    await $fetch('http://localhost:5000/api/v1/plataforma/superadmin/dashboard')
+    await useApi('/plataforma/superadmin/dashboard')
     apiOnline.value = true
   } catch (e) {
     apiOnline.value = false
@@ -226,8 +226,8 @@ const clearLogs = () => {
 const loadRevendasSelect = async () => {
   if (apiOnline.value) {
     try {
-      const res = await $fetch('http://localhost:5000/api/v1/plataforma/revendas', {
-        params: { pagina: 1, tamanhoPagina: 100 }
+      const res = await useApi('/plataforma/revendas', {
+        query: { pagina: 1, tamanhoPagina: 100 }
       })
       revendas.value = res.items
     } catch (e) {
@@ -249,8 +249,8 @@ const loadVendedores = async () => {
   loading.value = true
   if (apiOnline.value) {
     try {
-      const res = await $fetch('http://localhost:5000/api/v1/plataforma/vendedores', {
-        params: {
+      const res = await useApi('/plataforma/vendedores', {
+        query: {
           pagina: page.value,
           tamanhoPagina: 8,
           search: searchTerm.value
@@ -323,7 +323,7 @@ const handleSave = async () => {
   if (apiOnline.value) {
     try {
       if (isEditing.value) {
-        const res = await $fetch(`http://localhost:5000/api/v1/plataforma/vendedores/${editingId.value}`, {
+        const res = await useApi(`/plataforma/vendedores/${editingId.value}`, {
           method: 'PUT',
           body: {
             Id: editingId.value,
@@ -343,7 +343,7 @@ const handleSave = async () => {
           addLog(`Erro ao atualizar: ${res.mensagem}`, 'error')
         }
       } else {
-        const res = await $fetch('http://localhost:5000/api/v1/plataforma/vendedores', {
+        const res = await useApi('/plataforma/vendedores', {
           method: 'POST',
           body: {
             Nome: form.Nome,
@@ -410,7 +410,7 @@ const deleteVendedor = async (id) => {
   if (confirm('Deseja realmente excluir este vendedor?')) {
     if (apiOnline.value) {
       try {
-        const res = await $fetch(`http://localhost:5000/api/v1/plataforma/vendedores/${id}`, {
+        const res = await useApi(`/plataforma/vendedores/${id}`, {
           method: 'DELETE'
         })
         if (res.sucesso) {

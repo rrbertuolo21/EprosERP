@@ -172,6 +172,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from '#app'
 import AppHeader from '~/components/AppHeader.vue'
+import { useApi } from '~/composables/useApi'
 
 // Página autocontida (já renderiza seu próprio AppHeader) — sem layout do shell ERP.
 definePageMeta({ layout: false })
@@ -204,11 +205,8 @@ onMounted(async () => {
 
   // Detecta conectividade com o Backend
   try {
-    await $fetch('http://localhost:5000/api/v1/plataforma/clientes').then(() => {
-      apiOnline.value = true
-    }).catch(() => {
-      apiOnline.value = false
-    })
+    await useApi('/plataforma/clientes')
+    apiOnline.value = true
   } catch (e) {
     apiOnline.value = false
   }
@@ -221,7 +219,7 @@ const loadInvoices = async () => {
   
   if (apiOnline.value) {
     try {
-      const data = await $fetch('http://localhost:5000/api/v1/aplicativo/assinaturas/faturas')
+      const data = await useApi('/aplicativo/assinaturas/faturas')
       if (data && Array.isArray(data)) {
         invoices.value = data.map(f => ({
           id: f.id,
@@ -300,7 +298,7 @@ const openPaymentModal = async (invoice) => {
   
   if (apiOnline.value) {
     try {
-      const res = await $fetch(`http://localhost:5000/api/v1/aplicativo/assinaturas/faturas/${invoice.id}/pix`, {
+      const res = await useApi(`/aplicativo/assinaturas/faturas/${invoice.id}/pix`, {
         method: 'POST'
       })
       if (res && res.sucesso && res.dados) {
@@ -343,7 +341,7 @@ const triggerSimulatedPayment = async () => {
     }
 
     // Tenta chamada fetch para o monólito local (porta do backend REST)
-    await $fetch('http://localhost:5000/api/v1/plataforma/clientes/webhooks/mercadopago', {
+    await useApi('/plataforma/clientes/webhooks/mercadopago', {
       method: 'POST',
       body: webhookPayload
     }).catch(err => {

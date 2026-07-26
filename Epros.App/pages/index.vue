@@ -116,7 +116,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter } from '#app'
 import ThemeToggle from '~/components/ThemeToggle.vue'
 import AppLogo from '~/components/AppLogo.vue'
@@ -125,11 +125,6 @@ definePageMeta({ layout: 'guest' })
 
 const router = useRouter()
 const loading = ref(false)
-// Mantido apenas como sinalizador interno de fallback (não exibido na UI):
-// se a API real de login falhar e o Keycloak também estiver fora, cai no
-// modo simulado local. Não é mostrado como aviso para não assustar o usuário
-// por causa da checagem de /installation/state.
-const keycloakOffline = ref(false)
 const errorMessage = ref('')
 const showPassword = ref(false)
 
@@ -146,30 +141,6 @@ const apiUrl = (path) => {
   const config = useRuntimeConfig()
   const base = (config.public.apiBaseUrl || '').replace(/\/$/, '')
   return `${base}${path}`
-}
-
-onMounted(async () => {
-  try {
-    await $fetch(apiUrl('/api/v1/installation/state'), { timeout: 3000 })
-    keycloakOffline.value = false
-  } catch {
-    keycloakOffline.value = true
-  }
-})
-
-// Decodificador nativo de JWT baseado em base64url
-const decodeJwt = (token) => {
-  try {
-    const base64Url = token.split('.')[1]
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-    const jsonPayload = decodeURIComponent(atob(base64).split('').map((c) => {
-      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-    }).join(''))
-    return JSON.parse(jsonPayload)
-  } catch (e) {
-    console.error('Falha ao decodificar JWT nativamente:', e)
-    return null
-  }
 }
 
 const handleLogin = async () => {
@@ -216,75 +187,47 @@ const handleLogin = async () => {
     console.warn('Login API indisponível, tentando fallback:', apiErr)
   }
 
-  if (keycloakOffline.value) {
-    setTimeout(() => {
-      loading.value = false
-      executeSimulatedLogin()
-    }, 500)
-    return
-  }
-
-  // 2) Fluxo OIDC Keycloak (legado)
+  // 2) Login de operador interno (Admin da Plataforma) via endpoint real
   try {
-    const body = new URLSearchParams()
-    body.append('client_id', 'epros-api')
-    body.append('grant_type', 'password')
-    body.append('username', form.email)
-    body.append('password', form.password)
-    body.append('scope', 'openid')
-
-    const tokenData = await $fetch('http://localhost:8080/realms/epros-tenant/protocol/openid-connect/token', {
+    const respAdmin = await $fetch(apiUrl('/api/v1/public/plataforma/login'), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: body
+      body: { email: form.email, senha: form.password }
     })
-
-    if (tokenData && tokenData.access_token) {
-      const decoded = decodeJwt(tokenData.access_token)
-      if (!decoded) {
-        throw new Error('Não foi possível obter claims do JWT recebido.')
+    const dadosAdmin = respAdmin?.dados ?? respAdmin?.data ?? respAdmin
+    if (respAdmin?.sucesso !== false && dadosAdmin?.token) {
+      // Token JWT de operador interno (tenantId="system").
+      localStorage.setItem('epros_token', dadosAdmin.token)
+      const adminData = {
+        id: dadosAdmin.usuarioId,
+        email: dadosAdmin.email ?? form.email,
+        tenantId: 'system',
+        tenantName: dadosAdmin.nome ?? 'Administrador da Plataforma',
+        planName: 'Dono da Plataforma',
+        status: 'Admin'
       }
-
-      // Persiste token e perfil
-      localStorage.setItem('epros_token', tokenData.access_token)
-
-      // Super Admin verificado por role ou e-mail
-      const isLandlordAdmin = decoded.realm_access?.roles?.includes('admin') || decoded.email === 'admin@epros.com'
-      const resolvedTenantId = decoded.tenantId || form.tenant.toLowerCase().trim() || 'tenant-padrao'
-
-      const userData = {
-        email: decoded.email || form.email,
-        tenantId: resolvedTenantId,
-        tenantName: resolvedTenantId.charAt(0).toUpperCase() + resolvedTenantId.slice(1) + ' Ltda',
-        planName: isLandlordAdmin ? 'Dono da Plataforma' : (form.tenant.toLowerCase().includes('gold') ? 'Plano Gold' : (form.tenant.toLowerCase().includes('platinum') ? 'Plano Platinum' : 'Plano Silver')),
-        status: isLandlordAdmin ? 'Admin' : 'Ativo'
-      }
-
-      localStorage.setItem('epros_user', JSON.stringify(userData))
+      localStorage.setItem('epros_user', JSON.stringify(adminData))
       loading.value = false
-
-      if (isLandlordAdmin) {
-        router.push('/plataforma/admin')
-      } else {
-        router.push('/dashboard')
-      }
-    } else {
-      throw new Error('Token não retornado pelo Keycloak.')
+      router.push('/plataforma/admin')
+      return
     }
-  } catch (err) {
-    loading.value = false
-    console.error('Erro de autenticação no Keycloak:', err)
-
-    if (err.status === 401 || err.status === 400) {
-      errorMessage.value = 'Inquilino, usuário ou senha inválidos no Keycloak.'
-    } else {
-      console.warn('Servidor Keycloak ficou inacessível no login. Executando fallback em modo simulação.')
-      keycloakOffline.value = true
-      executeSimulatedLogin()
+    if (respAdmin?.erros?.length) {
+      errorMessage.value = respAdmin.erros.join(' ')
+      loading.value = false
+      return
     }
+  } catch (adminErr) {
+    const erros = adminErr?.data?.erros ?? adminErr?.response?._data?.erros
+    if (erros?.length) {
+      errorMessage.value = erros.join(' ')
+      loading.value = false
+      return
+    }
+    console.warn('Login de administrador indisponível, tentando fallback simulado:', adminErr)
   }
+
+  // 3) Fallback simulado local (demo sem backend)
+  loading.value = false
+  executeSimulatedLogin()
 }
 
 const executeSimulatedLogin = () => {

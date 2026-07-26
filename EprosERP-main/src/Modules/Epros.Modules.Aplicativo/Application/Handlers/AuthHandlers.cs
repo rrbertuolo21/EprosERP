@@ -197,6 +197,56 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
         }
     }
 
+    public class AutenticarUsuarioInternoCommandHandler : ICommandHandler<AutenticarUsuarioInternoCommand>
+    {
+        private readonly ContextAplicativo _context;
+        private readonly IPasswordHasher _passwordHasher;
+        private readonly IEprosTokenService _tokenService;
+
+        public AutenticarUsuarioInternoCommandHandler(
+            ContextAplicativo context,
+            IPasswordHasher passwordHasher,
+            IEprosTokenService tokenService)
+        {
+            _context = context;
+            _passwordHasher = passwordHasher;
+            _tokenService = tokenService;
+        }
+
+        public async Task<CommandResult> Handle(AutenticarUsuarioInternoCommand request, CancellationToken cancellationToken)
+        {
+            var emailLower = request.Email.ToLowerInvariant().Trim();
+
+            // Login de operador interno é anônimo: não conhece o inquilino. O UsuarioInterno vive no
+            // tenant fixo "system"; buscamos cross-tenant driblando o filtro de tenant do EF Core
+            // (IgnoreQueryFilters) e a RLS do Postgres (AuthRlsBypass), como no login de tenant.
+            // A comparação de e-mail é case-insensitive porque o seed não normaliza o e-mail.
+            await AuthRlsBypass.EnableAsync(_context, cancellationToken);
+            var usuario = await _context.UsuariosInternos
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == emailLower && u.DeletadoEm == null, cancellationToken);
+            await AuthRlsBypass.DisableAsync(_context, cancellationToken);
+
+            // Mesma mensagem para usuário inexistente ou senha incorreta (evita enumeração de contas).
+            if (usuario == null || !_passwordHasher.Verify(request.Senha, usuario.Senha))
+            {
+                return CommandResult.Falha(new[] { "E-mail ou senha incorretos." });
+            }
+
+            // Token marca o operador como interno: tenantId="system" (curto-circuito do AbacFilter),
+            // empresaId="system" e perfilId="interno".
+            var token = _tokenService.GerarCompleto("system", usuario.Id.ToString(), "system", "interno");
+
+            return CommandResult.Ok("Autenticação de operador interno realizada com sucesso!", new
+            {
+                token,
+                usuarioId = usuario.Id,
+                nome = usuario.Nome,
+                email = usuario.Email
+            });
+        }
+    }
+
     public class SelecionarEmpresaCommandHandler : ICommandHandler<SelecionarEmpresaCommand>
     {
         private readonly ContextAplicativo _context;

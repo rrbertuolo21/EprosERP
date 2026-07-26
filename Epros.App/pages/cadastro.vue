@@ -216,6 +216,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from '#app'
 import AppLogo from '~/components/AppLogo.vue'
+import { useApi } from '~/composables/useApi'
 
 definePageMeta({ layout: 'guest' })
 
@@ -282,18 +283,15 @@ onMounted(async () => {
 
   let apiOnline = false
   try {
-    await $fetch('http://localhost:5000/api/v1/plataforma/clientes').then(() => {
-      apiOnline = true
-    }).catch(() => {
-      apiOnline = false
-    })
+    await useApi('/plataforma/clientes')
+    apiOnline = true
   } catch (e) {
     apiOnline = false
   }
 
   if (apiOnline) {
     try {
-      const planRes = await $fetch('http://localhost:5000/api/v1/public/AreaPublica/planos')
+      const planRes = await useApi('/public/AreaPublica/planos')
       if (planRes && planRes.length > 0) {
         plans.value = planRes.map(p => ({
           id: p.id,
@@ -415,7 +413,7 @@ const handleRegister = async () => {
 
   // Tenta enviar POST à API real
   try {
-    await $fetch('http://localhost:5000/api/v1/plataforma/clientes', {
+    await useApi('/plataforma/clientes', {
       method: 'POST',
       body: payload
     }).catch(err => {

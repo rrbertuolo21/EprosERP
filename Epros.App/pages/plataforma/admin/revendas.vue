@@ -168,7 +168,7 @@ onMounted(async () => {
 
 const checkApiConnection = async () => {
   try {
-    await $fetch('http://localhost:5000/api/v1/plataforma/superadmin/dashboard')
+    await useApi('/plataforma/superadmin/dashboard')
     apiOnline.value = true
   } catch (e) {
     apiOnline.value = false
@@ -195,8 +195,8 @@ const loadRevendas = async () => {
   loading.value = true
   if (apiOnline.value) {
     try {
-      const res = await $fetch('http://localhost:5000/api/v1/plataforma/revendas', {
-        params: {
+      const res = await useApi('/plataforma/revendas', {
+        query: {
           pagina: page.value,
           tamanhoPagina: 8,
           search: searchTerm.value
@@ -263,7 +263,7 @@ const handleSave = async () => {
   if (apiOnline.value) {
     try {
       if (isEditing.value) {
-        const res = await $fetch(`http://localhost:5000/api/v1/plataforma/revendas/${editingId.value}`, {
+        const res = await useApi(`/plataforma/revendas/${editingId.value}`, {
           method: 'PUT',
           body: {
             Id: editingId.value,
@@ -280,7 +280,7 @@ const handleSave = async () => {
           addLog(`Erro ao atualizar: ${res.mensagem}`, 'error')
         }
       } else {
-        const res = await $fetch('http://localhost:5000/api/v1/plataforma/revendas', {
+        const res = await useApi('/plataforma/revendas', {
           method: 'POST',
           body: {
             Nome: form.Nome,
@@ -334,7 +334,7 @@ const deleteRevenda = async (id) => {
   if (confirm('Deseja realmente excluir esta revenda?')) {
     if (apiOnline.value) {
       try {
-        const res = await $fetch(`http://localhost:5000/api/v1/plataforma/revendas/${id}`, {
+        const res = await useApi(`/plataforma/revendas/${id}`, {
           method: 'DELETE'
         })
         if (res.sucesso) {

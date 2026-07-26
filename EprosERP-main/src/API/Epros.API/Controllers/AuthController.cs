@@ -42,6 +42,26 @@ namespace Epros.API.Controllers
             return Ok(result);
         }
 
+        [HttpPost("public/plataforma/login")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> LoginPlataforma([FromBody] LoginRequest request)
+        {
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+            var userAgent = Request.Headers["User-Agent"].ToString() ?? "unknown";
+
+            var command = new AutenticarUsuarioInternoCommand(request.Email, request.Senha, ipAddress, userAgent);
+            var result = await _mediator.Send(command);
+
+            if (!result.Sucesso)
+            {
+                return UnprocessableEntity(result);
+            }
+
+            return Ok(result);
+        }
+
         [HttpPost("auth/selecionar-empresa")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]

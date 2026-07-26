@@ -198,7 +198,7 @@ onMounted(async () => {
 const loadPerfis = async () => {
   loading.value = true
   try {
-    const data = await $fetch('http://localhost:5000/api/v1/plataforma/perfis-acesso')
+    const data = await useApi('/plataforma/perfis-acesso')
     perfis.value = data.dados?.itens || []
   } catch (e) {
     console.error('Falha ao listar perfis de acesso.', e)
@@ -209,7 +209,7 @@ const loadPerfis = async () => {
 
 const loadMenuCatalog = async () => {
   try {
-    const result = await $fetch('http://localhost:5000/api/v1/plataforma/menus')
+    const result = await useApi('/plataforma/menus')
     menuCatalog.value = result.dados || []
     resetMatrixState()
   } catch (e) {
@@ -311,7 +311,7 @@ const openCreateForm = () => {
 const openEditForm = async (id) => {
   loading.value = true
   try {
-    const data = await $fetch(`http://localhost:5000/api/v1/plataforma/perfis-acesso/${id}`)
+    const data = await useApi(`/plataforma/perfis-acesso/${id}`)
     const p = data.dados
     form.value = { id: p.id, descricao: p.descricao }
     
@@ -398,16 +398,16 @@ const saveForm = async () => {
       acessos
     }
 
-    let url = 'http://localhost:5000/api/v1/plataforma/perfis-acesso'
+    let rota = '/plataforma/perfis-acesso'
     let method = 'POST'
 
     if (isEditing.value) {
-      url = `http://localhost:5000/api/v1/plataforma/perfis-acesso/${form.value.id}`
+      rota = `/plataforma/perfis-acesso/${form.value.id}`
       method = 'PUT'
       payload.id = form.value.id
     }
 
-    const result = await $fetch(url, {
+    const result = await useApi(rota, {
       method,
       body: payload
     })
@@ -433,7 +433,7 @@ const deletePerfil = async (id, desc) => {
   if (!confirm(`Deseja realmente excluir o perfil de acesso "${desc}"?`)) return
 
   try {
-    await $fetch(`http://localhost:5000/api/v1/plataforma/perfis-acesso/${id}`, {
+    await useApi(`/plataforma/perfis-acesso/${id}`, {
       method: 'DELETE'
     })
     alert('Perfil excluído com sucesso!')

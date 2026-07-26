@@ -16,17 +16,27 @@ namespace Epros.API.Security
         private readonly string _acao;
         private readonly ContextGestaoClientes _context;
         private readonly ICurrentUser _currentUser;
+        private readonly ITenantProvider _tenantProvider;
 
-        public AbacFilter(string recurso, string acao, ContextGestaoClientes context, ICurrentUser currentUser)
+        public AbacFilter(string recurso, string acao, ContextGestaoClientes context, ICurrentUser currentUser, ITenantProvider tenantProvider)
         {
             _recurso = recurso;
             _acao = acao;
             _context = context;
             _currentUser = currentUser;
+            _tenantProvider = tenantProvider;
         }
 
         public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
+            // Curto-circuito do operador interno / SuperAdmin: o token do UsuarioInterno carrega
+            // tenantId="system". Esse operador não tem PerfilUsuario em ContextGestaoClientes, então
+            // a verificação ABAC abaixo o barraria. Liberamos antes de consultar PerfisUsuarios.
+            if (string.Equals(_tenantProvider.GetTenantId(), "system", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
             var userId = _currentUser.GetUserId();
             if (string.IsNullOrEmpty(userId))
             {

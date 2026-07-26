@@ -654,7 +654,7 @@ const receitaTotal = computed(() => {
 })
 
 onMounted(async () => {
-  // Guard de autenticação admin
+  // Guard de autenticação admin (operador interno da plataforma)
   const storedUser = localStorage.getItem('epros_user')
   if (!storedUser) {
     router.push('/')
@@ -666,6 +666,13 @@ onMounted(async () => {
     return
   }
   currentUserSession.value = user
+
+  // O token do operador interno é lido por useApi/plugins/api.ts da chave `epros_token`
+  // (gravada no login em POST /public/plataforma/login). Sem esse token, as chamadas
+  // autenticadas retornam 401 e o plugin de API redireciona para o login.
+  if (!localStorage.getItem('epros_token')) {
+    console.warn('Sessão admin sem token de operador (epros_token). Refaça o login para acessar a API.')
+  }
 
   // Detecta conectividade com o Backend
   await checkApiConnection()
@@ -680,7 +687,7 @@ onMounted(async () => {
 const checkApiConnection = async () => {
   try {
     // Ping API Dashboard
-    await $fetch('http://localhost:5000/api/v1/plataforma/superadmin/dashboard')
+    await useApi('/plataforma/superadmin/dashboard')
     apiOnline.value = true
   } catch (e) {
     console.warn('API Gateway ou Keycloak inacessível. Usando Modo de Simulação Local (localStorage).')
@@ -715,7 +722,7 @@ const loadClientes = async () => {
   if (apiOnline.value) {
     try {
       // 1. Carrega Planos do backend
-      const planRes = await $fetch('http://localhost:5000/api/v1/public/AreaPublica/planos')
+      const planRes = await useApi('/public/AreaPublica/planos')
       plans.value = planRes.map(p => ({
         id: p.id,
         name: p.nome,
@@ -724,7 +731,7 @@ const loadClientes = async () => {
       }))
 
       // 2. Carrega Clientes/Inquilinos do backend via novo endpoint
-      const clientRes = await $fetch('http://localhost:5000/api/v1/plataforma/superadmin/clientes')
+      const clientRes = await useApi('/plataforma/superadmin/clientes')
 
       tenants.value = clientRes.map(c => ({
         id: c.id,
@@ -775,7 +782,7 @@ const updateTenantStatus = async (id, newStatus) => {
   if (apiOnline.value) {
     try {
       const endpoint = newStatus === 'Suspenso' ? 'suspender' : 'ativar'
-      const res = await $fetch(`http://localhost:5000/api/v1/plataforma/clientes/${id}/${endpoint}`, {
+      const res = await useApi(`/plataforma/clientes/${id}/${endpoint}`, {
         method: 'POST'
       })
       if (res.sucesso) {
@@ -800,7 +807,7 @@ const updateTenantStatus = async (id, newStatus) => {
 const handleCreateClient = async () => {
   if (apiOnline.value) {
     try {
-      const res = await $fetch('http://localhost:5000/api/v1/plataforma/clientes', {
+      const res = await useApi('/plataforma/clientes', {
         method: 'POST',
         body: {
           RazaoSocial: newClient.RazaoSocial,
@@ -850,7 +857,7 @@ const resetNewClientForm = () => {
 const handleCreatePlan = async () => {
   if (apiOnline.value) {
     try {
-      const res = await $fetch('http://localhost:5000/api/v1/plataforma/clientes/planos', {
+      const res = await useApi('/plataforma/clientes/planos', {
         method: 'POST',
         body: {
           Nome: newPlan.Nome,
@@ -899,7 +906,7 @@ const resetNewPlanForm = () => {
 const loadUsuariosInternos = async () => {
   if (apiOnline.value) {
     try {
-      const data = await $fetch('http://localhost:5000/api/v1/plataforma/superadmin/usuarios-internos')
+      const data = await useApi('/plataforma/superadmin/usuarios-internos')
       usuariosInternos.value = data
     } catch (e) {
       console.error('Erro ao buscar usuarios internos da API.', e)
@@ -927,7 +934,7 @@ const loadUsuariosInternosSimulado = () => {
 const handleCreateInternalUser = async () => {
   if (apiOnline.value) {
     try {
-      const res = await $fetch('http://localhost:5000/api/v1/plataforma/superadmin/usuarios-internos', {
+      const res = await useApi('/plataforma/superadmin/usuarios-internos', {
         method: 'POST',
         body: newUser
       })
@@ -960,7 +967,7 @@ const handleCreateInternalUser = async () => {
 const promoteToPrimary = async (id) => {
   if (apiOnline.value) {
     try {
-      const res = await $fetch(`http://localhost:5000/api/v1/plataforma/superadmin/usuarios-internos/${id}/tornar-admin`, {
+      const res = await useApi(`/plataforma/superadmin/usuarios-internos/${id}/tornar-admin`, {
         method: 'POST'
       })
       if (res.sucesso) {
@@ -1000,7 +1007,7 @@ const handleResetPassword = async () => {
   const userId = resetPasswordModal.user.id
   if (apiOnline.value) {
     try {
-      const res = await $fetch(`http://localhost:5000/api/v1/plataforma/superadmin/usuarios-internos/${userId}/alterar-senha`, {
+      const res = await useApi(`/plataforma/superadmin/usuarios-internos/${userId}/alterar-senha`, {
         method: 'PUT',
         body: {
           UsuarioInternoId: userId,
@@ -1037,7 +1044,7 @@ const resetNewUserForm = () => {
 const loadSystemSettings = async () => {
   if (apiOnline.value) {
     try {
-      const data = await $fetch('http://localhost:5000/api/v1/plataforma/superadmin/configuracoes')
+      const data = await useApi('/plataforma/superadmin/configuracoes')
       systemSettings.value = data
     } catch (e) {
       console.error('Erro ao buscar configurações do sistema.', e)
@@ -1066,7 +1073,7 @@ const loadSystemSettingsSimulado = () => {
 const handleDefineSystemSetting = async () => {
   if (apiOnline.value) {
     try {
-      const res = await $fetch('http://localhost:5000/api/v1/plataforma/superadmin/configuracoes', {
+      const res = await useApi('/plataforma/superadmin/configuracoes', {
         method: 'POST',
         body: newSetting
       })
@@ -1116,7 +1123,7 @@ const resetNewSettingForm = () => {
 const loadExecucoesMassa = async () => {
   if (apiOnline.value) {
     try {
-      const data = await $fetch('http://localhost:5000/api/v1/plataforma/superadmin/execucoes-massa-global')
+      const data = await useApi('/plataforma/superadmin/execucoes-massa-global')
       execucoesMassa.value = data
     } catch (e) {
       console.error('Erro ao buscar execuções em massa.', e)
@@ -1142,7 +1149,7 @@ const loadExecucoesMassaSimulado = () => {
 const handleCreateMassExecution = async () => {
   if (apiOnline.value) {
     try {
-      const res = await $fetch('http://localhost:5000/api/v1/plataforma/superadmin/execucoes-massa-global', {
+      const res = await useApi('/plataforma/superadmin/execucoes-massa-global', {
         method: 'POST',
         body: newExec
       })
@@ -1178,7 +1185,7 @@ const simulateExec = async (id) => {
   addLog(`Iniciando simulação dry-run (Sandbox) para execução [${id}]...`, 'info')
   if (apiOnline.value) {
     try {
-      const res = await $fetch(`http://localhost:5000/api/v1/plataforma/superadmin/execucoes-massa-global/${id}/simular`, {
+      const res = await useApi(`/plataforma/superadmin/execucoes-massa-global/${id}/simular`, {
         method: 'POST'
       })
       if (res.sucesso) {
@@ -1209,7 +1216,7 @@ const simulateExec = async (id) => {
 const approveExec = async (id) => {
   if (apiOnline.value) {
     try {
-      const res = await $fetch(`http://localhost:5000/api/v1/plataforma/superadmin/execucoes-massa-global/${id}/ativar`, {
+      const res = await useApi(`/plataforma/superadmin/execucoes-massa-global/${id}/ativar`, {
         method: 'POST'
       })
       if (res.sucesso) {
@@ -1242,7 +1249,7 @@ const runExec = async (id) => {
   addLog(`Iniciando execução definitiva física no banco de dados para [${id}]...`, 'info')
   if (apiOnline.value) {
     try {
-      const res = await $fetch(`http://localhost:5000/api/v1/plataforma/superadmin/execucoes-massa-global/${id}/concluir`, {
+      const res = await useApi(`/plataforma/superadmin/execucoes-massa-global/${id}/concluir`, {
         method: 'POST'
       })
       if (res.sucesso) {
@@ -1281,7 +1288,7 @@ const getExecStatusClass = (status) => {
 const loadSubscribers = async () => {
   if (apiOnline.value) {
     try {
-      const data = await $fetch('http://localhost:5000/api/v1/plataforma/superadmin/newsletter')
+      const data = await useApi('/plataforma/superadmin/newsletter')
       subscribers.value = data
     } catch (e) {
       console.error('Erro ao buscar assinantes da newsletter.', e)
@@ -1309,7 +1316,7 @@ const loadSubscribersSimulado = () => {
 const toggleSubscriber = async (id, action) => {
   if (apiOnline.value) {
     try {
-      const res = await $fetch(`http://localhost:5000/api/v1/plataforma/superadmin/newsletter/${id}/${action}`, {
+      const res = await useApi(`/plataforma/superadmin/newsletter/${id}/${action}`, {
         method: 'POST'
       })
       if (res.sucesso) {
@@ -1340,7 +1347,7 @@ const handleSendCommunication = async () => {
   }
   if (apiOnline.value) {
     try {
-      const res = await $fetch('http://localhost:5000/api/v1/plataforma/superadmin/comunicacao', {
+      const res = await useApi('/plataforma/superadmin/comunicacao', {
         method: 'POST',
         body: newMsg
       })

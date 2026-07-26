@@ -24,6 +24,26 @@ namespace Epros.Modules.Aplicativo.Application.Commands
         }
     }
 
+    public record AutenticarUsuarioInternoCommand(
+        string Email,
+        string Senha,
+        string IpAddress,
+        string UserAgent
+    ) : ICommand;
+
+    public class AutenticarUsuarioInternoCommandValidator : AbstractValidator<AutenticarUsuarioInternoCommand>
+    {
+        public AutenticarUsuarioInternoCommandValidator()
+        {
+            RuleFor(x => x.Email)
+                .NotEmpty().WithMessage("O e-mail é obrigatório.")
+                .EmailAddress().WithMessage("O e-mail informado é inválido.");
+
+            RuleFor(x => x.Senha)
+                .NotEmpty().WithMessage("A senha é obrigatória.");
+        }
+    }
+
     public record SelecionarEmpresaCommand(
         Guid UsuarioId,
         Guid EmpresaId

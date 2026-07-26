@@ -89,6 +89,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from '#app'
 import AppHeader from '~/components/AppHeader.vue'
+import { useApi } from '~/composables/useApi'
 
 // Página autocontida (já renderiza seu próprio AppHeader) — sem layout do shell ERP.
 definePageMeta({ layout: false })
@@ -157,18 +158,15 @@ onMounted(async () => {
 
   // Detecta conectividade com o Backend
   try {
-    await $fetch('http://localhost:5000/api/v1/plataforma/clientes').then(() => {
-      apiOnline.value = true
-    }).catch(() => {
-      apiOnline.value = false
-    })
+    await useApi('/plataforma/clientes')
+    apiOnline.value = true
   } catch (e) {
     apiOnline.value = false
   }
 
   if (apiOnline.value) {
     try {
-      const planRes = await $fetch('http://localhost:5000/api/v1/public/AreaPublica/planos')
+      const planRes = await useApi('/public/AreaPublica/planos')
       if (planRes && planRes.length > 0) {
         plans.value = planRes.map(p => ({
           id: p.id,
@@ -210,7 +208,7 @@ const handleUpgrade = (plan) => {
   setTimeout(async () => {
     try {
       if (apiOnline.value) {
-        await $fetch('http://localhost:5000/api/v1/aplicativo/assinaturas/contratar', {
+        await useApi('/aplicativo/assinaturas/contratar', {
           method: 'POST',
           body: {
             PlanoId: plan.id,
@@ -219,7 +217,7 @@ const handleUpgrade = (plan) => {
         })
       } else {
         // Fallback offline
-        await $fetch('http://localhost:5000/api/v1/plataforma/clientes/upgrade', {
+        await useApi('/plataforma/clientes/upgrade', {
           method: 'POST',
           body: {
             tenantId: user.value.tenantId,

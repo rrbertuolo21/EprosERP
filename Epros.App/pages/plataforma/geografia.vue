@@ -463,7 +463,7 @@ const onMunicipioChange = () => {
 watch(selectedUf, async (newUf) => {
   if (apiOnline.value && newUf) {
     try {
-      const data = await $fetch(`http://localhost:5000/api/v1/cadastros/geografia/municipios/obter-por-uf/${newUf}`)
+      const data = await useApi(`/cadastros/geografia/municipios/obter-por-uf/${newUf}`)
       municipios.value = data
       addLog(`Carregou municípios do estado ${newUf} via API.`, 'success')
     } catch (e) {
@@ -481,7 +481,7 @@ onMounted(async () => {
 
 const checkApiOnline = async () => {
   try {
-    await $fetch('http://localhost:5000/api/v1/cadastros/geografia/paises')
+    await useApi('/cadastros/geografia/paises')
     apiOnline.value = true
   } catch (e) {
     if (e.status === 401 || e.status === 403) {
@@ -541,7 +541,7 @@ const formatCep = (val) => {
 const loadPaises = async () => {
   if (apiOnline.value) {
     try {
-      const data = await $fetch('http://localhost:5000/api/v1/cadastros/geografia/paises')
+      const data = await useApi('/cadastros/geografia/paises')
       paises.value = data
     } catch (e) {
       addLog(`Erro ao carregar países da API: ${e.message}`, 'error')
@@ -567,7 +567,7 @@ const loadPaisesSimulado = () => {
 const handleCreatePais = async () => {
   if (apiOnline.value) {
     try {
-      const res = await $fetch('http://localhost:5000/api/v1/cadastros/geografia/paises', {
+      const res = await useApi('/cadastros/geografia/paises', {
         method: 'POST', // Espera command record
         body: newPais
       })
@@ -617,7 +617,7 @@ const sincronizarGeografiaBase = async () => {
   addLog('Iniciando sincronização de geografia base (IBGE BR)...', 'info')
   if (apiOnline.value) {
     try {
-      const res = await $fetch('http://localhost:5000/api/v1/cadastros/geografia/municipios/sincronizar', { method: 'POST' })
+      const res = await useApi('/cadastros/geografia/municipios/sincronizar', { method: 'POST' })
       if (res.sucesso) {
         addLog('Sincronização com a base do IBGE concluída no servidor.', 'success')
         await loadData()
@@ -639,7 +639,7 @@ const loadMunicipios = async () => {
   if (apiOnline.value) {
     try {
       // Buscar municípios de São Paulo por padrão para demonstração rápida
-      const data = await $fetch('http://localhost:5000/api/v1/cadastros/geografia/municipios/obter-por-uf/SP')
+      const data = await useApi('/cadastros/geografia/municipios/obter-por-uf/SP')
       municipios.value = data
     } catch (e) {
       addLog(`Erro ao buscar municípios da API: ${e.message}`, 'error')
@@ -676,7 +676,7 @@ const filteredMunicipios = computed(() => {
 const loadCepCache = async () => {
   if (apiOnline.value) {
     try {
-      const data = await $fetch('http://localhost:5000/api/v1/cadastros/geografia/cep/cache')
+      const data = await useApi('/cadastros/geografia/cep/cache')
       postCodesCache.value = data
     } catch (e) {
       addLog(`Erro ao carregar cache de CEPs da API: ${e.message}`, 'error')
@@ -713,7 +713,7 @@ const triggerCepQuery = async () => {
 
   if (apiOnline.value) {
     try {
-      const data = await $fetch(`http://localhost:5000/api/v1/cadastros/geografia/cep/${cleanCep}`)
+      const data = await useApi(`/cadastros/geografia/cep/${cleanCep}`)
       if (data) {
         cepSearchResult.value = data
         addLog(`CEP ${searchCep.value} resolvido com sucesso via API.`, 'success')
@@ -776,7 +776,7 @@ const triggerCepQuery = async () => {
 const loadZonasEntrega = async () => {
   if (apiOnline.value) {
     try {
-      const data = await $fetch('http://localhost:5000/api/v1/cadastros/geografia/zonas-entrega')
+      const data = await useApi('/cadastros/geografia/zonas-entrega')
       zonasEntrega.value = data
     } catch (e) {
       addLog(`Erro ao carregar zonas de entrega da API: ${e.message}`, 'error')
@@ -802,7 +802,7 @@ const loadZonasSimulado = () => {
 const handleCreateZona = async () => {
   if (apiOnline.value) {
     try {
-      const res = await $fetch('http://localhost:5000/api/v1/cadastros/geografia/zonas-entrega', {
+      const res = await useApi('/cadastros/geografia/zonas-entrega', {
         method: 'POST',
         body: newZona
       })
@@ -840,7 +840,7 @@ const handleCreateManualCep = async () => {
   addLog(`Registrando CEP ${manualCepData.Cep} manualmente...`, 'info')
   if (apiOnline.value) {
     try {
-      const res = await $fetch('http://localhost:5000/api/v1/cadastros/geografia/cep/manual', {
+      const res = await useApi('/cadastros/geografia/cep/manual', {
         method: 'PUT',
         body: manualCepData
       })
@@ -893,7 +893,7 @@ const reprocessarCep = async (cep) => {
   addLog(`Solicitando reprocessamento para o CEP ${cep}...`, 'info')
   if (apiOnline.value) {
     try {
-      const res = await $fetch(`http://localhost:5000/api/v1/cadastros/geografia/cep/${cep}/reprocessar`, {
+      const res = await useApi(`/cadastros/geografia/cep/${cep}/reprocessar`, {
         method: 'POST'
       })
       if (res.sucesso) {

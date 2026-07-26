@@ -734,16 +734,12 @@ onMounted(async () => {
 const loadMetadata = async () => {
   try {
     // Carregar Grupos de Pessoa
-    const resGrupos = await fetch('http://localhost:5000/api/v1/cadastros/pessoa-grupos')
-    if (resGrupos.ok) {
-      pessoaGrupos.value = await resGrupos.json()
-    }
+    const resGrupos = await useApi('/cadastros/pessoa-grupos')
+    pessoaGrupos.value = extrairDados(resGrupos) || []
 
     // Carregar Países
-    const resPaises = await fetch('http://localhost:5000/api/v1/cadastros/geografia/paises')
-    if (resPaises.ok) {
-      paises.value = await resPaises.json()
-    }
+    const resPaises = await useApi('/cadastros/geografia/paises')
+    paises.value = extrairDados(resPaises) || []
   } catch (e) {
     console.error('Falha ao carregar metadados da API.', e)
   }
@@ -752,20 +748,20 @@ const loadMetadata = async () => {
 const loadPessoas = async () => {
   loading.value = true
   try {
-    let url = `http://localhost:5000/api/v1/cadastros/pessoas?pagina=${pagina.value}&tamanhoPagina=${tamanhoPagina.value}`
-    if (filterName.value) url += `&localizar=${encodeURIComponent(filterName.value)}`
-    if (filterRole.value) url += `&${filterRole.value}=true`
-    if (filterStatus.value) url += `&status=${filterStatus.value}`
-
-    const res = await fetch(url)
-    if (res.ok) {
-      const data = await res.json()
-      pessoas.value = data.itens || []
-      total.value = data.total || 0
-      apiOnline.value = true
-    } else {
-      apiOnline.value = false
+    // Monta a query como objeto — o useApi/ofetch cuida da serialização e do encode.
+    const query = {
+      pagina: pagina.value,
+      tamanhoPagina: tamanhoPagina.value
     }
+    if (filterName.value) query.localizar = filterName.value
+    if (filterRole.value) query[filterRole.value] = true
+    if (filterStatus.value) query.status = filterStatus.value
+
+    const resposta = await useApi('/cadastros/pessoas', { query })
+    const dados = extrairDados(resposta) || {}
+    pessoas.value = dados.itens || []
+    total.value = dados.total || 0
+    apiOnline.value = true
   } catch (e) {
     apiOnline.value = false
     console.error('API C# offline. Falha ao listar pessoas.', e)
@@ -852,12 +848,11 @@ const openCreateForm = () => {
 const openEditForm = async (id) => {
   loading.value = true
   try {
-    const res = await fetch(`http://localhost:5000/api/v1/cadastros/pessoas/${id}`)
-    if (res.ok) {
-      const data = await res.json()
-      
-      // Adaptar retorno do backend para o formato do form reativo
-      const p = {
+    const resposta = await useApi(`/cadastros/pessoas/${id}`)
+    const data = extrairDados(resposta)
+
+    // Adaptar retorno do backend para o formato do form reativo
+    const p = {
         id: data.id,
         tipoPessoa: data.tipoPessoa,
         tipoIndicadorIe: data.tipoIndicadorIe,
@@ -941,10 +936,8 @@ const openEditForm = async (id) => {
       // Carregar municípios para cada endereço de forma assíncrona
       for (let i = 0; i < p.enderecos.length; i++) {
         if (p.enderecos[i].uf) {
-          const resMuns = await fetch(`http://localhost:5000/api/v1/cadastros/geografia/municipios/obter-por-uf/${p.enderecos[i].uf}`)
-          if (resMuns.ok) {
-            p.enderecos[i].municipiosDisponiveis = await resMuns.json()
-          }
+          const resMuns = await useApi(`/cadastros/geografia/municipios/obter-por-uf/${p.enderecos[i].uf}`)
+          p.enderecos[i].municipiosDisponiveis = extrairDados(resMuns) || []
         }
       }
 
@@ -952,12 +945,9 @@ const openEditForm = async (id) => {
       isEditing.value = true
       showForm.value = true
       activeFormTab.value = 'identificacao'
-    } else {
-      alert('Falha ao obter detalhes do parceiro comercial.')
-    }
   } catch (e) {
     console.error('Falha ao conectar na API.', e)
-    alert('Erro de conexão ao carregar registro.')
+    alert('Erro ao carregar registro do parceiro comercial.')
   } finally {
     loading.value = false
   }
@@ -997,10 +987,8 @@ const onUfChange = async (index) => {
   if (!end.uf) return
   
   try {
-    const res = await fetch(`http://localhost:5000/api/v1/cadastros/geografia/municipios/obter-por-uf/${end.uf}`)
-    if (res.ok) {
-      end.municipiosDisponiveis = await res.json()
-    }
+    const res = await useApi(`/cadastros/geografia/municipios/obter-por-uf/${end.uf}`)
+    end.municipiosDisponiveis = extrairDados(res) || []
   } catch (e) {
     console.error('Erro ao buscar municípios para UF.', e)
   }
@@ -1013,24 +1001,22 @@ const searchCepOnBlur = async (index) => {
   if (cleanCep.length !== 8) return
 
   try {
-    const res = await fetch(`http://localhost:5000/api/v1/cadastros/geografia/cep/${cleanCep}`)
-    if (res.ok) {
-      const data = await res.json()
-      if (data && !data.falhou) {
-        end.logradouro = data.logradouro || ''
-        end.bairro = data.bairro || ''
-        end.uf = data.uf || ''
-        
-        // Buscar municípios da UF retornada
-        await onUfChange(index)
+    const resposta = await useApi(`/cadastros/geografia/cep/${cleanCep}`)
+    const data = extrairDados(resposta)
+    if (data && !data.falhou) {
+      end.logradouro = data.logradouro || ''
+      end.bairro = data.bairro || ''
+      end.uf = data.uf || ''
 
-        // Tentar localizar e associar o MunicipioId correspondente ao código IBGE
-        if (data.ibge && end.municipiosDisponiveis.length > 0) {
-          const codIbgeNum = parseInt(data.ibge, 10)
-          const matchedMun = end.municipiosDisponiveis.find(m => m.codigoIbge === codIbgeNum)
-          if (matchedMun) {
-            end.municipioId = matchedMun.id
-          }
+      // Buscar municípios da UF retornada
+      await onUfChange(index)
+
+      // Tentar localizar e associar o MunicipioId correspondente ao código IBGE
+      if (data.ibge && end.municipiosDisponiveis.length > 0) {
+        const codIbgeNum = parseInt(data.ibge, 10)
+        const matchedMun = end.municipiosDisponiveis.find(m => m.codigoIbge === codIbgeNum)
+        if (matchedMun) {
+          end.municipioId = matchedMun.id
         }
       }
     }
@@ -1178,33 +1164,29 @@ const saveForm = async () => {
       veiculos: []
     }
 
-    let url = 'http://localhost:5000/api/v1/cadastros/pessoas'
+    let rota = '/cadastros/pessoas'
     let method = 'POST'
 
     if (isEditing.value) {
-      url = `http://localhost:5000/api/v1/cadastros/pessoas/${form.value.id}`
+      rota = `/cadastros/pessoas/${form.value.id}`
       method = 'PUT'
       payload.id = form.value.id
     }
 
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-
-    const resultData = await res.json()
-    if (res.ok && resultData.sucesso) {
+    // useApi injeta token/tenant, serializa o corpo em JSON e devolve o envelope CommandResult.
+    const resultData = await useApi(rota, { method, body: payload })
+    if (resultData && resultData.sucesso) {
       alert(isEditing.value ? 'Parceiro comercial atualizado com sucesso!' : 'Parceiro comercial cadastrado com sucesso!')
       closeForm()
       await loadPessoas()
     } else {
-      const errMsg = resultData.erros ? resultData.erros.join('\n') : resultData.mensagem
+      const errMsg = resultData?.erros ? resultData.erros.join('\n') : resultData?.mensagem
       alert(`Falha ao gravar parceiro:\n${errMsg}`)
     }
   } catch (e) {
     console.error(e)
-    alert('Erro de conexão ao enviar formulário para o servidor.')
+    const errMsg = e.data?.erros ? e.data.erros.join('\n') : (e.data?.mensagem || e.message)
+    alert(`Erro ao enviar formulário para o servidor:\n${errMsg}`)
   } finally {
     saving.value = false
   }
@@ -1215,19 +1197,12 @@ const deletePessoa = async (id, name) => {
   if (!confirm(`Deseja realmente excluir a pessoa "${name}"?`)) return
   
   try {
-    const res = await fetch(`http://localhost:5000/api/v1/cadastros/pessoas/${id}`, {
-      method: 'DELETE'
-    })
-    
-    if (res.ok || res.status === 204) {
-      alert('Registro excluído com sucesso!')
-      await loadPessoas()
-    } else {
-      alert('Falha ao excluir registro. Pode haver vínculos operacionais.')
-    }
+    await useApi(`/cadastros/pessoas/${id}`, { method: 'DELETE' })
+    alert('Registro excluído com sucesso!')
+    await loadPessoas()
   } catch (e) {
     console.error(e)
-    alert('Erro de conexão ao tentar excluir registro.')
+    alert('Falha ao excluir registro. Pode haver vínculos operacionais ou erro de conexão.')
   }
 }
 </script>
