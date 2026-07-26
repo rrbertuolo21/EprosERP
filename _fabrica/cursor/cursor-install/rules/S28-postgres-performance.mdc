@@ -1,0 +1,46 @@
+---
+description: "Performance PostgreSQL 16 multi-tenant no Epros: EXPLAIN ANALYZE na prática, índices compostos (tenant_id, ...), particionamento, autovacuum, connection pooling e histórico de queries lentas resolvidas. Use ao investigar lentidão de banco, propor índices, revisar performance de módulo ou dimensionar clusters."
+globs:
+alwaysApply: false
+---
+
+# postgres-performance
+
+> **S28 · Camada 3 — Especialização** — Epros Dev Framework
+
+## Quando usar
+
+Ative esta skill quando a tarefa envolver: **query lenta, EXPLAIN, índice, particionamento, vacuum, pool de conexão, CPU do banco, deadlock, performance PostgreSQL**.
+
+## O que esta skill cobre
+
+Performance de PostgreSQL 16 no contexto multi-tenant: leitura de EXPLAIN ANALYZE na prática, estratégia de índices para (tenant_id, ...), quando particionar por tenant, tuning de autovacuum, connection pooling com Npgsql/PgBouncer e o histórico de queries lentas do Epros com as correções aplicadas.
+
+Ser o 'DBA como skill': resolver os problemas de performance que em multi-tenant degradam todos os clientes de um cluster de uma vez — sem precisar contratar um DBA dedicado ainda.
+
+## Instruções para o agente
+
+1. Query lenta: comece pelo EXPLAIN ANALYZE seguindo o roteiro de leitura (seq scan onde devia ter índice? estimativa errada?).
+2. Índice novo: sempre avalie o custo de escrita e verifique se um índice composto existente já cobre.
+3. Antes de propor particionamento, confira os critérios objetivos (volume por tenant, padrão de acesso) — particionar cedo demais é dívida.
+4. Consulte o histórico de queries lentas: o problema atual provavelmente já tem parente resolvido.
+
+## Recursos desta skill
+
+> Legenda: ✅ pronto · ⬜ a construir (ver "Como completar" abaixo)
+
+- ✅ `SKILL.md` — este arquivo (semente v1)
+- ⬜ `exemplos/queries-diagnostico.sql` — queries prontas: locks, bloat, índices não usados, cache hit
+- ⬜ `checklists/revisao-performance-modulo.md` — auditoria de performance por módulo
+
+## Como completar esta skill (do v1-semente à versão completa)
+
+1. Compile as queries de diagnóstico padrão (pg_stat_statements, locks, bloat).
+2. Documente 3 casos reais de query lenta resolvida (do Grafana) com antes/depois.
+3. Defina os critérios objetivos de particionamento com o Architect.
+
+## Regras de manutenção
+
+- Detalhe profundo vai para `exemplos/` e `checklists/` — este arquivo fica abaixo de 500 linhas.
+- Todo conteúdo deve ser específico do Epros (código real, casos reais, dados de homologação).
+- Ao concluir os recursos, mude `status:` para `completa` e atualize a data de revisão.
