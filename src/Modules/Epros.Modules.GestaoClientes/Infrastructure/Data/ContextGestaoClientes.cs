@@ -184,6 +184,8 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
             modelBuilder.Entity<GrupoPlano>(entity =>
             {
                 entity.HasKey(g => g.Id);
+                // Coluna real de ativação (snake_case "ativo" aplicado pela convenção global).
+                entity.Property(g => g.Ativo).HasDefaultValue(true);
             });
 
             modelBuilder.Entity<AssinaturaCliente>(entity =>

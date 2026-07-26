@@ -22,6 +22,14 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             if (input.ModuloGeralId.HasValue && input.ModuloGeralId.Value != Guid.Empty) return input.ModuloGeralId.Value.ToString();
             return string.Empty;
         }
+
+        /// <summary>ModuloGeralId como texto (a coluna é string?), ou null quando ausente/vazio.</summary>
+        public static string? ModuloGeralIdTexto(this ModuloPlanoInput input)
+        {
+            if (input.ModuloGeralId.HasValue && input.ModuloGeralId.Value != Guid.Empty)
+                return input.ModuloGeralId.Value.ToString();
+            return null;
+        }
     }
 
     // ===== Commands =====
@@ -53,7 +61,11 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 request.LimiteEmpresas,
                 request.RecursosInclusos,
                 tenantId,
-                criadoPor
+                criadoPor,
+                request.DescricaoCurta,
+                request.DescricaoCompleta,
+                request.DataInicio,
+                request.DataFim
             );
 
             if (request.Modulos != null)
@@ -63,7 +75,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                     var nome = m.NomePersistido();
                     if (!string.IsNullOrWhiteSpace(nome))
                     {
-                        plano.AdicionarModulo(nome, criadoPor);
+                        plano.AdicionarModulo(nome, criadoPor, m.ModuloGeralIdTexto(), m.Descricao, m.Valor, m.Ativo);
                     }
                 }
             }
@@ -122,7 +134,11 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 request.LimiteUsuarios,
                 request.LimiteEmpresas,
                 request.RecursosInclusos,
-                alteradoPor
+                alteradoPor,
+                request.DescricaoCurta,
+                request.DescricaoCompleta,
+                request.DataInicio,
+                request.DataFim
             );
 
             if (!plano.IsValid)
@@ -132,12 +148,13 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
 
             plano.DefinirAtivo(request.Ativo, alteradoPor);
 
-            // Reconciliação de módulos por NomeModulo (add/update/remove).
-            var desejados = (request.Modulos ?? new List<ModuloPlanoInput>())
-                .Select(m => m.NomePersistido())
-                .Where(n => !string.IsNullOrWhiteSpace(n))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            // Reconciliação de módulos por NomeModulo (add/update/remove), preservando ModuloGeralId/Descricao/Valor/Ativo.
+            var desejadosInputs = (request.Modulos ?? new List<ModuloPlanoInput>())
+                .Where(m => !string.IsNullOrWhiteSpace(m.NomePersistido()))
+                .GroupBy(m => m.NomePersistido(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+            var desejados = desejadosInputs.Keys.ToList();
 
             // Remove os que não estão mais na lista desejada.
             var aRemover = plano.Modulos
@@ -149,13 +166,23 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 _context.ModulosPlano.Remove(mo);
             }
 
+            // Atualiza os campos ricos dos módulos que permanecem.
+            foreach (var mo in plano.Modulos)
+            {
+                if (desejadosInputs.TryGetValue(mo.NomeModulo, out var input))
+                {
+                    mo.Atualizar(input.ModuloGeralIdTexto(), input.Descricao, input.Valor, input.Ativo, alteradoPor);
+                }
+            }
+
             // Adiciona os novos.
             var existentes = plano.Modulos
                 .Select(mo => mo.NomeModulo)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
-            foreach (var nome in desejados.Where(n => !existentes.Contains(n)))
+            foreach (var kv in desejadosInputs.Where(kv => !existentes.Contains(kv.Key)))
             {
-                plano.AdicionarModulo(nome, alteradoPor);
+                var input = kv.Value;
+                plano.AdicionarModulo(kv.Key, alteradoPor, input.ModuloGeralIdTexto(), input.Descricao, input.Valor, input.Ativo);
             }
 
             foreach (var modulo in plano.Modulos.Where(mo => !mo.IsValid))
@@ -239,8 +266,11 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                     Nome = p.Nome,
                     Valor = p.Preco,
                     GrupoPlanoId = p.GrupoPlanoId,
+                    DescricaoCurta = p.DescricaoCurta,
                     LimiteUsuarios = p.LimiteUsuarios,
                     LimiteEmpresas = p.LimiteEmpresas,
+                    DataInicio = p.DataInicio,
+                    DataFim = p.DataFim,
                     Ativo = p.Ativo,
                     QtdeModulos = p.Modulos.Count,
                     CriadoEm = p.CriadoEm
@@ -275,15 +305,23 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 Nome = p.Nome,
                 Valor = p.Preco,
                 GrupoPlanoId = p.GrupoPlanoId,
+                DescricaoCurta = p.DescricaoCurta,
+                DescricaoCompleta = p.DescricaoCompleta,
                 LimiteUsuarios = p.LimiteUsuarios,
                 LimiteEmpresas = p.LimiteEmpresas,
                 RecursosInclusos = p.RecursosInclusos,
+                DataInicio = p.DataInicio,
+                DataFim = p.DataFim,
                 Ativo = p.Ativo,
                 CriadoEm = p.CriadoEm,
                 Modulos = p.Modulos.Select(m => new ModuloPlanoDto
                 {
                     Id = m.Id,
-                    NomeModulo = m.NomeModulo
+                    NomeModulo = m.NomeModulo,
+                    ModuloGeralId = m.ModuloGeralId,
+                    Descricao = m.Descricao,
+                    Valor = m.Valor,
+                    Ativo = m.Ativo
                 }).ToList()
             };
         }

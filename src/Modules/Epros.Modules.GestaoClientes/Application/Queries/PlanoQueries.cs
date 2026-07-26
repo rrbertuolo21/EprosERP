@@ -18,8 +18,11 @@ namespace Epros.Modules.GestaoClientes.Application.Queries
         public string Nome { get; set; } = string.Empty;
         public decimal Valor { get; set; }
         public Guid? GrupoPlanoId { get; set; }
+        public string? DescricaoCurta { get; set; }
         public int LimiteUsuarios { get; set; }
         public int LimiteEmpresas { get; set; }
+        public DateTime? DataInicio { get; set; }
+        public DateTime? DataFim { get; set; }
         public bool Ativo { get; set; }
         public int QtdeModulos { get; set; }
         public DateTime CriadoEm { get; set; }
@@ -31,9 +34,13 @@ namespace Epros.Modules.GestaoClientes.Application.Queries
         public string Nome { get; set; } = string.Empty;
         public decimal Valor { get; set; }
         public Guid? GrupoPlanoId { get; set; }
+        public string? DescricaoCurta { get; set; }
+        public string? DescricaoCompleta { get; set; }
         public int LimiteUsuarios { get; set; }
         public int LimiteEmpresas { get; set; }
         public string? RecursosInclusos { get; set; }
+        public DateTime? DataInicio { get; set; }
+        public DateTime? DataFim { get; set; }
         public bool Ativo { get; set; }
         public DateTime CriadoEm { get; set; }
         public List<ModuloPlanoDto> Modulos { get; set; } = new();
@@ -43,5 +50,9 @@ namespace Epros.Modules.GestaoClientes.Application.Queries
     {
         public Guid Id { get; set; }
         public string NomeModulo { get; set; } = string.Empty;
+        public string? ModuloGeralId { get; set; }
+        public string? Descricao { get; set; }
+        public decimal Valor { get; set; }
+        public bool Ativo { get; set; }
     }
 }

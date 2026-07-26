@@ -14,19 +14,27 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public int LimiteUsuarios { get; private set; }
         public int LimiteEmpresas { get; private set; }
         public string? RecursosInclusos { get; private set; }
+        public string? DescricaoCurta { get; private set; }
+        public string? DescricaoCompleta { get; private set; }
+        public DateTime? DataInicio { get; private set; }
+        public DateTime? DataFim { get; private set; }
         public List<ModuloPlano> Modulos { get; private set; } = new();
 
         protected Plano() { } // EF Core
 
         public Plano(
-            string nome, 
-            decimal preco, 
-            Guid? grupoPlanoId, 
-            int limiteUsuarios, 
-            int limiteEmpresas, 
-            string? recursosInclusos, 
-            string tenantId, 
-            string criadoPor)
+            string nome,
+            decimal preco,
+            Guid? grupoPlanoId,
+            int limiteUsuarios,
+            int limiteEmpresas,
+            string? recursosInclusos,
+            string tenantId,
+            string criadoPor,
+            string? descricaoCurta = null,
+            string? descricaoCompleta = null,
+            DateTime? dataInicio = null,
+            DateTime? dataFim = null)
             : base(tenantId, criadoPor)
         {
             AddNotifications(new Contract<Plano>()
@@ -43,6 +51,10 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             LimiteUsuarios = limiteUsuarios;
             LimiteEmpresas = limiteEmpresas;
             RecursosInclusos = recursosInclusos;
+            DescricaoCurta = descricaoCurta;
+            DescricaoCompleta = descricaoCompleta;
+            DataInicio = dataInicio;
+            DataFim = dataFim;
             Ativo = true;
         }
 
@@ -51,9 +63,15 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         {
         }
 
-        public void AdicionarModulo(string nomeModulo, string criadoPor)
+        public void AdicionarModulo(
+            string nomeModulo,
+            string criadoPor,
+            string? moduloGeralId = null,
+            string? descricao = null,
+            decimal valor = 0m,
+            bool ativo = true)
         {
-            var modulo = new ModuloPlano(nomeModulo, Id, TenantId, criadoPor);
+            var modulo = new ModuloPlano(nomeModulo, Id, TenantId, criadoPor, moduloGeralId, descricao, valor, ativo);
             Modulos.Add(modulo);
         }
 
@@ -79,7 +97,11 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             int limiteUsuarios,
             int limiteEmpresas,
             string? recursosInclusos,
-            string alteradoPor)
+            string alteradoPor,
+            string? descricaoCurta = null,
+            string? descricaoCompleta = null,
+            DateTime? dataInicio = null,
+            DateTime? dataFim = null)
         {
             AddNotifications(new Contract<Plano>()
                 .Requires()
@@ -97,6 +119,10 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             LimiteUsuarios = limiteUsuarios;
             LimiteEmpresas = limiteEmpresas;
             RecursosInclusos = recursosInclusos;
+            DescricaoCurta = descricaoCurta;
+            DescricaoCompleta = descricaoCompleta;
+            DataInicio = dataInicio;
+            DataFim = dataFim;
             MarcarAlterado(alteradoPor);
         }
 

@@ -33,7 +33,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             var tenantId = _tenantProvider.GetTenantId();
             var criadoPor = _currentUser.GetUserId() ?? "system";
 
-            var grupo = new GrupoPlano(request.Descricao, tenantId, criadoPor);
+            var grupo = new GrupoPlano(request.Descricao, tenantId, criadoPor, request.Ativo);
 
             if (!grupo.IsValid)
             {
@@ -47,7 +47,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
         }
     }
 
-    /// <summary>Atualiza Grupo de Plano. Ativo=false inativa via soft-delete (não há coluna Ativo dedicada).</summary>
+    /// <summary>Atualiza Grupo de Plano. Ativo grava na coluna real (soft-delete permanece só para exclusão).</summary>
     public class AtualizarGrupoPlanoCommandHandler : ICommandHandler<AtualizarGrupoPlanoCommand>
     {
         private readonly ContextGestaoClientes _context;
@@ -69,17 +69,11 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 return CommandResult.Falha(new[] { "Grupo de plano não encontrado." }, "Erro");
             }
 
-            grupo.Atualizar(request.Descricao, alteradoPor);
+            grupo.Atualizar(request.Descricao, alteradoPor, request.Ativo);
 
             if (!grupo.IsValid)
             {
                 return CommandResult.Falha(grupo.Notifications.Select(n => n.Message), "Falha na validação do grupo de plano");
-            }
-
-            // GrupoPlano não possui coluna Ativo; inativação é mapeada para soft-delete.
-            if (!request.Ativo)
-            {
-                grupo.Deletar(alteradoPor);
             }
 
             _context.GrupoPlanos.Update(grupo);
@@ -151,7 +145,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 {
                     Id = g.Id,
                     Descricao = g.Descricao,
-                    Ativo = g.DeletadoEm == null,
+                    Ativo = g.Ativo,
                     CriadoEm = g.CriadoEm
                 })
                 .ToListAsync(cancellationToken);
