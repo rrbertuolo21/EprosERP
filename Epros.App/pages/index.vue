@@ -172,19 +172,18 @@ const handleLogin = async () => {
       router.push('/erp/acesso-rapido')
       return
     }
+    // Falha de tenant NÃO encerra o login: pode ser um operador interno (admin da
+    // plataforma). Guarda a mensagem e cai para o login de admin (passo 2) antes de exibir erro.
     if (resp?.erros?.length) {
       errorMessage.value = resp.erros.join(' ')
-      loading.value = false
-      return
     }
   } catch (apiErr) {
     const erros = apiErr?.data?.erros ?? apiErr?.response?._data?.erros
     if (erros?.length) {
       errorMessage.value = erros.join(' ')
-      loading.value = false
-      return
+    } else {
+      console.warn('Login API indisponível, tentando fallback:', apiErr)
     }
-    console.warn('Login API indisponível, tentando fallback:', apiErr)
   }
 
   // 2) Login de operador interno (Admin da Plataforma) via endpoint real
