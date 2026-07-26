@@ -93,6 +93,14 @@
                   </NuxtLink>
                   <button
                     type="button"
+                    class="btn btn-secondary btn-table-action"
+                    :disabled="pixModal.gerando && pixModal.faturaId === f.id"
+                    @click="gerarPix(f)"
+                  >
+                    {{ pixModal.gerando && pixModal.faturaId === f.id ? 'Gerando...' : 'Gerar Pix' }}
+                  </button>
+                  <button
+                    type="button"
                     class="btn btn-primary btn-table-action btn-success-action"
                     @click="openBaixaModal(f)"
                   >
@@ -188,6 +196,54 @@
         </form>
       </div>
     </div>
+
+    <!-- DIÁLOGO: COBRANÇA PIX -->
+    <AppDialog v-model="pixModal.open" title="Cobrança Pix" width="480px">
+      <div class="pix-body">
+        <div v-if="pixModal.dados.qrCodeBase64" class="pix-qr-wrap">
+          <img
+            class="pix-qr"
+            :src="`data:image/png;base64,${pixModal.dados.qrCodeBase64}`"
+            alt="QR Code Pix"
+          />
+        </div>
+
+        <div class="pix-field">
+          <label>Pix copia-e-cola</label>
+          <div class="pix-copy-row">
+            <textarea class="pix-copia-cola" readonly rows="3" :value="pixModal.dados.qrCode"></textarea>
+            <button type="button" class="btn btn-secondary btn-sm" @click="copiarPix">
+              {{ pixCopiado ? 'Copiado!' : 'Copiar' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="pix-meta">
+          <div v-if="pixModal.dados.paymentId" class="pix-meta-item">
+            <span class="pix-meta-label">ID do pagamento</span>
+            <span class="pix-meta-value">{{ pixModal.dados.paymentId }}</span>
+          </div>
+          <div v-if="pixModal.dados.dataExpiracao" class="pix-meta-item">
+            <span class="pix-meta-label">Expira em</span>
+            <span class="pix-meta-value">{{ formatDateTime(pixModal.dados.dataExpiracao) }}</span>
+          </div>
+        </div>
+
+        <a
+          v-if="pixModal.dados.ticketUrl"
+          :href="pixModal.dados.ticketUrl"
+          target="_blank"
+          rel="noopener"
+          class="btn btn-secondary btn-block mt-2"
+        >
+          Abrir link da cobrança ↗
+        </a>
+      </div>
+
+      <template #footer>
+        <button type="button" class="btn btn-primary" @click="pixModal.open = false">Fechar</button>
+      </template>
+    </AppDialog>
   </div>
 </template>
 
@@ -195,6 +251,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import MoneyInput from '~/components/shared/fields/MoneyInput.vue'
 import DateTimeField from '~/components/shared/fields/DateTimeField.vue'
+import AppDialog from '~/components/shared/AppDialog.vue'
 
 definePageMeta({ layout: 'admin' })
 
@@ -229,6 +286,14 @@ const baixaModal = reactive({
   dataVencimento: '',
   form: { valorPago: 0, formaPagamento: '', dataPagamento: new Date().toISOString().split('T')[0] }
 })
+
+const pixModal = reactive({
+  open: false,
+  gerando: false,
+  faturaId: '',
+  dados: { paymentId: '', qrCode: '', qrCodeBase64: '', ticketUrl: '', dataExpiracao: '' }
+})
+const pixCopiado = ref(false)
 
 onMounted(async () => {
   await checkApiConnection()
@@ -375,6 +440,62 @@ const excluirFatura = async (fatura) => {
   }
 }
 
+const gerarPix = async (fatura) => {
+  pixModal.gerando = true
+  pixModal.faturaId = fatura.id
+  try {
+    const res = await useApi(`/plataforma/faturas/${fatura.id}/gerar-cobranca-pix`, { method: 'POST' })
+    if (res?.sucesso === false) {
+      const msg = (res?.mensagem ?? '').toLowerCase()
+      if (msg.includes('gateway') || msg.includes('configurad') || msg.includes('não configurad')) {
+        alert('Nenhum gateway de pagamento configurado. Configure um provedor em Operação → Integrações / Gateways antes de gerar a cobrança Pix.')
+      } else {
+        alert(`Falha ao gerar Pix: ${res.mensagem ?? 'erro desconhecido'}`)
+      }
+      return
+    }
+    const dados = res?.dados ?? res
+    pixModal.dados = {
+      paymentId: dados?.paymentId ?? '',
+      qrCode: dados?.qrCode ?? '',
+      qrCodeBase64: dados?.qrCodeBase64 ?? '',
+      ticketUrl: dados?.ticketUrl ?? '',
+      dataExpiracao: dados?.dataExpiracao ?? ''
+    }
+    pixCopiado.value = false
+    pixModal.open = true
+  } catch (e) {
+    // 404/400 do backend quando não há gateway ativo para o escopo.
+    const msg = (e?.data?.mensagem ?? e?.message ?? '').toLowerCase()
+    if (msg.includes('gateway') || msg.includes('configurad')) {
+      alert('Nenhum gateway de pagamento configurado. Configure um provedor em Operação → Integrações / Gateways antes de gerar a cobrança Pix.')
+    } else {
+      alert(`Erro ao gerar cobrança Pix: ${e.message}`)
+    }
+  } finally {
+    pixModal.gerando = false
+  }
+}
+
+const copiarPix = async () => {
+  const texto = pixModal.dados.qrCode
+  if (!texto) return
+  try {
+    if (import.meta.client && navigator.clipboard) {
+      await navigator.clipboard.writeText(texto)
+    }
+    pixCopiado.value = true
+    setTimeout(() => { pixCopiado.value = false }, 2000)
+  } catch (e) {
+    alert('Não foi possível copiar automaticamente. Selecione o texto e copie manualmente.')
+  }
+}
+
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return '—'
+  return new Date(dateStr).toLocaleString('pt-BR')
+}
+
 const getStatusBadgeClass = (status) => {
   const s = (status || '').toLowerCase()
   if (s.includes('pago') || s.includes('quitad')) return 'badge-success'
@@ -505,5 +626,68 @@ const formatMoney = (v) => {
 .btn-close:hover {
   color: var(--text-primary);
 }
+.pix-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pix-qr-wrap {
+  display: flex;
+  justify-content: center;
+}
+.pix-qr {
+  width: 220px;
+  height: 220px;
+  background: #fff;
+  padding: 8px;
+  border-radius: 8px;
+  image-rendering: pixelated;
+}
+.pix-field label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.pix-copy-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.pix-copia-cola {
+  flex: 1;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  resize: vertical;
+  word-break: break-all;
+}
+.pix-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pix-meta-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+.pix-meta-label {
+  color: var(--text-secondary);
+}
+.pix-meta-value {
+  color: var(--text-primary);
+  font-weight: 600;
+  word-break: break-all;
+  text-align: right;
+}
+.mt-2 { margin-top: 12px; }
 .mt-4 { margin-top: 24px; }
 </style>

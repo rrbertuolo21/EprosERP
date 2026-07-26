@@ -14,6 +14,7 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
         public DbSet<GrupoPlano> GrupoPlanos => Set<GrupoPlano>();
         public DbSet<AssinaturaCliente> AssinaturasClientes => Set<AssinaturaCliente>();
         public DbSet<PagamentoFatura> PagamentosFaturas => Set<PagamentoFatura>();
+        public DbSet<ConfiguracaoGatewayPagamento> ConfiguracoesGatewayPagamento => Set<ConfiguracaoGatewayPagamento>();
         public DbSet<ComposicaoFaturamento> ComposicoesFaturamento => Set<ComposicaoFaturamento>();
         public DbSet<HistoricoReajuste> HistoricosReajustes => Set<HistoricoReajuste>();
         
@@ -214,6 +215,24 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                       .IsUnique()
                       .HasDatabaseName("ix_pagamentos_fatura_payment_id")
                       .HasFilter("identificador_pagamento IS NOT NULL");
+                // Dados da cobrança PIX (payloads podem ser longos → text).
+                entity.Property(p => p.QrCode).HasColumnType("text");
+                entity.Property(p => p.QrCodeBase64).HasColumnType("text");
+            });
+
+            modelBuilder.Entity<ConfiguracaoGatewayPagamento>(entity =>
+            {
+                entity.HasKey(g => g.Id);
+                entity.Property(g => g.Provedor).HasConversion<string>().HasMaxLength(30);
+                entity.Property(g => g.Ambiente).HasConversion<string>().HasMaxLength(20);
+                entity.Property(g => g.AccessToken).HasColumnType("text");
+                entity.Property(g => g.PublicKey).HasColumnType("text");
+                entity.Property(g => g.WebhookSecret).HasColumnType("text");
+                entity.Property(g => g.NotificationUrl).HasMaxLength(500);
+                entity.Property(g => g.Moeda).HasMaxLength(3);
+                entity.Property(g => g.TenantAlvo).HasMaxLength(100);
+                entity.HasIndex(g => new { g.TenantAlvo, g.Provedor, g.Ativo })
+                      .HasDatabaseName("ix_config_gateway_pagamento_tenant_provedor_ativo");
             });
 
             modelBuilder.Entity<Cupom>(entity =>

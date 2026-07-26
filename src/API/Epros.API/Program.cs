@@ -106,6 +106,14 @@ try
     // Registra o Cofre de Segredos (Vault)
     builder.Services.AddHttpClient<ISegredoCofreService, Epros.Infrastructure.Services.VaultEncryptionService>();
 
+    // Gateway de pagamento (outbound) — Mercado Pago. HttpClient nomeado + implementação.
+    builder.Services.AddHttpClient(Epros.Modules.GestaoClientes.Infrastructure.Gateways.MercadoPagoGateway.HttpClientName, client =>
+    {
+        client.BaseAddress = new Uri("https://api.mercadopago.com/");
+        client.Timeout = TimeSpan.FromSeconds(30);
+    });
+    builder.Services.AddScoped<Epros.Modules.GestaoClientes.Application.Interfaces.IPaymentGateway, Epros.Modules.GestaoClientes.Infrastructure.Gateways.MercadoPagoGateway>();
+
     // Registra o serviço de notificações (Mock para homologação local) (REG-020)
     builder.Services.AddScoped<INotificacaoService, Epros.Infrastructure.Services.MockNotificacaoService>();
     

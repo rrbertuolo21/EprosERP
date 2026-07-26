@@ -10,29 +10,25 @@ using Epros.Shared.Application.Models;
 
 namespace Epros.API.Controllers
 {
-    /// <summary>Landlord: gestão de Faturas (GAP-4). Geração continua em plataforma/clientes/faturas.</summary>
+    /// <summary>Landlord: CRUD de configurações de gateway de pagamento (Mercado Pago).</summary>
     [ApiController]
-    [Route("api/v1/plataforma/faturas")]
+    [Route("api/v1/plataforma/gateways-pagamento")]
     [Produces("application/json")]
     [AbacAuthorize("SuperAdmin", "Configurar")]
-    public class FaturasController : ControllerBase
+    public class GatewaysPagamentoController : ControllerBase
     {
         private readonly IMediator _mediator;
 
-        public FaturasController(IMediator mediator)
+        public GatewaysPagamentoController(IMediator mediator)
         {
             _mediator = mediator;
         }
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> Get(
-            [FromQuery] int pagina = 1,
-            [FromQuery] int tamanhoPagina = 25,
-            [FromQuery] Guid? clienteId = null,
-            [FromQuery] string? status = null)
+        public async Task<IActionResult> Get([FromQuery] int pagina = 1, [FromQuery] int tamanhoPagina = 25)
         {
-            var result = await _mediator.Send(new ListarFaturasQuery(pagina, tamanhoPagina, clienteId, status));
+            var result = await _mediator.Send(new ListarGatewaysPagamentoQuery(pagina, tamanhoPagina));
             return Ok(result);
         }
 
@@ -41,8 +37,18 @@ namespace Epros.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var result = await _mediator.Send(new ObterFaturaPorIdQuery(id));
+            var result = await _mediator.Send(new ObterGatewayPagamentoPorIdQuery(id));
             if (result == null) return NotFound();
+            return Ok(result);
+        }
+
+        [HttpPost]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Create([FromBody] CriarGatewayPagamentoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            if (!result.Sucesso) return UnprocessableEntity(result);
             return Ok(result);
         }
 
@@ -50,7 +56,7 @@ namespace Epros.API.Controllers
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
-        public async Task<IActionResult> Update(Guid id, [FromBody] AlterarFaturaCommand command)
+        public async Task<IActionResult> Update(Guid id, [FromBody] AtualizarGatewayPagamentoCommand command)
         {
             if (id != command.Id)
             {
@@ -67,34 +73,17 @@ namespace Epros.API.Controllers
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<CommandResult>> Delete(Guid id)
         {
-            var result = await _mediator.Send(new ExcluirFaturaCommand(id));
+            var result = await _mediator.Send(new ExcluirGatewayPagamentoCommand(id));
             if (!result.Sucesso) return UnprocessableEntity(result);
             return Ok(result);
         }
 
-        [HttpPost("{id}/baixar-manual")]
-        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
-        public async Task<IActionResult> BaixarManual(Guid id, [FromBody] BaixarFaturaManualCommand command)
-        {
-            if (id != command.FaturaId)
-            {
-                return BadRequest("O ID na URL não corresponde ao ID no corpo do comando.");
-            }
-
-            var result = await _mediator.Send(command);
-            if (!result.Sucesso) return UnprocessableEntity(result);
-            return Ok(result);
-        }
-
-        /// <summary>Gera a cobrança PIX da fatura no gateway ativo (config por tenant, senão global).</summary>
-        [HttpPost("{id}/gerar-cobranca-pix")]
+        [HttpPost("{id}/testar-conexao")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
-        public async Task<IActionResult> GerarCobrancaPix(Guid id)
+        public async Task<IActionResult> TestarConexao(Guid id)
         {
-            var result = await _mediator.Send(new GerarCobrancaPixCommand(id));
+            var result = await _mediator.Send(new TestarConexaoGatewayPagamentoCommand(id));
             if (!result.Sucesso) return UnprocessableEntity(result);
             return Ok(result);
         }

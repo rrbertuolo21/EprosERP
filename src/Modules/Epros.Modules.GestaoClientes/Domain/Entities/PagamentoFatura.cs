@@ -15,6 +15,11 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public bool PagoManualmente { get; private set; }
         public DateTime? DataPagamento { get; private set; }
 
+        // Dados da cobrança PIX gerada no gateway (melhoria: o legado não persistia).
+        public string? QrCode { get; private set; }         // PIX "copia e cola" (payload EMV)
+        public string? QrCodeBase64 { get; private set; }   // imagem do QR em base64
+        public string? TicketUrl { get; private set; }      // URL do comprovante/checkout no gateway
+
         protected PagamentoFatura() { } // EF Core
 
         public PagamentoFatura(
@@ -45,6 +50,21 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             IdentificadorPagamento = identificadorPagamento;
             PagoManualmente = pagoManualmente;
             DataPagamento = dataPagamento;
+        }
+
+        /// <summary>
+        /// Registra os dados da cobrança PIX retornados pelo gateway (payment id, QR e ticket).
+        /// Mantém o pagamento em <see cref="PagamentoFaturaStatus.Pending"/> até a confirmação via webhook.
+        /// </summary>
+        public void RegistrarCobrancaPix(string? identificadorPagamento, string? qrCode, string? qrCodeBase64, string? ticketUrl, string alteradoPor)
+        {
+            if (!string.IsNullOrWhiteSpace(identificadorPagamento))
+                IdentificadorPagamento = identificadorPagamento;
+            QrCode = qrCode;
+            QrCodeBase64 = qrCodeBase64;
+            TicketUrl = ticketUrl;
+            Status = PagamentoFaturaStatus.Pending;
+            MarcarAlterado(alteradoPor);
         }
 
         public void Liquidar(decimal valorRealPago, decimal? tarifa, string alteradoPor)

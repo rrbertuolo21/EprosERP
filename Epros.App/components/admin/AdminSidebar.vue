@@ -51,6 +51,7 @@ const adminMenu: MenuGroup[] = [
     icon: 'settings',
     itens: [
       { label: 'Equipe', to: '/plataforma/admin/equipe' },
+      { label: 'Integrações / Gateways', to: '/plataforma/admin/integracoes' },
       { label: 'Configurações', to: '/plataforma/admin/configuracoes' },
       { label: 'Execuções', to: '/plataforma/admin/execucoes' },
       { label: 'Mensagens', to: '/plataforma/admin/mensagens' },
