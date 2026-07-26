@@ -26,7 +26,7 @@ services:
 
   migrate:
     build:
-      context: ./EprosERP-main
+      context: .
       dockerfile: src/API/Epros.API/Dockerfile
       target: migrate
     container_name: epros-novo-migrate
@@ -48,7 +48,7 @@ services:
 
   api:
     build:
-      context: ./EprosERP-main
+      context: .
       dockerfile: src/API/Epros.API/Dockerfile
       target: runtime
     container_name: epros-novo-api
