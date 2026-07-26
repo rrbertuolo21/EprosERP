@@ -88,6 +88,7 @@ namespace Epros.API.Controllers
         [HttpPost("atualizar")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        [Consumes("multipart/form-data")]
         public async Task<ActionResult<CommandResult>> AtualizarTabela(IFormFile arquivo, CancellationToken cancellationToken)
         {
             if (arquivo == null || arquivo.Length == 0)

@@ -31,12 +31,14 @@ namespace Epros.API.Controllers
         /// <summary>Upload direto de arquivo completo (multipart).</summary>
         [HttpPost("arquivos")]
         [RequestSizeLimit(200_000_000)]
-        public async Task<ActionResult<CommandResult>> RegistrarArquivo([FromForm] IFormFile arquivo, [FromForm] Guid usuarioId, [FromForm] string? pastaDestino, CancellationToken ct)
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<CommandResult>> RegistrarArquivo([FromForm] RegistrarArquivoForm form, CancellationToken ct)
         {
+            var arquivo = form.Arquivo;
             if (arquivo == null || arquivo.Length == 0) return BadRequest(CommandResult.Falha("Arquivo vazio ou não informado."));
             var bytes = await LerBytesAsync(arquivo, ct);
             var ext = Path.GetExtension(arquivo.FileName);
-            var command = new RegistrarArquivoUploadCommand(usuarioId, null, EUplOrigemUpload.Direct, arquivo.FileName, ext, bytes, pastaDestino);
+            var command = new RegistrarArquivoUploadCommand(form.UsuarioId, null, EUplOrigemUpload.Direct, arquivo.FileName, ext, bytes, form.PastaDestino);
             var result = await _mediator.Send(command, ct);
             return result.Sucesso ? Created(string.Empty, result) : UnprocessableEntity(result);
         }
@@ -44,8 +46,10 @@ namespace Epros.API.Controllers
         /// <summary>Upload em partes. Informe o cabeçalho Content-Range: bytes {inicio}-{fim}/{total}.</summary>
         [HttpPost("partes")]
         [RequestSizeLimit(200_000_000)]
-        public async Task<ActionResult<CommandResult>> ReceberParte([FromForm] IFormFile arquivo, [FromForm] Guid usuarioId, [FromForm] Guid? execucaoUploadId, [FromForm] string? pastaDestino, CancellationToken ct)
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<CommandResult>> ReceberParte([FromForm] ReceberParteForm form, CancellationToken ct)
         {
+            var arquivo = form.Arquivo;
             if (arquivo == null) return BadRequest(CommandResult.Falha("Parte não informada."));
 
             long byteInicio = 0, byteFim = arquivo.Length - 1, totalBytes = arquivo.Length;
@@ -64,7 +68,7 @@ namespace Epros.API.Controllers
 
             var bytes = await LerBytesAsync(arquivo, ct);
             var ext = Path.GetExtension(arquivo.FileName);
-            var command = new ReceberParteUploadCommand(execucaoUploadId, usuarioId, arquivo.FileName, ext, bytes, byteInicio, byteFim, totalBytes, pastaDestino);
+            var command = new ReceberParteUploadCommand(form.ExecucaoUploadId, form.UsuarioId, arquivo.FileName, ext, bytes, byteInicio, byteFim, totalBytes, form.PastaDestino);
             var result = await _mediator.Send(command, ct);
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
@@ -72,12 +76,14 @@ namespace Epros.API.Controllers
         /// <summary>Importação tabular CSV/XLSX (multipart).</summary>
         [HttpPost("importacoes")]
         [RequestSizeLimit(200_000_000)]
-        public async Task<ActionResult<CommandResult>> ImportarTabular([FromForm] IFormFile arquivo, [FromForm] Guid usuarioId, [FromForm] string tipoImportacao, [FromForm] Guid? arquivoId, [FromForm] bool ignorarLinhasInvalidas, CancellationToken ct)
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<CommandResult>> ImportarTabular([FromForm] ImportarTabularForm form, CancellationToken ct)
         {
+            var arquivo = form.Arquivo;
             if (arquivo == null || arquivo.Length == 0) return BadRequest(CommandResult.Falha("Arquivo vazio ou não informado."));
             var bytes = await LerBytesAsync(arquivo, ct);
             var ext = Path.GetExtension(arquivo.FileName);
-            var command = new ImportarArquivoTabularCommand(usuarioId, tipoImportacao, arquivoId, arquivo.FileName, ext, bytes, ignorarLinhasInvalidas);
+            var command = new ImportarArquivoTabularCommand(form.UsuarioId, form.TipoImportacao, form.ArquivoId, arquivo.FileName, ext, bytes, form.IgnorarLinhasInvalidas);
             var result = await _mediator.Send(command, ct);
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
@@ -117,5 +123,32 @@ namespace Epros.API.Controllers
             var result = await _mediator.Send(new ObterArquivoPorIdQuery(id));
             return result == null ? NotFound() : Ok(result);
         }
+    }
+
+    /// <summary>Formulário multipart do upload direto (PLT-UPL). DTO explícito para o binder e o OpenAPI.</summary>
+    public class RegistrarArquivoForm
+    {
+        public IFormFile Arquivo { get; set; } = default!;
+        public Guid UsuarioId { get; set; }
+        public string? PastaDestino { get; set; }
+    }
+
+    /// <summary>Formulário multipart do upload em partes (PLT-UPL).</summary>
+    public class ReceberParteForm
+    {
+        public IFormFile Arquivo { get; set; } = default!;
+        public Guid UsuarioId { get; set; }
+        public Guid? ExecucaoUploadId { get; set; }
+        public string? PastaDestino { get; set; }
+    }
+
+    /// <summary>Formulário multipart da importação tabular CSV/XLSX (PLT-UPL).</summary>
+    public class ImportarTabularForm
+    {
+        public IFormFile Arquivo { get; set; } = default!;
+        public Guid UsuarioId { get; set; }
+        public string TipoImportacao { get; set; } = default!;
+        public Guid? ArquivoId { get; set; }
+        public bool IgnorarLinhasInvalidas { get; set; }
     }
 }
