@@ -8,9 +8,9 @@ de origem e regenere (script em `scratchpad`/`cursor-install`).
 
 1. Copie o conteúdo de `rules/` para dentro do repositório do produto:
    ```
-   PlataformaSaaS/.cursor/rules/
+   EprosERP/.cursor/rules/  (a raiz do repo)
    ```
-   (crie a pasta `.cursor/rules/` na raiz do `PlataformaSaaS` se não existir)
+   (crie a pasta `.cursor/rules/` na raiz do repo se não existir)
 
 2. Pronto. O Cursor carrega as regras automaticamente:
    - **`00-context.mdc`** → `alwaysApply: true` — sempre ativo, em toda conversa.
