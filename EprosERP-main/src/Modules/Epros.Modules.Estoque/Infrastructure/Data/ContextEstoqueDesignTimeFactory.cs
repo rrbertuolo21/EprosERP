@@ -13,8 +13,10 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
     {
         public ContextEstoque CreateDbContext(string[] args)
         {
+            var conn = System.Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? "Host=localhost;Database=epros_design;Username=postgres;Password=postgres";
             var options = new DbContextOptionsBuilder<ContextEstoque>()
-                .UseNpgsql("Host=localhost;Database=epros_design;Username=postgres;Password=postgres")
+                .UseNpgsql(conn)
                 .Options;
 
             return new ContextEstoque(options, new DesignTenantProvider(), new DesignCurrentUser());

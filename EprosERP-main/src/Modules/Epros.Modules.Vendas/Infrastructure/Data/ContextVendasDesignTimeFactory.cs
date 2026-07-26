@@ -13,8 +13,10 @@ namespace Epros.Modules.Vendas.Infrastructure.Data
     {
         public ContextVendas CreateDbContext(string[] args)
         {
+            var conn = System.Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? "Host=localhost;Database=epros_design;Username=postgres;Password=postgres";
             var options = new DbContextOptionsBuilder<ContextVendas>()
-                .UseNpgsql("Host=localhost;Database=epros_design;Username=postgres;Password=postgres")
+                .UseNpgsql(conn)
                 .Options;
 
             return new ContextVendas(options, new DesignTenantProvider(), new DesignCurrentUser());

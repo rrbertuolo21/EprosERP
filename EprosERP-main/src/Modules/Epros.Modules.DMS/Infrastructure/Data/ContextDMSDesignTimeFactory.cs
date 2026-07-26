@@ -13,8 +13,10 @@ namespace Epros.Modules.DMS.Infrastructure.Data
     {
         public ContextDMS CreateDbContext(string[] args)
         {
+            var conn = System.Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? "Host=localhost;Database=epros_design;Username=postgres;Password=postgres";
             var options = new DbContextOptionsBuilder<ContextDMS>()
-                .UseNpgsql("Host=localhost;Database=epros_design;Username=postgres;Password=postgres")
+                .UseNpgsql(conn)
                 .Options;
 
             return new ContextDMS(options, new DesignTenantProvider(), new DesignCurrentUser());

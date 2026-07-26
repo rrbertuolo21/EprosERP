@@ -1,0 +1,91 @@
+# Stack full-stack LOCAL do EprosERP novo (infra + migrate + API + front).
+# Sobe tudo em localhost, sem caddy/domínios/TLS, com segredos de desenvolvimento.
+# Portas: front 3000 | API 8080 | Postgres 55432 (host) -> 5432 (container).
+#   docker compose -f docker-compose.local.yml up -d --build
+name: epros-novo
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: epros-novo-db
+    environment:
+      POSTGRES_DB: epros
+      POSTGRES_USER: epros
+      POSTGRES_PASSWORD: epros_dev
+    ports:
+      - "55432:5432"
+    volumes:
+      - epros_novo_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U epros -d epros"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks: [epros-novo]
+
+  migrate:
+    build:
+      context: ./EprosERP-main
+      dockerfile: src/API/Epros.API/Dockerfile
+      target: migrate
+    container_name: epros-novo-migrate
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=epros;Username=epros;Password=epros_dev"
+      Cofre__KekLocal: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+      # usados pelo passo RLS (psql) do migrate-all.sh
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: epros
+      POSTGRES_USER: epros
+      POSTGRES_PASSWORD: epros_dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks: [epros-novo]
+
+  api:
+    build:
+      context: ./EprosERP-main
+      dockerfile: src/API/Epros.API/Dockerfile
+      target: runtime
+    container_name: epros-novo-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=epros;Username=epros;Password=epros_dev"
+      Cofre__KekLocal: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+      Seguranca__JwtSigningKey: "epros-local-dev-signing-key-0123456789-abcdef-xyz"
+      CORS_ORIGINS: "http://localhost:3000"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    networks: [epros-novo]
+
+  web:
+    build:
+      context: ./Epros.App
+      dockerfile: Dockerfile.local
+      args:
+        NUXT_PUBLIC_API_BASE_URL: "http://localhost:8080"
+    container_name: epros-novo-web
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks: [epros-novo]
+
+volumes:
+  epros_novo_pg:
+
+networks:
+  epros-novo:
+    name: epros-novo-network
