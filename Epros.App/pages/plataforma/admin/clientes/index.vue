@@ -1,9 +1,6 @@
 <template>
   <div class="dashboard-layout">
-    <!-- Cabeçalho Compartilhado -->
-    <AppHeader />
-
-    <!-- Conteúdo Principal -->
+    <!-- Conteúdo Principal (cabeçalho vem do shell `admin`) -->
     <main class="dashboard-content">
       <header class="page-header">
         <h1 class="glow-text">Gerenciamento de Clientes (Tenants)</h1>
@@ -113,8 +110,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 
-// Página autocontida (já renderiza seu próprio AppHeader) — sem layout do shell ERP.
-definePageMeta({ layout: false })
+definePageMeta({ layout: 'admin' })
 
 const apiOnline = ref(true)
 const loading = ref(false)

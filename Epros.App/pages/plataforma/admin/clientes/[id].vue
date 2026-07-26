@@ -1,9 +1,6 @@
 <template>
   <div class="dashboard-layout">
-    <!-- Cabeçalho Compartilhado -->
-    <AppHeader />
-
-    <!-- Conteúdo Principal -->
+    <!-- Conteúdo Principal (o shell/header vem do layout `admin`) -->
     <main class="dashboard-content">
       <header class="page-header">
         <h1 class="glow-text">{{ isNew ? 'Novo Inquilino' : 'Editar Inquilino' }}</h1>
@@ -12,6 +9,14 @@
           <NuxtLink to="/plataforma/admin/clientes" class="btn btn-secondary btn-back">
             ← Voltar para Lista
           </NuxtLink>
+          <button
+            v-if="!isNew"
+            type="button"
+            class="btn btn-primary"
+            @click="openAprovarModal"
+          >
+            Aprovar assinatura manual
+          </button>
           <span class="status-pill" :class="{ 'offline': !apiOnline }">
             <span class="status-dot"></span>
             {{ apiOnline ? 'Conectado à API Gateway' : 'Modo Simulação Offline' }}
@@ -307,6 +312,49 @@
         </form>
       </div>
     </div>
+
+    <!-- MODAL: APROVAR ASSINATURA MANUAL -->
+    <div class="modal-backdrop" v-if="aprovarModal.open">
+      <div class="modal-card glass-panel">
+        <header class="modal-header">
+          <h3>Aprovar Assinatura Manual</h3>
+          <button type="button" @click="aprovarModal.open = false" class="btn-close">×</button>
+        </header>
+        <form @submit.prevent="aprovarAssinaturaManual" class="vertical-form">
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label>Data de Início *</label>
+              <input type="date" v-model="aprovarModal.form.dataInicio" required />
+            </div>
+            <div class="form-group col-6">
+              <label>Data de Fim (Opcional)</label>
+              <input type="date" v-model="aprovarModal.form.dataFim" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label>Dia de Vencimento (1 a 28) *</label>
+              <input type="number" v-model.number="aprovarModal.form.diaVencimento" min="1" max="28" required />
+            </div>
+            <div class="form-group col-6">
+              <label>Valor Recorrente (R$) *</label>
+              <input type="number" v-model.number="aprovarModal.form.valorRecorrente" step="0.01" min="0.01" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Operador Responsável *</label>
+            <input type="text" v-model="aprovarModal.form.operador" placeholder="Nome do operador" required />
+          </div>
+          <div class="form-group">
+            <label>Justificativa (mín. 10 caracteres) *</label>
+            <textarea v-model="aprovarModal.form.justificativa" rows="3" minlength="10" placeholder="Motivo da aprovação manual da assinatura" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block mt-4" :disabled="aprovando">
+            {{ aprovando ? 'Enviando...' : 'Confirmar Aprovação' }}
+          </button>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -314,8 +362,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-// Página autocontida (já renderiza seu próprio AppHeader) — sem layout do shell ERP.
-definePageMeta({ layout: false })
+// Área landlord: usa o shell administrativo (sidebar + header) fornecido pelo layout `admin`.
+definePageMeta({ layout: 'admin' })
 
 const route = useRoute()
 const router = useRouter()
@@ -385,6 +433,20 @@ const composicaoModal = reactive({
   }
 })
 
+// Estado da aprovação manual de assinatura.
+const aprovando = ref(false)
+const aprovarModal = reactive({
+  open: false,
+  form: {
+    dataInicio: new Date().toISOString().split('T')[0],
+    dataFim: '',
+    diaVencimento: 10,
+    valorRecorrente: 0,
+    operador: '',
+    justificativa: ''
+  }
+})
+
 onMounted(async () => {
   await checkApiConnection()
   await loadMetadataSelects()
@@ -405,9 +467,9 @@ const checkApiConnection = async () => {
 const loadMetadataSelects = async () => {
   if (apiOnline.value) {
     try {
-      // Carrega planos
-      const planRes = await useApi('/public/AreaPublica/planos')
-      plans.value = planRes.map(p => ({ id: p.id, name: p.nome, price: p.preco }))
+      // Carrega planos: tenta o endpoint landlord `/plataforma/planos` quando existir;
+      // se não existir/estiver indisponível, cai para a lista pública (fallback).
+      await carregarPlanos()
 
       // Carrega revendas
       const revRes = await useApi('/plataforma/revendas', { query: { tamanhoPagina: 100 } })
@@ -493,6 +555,77 @@ const loadClienteSimulado = () => {
         composicoes: item.composicoes || []
       })
     }
+  }
+}
+
+// Carrega planos para o select de PlanoId. Prioriza o endpoint landlord `/plataforma/planos`
+// (quando existir) e faz fallback para a lista pública. Se ambos falharem, o form ainda funciona
+// (o valor de PlanoId persiste e pode ser mantido/salvo como texto/GUID).
+const carregarPlanos = async () => {
+  try {
+    const res = await useApi('/plataforma/planos', { query: { tamanhoPagina: 100 } })
+    const lista = res?.items ?? res?.dados ?? res?.data ?? res
+    if (Array.isArray(lista) && lista.length) {
+      plans.value = lista.map(p => ({
+        id: p.id,
+        name: p.nome ?? p.name ?? p.descricao ?? 'Plano',
+        price: Number(p.preco ?? p.valor ?? p.price ?? 0)
+      }))
+      return
+    }
+  } catch (e) {
+    // endpoint landlord ainda não existe (GAP-1) — segue para o fallback público
+  }
+  try {
+    const planRes = await useApi('/public/AreaPublica/planos')
+    plans.value = planRes.map(p => ({ id: p.id, name: p.nome, price: p.preco }))
+  } catch (e) {
+    // sem planos disponíveis — mantém o que já houver; PlanoId continua editável
+  }
+}
+
+const openAprovarModal = () => {
+  aprovarModal.form.dataInicio = new Date().toISOString().split('T')[0]
+  aprovarModal.form.dataFim = ''
+  aprovarModal.form.diaVencimento = cliente.diaVencimento || 10
+  aprovarModal.form.valorRecorrente = 0
+  aprovarModal.form.operador = ''
+  aprovarModal.form.justificativa = ''
+  aprovarModal.open = true
+}
+
+const aprovarAssinaturaManual = async () => {
+  if (aprovarModal.form.justificativa.trim().length < 10) {
+    alert('A justificativa deve ter no mínimo 10 caracteres.')
+    return
+  }
+  aprovando.value = true
+  try {
+    // Rota real no backend novo: SuperAdminController → api/v1/plataforma/superadmin/clientes/{id}/aprovar-assinatura-manual
+    const res = await useApi(`/plataforma/superadmin/clientes/${cliente.id}/aprovar-assinatura-manual`, {
+      method: 'POST',
+      body: {
+        ClienteId: cliente.id,
+        DataInicio: aprovarModal.form.dataInicio,
+        DataFim: aprovarModal.form.dataFim || null,
+        DiaVencimento: aprovarModal.form.diaVencimento,
+        ValorRecorrente: aprovarModal.form.valorRecorrente,
+        FaturaPendenteIdParaBaixar: null,
+        Operador: aprovarModal.form.operador,
+        Justificativa: aprovarModal.form.justificativa
+      }
+    })
+    if (res?.sucesso === false) {
+      alert(`Falha ao aprovar assinatura: ${res.mensagem ?? 'erro desconhecido'}`)
+      return
+    }
+    alert('Assinatura manual aprovada com sucesso!')
+    aprovarModal.open = false
+    await loadClienteDetalhado()
+  } catch (e) {
+    alert(`Erro ao aprovar assinatura: ${e.message}`)
+  } finally {
+    aprovando.value = false
   }
 }
 
@@ -672,7 +805,9 @@ const fetchCep = async () => {
   const clean = enderecoModal.form.cep.replace(/\D/g, '')
   if (clean.length === 8) {
     try {
-      const res = await $fetch(`https://viacep.com.br/ws/${clean}/json/`)
+      // Serviço externo de CEP (não é a nossa API): usa fetch nativo do navegador.
+      const resp = await fetch(`https://viacep.com.br/ws/${clean}/json/`)
+      const res = await resp.json()
       if (!res.erro) {
         enderecoModal.form.logradouro = res.logradouro
         enderecoModal.form.bairro = res.bairro

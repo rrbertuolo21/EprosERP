@@ -70,5 +70,50 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
                 MarcarAlterado(alteradoPor);
             }
         }
+
+        /// <summary>Atualiza os dados escalares do plano (não mexe na coleção de módulos).</summary>
+        public void Atualizar(
+            string nome,
+            decimal preco,
+            Guid? grupoPlanoId,
+            int limiteUsuarios,
+            int limiteEmpresas,
+            string? recursosInclusos,
+            string alteradoPor)
+        {
+            AddNotifications(new Contract<Plano>()
+                .Requires()
+                .IsNotNullOrEmpty(nome, nameof(Nome), "Nome do plano é obrigatório")
+                .IsGreaterThan(preco, -0.01m, nameof(Preco), "Preço do plano deve ser maior ou igual a zero")
+                .IsGreaterThan(limiteUsuarios, 0, nameof(LimiteUsuarios), "Limite de usuários deve ser maior que zero")
+                .IsGreaterThan(limiteEmpresas, 0, nameof(LimiteEmpresas), "Limite de empresas deve ser maior que zero")
+            );
+
+            if (!IsValid) return;
+
+            Nome = nome;
+            Preco = preco;
+            GrupoPlanoId = grupoPlanoId;
+            LimiteUsuarios = limiteUsuarios;
+            LimiteEmpresas = limiteEmpresas;
+            RecursosInclusos = recursosInclusos;
+            MarcarAlterado(alteradoPor);
+        }
+
+        public void DefinirAtivo(bool ativo, string alteradoPor)
+        {
+            Ativo = ativo;
+            MarcarAlterado(alteradoPor);
+        }
+
+        public void RemoverModulo(ModuloPlano modulo)
+        {
+            Modulos.Remove(modulo);
+        }
+
+        public void LimparModulos()
+        {
+            Modulos.Clear();
+        }
     }
 }

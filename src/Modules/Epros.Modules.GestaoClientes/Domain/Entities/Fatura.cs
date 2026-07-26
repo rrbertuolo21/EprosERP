@@ -39,6 +39,29 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             MarcarAlterado(alteradoPor);
         }
 
+        /// <summary>Baixa manual com data de pagamento informada (landlord).</summary>
+        public void BaixarManual(DateTime dataPagamento, string alteradoPor)
+        {
+            Status = FaturaStatus.Paga;
+            DataPagamento = dataPagamento;
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>Altera vencimento e/ou valor de uma fatura ainda em aberto.</summary>
+        public void Alterar(decimal valor, DateTime dataVencimento, string alteradoPor)
+        {
+            AddNotifications(new Contract<Fatura>()
+                .Requires()
+                .IsGreaterThan(valor, 0, nameof(Valor), "Valor da fatura deve ser maior que zero")
+            );
+
+            if (!IsValid) return;
+
+            Valor = valor;
+            DataVencimento = dataVencimento;
+            MarcarAlterado(alteradoPor);
+        }
+
         public void Cancelar(string alteradoPor)
         {
             Status = FaturaStatus.Cancelada;

@@ -167,7 +167,7 @@
 import { ref, reactive, onMounted, nextTick } from 'vue'
 
 // Página autocontida (já renderiza seu próprio AppHeader) — sem layout do shell ERP.
-definePageMeta({ layout: false })
+definePageMeta({ layout: 'admin' })
 
 const apiOnline = ref(true)
 const loading = ref(false)
