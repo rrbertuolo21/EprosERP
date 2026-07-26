@@ -1,4 +1,0 @@
-[submodule "Epros.Mobile"]
-	path = Epros.Mobile
-	url = https://github.com/rrbertuolo21/EprosMobile.git
-	branch = main
