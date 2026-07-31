@@ -38,8 +38,20 @@ namespace Epros.Modules.GestaoClientes.Application.Queries
         public decimal PercentualComissaoVendedor { get; set; }
         public decimal ValorComissaoRevenda { get; set; }
         public decimal ValorComissaoVendedor { get; set; }
+        public bool Quitada { get; set; }
+        public decimal ValorPago { get; set; }
+        public string? Numero { get; set; }
+        public string? Observacoes { get; set; }
         public DateTime CriadoEm { get; set; }
+        public List<FaturaItemDto> Itens { get; set; } = new();
         public List<PagamentoFaturaDto> Pagamentos { get; set; } = new();
+    }
+
+    public class FaturaItemDto
+    {
+        public Guid Id { get; set; }
+        public string Descricao { get; set; } = string.Empty;
+        public decimal Valor { get; set; }
     }
 
     public class PagamentoFaturaDto

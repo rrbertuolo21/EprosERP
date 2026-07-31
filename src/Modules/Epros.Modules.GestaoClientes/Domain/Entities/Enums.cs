@@ -9,6 +9,19 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         PessoaEstrangeira = 3
     }
 
+    // 1.01 — Status do ciclo de cobrança SaaS do tenant (Cliente.StatusSaaS).
+    // Persistido como string via HasConversion<string> (mantém DB legível).
+    // Valor legado "Active" migrado para "Ativo" na migration Fecha_1_01_StatusSaaS_Enums.
+    public enum StatusSaaS
+    {
+        SemAssinatura,
+        TrialGratuito,
+        AguardandoPagamento,
+        Falha,
+        Ativo,
+        Cancelado
+    }
+
     public enum EStatusPessoa
     {
         Ativo = 1,

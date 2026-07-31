@@ -1,4 +1,5 @@
 using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Epros.Modules.Aplicativo.Application.Commands;
 using Epros.Modules.Aplicativo.Application.Queries;
@@ -131,6 +132,28 @@ namespace Epros.API.Controllers
         public async Task<ActionResult<CommandResult>> RegistrarTenant([FromBody] RegistrarNovoTenantCommand command)
         {
             var result = await _mediator.Send(command);
+
+            if (!result.Sucesso)
+            {
+                return UnprocessableEntity(result);
+            }
+
+            return Ok(result);
+        }
+
+        [HttpPost("auth/logout")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Logout()
+        {
+            // Logout real (REG-013): revoga as sessões do usuário autenticado (identidade do token).
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(userIdClaim, out var usuarioId))
+            {
+                return UnprocessableEntity(CommandResult.Falha(new[] { "Usuário não identificado no token." }));
+            }
+
+            var result = await _mediator.Send(new EncerrarSessaoCommand(usuarioId));
 
             if (!result.Sucesso)
             {

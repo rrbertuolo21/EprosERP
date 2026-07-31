@@ -322,7 +322,7 @@ namespace Epros.Tests
             var assinaturaAtiva = new AssinaturaCliente(
                 clienteId: clienteId,
                 planoId: planoId,
-                status: AssinaturaStatus.Aprovada,
+                status: AssinaturaStatus.Ativa,
                 dataInicio: DateTime.UtcNow,
                 dataFim: null,
                 trialAte: null,
@@ -348,7 +348,7 @@ namespace Epros.Tests
             var assinaturaCancelada = new AssinaturaCliente(
                 clienteId: clienteId,
                 planoId: planoId,
-                status: AssinaturaStatus.Aprovada,
+                status: AssinaturaStatus.Ativa,
                 dataInicio: DateTime.UtcNow.AddDays(-60),
                 dataFim: DateTime.UtcNow.AddDays(-30),
                 trialAte: null,
@@ -421,7 +421,7 @@ namespace Epros.Tests
                 revendaId: null,
                 vendedorId: null,
                 diaVencimento: 10,
-                statusSaaS: "Ativo",
+                statusSaaS: StatusSaaS.Ativo,
                 tenantId: "tenant-alfa",
                 criadoPor: "admin-root",
                 telefone: "11999999999"
@@ -501,7 +501,7 @@ namespace Epros.Tests
                 revendaId: null,
                 vendedorId: null,
                 diaVencimento: 10,
-                statusSaaS: "Ativo",
+                statusSaaS: StatusSaaS.Ativo,
                 tenantId: "tenant-beta",
                 criadoPor: "admin-root",
                 telefone: "11999999999"

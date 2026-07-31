@@ -5,6 +5,14 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
     // dos membros são idênticos aos valores string já persistidos — a migração de dados é neutra
     // (a coluna continua varchar; muda apenas a tipagem no domínio).
 
+    /// <summary>Duração/vigência de um <c>Plano</c> do catálogo (EF 1.01: Duration vitalícia/mensal/anual).</summary>
+    public enum PlanoDuration
+    {
+        Vitalicia,
+        Mensal,
+        Anual
+    }
+
     /// <summary>Status de uma <c>Fatura</c> SaaS.</summary>
     public enum FaturaStatus
     {

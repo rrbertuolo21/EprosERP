@@ -63,10 +63,46 @@
               <span class="info-value">{{ fatura.dataPagamento ? formatDate(fatura.dataPagamento) : '—' }}</span>
             </div>
             <div class="info-item">
+              <span class="info-label">Número</span>
+              <span class="info-value">{{ fatura.numero || '—' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Quitada</span>
+              <span class="info-value">
+                <span :class="['badge', fatura.quitada ? 'badge-ok' : 'badge-pend']">{{ fatura.quitada ? 'Sim' : 'Não' }}</span>
+              </span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Valor pago</span>
+              <span class="info-value">{{ formatMoney(fatura.valorPago || 0) }}</span>
+            </div>
+            <div class="info-item">
               <span class="info-label">Criada em</span>
               <span class="info-value">{{ formatDate(fatura.criadoEm) }}</span>
             </div>
           </div>
+          <div v-if="fatura.observacoes" class="fatura-obs">
+            <span class="info-label">Observações</span>
+            <p>{{ fatura.observacoes }}</p>
+          </div>
+        </section>
+
+        <!-- Itens da fatura -->
+        <section v-if="fatura.itens && fatura.itens.length" class="admin-section glass-panel mt-4">
+          <header class="section-header"><h3>Itens da Fatura</h3></header>
+          <table class="data-table">
+            <thead><tr><th>Descrição</th><th class="text-right">Valor</th></tr></thead>
+            <tbody>
+              <tr v-for="it in fatura.itens" :key="it.id">
+                <td>{{ it.descricao }}</td>
+                <td class="text-right">{{ formatMoney(it.valor) }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr><td class="text-right"><strong>Total</strong></td>
+                  <td class="text-right"><strong>{{ formatMoney(fatura.itens.reduce((a, i) => a + Number(i.valor || 0), 0)) }}</strong></td></tr>
+            </tfoot>
+          </table>
         </section>
 
         <!-- Split de comissão -->
@@ -601,4 +637,10 @@ const formatPercent = (v) => {
 }
 .mt-2 { margin-top: 12px; }
 .mt-4 { margin-top: 24px; }
+/* 1.01 front — fatura: quitada, valor pago, itens */
+.text-right { text-align: right; }
+.badge-ok { background: #dcfce7; color: #15803d; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+.badge-pend { background: #fef3c7; color: #b45309; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+.fatura-obs { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(148,163,184,.25); }
+.fatura-obs p { margin: 4px 0 0; }
 </style>

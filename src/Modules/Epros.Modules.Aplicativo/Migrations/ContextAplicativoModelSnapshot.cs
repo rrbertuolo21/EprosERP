@@ -1371,6 +1371,10 @@ namespace Epros.Modules.Aplicativo.Migrations
                         .HasColumnType("text")
                         .HasColumnName("ip_address");
 
+                    b.Property<Guid>("Jti")
+                        .HasColumnType("uuid")
+                        .HasColumnName("jti");
+
                     b.Property<bool>("Revogado")
                         .HasColumnType("boolean")
                         .HasColumnName("revogado");
@@ -1404,6 +1408,9 @@ namespace Epros.Modules.Aplicativo.Migrations
 
                     b.HasKey("Id")
                         .HasName("p_k_sessoes_usuarios");
+
+                    b.HasIndex("Jti")
+                        .HasDatabaseName("ix_sessoes_jti");
 
                     b.HasIndex("SyncId")
                         .IsUnique()

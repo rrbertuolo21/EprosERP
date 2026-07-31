@@ -15,6 +15,11 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public bool PagoManualmente { get; private set; }
         public DateTime? DataPagamento { get; private set; }
 
+        // 1.01 — ciclo PIX / liquidação (EF 11.9).
+        public DateTime? DataExpiracao { get; private set; }      // expiração da cobrança PIX
+        public decimal? ValorRecebido { get; private set; }        // líquido pós-tarifa
+        public DateTime? DataLiberacaoFundos { get; private set; } // liberação dos fundos pelo gateway
+
         // Dados da cobrança PIX gerada no gateway (melhoria: o legado não persistia).
         public string? QrCode { get; private set; }         // PIX "copia e cola" (payload EMV)
         public string? QrCodeBase64 { get; private set; }   // imagem do QR em base64
@@ -56,22 +61,27 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         /// Registra os dados da cobrança PIX retornados pelo gateway (payment id, QR e ticket).
         /// Mantém o pagamento em <see cref="PagamentoFaturaStatus.Pending"/> até a confirmação via webhook.
         /// </summary>
-        public void RegistrarCobrancaPix(string? identificadorPagamento, string? qrCode, string? qrCodeBase64, string? ticketUrl, string alteradoPor)
+        public void RegistrarCobrancaPix(string? identificadorPagamento, string? qrCode, string? qrCodeBase64, string? ticketUrl, string alteradoPor, DateTime? dataExpiracao = null)
         {
             if (!string.IsNullOrWhiteSpace(identificadorPagamento))
                 IdentificadorPagamento = identificadorPagamento;
             QrCode = qrCode;
             QrCodeBase64 = qrCodeBase64;
             TicketUrl = ticketUrl;
+            if (dataExpiracao.HasValue)
+                DataExpiracao = dataExpiracao;
             Status = PagamentoFaturaStatus.Pending;
             MarcarAlterado(alteradoPor);
         }
 
-        public void Liquidar(decimal valorRealPago, decimal? tarifa, string alteradoPor)
+        public void Liquidar(decimal valorRealPago, decimal? tarifa, string alteradoPor, decimal? valorRecebido = null, DateTime? dataLiberacaoFundos = null)
         {
             Status = PagamentoFaturaStatus.Paid;
             ValorPago = valorRealPago;
             ValorTarifa = tarifa;
+            // líquido: usa o informado; senão deriva de valorPago - tarifa.
+            ValorRecebido = valorRecebido ?? (valorRealPago - (tarifa ?? 0m));
+            DataLiberacaoFundos = dataLiberacaoFundos;
             DataPagamento = DateTime.UtcNow;
             MarcarAlterado(alteradoPor);
         }

@@ -562,7 +562,8 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             var response = new AcessosResponseDto(
                 Acesso: acessosPermitidos,
                 IsAdmin: vinculo.EhAdmin,
-                Login: usuario.Email,
+                // REG/MC: transporta o login REAL (Usuario.Login); cai para o e-mail só quando não há login definido.
+                Login: usuario.Login ?? usuario.Email,
                 TenantId: tenantId,
                 PlanoContasFinanceiroId: empresa.PlanoContasFinanceiroId,
                 RegimeTributario: (int)empresa.RegimeTributario,

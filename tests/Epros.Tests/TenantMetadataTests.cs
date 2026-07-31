@@ -114,7 +114,7 @@ namespace Epros.Tests
             var plano = new Plano("Plano Teste", 100m, null, 10, 5, null, "tenant-test", "system");
             contextGestao.Planos.Add(plano);
 
-            var cliente = new Cliente("Razao Social", "12345678000195", "cliente@teste.com", plano.Id, null, null, 10, "Active", "tenant-test", "system");
+            var cliente = new Cliente("Razao Social", "12345678000195", "cliente@teste.com", plano.Id, null, null, 10, StatusSaaS.Ativo, "tenant-test", "system");
             contextGestao.Clientes.Add(cliente);
             await contextGestao.SaveChangesAsync();
 
@@ -148,7 +148,7 @@ namespace Epros.Tests
             var plano = new Plano("Plano Demo", 0m, null, 100, 100, null, "tenant-demo", "system");
             contextGestao.Planos.Add(plano);
 
-            var cliente = new Cliente("Empresa Demo", "12345678000195", "demo@teste.com", plano.Id, null, null, 10, "Active", "tenant-demo", "system", isDemo: true);
+            var cliente = new Cliente("Empresa Demo", "12345678000195", "demo@teste.com", plano.Id, null, null, 10, StatusSaaS.Ativo, "tenant-demo", "system", isDemo: true);
             contextGestao.Clientes.Add(cliente);
             await contextGestao.SaveChangesAsync();
 

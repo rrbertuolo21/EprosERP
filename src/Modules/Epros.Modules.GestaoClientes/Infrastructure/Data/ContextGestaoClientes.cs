@@ -11,6 +11,7 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
         public DbSet<ModuloPlano> ModulosPlano => Set<ModuloPlano>();
         public DbSet<Cliente> Clientes => Set<Cliente>();
         public DbSet<Fatura> Faturas => Set<Fatura>();
+        public DbSet<FaturaItem> FaturaItens => Set<FaturaItem>();
         public DbSet<GrupoPlano> GrupoPlanos => Set<GrupoPlano>();
         public DbSet<AssinaturaCliente> AssinaturasClientes => Set<AssinaturaCliente>();
         public DbSet<PagamentoFatura> PagamentosFaturas => Set<PagamentoFatura>();
@@ -147,6 +148,8 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
             modelBuilder.Entity<Plano>(entity =>
             {
                 entity.HasKey(p => p.Id);
+                // 1.01 — Duration persistida como texto (vitalicia/mensal/anual).
+                entity.Property(p => p.Duration).HasConversion<string>().HasMaxLength(20);
                 entity.HasMany(p => p.Modulos)
                       .WithOne()
                       .HasForeignKey(m => m.PlanoId)
@@ -165,6 +168,8 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
             modelBuilder.Entity<Cliente>(entity =>
             {
                 entity.HasKey(c => c.Id);
+                // 1.01 — StatusSaaS como enum tipado, persistido como texto (coluna "status_saa_s" inalterada).
+                entity.Property(c => c.StatusSaaS).HasConversion<string>();
                 entity.HasOne<Revenda>()
                       .WithMany()
                       .HasForeignKey(c => c.RevendaId)
@@ -180,6 +185,18 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 entity.HasKey(f => f.Id);
                 // Status como enum tipado, persistido como texto (coluna varchar inalterada).
                 entity.Property(f => f.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(f => f.Numero).HasMaxLength(50);
+                // Itens/composição da fatura emitida (1.01 / EF 11.8).
+                entity.HasMany(f => f.Itens)
+                      .WithOne()
+                      .HasForeignKey(i => i.FaturaId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<FaturaItem>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.Descricao).HasMaxLength(200);
             });
 
             modelBuilder.Entity<GrupoPlano>(entity =>
@@ -207,6 +224,8 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
             {
                 entity.HasKey(p => p.Id);
                 entity.Property(p => p.Status).HasConversion<string>().HasMaxLength(20);
+                // Obs.: a precisão 18,3 de ValorTarifa é aplicada APÓS base.OnModelCreating (a convenção
+                // global reescreveria 18,2 aqui). Ver bloco no fim deste método.
                 entity.HasOne<Fatura>()
                       .WithMany()
                       .HasForeignKey(p => p.FaturaId)
@@ -1160,6 +1179,27 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
 
             // Aplica as convenções globais de ContextBase (snake_case, RLS, Precision(18,2), unique sync_id index, etc.)
             base.OnModelCreating(modelBuilder);
+
+            // 1.01 — Plano HÍBRIDO: sobrepõe o filtro de tenant padrão (aplicado por ContextBase) para que o
+            // catálogo GLOBAL do Siser (TenantId == "system") seja visível a todos os tenants, além do plano
+            // custom do próprio tenant. A criação sob contexto landlord ("system") gera catálogo; sob contexto
+            // de tenant gera custom (ProcessarEntidadesSaaS). Não quebra dados existentes: planos com TenantId
+            // real continuam visíveis apenas ao seu tenant.
+            modelBuilder.Entity<Plano>().HasQueryFilter(p =>
+                (p.TenantId == _tenantProvider.GetTenantId() || p.TenantId == "system") && p.DeletadoEm == null);
+
+            // 1.01 — tarifa do PagamentoFatura com precisão 18,3 (EF 11.9). Definido após base.OnModelCreating
+            // porque a convenção global de decimais (Precision 18,2) sobrescreveria qualquer valor definido antes.
+            modelBuilder.Entity<PagamentoFatura>().Property(p => p.ValorTarifa).HasPrecision(18, 3);
+
+            // 1.02 — Cupom HÍBRIDO (mesmo padrão do Plano): cupom global do Siser ("system") visível a todos
+            // os tenants + cupom custom do próprio tenant. Não quebra dados existentes.
+            modelBuilder.Entity<Cupom>().HasQueryFilter(c =>
+                (c.TenantId == _tenantProvider.GetTenantId() || c.TenantId == "system") && c.DeletadoEm == null);
+
+            // 1.02 — unicidade de catálogos globais: Moeda por CodigoISO, Pais por Nome (REG-006).
+            modelBuilder.Entity<Moeda>().HasIndex(m => m.CodigoISO).IsUnique();
+            modelBuilder.Entity<Pais>().HasIndex(p => p.Nome).IsUnique();
         }
     }
 }

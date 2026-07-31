@@ -4,10 +4,14 @@ using Flunt.Validations;
 
 namespace Epros.Modules.GestaoClientes.Domain.Entities
 {
+    // 1.01 — Status do ciclo da assinatura do cliente (AssinaturaCliente.Status).
+    // Nomes alinhados ao vocabulário da fatia 1.01: Ativa/AguardandoAprovacao/Recusada/Futura/Expirada.
+    // Persistido como string via HasConversion<string>; valores legados migrados na
+    // migration Fecha_1_01_StatusSaaS_Enums (Aprovada->Ativa, Aguardando->AguardandoAprovacao).
     public enum AssinaturaStatus
     {
-        Aprovada = 1,
-        Aguardando = 2,
+        Ativa = 1,
+        AguardandoAprovacao = 2,
         Recusada = 3,
         Futura = 4,
         Expirada = 5
@@ -65,13 +69,13 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
 
         public void Ativar(string alteradoPor)
         {
-            Status = AssinaturaStatus.Aprovada;
+            Status = AssinaturaStatus.Ativa;
             MarcarAlterado(alteradoPor);
         }
 
         public void AprovarManualmente(string operador, string justificativa, string alteradoPor)
         {
-            Status = AssinaturaStatus.Aprovada;
+            Status = AssinaturaStatus.Ativa;
             OperadorAprovacao = operador;
             JustificativaAprovacao = justificativa;
             

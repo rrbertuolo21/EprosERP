@@ -168,7 +168,7 @@ namespace Epros.Tests
             // Cria cliente vinculado à revenda e vendedor
             var plano = new Plano("Plano Teste", 500m, tenantId, userId);
             context.Planos.Add(plano);
-            var cliente = new Cliente("Empresa Cliente", "12.345.678/0001-00", "cliente@teste.com", plano.Id, revenda.Id, vendedor.Id, 10, "Active", tenantId, userId);
+            var cliente = new Cliente("Empresa Cliente", "12.345.678/0001-00", "cliente@teste.com", plano.Id, revenda.Id, vendedor.Id, 10, StatusSaaS.Ativo, tenantId, userId);
             context.Clientes.Add(cliente);
             await context.SaveChangesAsync();
 

@@ -18,7 +18,25 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public string? DescricaoCompleta { get; private set; }
         public DateTime? DataInicio { get; private set; }
         public DateTime? DataFim { get; private set; }
+
+        // 1.01: duração/vigência do plano do catálogo (EF: vitalícia/mensal/anual).
+        public PlanoDuration Duration { get; private set; } = PlanoDuration.Mensal;
+
+        // 1.01: flags de módulo do plano (EF: Crm/Project/Hrm/Account/Pos).
+        public bool ModuloCrm { get; private set; }
+        public bool ModuloProjetos { get; private set; }
+        public bool ModuloRh { get; private set; }
+        public bool ModuloFinanceiro { get; private set; }
+        public bool ModuloPdv { get; private set; }
+
         public List<ModuloPlano> Modulos { get; private set; } = new();
+
+        /// <summary>
+        /// Plano híbrido (1.01): quando <c>TenantId == "system"</c> o plano é o catálogo GLOBAL do Siser
+        /// (visível a todos os tenants). Quando <c>TenantId</c> é um tenant real, é um plano custom daquele cliente.
+        /// A distinção nasce do contexto de criação (landlord "system" vs. tenant), aplicada em ProcessarEntidadesSaaS.
+        /// </summary>
+        public bool EhCatalogoGlobal() => TenantId == "system";
 
         protected Plano() { } // EF Core
 
@@ -34,7 +52,13 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             string? descricaoCurta = null,
             string? descricaoCompleta = null,
             DateTime? dataInicio = null,
-            DateTime? dataFim = null)
+            DateTime? dataFim = null,
+            PlanoDuration duration = PlanoDuration.Mensal,
+            bool moduloCrm = false,
+            bool moduloProjetos = false,
+            bool moduloRh = false,
+            bool moduloFinanceiro = false,
+            bool moduloPdv = false)
             : base(tenantId, criadoPor)
         {
             AddNotifications(new Contract<Plano>()
@@ -55,6 +79,12 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             DescricaoCompleta = descricaoCompleta;
             DataInicio = dataInicio;
             DataFim = dataFim;
+            Duration = duration;
+            ModuloCrm = moduloCrm;
+            ModuloProjetos = moduloProjetos;
+            ModuloRh = moduloRh;
+            ModuloFinanceiro = moduloFinanceiro;
+            ModuloPdv = moduloPdv;
             Ativo = true;
         }
 
@@ -101,7 +131,13 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             string? descricaoCurta = null,
             string? descricaoCompleta = null,
             DateTime? dataInicio = null,
-            DateTime? dataFim = null)
+            DateTime? dataFim = null,
+            PlanoDuration duration = PlanoDuration.Mensal,
+            bool moduloCrm = false,
+            bool moduloProjetos = false,
+            bool moduloRh = false,
+            bool moduloFinanceiro = false,
+            bool moduloPdv = false)
         {
             AddNotifications(new Contract<Plano>()
                 .Requires()
@@ -123,6 +159,12 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             DescricaoCompleta = descricaoCompleta;
             DataInicio = dataInicio;
             DataFim = dataFim;
+            Duration = duration;
+            ModuloCrm = moduloCrm;
+            ModuloProjetos = moduloProjetos;
+            ModuloRh = moduloRh;
+            ModuloFinanceiro = moduloFinanceiro;
+            ModuloPdv = moduloPdv;
             MarcarAlterado(alteradoPor);
         }
 

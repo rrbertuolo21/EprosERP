@@ -7,6 +7,8 @@ namespace Epros.Modules.Aplicativo.Domain.Entities
     {
         public Guid UsuarioId { get; private set; }
         public string TokenSessao { get; private set; } = string.Empty;
+        /// <summary>Identificador (claim jti) do token emitido para esta sessão — liga a sessão ao JWT (REG-013).</summary>
+        public Guid Jti { get; private set; }
         public string IpAddress { get; private set; } = string.Empty;
         public string UserAgent { get; private set; } = string.Empty;
         public DateTime Expiracao { get; private set; }
@@ -21,7 +23,8 @@ namespace Epros.Modules.Aplicativo.Domain.Entities
             string ipAddress,
             string userAgent,
             DateTime expiracao,
-            string criadoPor)
+            string criadoPor,
+            Guid jti = default)
             : base(tenantId, criadoPor)
         {
             if (usuarioId == Guid.Empty)
@@ -31,6 +34,7 @@ namespace Epros.Modules.Aplicativo.Domain.Entities
 
             UsuarioId = usuarioId;
             TokenSessao = tokenSessao;
+            Jti = jti;
             IpAddress = ipAddress ?? string.Empty;
             UserAgent = userAgent ?? string.Empty;
             Expiracao = expiracao;

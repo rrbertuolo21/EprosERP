@@ -390,7 +390,8 @@ namespace Epros.Tests
             var dbName = Guid.NewGuid().ToString();
             using var context = CreateInMemoryContext(dbName, "tenant-abac", "user-none");
             var currentUser = new TestCurrentUser("user-none");
-            var filter = new AbacFilter("Faturas", "Cancelar", context, currentUser);
+            var tenantProvider = new TestTenantProvider("tenant-abac");
+            var filter = new AbacFilter("Faturas", "Cancelar", context, currentUser, tenantProvider);
 
             var actionContext = new ActionContext(new DefaultHttpContext(), new RouteData(), new ActionDescriptor());
             var filterContext = new AuthorizationFilterContext(actionContext, new List<IFilterMetadata>());
@@ -415,7 +416,8 @@ namespace Epros.Tests
             await context.SaveChangesAsync();
 
             var currentUser = new TestCurrentUser("user-admin");
-            var filter = new AbacFilter("Faturas", "Cancelar", context, currentUser);
+            var tenantProvider = new TestTenantProvider("tenant-abac");
+            var filter = new AbacFilter("Faturas", "Cancelar", context, currentUser, tenantProvider);
 
             var actionContext = new ActionContext(new DefaultHttpContext(), new RouteData(), new ActionDescriptor());
             var filterContext = new AuthorizationFilterContext(actionContext, new List<IFilterMetadata>());
@@ -441,13 +443,14 @@ namespace Epros.Tests
             await context.SaveChangesAsync();
 
             var currentUser = new TestCurrentUser("user-vendedor");
+            var tenantProvider = new TestTenantProvider("tenant-abac");
 
             // Caso 1: Desconto dentro do limite (5%)
             var httpContextOk = new DefaultHttpContext();
             httpContextOk.Request.QueryString = new QueryString("?percentual=5");
             var actionContextOk = new ActionContext(httpContextOk, new RouteData(), new ActionDescriptor());
             var filterContextOk = new AuthorizationFilterContext(actionContextOk, new List<IFilterMetadata>());
-            var filterOk = new AbacFilter("Desconto", "Aplicar", context, currentUser);
+            var filterOk = new AbacFilter("Desconto", "Aplicar", context, currentUser, tenantProvider);
 
             // Act 1
             await filterOk.OnAuthorizationAsync(filterContextOk);
@@ -460,7 +463,7 @@ namespace Epros.Tests
             httpContextNegado.Request.QueryString = new QueryString("?percentual=15");
             var actionContextNegado = new ActionContext(httpContextNegado, new RouteData(), new ActionDescriptor());
             var filterContextNegado = new AuthorizationFilterContext(actionContextNegado, new List<IFilterMetadata>());
-            var filterNegado = new AbacFilter("Desconto", "Aplicar", context, currentUser);
+            var filterNegado = new AbacFilter("Desconto", "Aplicar", context, currentUser, tenantProvider);
 
             // Act 2
             await filterNegado.OnAuthorizationAsync(filterContextNegado);

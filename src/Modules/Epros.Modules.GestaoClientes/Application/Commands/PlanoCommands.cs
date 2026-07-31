@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Epros.Shared.Application.Contracts;
+using Epros.Modules.GestaoClientes.Domain.Entities;
 using FluentValidation;
 
 namespace Epros.Modules.GestaoClientes.Application.Commands
@@ -32,6 +33,12 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
         DateTime? DataFim = null,
         bool Ativo = true,
         string? RecursosInclusos = null,
+        PlanoDuration Duration = PlanoDuration.Mensal,
+        bool ModuloCrm = false,
+        bool ModuloProjetos = false,
+        bool ModuloRh = false,
+        bool ModuloFinanceiro = false,
+        bool ModuloPdv = false,
         List<ModuloPlanoInput>? Modulos = null
     ) : ICommand;
 
@@ -67,6 +74,12 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
         DateTime? DataFim = null,
         bool Ativo = true,
         string? RecursosInclusos = null,
+        PlanoDuration Duration = PlanoDuration.Mensal,
+        bool ModuloCrm = false,
+        bool ModuloProjetos = false,
+        bool ModuloRh = false,
+        bool ModuloFinanceiro = false,
+        bool ModuloPdv = false,
         List<ModuloPlanoInput>? Modulos = null
     ) : ICommand;
 

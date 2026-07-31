@@ -223,6 +223,7 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
             {
                 entity.HasKey(s => s.Id);
                 entity.HasIndex(s => s.TokenSessao).IsUnique().HasDatabaseName("ix_sessoes_token");
+                entity.HasIndex(s => s.Jti).HasDatabaseName("ix_sessoes_jti");
             });
 
             modelBuilder.Entity<PersonalAccessToken>(entity =>

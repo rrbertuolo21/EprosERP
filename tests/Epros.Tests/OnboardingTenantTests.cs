@@ -59,7 +59,22 @@ namespace Epros.Tests
             var contextApp = serviceProvider.GetRequiredService<ContextAplicativo>();
             var contextGestao = serviceProvider.GetRequiredService<ContextGestaoClientes>();
 
-            var command = new RegistrarNovoTenantCommand("Nova Empresa Ltda", "12345678000195", "Admin Onboarding", "admin@onboard.com", "SenhaForte@123");
+            // REG-036: o self-register exige município IBGE cadastrado. Semeamos o catálogo mínimo
+            // (País → Subdivisão/UF → Município) para o código IBGE usado no comando.
+            var pais = new Pais("Brasil", "BR", "BRA", "076", "Brasília", "+55", "system");
+            contextGestao.Paises.Add(pais);
+            await contextGestao.SaveChangesAsync();
+            var uf = new Subdivisao(pais.Id, "BR-PR", "Paraná", TipoSubdivisao.Estado, null, "system");
+            contextGestao.Subdivisoes.Add(uf);
+            await contextGestao.SaveChangesAsync();
+            var municipio = new Municipio(pais.Id, uf.Id, "Cianorte", 4105508, null, null, "system", "PR");
+            contextGestao.Municipios.Add(municipio);
+            await contextGestao.SaveChangesAsync();
+
+            // REG-036: documento fiscal válido (CNPJ), município IBGE válido, telefone + tipo.
+            var command = new RegistrarNovoTenantCommand(
+                "Nova Empresa Ltda", "12345678000195", "Admin Onboarding", "admin@onboard.com", "SenhaForte@123",
+                CodigoIbgeMunicipio: 4105508, Telefone: "44999990000", TipoTelefone: "Celular");
 
             // Act
             var result = await mediator.Send(command);
@@ -76,13 +91,18 @@ namespace Epros.Tests
             Assert.NotNull(pessoaGrupo);
             Assert.Contains("Nova Empresa Ltda", pessoaGrupo.Descricao);
 
-            // 2. Verificar se a Empresa foi persistida com os IDs de grupos associados
+            // 2. Verificar se a Empresa foi persistida com o PessoaGrupo real associado
             var empresa = await contextGestao.Empresas.IgnoreQueryFilters().FirstOrDefaultAsync(e => e.Id == empresaId);
             Assert.NotNull(empresa);
             Assert.Equal(pessoaGrupo.Id, empresa.PessoaGrupoId);
-            Assert.NotNull(empresa.ProdutoGrupoId);
-            Assert.NotNull(empresa.PlanoContasFinanceiroId);
-            Assert.NotNull(empresa.TributarioGrupoId);
+            // REG-036: IDs fiscais/agrupadores NÃO são mais fabricados com Guid.NewGuid() (placeholder
+            // para entidade inexistente). Ficam nulos até serem semeados no onboarding real.
+            Assert.Null(empresa.ProdutoGrupoId);
+            Assert.Null(empresa.PlanoContasFinanceiroId);
+            Assert.Null(empresa.TributarioGrupoId);
+            // Município IBGE real refletido no endereço (cidade/UF do catálogo).
+            Assert.Equal("Cianorte", empresa.Endereco.Cidade);
+            Assert.Equal("PR", empresa.Endereco.Estado);
 
             // 3. Verificar se ConfiguracaoEmpresa foi criada
             var config = await contextApp.ConfiguracoesEmpresas.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.EmpresaId == empresaId);
@@ -220,7 +240,7 @@ namespace Epros.Tests
             var plano = new Plano("Plano Teste", 100m, null, 10, 5, null, "tenant-1", "system");
             contextGestao.Planos.Add(plano);
 
-            var cliente = new Cliente("Razao Social", "12345678000195", "cliente@teste.com", plano.Id, null, null, 10, "Active", "tenant-1", "system");
+            var cliente = new Cliente("Razao Social", "12345678000195", "cliente@teste.com", plano.Id, null, null, 10, StatusSaaS.Ativo, "tenant-1", "system");
             contextGestao.Clientes.Add(cliente);
 
             contextGestao.Empresas.Add(empresa1);

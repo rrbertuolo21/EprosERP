@@ -146,6 +146,18 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public void AdicionarEndereco(Endereco endereco)
         {
             if (endereco == null) return;
+            // 1.01 (RN endereço principal único): ao adicionar um endereço marcado como Principal,
+            // desmarca os demais principais do mesmo tipo desta pessoa (1 principal por tipo de endereço).
+            if (endereco.Principal)
+            {
+                foreach (var existente in Enderecos)
+                {
+                    if (existente.Principal && existente.TipoEndereco == endereco.TipoEndereco)
+                    {
+                        existente.DefinirPrincipal(false, endereco.CriadoPor ?? CriadoPor ?? "system");
+                    }
+                }
+            }
             Enderecos.Add(endereco);
         }
 

@@ -107,6 +107,26 @@
               </div>
 
               <div class="form-row">
+                <div class="form-group col-12">
+                  <label>Cota contratada (override do plano) <small>— deixe vazio para usar o limite do plano</small></label>
+                  <div class="cota-grid">
+                    <div>
+                      <label for="c-cota-usu" class="cota-lbl">Usuários</label>
+                      <input type="number" id="c-cota-usu" min="0" placeholder="(plano)" v-model.number="cliente.cotaUsuarios" />
+                    </div>
+                    <div>
+                      <label for="c-cota-emp" class="cota-lbl">Empresas</label>
+                      <input type="number" id="c-cota-emp" min="0" placeholder="(plano)" v-model.number="cliente.cotaEmpresas" />
+                    </div>
+                    <div>
+                      <label for="c-cota-perm" class="cota-lbl">Permissões</label>
+                      <input type="number" id="c-cota-perm" min="0" placeholder="(plano)" v-model.number="cliente.cotaPermissoes" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row">
                 <div class="form-group toggle-row col-6">
                   <label for="c-demo">Modo Demonstração (Demo)</label>
                   <input type="checkbox" id="c-demo" v-model="cliente.isDemo" />
@@ -144,7 +164,10 @@
                       <td colspan="6" class="empty-cell">Nenhum endereço cadastrado.</td>
                     </tr>
                     <tr v-else v-for="(end, idx) in cliente.enderecos" :key="end.id || idx">
-                      <td><span class="badge">{{ getTipoEnderecoLabel(end.tipoEndereco) }}</span></td>
+                      <td>
+                        <span class="badge">{{ getTipoEnderecoLabel(end.tipoEndereco) }}</span>
+                        <span v-if="end.principal" class="badge badge-principal" title="Endereço principal">★ Principal</span>
+                      </td>
                       <td>{{ end.logradouro }}, {{ end.numero }} {{ end.complemento ? '· ' + end.complemento : '' }}</td>
                       <td>{{ end.bairro }}</td>
                       <td>{{ end.cep }}</td>
@@ -269,6 +292,12 @@
             <div class="form-group col-6">
               <label>Referência</label>
               <input type="text" v-model="enderecoModal.form.referencia" placeholder="Ponto de referência" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group toggle-row col-12">
+              <label>Endereço principal (deste tipo)</label>
+              <input type="checkbox" v-model="enderecoModal.form.principal" />
             </div>
           </div>
           <button type="submit" class="btn btn-primary btn-block mt-4">Confirmar Endereço</button>
@@ -397,6 +426,9 @@ const cliente = reactive({
   nomeContato: '',
   isDemo: false,
   tokenAcesso: '',
+  cotaUsuarios: null,
+  cotaEmpresas: null,
+  cotaPermissoes: null,
   enderecos: [],
   composicoes: []
 })
@@ -416,7 +448,8 @@ const enderecoModal = reactive({
     numero: '',
     complemento: '',
     bairro: '',
-    referencia: ''
+    referencia: '',
+    principal: false
   }
 })
 
@@ -520,6 +553,9 @@ const loadClienteDetalhado = async () => {
         nomeContato: res.nomeContato || '',
         isDemo: res.isDemo,
         tokenAcesso: res.tokenAcesso || '',
+        cotaUsuarios: res.cotaUsuarios ?? null,
+        cotaEmpresas: res.cotaEmpresas ?? null,
+        cotaPermissoes: res.cotaPermissoes ?? null,
         enderecos: res.enderecos || [],
         composicoes: res.composicoes || []
       })
@@ -671,6 +707,9 @@ const saveClient = async () => {
             NomeContato: cliente.nomeContato,
             IsDemo: cliente.isDemo,
             TokenAcesso: cliente.tokenAcesso,
+            CotaUsuarios: cliente.cotaUsuarios,
+            CotaEmpresas: cliente.cotaEmpresas,
+            CotaPermissoes: cliente.cotaPermissoes,
             Enderecos: cliente.enderecos.map(e => ({
               Id: e.id || '00000000-0000-0000-0000-000000000000',
               TipoEndereco: e.tipoEndereco,
@@ -683,7 +722,8 @@ const saveClient = async () => {
               Numero: e.numero,
               Complemento: e.complemento,
               Bairro: e.bairro,
-              Referencia: e.referencia
+              Referencia: e.referencia,
+              Principal: e.principal || false
             })),
             Composicoes: cliente.composicoes.map(c => ({
               Id: c.id || '00000000-0000-0000-0000-000000000000',
@@ -964,4 +1004,8 @@ const formatDate = (dateStr) => {
 .mt-2 {
   margin-top: 12px;
 }
+/* 1.01 front — cota (override do plano) + endereço principal */
+.cota-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 6px; }
+.cota-lbl { font-size: 12px; color: #64748b; display: block; margin-bottom: 2px; }
+.badge-principal { background: #fef9c3; color: #a16207; margin-left: 6px; }
 </style>

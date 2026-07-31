@@ -257,6 +257,11 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 })
                 .ToListAsync(cancellationToken);
 
+            var itens = await _context.Set<FaturaItem>()
+                .Where(i => i.FaturaId == f.Id)
+                .Select(i => new FaturaItemDto { Id = i.Id, Descricao = i.Descricao, Valor = i.Valor })
+                .ToListAsync(cancellationToken);
+
             return new FaturaDetalhadaDto
             {
                 Id = f.Id,
@@ -270,7 +275,12 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 PercentualComissaoVendedor = f.PercentualComissaoVendedor,
                 ValorComissaoRevenda = f.ValorComissaoRevenda,
                 ValorComissaoVendedor = f.ValorComissaoVendedor,
+                Quitada = f.Quitada,
+                ValorPago = f.ValorPago ?? 0m,
+                Numero = f.Numero,
+                Observacoes = f.Observacoes,
                 CriadoEm = f.CriadoEm,
+                Itens = itens,
                 Pagamentos = pagamentos
             };
         }

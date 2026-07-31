@@ -40,7 +40,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 null, // RevendaId
                 null, // VendedorId
                 10, // DiaVencimento
-                "Active", // StatusSaaS
+                StatusSaaS.Ativo, // StatusSaaS
                 tenantId,
                 criadoPor,
                 request.Telefone,

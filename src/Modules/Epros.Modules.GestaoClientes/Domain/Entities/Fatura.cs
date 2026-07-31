@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Epros.Shared.Domain.Entities;
 using Flunt.Validations;
 
@@ -15,6 +16,15 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public decimal PercentualComissaoVendedor { get; private set; }
         public decimal ValorComissaoRevenda { get; private set; }
         public decimal ValorComissaoVendedor { get; private set; }
+
+        // 1.01 — campos financeiros/consulta materializados (EF 11.7/11.19).
+        public bool Quitada { get; private set; }
+        public decimal? ValorPago { get; private set; }
+        public string? Numero { get; private set; }
+        public string? Observacoes { get; private set; }
+
+        // 1.01 — itens/composição da fatura emitida (EF 11.8).
+        public List<FaturaItem> Itens { get; private set; } = new();
 
         protected Fatura() { } // EF Core
 
@@ -36,6 +46,8 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         {
             Status = FaturaStatus.Paga;
             DataPagamento = DateTime.UtcNow;
+            Quitada = true;
+            ValorPago = Valor;
             MarcarAlterado(alteradoPor);
         }
 
@@ -44,7 +56,25 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         {
             Status = FaturaStatus.Paga;
             DataPagamento = dataPagamento;
+            Quitada = true;
+            ValorPago = Valor;
             MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>Define dados de consulta/emissão (número e observações) — EF 11.19.</summary>
+        public void DefinirDadosEmissao(string? numero, string? observacoes, string alteradoPor)
+        {
+            Numero = numero;
+            Observacoes = observacoes;
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>Adiciona um item (composição) à fatura emitida — EF 11.8.</summary>
+        public FaturaItem AdicionarItem(string descricao, decimal valor, string criadoPor)
+        {
+            var item = new FaturaItem(Id, descricao, valor, TenantId, criadoPor);
+            Itens.Add(item);
+            return item;
         }
 
         /// <summary>Altera vencimento e/ou valor de uma fatura ainda em aberto.</summary>

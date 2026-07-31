@@ -14,6 +14,7 @@ using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
 using Epros.Shared.Security;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
 // Desambiguação: HistoricoLogin existe em Aplicativo e GestaoClientes; aqui persiste em ContextAplicativo.HistoricosLogin.
 using HistoricoLogin = Epros.Modules.Aplicativo.Domain.Entities.HistoricoLogin;
 using Microsoft.EntityFrameworkCore;
@@ -92,10 +93,23 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             {
                 // Registra tentativa falha e lockout se atingir limite
                 usuario.RegistrarFalhaLogin(5, TimeSpan.FromMinutes(15));
-                
+
                 var historicoFalha = new HistoricoLogin(usuario.TenantId, usuario.Id, emailLower, request.IpAddress, request.UserAgent, false, "Senha incorreta.", "system");
                 _context.HistoricosLogin.Add(historicoFalha);
-                
+
+                await _context.SaveChangesAsync(cancellationToken);
+
+                return CommandResult.Falha(new[] { "E-mail ou senha incorretos." });
+            }
+
+            // 4.1. REG-006 (P0): barrar contas não-ativas JÁ NO LOGIN, antes de emitir qualquer token.
+            // A senha foi validada primeiro (custo constante), mas uma conta Pending/Disabled/Suspended
+            // não pode receber token básico — antes ela era barrada só depois, em obter-acessos/session.
+            // Mensagem GENÉRICA (anti-enumeração): não revela o estado da conta a quem acertou a senha.
+            if (usuario.Status != UsuarioStatus.Active)
+            {
+                var historicoBloqueio = new HistoricoLogin(usuario.TenantId, usuario.Id, emailLower, request.IpAddress, request.UserAgent, false, $"Login negado: status da conta = {usuario.Status}.", "system");
+                _context.HistoricosLogin.Add(historicoBloqueio);
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return CommandResult.Falha(new[] { "E-mail ou senha incorretos." });
@@ -104,9 +118,10 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             // 5. Sucesso
             usuario.ResetarFalhasLogin();
 
-            // Gerar token básico e sessão
-            var tokenSessao = _tokenService.GerarBasico(usuario.TenantId, usuario.Id.ToString());
-            var expiracaoSessao = DateTime.UtcNow.AddHours(10); // Expiracao do token basico do material
+            // Gerar token básico e sessão. O jti liga o JWT à SessaoUsuario (logout/revogação — REG-013).
+            var jti = Guid.NewGuid();
+            var tokenSessao = _tokenService.GerarBasico(usuario.TenantId, usuario.Id.ToString(), jti.ToString());
+            var expiracaoSessao = DateTime.UtcNow.Add(_tokenService.Validade); // Fonte única de expiração (8h — REG-024)
 
             var sessao = new SessaoUsuario(
                 usuario.TenantId,
@@ -115,7 +130,8 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 request.IpAddress,
                 request.UserAgent,
                 expiracaoSessao,
-                usuario.Id.ToString()
+                usuario.Id.ToString(),
+                jti
             );
 
             var historicoSucesso = new HistoricoLogin(usuario.TenantId, usuario.Id, emailLower, request.IpAddress, request.UserAgent, true, "Login realizado com sucesso.", usuario.Id.ToString());
@@ -169,7 +185,8 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             if (empresasVinculadas.Count == 1)
             {
                 var vinculo = empresasVinculadas.First();
-                tokenRetorno = _tokenService.GerarCompleto(usuario.TenantId, usuario.Id.ToString(), vinculo.EmpresaId.ToString(), vinculo.PerfilAcessoId?.ToString() ?? "null");
+                // Reusa o MESMO jti da sessão para que o token completo retornado permaneça vinculado à SessaoUsuario.
+                tokenRetorno = _tokenService.GerarCompleto(usuario.TenantId, usuario.Id.ToString(), vinculo.EmpresaId.ToString(), vinculo.PerfilAcessoId?.ToString() ?? "null", jti.ToString());
             }
 
             var dto = new AuthResponseDto(
@@ -296,7 +313,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
 
             // Emite token completo com empresa e perfil
             var tokenCompleto = _tokenService.GerarCompleto(usuario.TenantId, usuario.Id.ToString(), vinculo.EmpresaId.ToString(), vinculo.PerfilAcessoId?.ToString() ?? "null");
-            var expiracao = DateTime.UtcNow.AddHours(10);
+            var expiracao = DateTime.UtcNow.Add(_tokenService.Validade); // Fonte única de expiração (8h — REG-024)
 
             var dto = new AuthResponseDto(
                 Token: tokenCompleto,
@@ -310,6 +327,49 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             );
 
             return CommandResult.Ok("Empresa selecionada e contexto completo emitido com sucesso!", dto);
+        }
+    }
+
+    /// <summary>
+    /// Logout / revogação (REG-013). Revoga as <c>SessaoUsuario</c> ativas do usuário (registro
+    /// persistente/auditoria) e grava um marco de logout em cache. A partir daí o handler de
+    /// autenticação rejeita, na borda, qualquer token do usuário emitido antes desse instante —
+    /// tornando o logout efetivo para toda a API (não só para os endpoints de sessão).
+    /// </summary>
+    public class EncerrarSessaoCommandHandler : ICommandHandler<EncerrarSessaoCommand>
+    {
+        private readonly ContextAplicativo _context;
+        private readonly IMemoryCache _cache;
+        private readonly IEprosTokenService _tokenService;
+
+        public EncerrarSessaoCommandHandler(ContextAplicativo context, IMemoryCache cache, IEprosTokenService tokenService)
+        {
+            _context = context;
+            _cache = cache;
+            _tokenService = tokenService;
+        }
+
+        public async Task<CommandResult> Handle(EncerrarSessaoCommand request, CancellationToken cancellationToken)
+        {
+            var sessoes = await _context.SessoesUsuarios
+                .Where(s => s.UsuarioId == request.UsuarioId && !s.Revogado)
+                .ToListAsync(cancellationToken);
+
+            foreach (var sessao in sessoes)
+            {
+                sessao.Revogar(request.UsuarioId.ToString());
+            }
+
+            if (sessoes.Count > 0)
+            {
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+
+            // Marco de logout: rejeita na borda qualquer token do usuário emitido antes de agora.
+            // TTL = validade do token, para o marco cobrir a vida de qualquer token ainda válido.
+            _cache.Set(RevogacaoSessao.ChaveCache(request.UsuarioId.ToString()), DateTime.UtcNow, _tokenService.Validade);
+
+            return CommandResult.Ok("Sessão encerrada com sucesso.");
         }
     }
 
@@ -477,6 +537,36 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
         {
             var emailLower = request.EmailAdmin.ToLowerInvariant().Trim();
 
+            // 0. REG-036 (decisão de negócio — fonte: overlay fiscal): documento fiscal ÍNTEGRO.
+            //    Quem emite documento fiscal precisa de cadastro válido. Validamos o documento por
+            //    dígito verificador (CNPJ ou CPF) — nada de placeholder — ANTES de qualquer escrita.
+            var cnpjInformado = request.Cnpj?.Trim() ?? string.Empty;
+            var cpfInformado = request.Cpf?.Trim() ?? string.Empty;
+            string? cpfLimpo = null;
+
+            if (!string.IsNullOrWhiteSpace(cpfInformado))
+            {
+                var cpfDigitos = SomenteDigitos(cpfInformado);
+                if (!ValidarCpf(cpfDigitos))
+                {
+                    return CommandResult.Falha(new[] { "CPF inválido." });
+                }
+                cpfLimpo = cpfDigitos;
+            }
+
+            if (string.IsNullOrWhiteSpace(cnpjInformado))
+            {
+                // A entidade Empresa (emitente) exige CNPJ. O emitente pessoa física (somente CPF)
+                // depende de flexibilizar essa invariante do agregado — fica para o passe de emitente PF.
+                return CommandResult.Falha(new[] { "Informe o CNPJ da empresa. O cadastro somente por CPF (emitente pessoa física) será habilitado em etapa posterior." });
+            }
+
+            var cnpjVo = new Cnpj(cnpjInformado);
+            if (!cnpjVo.IsValid)
+            {
+                return CommandResult.Falha(new[] { "CNPJ inválido." });
+            }
+
             // 1. Validar duplicidade de e-mail na base de usuários (cross-tenant)
             await AuthRlsBypass.EnableAsync(_contextAplicativo, cancellationToken);
             await AuthRlsBypass.EnableAsync(_contextGestaoClientes, cancellationToken);
@@ -492,8 +582,8 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 return CommandResult.Falha(new[] { "Já existe um usuário cadastrado com este e-mail." });
             }
 
-            // 2. Validar duplicidade de CNPJ
-            var cnpjFormatado = request.Cnpj.Trim();
+            // 2. Validar duplicidade de CNPJ (comparação pelos dígitos limpos — a Empresa armazena limpo).
+            var cnpjFormatado = cnpjVo.Valor;
             var cnpjExiste = await _contextGestaoClientes.Empresas
                 .IgnoreQueryFilters()
                 .AnyAsync(e => e.Cnpj == cnpjFormatado && e.DeletadoEm == null, cancellationToken);
@@ -505,6 +595,21 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             {
                 return CommandResult.Falha(new[] { "Já existe uma empresa cadastrada com este CNPJ." });
             }
+
+            // 2.5. REG-036: município IBGE precisa existir no cadastro de geografia (catálogo global).
+            //      Sem município válido não há como compor cUF/cMun de documento fiscal — rejeita.
+            var municipio = await _contextGestaoClientes.Municipios
+                .IgnoreQueryFilters()
+                .Include(m => m.Subdivisao)
+                .FirstOrDefaultAsync(m => m.CodigoIbge == request.CodigoIbgeMunicipio && m.DeletadoEm == null, cancellationToken);
+
+            if (municipio == null)
+            {
+                return CommandResult.Falha(new[] { "Município (código IBGE) inválido ou não cadastrado." });
+            }
+
+            var cidadeMunicipio = municipio.Nome;
+            var ufMunicipio = municipio.Uf ?? municipio.Subdivisao?.CodigoISO31662?.Replace("BR-", "") ?? "";
 
             // 3. Transação compartilhada — fechar conexões abertas nas validações acima
             var isRelational = _contextAplicativo.Database.IsRelational() && _contextGestaoClientes.Database.IsRelational();
@@ -537,8 +642,9 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     _httpContextAccessor.HttpContext.Items["TenantId"] = tenantId;
                 }
 
-                // Criar o endereço padrão para a empresa (valores padrões aceitáveis no self-register)
-                var endereco = new Epros.Modules.GestaoClientes.Domain.ValueObjects.Endereco("Logradouro Padrão", "S/N", "Self Register", "Bairro Padrão", "00000000", "Cidade Padrão", "SP");
+                // Endereço com município IBGE REAL validado (cidade/UF vindos do catálogo). O detalhe
+                // de logradouro/número/bairro/CEP é completado no onboarding — cidade/UF já são íntegros.
+                var endereco = new Epros.Modules.GestaoClientes.Domain.ValueObjects.Endereco("A informar", "S/N", "Self Register", "A informar", "00000000", cidadeMunicipio, ufMunicipio);
 
                 // 3.5. Criar PessoaGrupo para o tenant
                 var pessoaGrupo = new PessoaGrupo(
@@ -561,9 +667,11 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     regimeTributario: RegimeTributario.SimplesNacional,
                     regimeApuracao: RegimeApuracao.Cumulativo,
                     pessoaGrupoId: pessoaGrupo.Id,
-                    produtoGrupoId: Guid.NewGuid(),
-                    planoContasFinanceiroId: Guid.NewGuid(),
-                    tributarioGrupoId: Guid.NewGuid(),
+                    // REG-036: NÃO fabricar IDs fiscais/agrupadores com Guid.NewGuid() (apontavam para
+                    // entidades inexistentes). Ficam nulos; os grupos reais são semeados no onboarding.
+                    produtoGrupoId: null,
+                    planoContasFinanceiroId: null,
+                    tributarioGrupoId: null,
                     ncmTributacaoId: null,
                     certificadoDigitalId: null,
                     empresaParametrosDfeId: null,
@@ -572,7 +680,8 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     logo: null,
                     endereco: endereco,
                     tenantId: tenantId,
-                    criadoPor: criadoPor
+                    criadoPor: criadoPor,
+                    cpf: cpfLimpo
                 );
 
                 if (!empresa.IsValid)
@@ -622,8 +731,8 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     empresaId: empresa.Id,
                     nome: request.NomeEmpresa,
                     email: emailLower,
-                    telefone: null,
-                    endereco: "Logradouro Padrão, S/N",
+                    telefone: request.Telefone,
+                    endereco: $"{cidadeMunicipio}/{ufMunicipio}",
                     timeZoneId: 1,
                     dateFormat: "DD-MM-YYYY",
                     currencyId: 1,
@@ -683,6 +792,30 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     await transaction.DisposeAsync();
                 }
             }
+        }
+
+        private static string SomenteDigitos(string valor)
+            => string.IsNullOrEmpty(valor) ? string.Empty : new string(valor.Where(char.IsDigit).ToArray());
+
+        /// <summary>Valida CPF pelos dois dígitos verificadores (rejeita sequências repetidas).</summary>
+        private static bool ValidarCpf(string cpf)
+        {
+            if (string.IsNullOrWhiteSpace(cpf) || cpf.Length != 11) return false;
+            if (cpf.Distinct().Count() == 1) return false;
+
+            var numeros = cpf.Select(c => c - '0').ToArray();
+
+            int soma = 0;
+            for (int i = 0; i < 9; i++) soma += numeros[i] * (10 - i);
+            int resto = soma % 11;
+            int dig1 = resto < 2 ? 0 : 11 - resto;
+            if (numeros[9] != dig1) return false;
+
+            soma = 0;
+            for (int i = 0; i < 10; i++) soma += numeros[i] * (11 - i);
+            resto = soma % 11;
+            int dig2 = resto < 2 ? 0 : 11 - resto;
+            return numeros[10] == dig2;
         }
     }
 }

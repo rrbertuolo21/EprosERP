@@ -568,6 +568,18 @@ namespace Epros.Modules.GestaoClientes.Migrations
                         .HasColumnType("text")
                         .HasColumnName("cnpj");
 
+                    b.Property<int?>("CotaEmpresas")
+                        .HasColumnType("integer")
+                        .HasColumnName("cota_empresas");
+
+                    b.Property<int?>("CotaPermissoes")
+                        .HasColumnType("integer")
+                        .HasColumnName("cota_permissoes");
+
+                    b.Property<int?>("CotaUsuarios")
+                        .HasColumnType("integer")
+                        .HasColumnName("cota_usuarios");
+
                     b.Property<DateTime>("CriadoEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("criado_em");
@@ -1542,6 +1554,11 @@ namespace Epros.Modules.GestaoClientes.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("limite_uso");
 
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("nome");
+
                     b.Property<int>("QuantidadeUsos")
                         .HasColumnType("integer")
                         .HasColumnName("quantidade_usos");
@@ -2190,6 +2207,10 @@ namespace Epros.Modules.GestaoClientes.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("pessoa_id");
 
+                    b.Property<bool>("Principal")
+                        .HasColumnType("boolean")
+                        .HasColumnName("principal");
+
                     b.Property<string>("Referencia")
                         .HasColumnType("text")
                         .HasColumnName("referencia");
@@ -2438,6 +2459,15 @@ namespace Epros.Modules.GestaoClientes.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deletado_em");
 
+                    b.Property<string>("Numero")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("numero");
+
+                    b.Property<string>("Observacoes")
+                        .HasColumnType("text")
+                        .HasColumnName("observacoes");
+
                     b.Property<decimal>("PercentualComissaoRevenda")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")
@@ -2447,6 +2477,10 @@ namespace Epros.Modules.GestaoClientes.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("percentual_comissao_vendedor");
+
+                    b.Property<bool>("Quitada")
+                        .HasColumnType("boolean")
+                        .HasColumnName("quitada");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -2482,6 +2516,11 @@ namespace Epros.Modules.GestaoClientes.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("valor_comissao_vendedor");
 
+                    b.Property<decimal?>("ValorPago")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("valor_pago");
+
                     b.HasKey("Id")
                         .HasName("p_k_faturas");
 
@@ -2493,6 +2532,77 @@ namespace Epros.Modules.GestaoClientes.Migrations
                         .HasDatabaseName("ix__fatura_tenant_id");
 
                     b.ToTable("faturas", "plataforma");
+                });
+
+            modelBuilder.Entity("Epros.Modules.GestaoClientes.Domain.Entities.FaturaItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AlteradoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("alterado_em");
+
+                    b.Property<string>("AlteradoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("alterado_por");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text")
+                        .HasColumnName("criado_por");
+
+                    b.Property<DateTime?>("DeletadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deletado_em");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("descricao");
+
+                    b.Property<Guid>("FaturaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fatura_id");
+
+                    b.Property<Guid>("SyncId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sync_id");
+
+                    b.Property<int>("SyncVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("sync_version");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<decimal>("Valor")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("valor");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_fatura_itens");
+
+                    b.HasIndex("FaturaId")
+                        .HasDatabaseName("i_x_fatura_itens_fatura_id");
+
+                    b.HasIndex("SyncId")
+                        .IsUnique()
+                        .HasDatabaseName("ix__fatura_item_sync_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix__fatura_item_tenant_id");
+
+                    b.ToTable("fatura_itens", "plataforma");
                 });
 
             modelBuilder.Entity("Epros.Modules.GestaoClientes.Domain.Entities.FormatoCodigoPostal", b =>
@@ -3490,6 +3600,11 @@ namespace Epros.Modules.GestaoClientes.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deletado_em");
 
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("nome");
+
                     b.Property<string>("Simbolo")
                         .IsRequired()
                         .HasColumnType("text")
@@ -3774,6 +3889,14 @@ namespace Epros.Modules.GestaoClientes.Migrations
                         .HasColumnType("text")
                         .HasColumnName("criado_por");
 
+                    b.Property<DateTime?>("DataExpiracao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("data_expiracao");
+
+                    b.Property<DateTime?>("DataLiberacaoFundos")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("data_liberacao_fundos");
+
                     b.Property<DateTime?>("DataPagamento")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("data_pagamento");
@@ -3835,9 +3958,14 @@ namespace Epros.Modules.GestaoClientes.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("valor_pago");
 
-                    b.Property<decimal?>("ValorTarifa")
+                    b.Property<decimal?>("ValorRecebido")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")
+                        .HasColumnName("valor_recebido");
+
+                    b.Property<decimal?>("ValorTarifa")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
                         .HasColumnName("valor_tarifa");
 
                     b.HasKey("Id")
@@ -4131,6 +4259,9 @@ namespace Epros.Modules.GestaoClientes.Migrations
                     b.HasIndex("CodigoIsoAlpha3")
                         .IsUnique()
                         .HasDatabaseName("ix_paises_codigo_iso_alpha_3");
+
+                    b.HasIndex("Nome")
+                        .IsUnique();
 
                     b.HasIndex("SyncId")
                         .IsUnique()
@@ -6286,6 +6417,12 @@ namespace Epros.Modules.GestaoClientes.Migrations
                         .HasColumnType("text")
                         .HasColumnName("descricao_curta");
 
+                    b.Property<string>("Duration")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("duration");
+
                     b.Property<Guid?>("GrupoPlanoId")
                         .HasColumnType("uuid")
                         .HasColumnName("grupo_plano_id");
@@ -6297,6 +6434,26 @@ namespace Epros.Modules.GestaoClientes.Migrations
                     b.Property<int>("LimiteUsuarios")
                         .HasColumnType("integer")
                         .HasColumnName("limite_usuarios");
+
+                    b.Property<bool>("ModuloCrm")
+                        .HasColumnType("boolean")
+                        .HasColumnName("modulo_crm");
+
+                    b.Property<bool>("ModuloFinanceiro")
+                        .HasColumnType("boolean")
+                        .HasColumnName("modulo_financeiro");
+
+                    b.Property<bool>("ModuloPdv")
+                        .HasColumnType("boolean")
+                        .HasColumnName("modulo_pdv");
+
+                    b.Property<bool>("ModuloProjetos")
+                        .HasColumnType("boolean")
+                        .HasColumnName("modulo_projetos");
+
+                    b.Property<bool>("ModuloRh")
+                        .HasColumnType("boolean")
+                        .HasColumnName("modulo_rh");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -8215,6 +8372,16 @@ namespace Epros.Modules.GestaoClientes.Migrations
                     b.Navigation("Subdivisao");
                 });
 
+            modelBuilder.Entity("Epros.Modules.GestaoClientes.Domain.Entities.FaturaItem", b =>
+                {
+                    b.HasOne("Epros.Modules.GestaoClientes.Domain.Entities.Fatura", null)
+                        .WithMany("Itens")
+                        .HasForeignKey("FaturaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("f_k_fatura_itens_faturas_fatura_id");
+                });
+
             modelBuilder.Entity("Epros.Modules.GestaoClientes.Domain.Entities.FormatoCodigoPostal", b =>
                 {
                     b.HasOne("Epros.Modules.GestaoClientes.Domain.Entities.Pais", "Pais")
@@ -8771,6 +8938,11 @@ namespace Epros.Modules.GestaoClientes.Migrations
                     b.Navigation("EmpresaParametrosDfe");
 
                     b.Navigation("IeSts");
+                });
+
+            modelBuilder.Entity("Epros.Modules.GestaoClientes.Domain.Entities.Fatura", b =>
+                {
+                    b.Navigation("Itens");
                 });
 
             modelBuilder.Entity("Epros.Modules.GestaoClientes.Domain.Entities.Menu", b =>

@@ -20,7 +20,10 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
         bool IsDemo,
         string? TokenAcesso,
         List<SalvarEnderecoDto> Enderecos,
-        List<SalvarComposicaoDto> Composicoes
+        List<SalvarComposicaoDto> Composicoes,
+        int? CotaUsuarios = null,
+        int? CotaEmpresas = null,
+        int? CotaPermissoes = null
     ) : ICommand;
 
     public class SalvarEnderecoDto
@@ -37,6 +40,7 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
         public string? Complemento { get; set; }
         public string Bairro { get; set; } = string.Empty;
         public string? Referencia { get; set; }
+        public bool Principal { get; set; }
     }
 
     public class SalvarComposicaoDto

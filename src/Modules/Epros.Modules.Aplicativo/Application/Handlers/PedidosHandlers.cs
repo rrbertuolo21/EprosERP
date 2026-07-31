@@ -130,7 +130,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             // Verifica se há alguma assinatura ativa do cliente para encadeamento
             var assinaturaAtiva = await _context.AssinaturasClientes
                 .IgnoreQueryFilters()
-                .Where(a => a.ClienteId == cliente.Id && a.Status == AssinaturaStatus.Aprovada && a.DeletadoEm == null && !a.Arquivada)
+                .Where(a => a.ClienteId == cliente.Id && a.Status == AssinaturaStatus.Ativa && a.DeletadoEm == null && !a.Arquivada)
                 .OrderByDescending(a => a.DataFim)
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -148,7 +148,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             {
                 dataInicio = DateTime.UtcNow;
                 dataFim = valorTotal == 0 ? (DateTime?)null : DateTime.UtcNow.AddDays(30);
-                statusInicial = valorTotal == 0 ? AssinaturaStatus.Aprovada : AssinaturaStatus.Aguardando;
+                statusInicial = valorTotal == 0 ? AssinaturaStatus.Ativa : AssinaturaStatus.AguardandoAprovacao;
             }
 
             // Snapshot do plano
@@ -170,7 +170,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 dataFim: dataFim,
                 trialAte: valorTotal == 0 ? DateTime.UtcNow.AddDays(15) : (DateTime?)null,
                 metodoPagamento: request.MetodoPagamento,
-                transacaoId: statusInicial == AssinaturaStatus.Aprovada ? "free-pedido-" + Guid.NewGuid() : null,
+                transacaoId: statusInicial == AssinaturaStatus.Ativa ? "free-pedido-" + Guid.NewGuid() : null,
                 detalhesPacoteJson: jsonSnapshot,
                 tenantId: tenantId,
                 criadoPor: criadoPor
@@ -179,7 +179,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             _context.AssinaturasClientes.Add(novaAssinatura);
 
             // Se foi liquidado de imediato (plano gratuito ou 100% de desconto)
-            if (statusInicial == AssinaturaStatus.Aprovada)
+            if (statusInicial == AssinaturaStatus.Ativa)
             {
                 pedido.Liquidar(novaAssinatura.Id, criadoPor);
                 cliente.AlterarPlano(plano.Id, criadoPor);
@@ -198,7 +198,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 );
                 _context.PagamentosGlobais.Add(pagamentoGlobal);
             }
-            else if (statusInicial == AssinaturaStatus.Aguardando)
+            else if (statusInicial == AssinaturaStatus.AguardandoAprovacao)
             {
                 // Se for pago e pendente, gera uma fatura mensal de cobrança
                 var fatura = new Fatura(

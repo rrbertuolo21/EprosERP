@@ -24,6 +24,8 @@ namespace Epros.Modules.GestaoClientes.Application.Queries
         public DateTime? DataInicio { get; set; }
         public DateTime? DataFim { get; set; }
         public bool Ativo { get; set; }
+        public string Duration { get; set; } = "Mensal";
+        public bool Global { get; set; }
         public int QtdeModulos { get; set; }
         public DateTime CriadoEm { get; set; }
     }
@@ -42,6 +44,13 @@ namespace Epros.Modules.GestaoClientes.Application.Queries
         public DateTime? DataInicio { get; set; }
         public DateTime? DataFim { get; set; }
         public bool Ativo { get; set; }
+        public string Duration { get; set; } = "Mensal";
+        public bool ModuloCrm { get; set; }
+        public bool ModuloProjetos { get; set; }
+        public bool ModuloRh { get; set; }
+        public bool ModuloFinanceiro { get; set; }
+        public bool ModuloPdv { get; set; }
+        public bool Global { get; set; }
         public DateTime CriadoEm { get; set; }
         public List<ModuloPlanoDto> Modulos { get; set; } = new();
     }

@@ -63,8 +63,12 @@ namespace Epros.Modules.Aplicativo.Application.Services
                 return (true, "Plano contratado inativo ou não encontrado.");
             }
 
+            // 1.01 — Override por cliente (snapshot): usa a cota contratada no Cliente quando preenchida,
+            // senão cai para o limite do plano base.
+            var limiteUsuarios = cliente.CotaUsuarios ?? plano.LimiteUsuarios;
+
             // Regra: Menor ou igual a zero representa Ilimitado
-            if (plano.LimiteUsuarios <= 0)
+            if (limiteUsuarios <= 0)
             {
                 return (false, string.Empty);
             }
@@ -72,9 +76,9 @@ namespace Epros.Modules.Aplicativo.Application.Services
             var totalUsuarios = await _contextApp.Usuarios
                 .CountAsync(u => u.TenantId == tenantId && u.DeletadoEm == null && u.Status == UsuarioStatus.Active, cancellationToken);
 
-            if (totalUsuarios >= plano.LimiteUsuarios)
+            if (totalUsuarios >= limiteUsuarios)
             {
-                return (true, $"O limite de usuários ativos contratados em seu plano foi atingido ({totalUsuarios}/{plano.LimiteUsuarios}). Por favor, faça um upgrade para adicionar novos usuários.");
+                return (true, $"O limite de usuários ativos contratados em seu plano foi atingido ({totalUsuarios}/{limiteUsuarios}). Por favor, faça um upgrade para adicionar novos usuários.");
             }
 
             return (false, string.Empty);
@@ -111,8 +115,12 @@ namespace Epros.Modules.Aplicativo.Application.Services
                 return (true, "Plano contratado inativo ou não encontrado.");
             }
 
+            // 1.01 — Override por cliente (snapshot): usa a cota contratada no Cliente quando preenchida,
+            // senão cai para o limite do plano base.
+            var limiteEmpresas = cliente.CotaEmpresas ?? plano.LimiteEmpresas;
+
             // Regra: Menor ou igual a zero representa Ilimitado
-            if (plano.LimiteEmpresas <= 0)
+            if (limiteEmpresas <= 0)
             {
                 return (false, string.Empty);
             }
@@ -120,9 +128,9 @@ namespace Epros.Modules.Aplicativo.Application.Services
             var totalEmpresas = await _contextGestao.Empresas
                 .CountAsync(e => e.TenantId == tenantId && e.DeletadoEm == null, cancellationToken);
 
-            if (totalEmpresas >= plano.LimiteEmpresas)
+            if (totalEmpresas >= limiteEmpresas)
             {
-                return (true, $"O limite de empresas cadastradas contratadas em seu plano foi atingido ({totalEmpresas}/{plano.LimiteEmpresas}). Por favor, faça um upgrade para adicionar novas empresas.");
+                return (true, $"O limite de empresas cadastradas contratadas em seu plano foi atingido ({totalEmpresas}/{limiteEmpresas}). Por favor, faça um upgrade para adicionar novas empresas.");
             }
 
             return (false, string.Empty);

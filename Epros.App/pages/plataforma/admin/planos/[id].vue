@@ -56,6 +56,47 @@
               </div>
 
               <div class="form-row">
+                <div class="form-group col-6">
+                  <label for="p-duration">Duração / Cobrança</label>
+                  <select id="p-duration" v-model="plano.duration">
+                    <option value="Mensal">Mensal</option>
+                    <option value="Anual">Anual</option>
+                    <option value="Vitalicia">Vitalícia</option>
+                  </select>
+                </div>
+                <div class="form-group col-6">
+                  <label>Escopo do plano</label>
+                  <span class="badge" :class="plano.global ? 'badge-global' : 'badge-custom'">
+                    {{ plano.global ? 'Catálogo global (Siser)' : 'Custom do tenant' }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label for="p-desc-curta">Descrição curta</label>
+                  <input type="text" id="p-desc-curta" v-model="plano.descricaoCurta" maxlength="160" placeholder="Resumo do plano (aparece no card público)" />
+                </div>
+                <div class="form-group col-6">
+                  <label for="p-desc-completa">Descrição completa</label>
+                  <textarea id="p-desc-completa" v-model="plano.descricaoCompleta" rows="2" placeholder="Detalhamento do plano"></textarea>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group col-12">
+                  <label>Módulos habilitados no plano</label>
+                  <div class="flags-grid">
+                    <label class="flag-check"><input type="checkbox" v-model="plano.moduloCrm" /> CRM</label>
+                    <label class="flag-check"><input type="checkbox" v-model="plano.moduloProjetos" /> Projetos</label>
+                    <label class="flag-check"><input type="checkbox" v-model="plano.moduloRh" /> RH</label>
+                    <label class="flag-check"><input type="checkbox" v-model="plano.moduloFinanceiro" /> Financeiro</label>
+                    <label class="flag-check"><input type="checkbox" v-model="plano.moduloPdv" /> PDV</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row">
                 <div class="form-group col-12">
                   <label for="p-recursos">Recursos Inclusos</label>
                   <textarea id="p-recursos" v-model="plano.recursosInclusos" rows="3" placeholder="Descreva os recursos inclusos no plano (um por linha ou texto livre)"></textarea>
@@ -170,6 +211,15 @@ const plano = reactive({
   limiteEmpresas: 0,
   recursosInclusos: '',
   ativo: true,
+  duration: 'Mensal',
+  descricaoCurta: '',
+  descricaoCompleta: '',
+  moduloCrm: false,
+  moduloProjetos: false,
+  moduloRh: false,
+  moduloFinanceiro: false,
+  moduloPdv: false,
+  global: false,
   modulos: []
 })
 
@@ -237,6 +287,15 @@ const carregarPlano = async () => {
       limiteEmpresas: dados.limiteEmpresas ?? 0,
       recursosInclusos: dados.recursosInclusos ?? '',
       ativo: dados.ativo ?? true,
+      duration: dados.duration ?? 'Mensal',
+      descricaoCurta: dados.descricaoCurta ?? '',
+      descricaoCompleta: dados.descricaoCompleta ?? '',
+      moduloCrm: dados.moduloCrm ?? false,
+      moduloProjetos: dados.moduloProjetos ?? false,
+      moduloRh: dados.moduloRh ?? false,
+      moduloFinanceiro: dados.moduloFinanceiro ?? false,
+      moduloPdv: dados.moduloPdv ?? false,
+      global: dados.global ?? false,
       modulos: (dados.modulos ?? []).map(m => ({
         moduloGeralId: m.moduloGeralId ?? m.id,
         nome: m.nome ?? '',
@@ -282,6 +341,14 @@ const salvarPlano = async () => {
       LimiteEmpresas: plano.limiteEmpresas,
       RecursosInclusos: plano.recursosInclusos,
       Ativo: plano.ativo,
+      Duration: plano.duration,
+      DescricaoCurta: plano.descricaoCurta,
+      DescricaoCompleta: plano.descricaoCompleta,
+      ModuloCrm: plano.moduloCrm,
+      ModuloProjetos: plano.moduloProjetos,
+      ModuloRh: plano.moduloRh,
+      ModuloFinanceiro: plano.moduloFinanceiro,
+      ModuloPdv: plano.moduloPdv,
       Modulos: plano.modulos.map(m => ({
         ModuloGeralId: m.moduloGeralId,
         Nome: m.nome,
@@ -426,4 +493,10 @@ const formatMoney = (v) => {
 }
 .mt-2 { margin-top: 12px; }
 .mt-4 { margin-top: 24px; }
+/* 1.01 front — Duration, flags de módulo, escopo global/custom */
+.flags-grid { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 6px; }
+.flag-check { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; cursor: pointer; }
+.badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+.badge-global { background: #e0f2fe; color: #0369a1; }
+.badge-custom { background: #f1f5f9; color: #475569; }
 </style>

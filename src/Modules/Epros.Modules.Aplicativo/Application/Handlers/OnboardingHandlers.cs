@@ -216,7 +216,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 revendaId: null,
                 vendedorId: null,
                 diaVencimento: request.DiaVencimento,
-                statusSaaS: "Active",
+                statusSaaS: Epros.Modules.GestaoClientes.Domain.Entities.StatusSaaS.Ativo,
                 tenantId: request.TenantId,
                 criadoPor: criadoPor,
                 telefone: request.Telefone,
@@ -358,7 +358,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     limiteUsuarios = plano.LimiteUsuarios;
                 }
 
-                if (cliente.StatusSaaS != "Active" || !cliente.Ativo)
+                if (cliente.StatusSaaS != Epros.Modules.GestaoClientes.Domain.Entities.StatusSaaS.Ativo || !cliente.Ativo)
                 {
                     block = true;
                 }

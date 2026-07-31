@@ -265,11 +265,15 @@ namespace Epros.Tests
             var mediator = serviceProvider.GetRequiredService<IMediator>();
 
             var endereco = new Epros.Modules.GestaoClientes.Domain.ValueObjects.Endereco("Logradouro", "123", null, "Centro", "11111111", "Cianorte", "PR");
-            var empresaExistente = new Empresa("Razao Existente", "Fantasia", "12345678901234", null, null, null, null, RegimeTributario.SimplesNacional, RegimeApuracao.Cumulativo, null, null, null, null, null, null, null, null, null, null, endereco, "tenant-ex", "system");
+            // CNPJ válido (dígito verificador correto) para exercitar a checagem de DUPLICIDADE — a
+            // validação de CNPJ inválido é anterior e barraria um CNPJ com DV errado antes daqui.
+            var empresaExistente = new Empresa("Razao Existente", "Fantasia", "12345678000195", null, null, null, null, RegimeTributario.SimplesNacional, RegimeApuracao.Cumulativo, null, null, null, null, null, null, null, null, null, null, endereco, "tenant-ex", "system");
             contextGestao.Empresas.Add(empresaExistente);
             await contextGestao.SaveChangesAsync();
 
-            var command = new RegistrarNovoTenantCommand("Nova Empresa S/A", "12345678901234", "Admin", "admin@nova.com", "senhaForte1");
+            var command = new RegistrarNovoTenantCommand(
+                "Nova Empresa S/A", "12345678000195", "Admin", "admin@nova.com", "senhaForte1",
+                CodigoIbgeMunicipio: 4105508, Telefone: "44999990000", TipoTelefone: "Celular");
 
             // Act
             var result = await mediator.Send(command);

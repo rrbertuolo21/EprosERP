@@ -21,7 +21,8 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
         string? LinhaEndereco1 = null,
         string? LinhaEndereco2 = null,
         decimal? Latitude = null,
-        decimal? Longitude = null
+        decimal? Longitude = null,
+        bool Principal = false
     );
 
     public record ContatoDto(

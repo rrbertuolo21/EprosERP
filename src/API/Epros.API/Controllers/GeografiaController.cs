@@ -6,12 +6,14 @@ using MediatR;
 using Epros.Modules.GestaoClientes.Application.Commands;
 using Epros.Modules.GestaoClientes.Application.Queries;
 using Epros.Shared.Application.Models;
+using Epros.API.Security;
 
 namespace Epros.API.Controllers
 {
     [ApiController]
     [Route("api/v1/cadastros/[controller]")]
     [Produces("application/json")]
+    [AbacAuthorize("SuperAdmin", "Configurar")]
     public class GeografiaController : ControllerBase
     {
         private readonly IMediator _mediator;
@@ -176,6 +178,21 @@ namespace Epros.API.Controllers
                 return UnprocessableEntity(result);
             }
             return Ok(result);
+        }
+
+        // 1.02 — Países: atualização e inativação (REG-006)
+        [HttpPut("paises/{id:guid}")]
+        public async Task<ActionResult<CommandResult>> AtualizarPais(Guid id, [FromBody] AtualizarPaisCommand command)
+        {
+            var result = await _mediator.Send(command with { Id = id });
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPatch("paises/{id:guid}/ativo")]
+        public async Task<ActionResult<CommandResult>> AtivarInativarPais(Guid id, [FromQuery] bool ativo)
+        {
+            var result = await _mediator.Send(new InativarPaisCommand(id, ativo));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
     }
 }

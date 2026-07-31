@@ -5,6 +5,7 @@ using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Epros.Shared.Security;
@@ -33,17 +34,20 @@ namespace Epros.API.Security
 
         private readonly IHostEnvironmentFlags _env;
         private readonly IEprosTokenService _tokenService;
+        private readonly IMemoryCache _cache;
 
         public EprosTokenAuthenticationHandler(
             IOptionsMonitor<AuthenticationSchemeOptions> options,
             ILoggerFactory logger,
             UrlEncoder encoder,
             IHostEnvironmentFlags env,
-            IEprosTokenService tokenService)
+            IEprosTokenService tokenService,
+            IMemoryCache cache)
             : base(options, logger, encoder)
         {
             _env = env;
             _tokenService = tokenService;
+            _cache = cache;
         }
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -56,6 +60,14 @@ namespace Epros.API.Security
                 var principal = _tokenService.Validar(token);
                 if (principal != null)
                 {
+                    // Revogação de sessão (logout — REG-013): se o usuário fez logout depois de este
+                    // token ser emitido, rejeita. Fonte de verdade rápida em cache (por usuário);
+                    // cobre qualquer token (básico/completo) emitido antes do marco de logout.
+                    if (TokenRevogadoPorLogout(principal))
+                    {
+                        return Task.FromResult(AuthenticateResult.Fail("Sessão encerrada (logout)."));
+                    }
+
                     return Task.FromResult(AuthenticateResult.Success(
                         new AuthenticationTicket(principal, SchemeName)));
                 }
@@ -94,6 +106,35 @@ namespace Epros.API.Security
 
             // Sem credencial válida: NoResult -> a FallbackPolicy/[Authorize] responde 401.
             return Task.FromResult(AuthenticateResult.NoResult());
+        }
+
+        /// <summary>
+        /// True se existe um marco de logout para o usuário (cache) posterior à emissão do token —
+        /// i.e., o usuário deslogou depois que este token foi emitido, logo o token está revogado.
+        /// </summary>
+        private bool TokenRevogadoPorLogout(ClaimsPrincipal principal)
+        {
+            var usuarioId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(usuarioId))
+            {
+                return false;
+            }
+
+            if (!_cache.TryGetValue(RevogacaoSessao.ChaveCache(usuarioId), out DateTime logoutEm))
+            {
+                return false;
+            }
+
+            // Instante de emissão do token: claim "iat" (fallback "nbf"), em segundos Unix (UTC).
+            var iatClaim = principal.FindFirst("iat")?.Value ?? principal.FindFirst("nbf")?.Value;
+            if (long.TryParse(iatClaim, out var iatSeconds))
+            {
+                var emitidoEm = DateTimeOffset.FromUnixTimeSeconds(iatSeconds).UtcDateTime;
+                return emitidoEm < logoutEm;
+            }
+
+            // Sem instante de emissão legível: mais seguro revogar (usuário fez logout).
+            return true;
         }
     }
 

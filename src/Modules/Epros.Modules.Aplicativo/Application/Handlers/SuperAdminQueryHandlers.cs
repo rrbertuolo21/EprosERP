@@ -44,11 +44,11 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
 
             var totalAssinaturasAtivas = await _contextGestao.AssinaturasClientes
                 .IgnoreQueryFilters()
-                .CountAsync(a => a.Status == AssinaturaStatus.Aprovada && a.DeletadoEm == null, cancellationToken);
+                .CountAsync(a => a.Status == AssinaturaStatus.Ativa && a.DeletadoEm == null, cancellationToken);
 
             var activeSubscribers = await _contextGestao.AssinaturasClientes
                 .IgnoreQueryFilters()
-                .Where(a => a.Status == AssinaturaStatus.Aprovada && a.DeletadoEm == null)
+                .Where(a => a.Status == AssinaturaStatus.Ativa && a.DeletadoEm == null)
                 .Select(a => a.ClienteId)
                 .Distinct()
                 .ToListAsync(cancellationToken);
@@ -61,11 +61,11 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             var inicioMes = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var novasAssinaturasMes = await _contextGestao.AssinaturasClientes
                 .IgnoreQueryFilters()
-                .CountAsync(a => a.Status == AssinaturaStatus.Aprovada && a.CriadoEm >= inicioMes && a.DeletadoEm == null, cancellationToken);
+                .CountAsync(a => a.Status == AssinaturaStatus.Ativa && a.CriadoEm >= inicioMes && a.DeletadoEm == null, cancellationToken);
 
             var totalAtivas = await _contextGestao.AssinaturasClientes
                 .IgnoreQueryFilters()
-                .CountAsync(a => a.Status == AssinaturaStatus.Aprovada && a.DeletadoEm == null, cancellationToken);
+                .CountAsync(a => a.Status == AssinaturaStatus.Ativa && a.DeletadoEm == null, cancellationToken);
 
             var canceladas30Dias = await _contextGestao.AssinaturasClientes
                 .IgnoreQueryFilters()
@@ -300,7 +300,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     c.Cnpj,
                     c.Email,
                     plano?.Nome ?? "Plano Desconhecido",
-                    c.StatusSaaS,
+                    c.StatusSaaS.ToString(),
                     c.Ativo
                 ));
             }

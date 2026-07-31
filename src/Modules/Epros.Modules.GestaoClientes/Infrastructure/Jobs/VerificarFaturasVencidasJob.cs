@@ -51,8 +51,9 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Jobs
                 _context.Faturas.Update(fatura);
                 await _context.SaveChangesAsync();
 
-                // Se o atraso for maior que 10 dias, envia o comando de suspensão do cliente
-                if ((hoje - fatura.DataVencimento).TotalDays > 10)
+                // Se o atraso for maior que 15 dias, envia o comando de suspensão do cliente
+                // (1.01: alinhado à regra de inadimplência de 15 dias já usada no login — AuthHandlers).
+                if ((hoje - fatura.DataVencimento).TotalDays > 15)
                 {
                     var result = await _mediator.Send(new SuspenderClienteCommand(fatura.ClienteId));
                     if (!result.Sucesso)
