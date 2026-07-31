@@ -734,6 +734,12 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 return CommandResult.Falha(new[] { "A senha atual informada é inválida." });
             }
 
+            // REG-046 / CT-008 — a nova senha não pode ser igual à senha atual.
+            if (_passwordHasher.Verify(request.NovaSenha, usuario.PasswordHash))
+            {
+                return CommandResult.Falha(new[] { "A nova senha deve ser diferente da senha atual." });
+            }
+
             usuario.AlterarSenha(_passwordHasher.Hash(request.NovaSenha), request.UsuarioId.ToString());
 
             if (!usuario.IsValid)
@@ -1058,6 +1064,40 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 _contextAplicativo.AcessosUsuarioTenant.Add(acessoTenant);
 
                 await _contextAplicativo.SaveChangesAsync(cancellationToken);
+
+                // 6.2. 1.09 — RBAC unificado: atribui ao admin do self-register o PAPEL de sistema
+                //      "Administrador" (todas as capacidades), com EmpresaId nulo = vale para todas as
+                //      empresas do tenant. CONSERTA o LC-1 (o admin recém-criado não tinha perfil que o
+                //      AbacFilter honrasse e ficava travado em todo endpoint [AbacAuthorize]). O catálogo é
+                //      semeado no boot (CapacidadeCatalogoSeeder); se ainda não existir, apenas registra e
+                //      segue — não derruba o onboarding.
+                var papelAdminId = await _contextGestaoClientes.Papeis
+                    .IgnoreQueryFilters()
+                    .Where(p => p.TenantId == "system" && p.Name == "Administrador" && p.DeletadoEm == null)
+                    .Select(p => (Guid?)p.Id)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (papelAdminId.HasValue)
+                {
+                    var jaTem = await _contextGestaoClientes.UsuariosPapeis
+                        .IgnoreQueryFilters()
+                        .AnyAsync(up => up.UsuarioId == usuarioAdmin.Id && up.PapelId == papelAdminId.Value
+                                        && up.TenantId == tenantId && up.DeletadoEm == null, cancellationToken);
+                    if (!jaTem)
+                    {
+                        var papelUsuario = new Epros.Modules.GestaoClientes.Domain.Entities.UsuarioPapel(
+                            usuarioId: usuarioAdmin.Id,
+                            papelId: papelAdminId.Value,
+                            modelType: "Usuario",
+                            tenantId: tenantId,
+                            criadoPor: criadoPor,
+                            empresaId: null);
+                        _contextGestaoClientes.UsuariosPapeis.Add(papelUsuario);
+                        await _contextGestaoClientes.SaveChangesAsync(cancellationToken);
+                    }
+                }
+                // (Se o papel de sistema Administrador ainda não existir — catálogo não semeado — o admin
+                //  segue sem papel RBAC; no ambiente alvo o CapacidadeCatalogoSeeder roda no boot antes disto.)
 
                 // 6.5. Criar ConfiguracaoEmpresa padrão
                 var configEmpresa = new ConfiguracaoEmpresa(

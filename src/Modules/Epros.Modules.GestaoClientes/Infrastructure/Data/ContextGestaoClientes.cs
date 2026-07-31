@@ -1160,9 +1160,11 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
             {
                 entity.HasKey(up => up.Id);
                 entity.Property(up => up.ModelType).HasMaxLength(100);
-                entity.HasIndex(up => new { up.UsuarioId, up.PapelId })
+                // 1.09 — papel por empresa: a chave natural passa a incluir a empresa (nulo = todas as
+                // empresas do tenant). Permite o mesmo (usuário, papel) em empresas distintas.
+                entity.HasIndex(up => new { up.UsuarioId, up.PapelId, up.EmpresaId })
                       .IsUnique()
-                      .HasDatabaseName("ix_usuarios_papeis_usuario_papel");
+                      .HasDatabaseName("ix_usuarios_papeis_usuario_papel_empresa");
             });
 
             // ===================== APP-TEN-003: auditoria e segurança de usuário =====================

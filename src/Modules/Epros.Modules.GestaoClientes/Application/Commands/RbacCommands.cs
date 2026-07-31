@@ -53,7 +53,8 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
     public record DeletarCapacidadeCommand(Guid Id) : ICommand;
 
     // ===== Atribuição de papel a usuário =====
-    public record AtribuirPapelUsuarioCommand(Guid UsuarioId, Guid PapelId, string? ModelType) : ICommand;
+    // 1.09 — papel por empresa: EmpresaId nulo = vale para todas as empresas do tenant.
+    public record AtribuirPapelUsuarioCommand(Guid UsuarioId, Guid PapelId, string? ModelType, Guid? EmpresaId = null) : ICommand;
     public record RemoverPapelUsuarioCommand(Guid Id) : ICommand;
 
     // ===== Nível de usuário =====

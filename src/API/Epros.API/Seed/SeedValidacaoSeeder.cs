@@ -78,6 +78,10 @@ namespace Epros.API.Seed
             await AuthRlsBypass.EnableAsync(contextGestao, cancellationToken);
             try
             {
+                // 1.09 — garante o catálogo RBAC (Capacidades system + papel Administrador) antes de
+                // atribuí-lo aos admins de validação. Idempotente; no boot normal já rodou no Program.cs.
+                await CapacidadeCatalogoSeeder.SeedAsync(contextGestao, ct: cancellationToken);
+
                 await SemearLordAsync(contextAplicativo, senhaHash, cancellationToken);
 
                 await SemearTenantAsync(
@@ -307,7 +311,10 @@ namespace Epros.API.Seed
             // Membership no tenant — Proprietário.
             await GarantirAcessoTenantAsync(ctxApp, tenantId, admin.Id, PapelAcessoTenant.Proprietario, ct);
 
-            Log.Information("[SeedValidacao] Tenant {Tenant} pronto (plano+cliente+empresa+admin+memberships).", tenantId);
+            // 1.09 — RBAC: atribui o papel de sistema Administrador ao admin (senão fica travado no AbacFilter).
+            await GarantirPapelAdministradorAsync(ctxGestao, tenantId, admin.Id, ct);
+
+            Log.Information("[SeedValidacao] Tenant {Tenant} pronto (plano+cliente+empresa+admin+memberships+papel).", tenantId);
         }
 
         // ---------------------------------------------------------------------
@@ -380,6 +387,34 @@ namespace Epros.API.Seed
                 return;
             }
             ctx.AcessosUsuarioTenant.Add(acesso);
+            await ctx.SaveChangesAsync(ct);
+        }
+
+        // 1.09 — atribui o papel de sistema Administrador (todas as capacidades) ao usuário, por tenant,
+        // com EmpresaId nulo (vale p/ todas as empresas). Idempotente.
+        private static async Task GarantirPapelAdministradorAsync(
+            ContextGestaoClientes ctx, string tenantId, Guid usuarioId, CancellationToken ct)
+        {
+            var papelId = await CapacidadeCatalogoSeeder.ObterPapelAdministradorIdAsync(ctx, ct);
+            if (papelId == null)
+            {
+                Log.Warning("[SeedValidacao] Papel Administrador ausente — usuário {Usuario} sem papel RBAC.", usuarioId);
+                return;
+            }
+
+            var existe = await ctx.UsuariosPapeis
+                .IgnoreQueryFilters()
+                .AnyAsync(up => up.TenantId == tenantId && up.UsuarioId == usuarioId && up.PapelId == papelId.Value && up.DeletadoEm == null, ct);
+            if (existe) return;
+
+            var vinculo = new UsuarioPapel(usuarioId, papelId.Value, "Usuario", tenantId, CriadoPor, empresaId: null);
+            if (!vinculo.IsValid)
+            {
+                Log.Warning("[SeedValidacao] UsuarioPapel inválido ({Tenant}/{Usuario}): {Erros}",
+                    tenantId, usuarioId, string.Join("; ", vinculo.Notifications.Select(n => n.Message)));
+                return;
+            }
+            ctx.UsuariosPapeis.Add(vinculo);
             await ctx.SaveChangesAsync(ct);
         }
 

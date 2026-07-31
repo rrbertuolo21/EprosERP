@@ -616,6 +616,13 @@ try
                 Log.Information("Semeando catálogos fiscais (CFOP/CST IBS-CBS)...");
                 await Epros.Modules.Fiscal.Infrastructure.Data.CatalogoFiscalSeeder.SeedAsync(dbFiscal);
                 Log.Information("Catálogos fiscais semeados.");
+
+                // 1.09 — catálogo AUTORITATIVO de permissões RBAC: descobre os [AbacAuthorize] dos controllers
+                // e materializa as Capacidades (system) + papel de sistema Administrador (todas as caps).
+                // Idempotente. É a fonte que o AbacFilter cobra (LC-2) e conserta o admin travado (LC-1).
+                Log.Information("Semeando catálogo de permissões RBAC (Capacidade/Papel Administrador)...");
+                await Epros.API.Seed.CapacidadeCatalogoSeeder.SeedAsync(dbClientes);
+                Log.Information("Catálogo de permissões RBAC semeado.");
             }
             catch (Exception ex)
             {

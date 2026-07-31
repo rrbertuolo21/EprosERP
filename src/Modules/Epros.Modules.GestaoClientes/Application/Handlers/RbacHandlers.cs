@@ -240,11 +240,11 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             if (!papelExiste)
                 return CommandResult.Falha(new[] { "Papel não encontrado para o inquilino atual." });
 
-            var jaAtribuido = await _context.UsuariosPapeis.AnyAsync(up => up.UsuarioId == request.UsuarioId && up.PapelId == request.PapelId && up.TenantId == tenantId, cancellationToken);
+            var jaAtribuido = await _context.UsuariosPapeis.AnyAsync(up => up.UsuarioId == request.UsuarioId && up.PapelId == request.PapelId && up.EmpresaId == request.EmpresaId && up.TenantId == tenantId, cancellationToken);
             if (jaAtribuido)
                 return CommandResult.Falha(new[] { "Papel já atribuído a este usuário." }, "Erro de validação");
 
-            var vinculo = new UsuarioPapel(request.UsuarioId, request.PapelId, request.ModelType, tenantId, userId);
+            var vinculo = new UsuarioPapel(request.UsuarioId, request.PapelId, request.ModelType, tenantId, userId, request.EmpresaId);
             if (!vinculo.IsValid)
                 return CommandResult.Falha(vinculo.Notifications.Select(n => n.Message).Distinct(), "Invariantes de domínio do vínculo UsuarioPapel não foram atendidas.");
 

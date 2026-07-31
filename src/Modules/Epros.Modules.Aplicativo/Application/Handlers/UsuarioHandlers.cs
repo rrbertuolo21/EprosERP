@@ -13,6 +13,7 @@ using Epros.Modules.GestaoClientes.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
 using Epros.Shared.Security;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 // Desambiguação: SessaoImpersonacao existe em Aplicativo e GestaoClientes; aqui persiste em ContextAplicativo.SessoesImpersonacao.
 using SessaoImpersonacao = Epros.Modules.Aplicativo.Domain.Entities.SessaoImpersonacao;
@@ -402,6 +403,13 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 return CommandResult.Falha(new[] { "Usuário não encontrado." });
             }
 
+            // REG-046 / CT-008 — a nova senha não pode ser igual à senha atual. Comparação via hasher
+            // (hashes são salgados; a igualdade só é detectável verificando a senha crua contra o hash).
+            if (_passwordHasher.Verify(request.NovaSenha, usuario.PasswordHash))
+            {
+                return CommandResult.Falha(new[] { "A nova senha deve ser diferente da senha atual." });
+            }
+
             usuario.AlterarSenha(_passwordHasher.Hash(request.NovaSenha), alteradoPor);
 
             if (!usuario.IsValid)
@@ -493,17 +501,20 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
         private readonly ITenantProvider _tenantProvider;
         private readonly ICurrentUser _currentUser;
         private readonly IEprosTokenService _tokenService;
+        private readonly IHttpContextAccessor? _httpContextAccessor;
 
         public IniciarImpersonacaoCommandHandler(
             ContextAplicativo contextApp,
             ITenantProvider tenantProvider,
             ICurrentUser currentUser,
-            IEprosTokenService tokenService)
+            IEprosTokenService tokenService,
+            IHttpContextAccessor? httpContextAccessor = null)
         {
             _contextApp = contextApp;
             _tenantProvider = tenantProvider;
             _currentUser = currentUser;
             _tokenService = tokenService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<CommandResult> Handle(IniciarImpersonacaoCommand request, CancellationToken cancellationToken)
@@ -564,7 +575,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 usuarioAlvoId: request.UsuarioAlvoId,
                 empresaId: empresaId,
                 motivo: request.Motivo,
-                ipOrigem: "127.0.0.1",
+                ipOrigem: AcessoSuportePolicy.ObterIpOrigem(_httpContextAccessor),
                 criadoPor: adminIdStr
             );
 
@@ -648,6 +659,16 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
     internal static class AcessoSuportePolicy
     {
         /// <summary>
+        /// IP de origem REAL da requisição (antes ficava hardcoded "127.0.0.1"). Usa o RemoteIpAddress
+        /// do HttpContext; cai para "127.0.0.1" apenas fora de um contexto HTTP (ex.: jobs/testes).
+        /// </summary>
+        public static string ObterIpOrigem(IHttpContextAccessor? httpContextAccessor)
+        {
+            var ip = httpContextAccessor?.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+            return string.IsNullOrWhiteSpace(ip) ? "127.0.0.1" : ip;
+        }
+
+        /// <summary>
         /// True se o usuário alvo é ADMIN do tenant: possui algum vínculo de empresa com
         /// <c>EhAdmin</c> ou é <c>Proprietario</c> (dono/admin primário) do tenant. Nesses casos o
         /// acesso de suporte/impersonação é proibido.
@@ -685,17 +706,20 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
         private readonly ITenantProvider _tenantProvider;
         private readonly ICurrentUser _currentUser;
         private readonly IEprosTokenService _tokenService;
+        private readonly IHttpContextAccessor? _httpContextAccessor;
 
         public IniciarAcessoSuporteCommandHandler(
             ContextAplicativo contextApp,
             ITenantProvider tenantProvider,
             ICurrentUser currentUser,
-            IEprosTokenService tokenService)
+            IEprosTokenService tokenService,
+            IHttpContextAccessor? httpContextAccessor = null)
         {
             _contextApp = contextApp;
             _tenantProvider = tenantProvider;
             _currentUser = currentUser;
             _tokenService = tokenService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<CommandResult> Handle(IniciarAcessoSuporteCommand request, CancellationToken cancellationToken)
@@ -788,7 +812,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 usuarioAlvoId: request.UsuarioAlvoId,
                 empresaId: empresaId,
                 motivo: request.Motivo,
-                ipOrigem: "127.0.0.1",
+                ipOrigem: AcessoSuportePolicy.ObterIpOrigem(_httpContextAccessor),
                 criadoPor: operadorIdStr,
                 tipoAcesso: tipoAcesso,
                 tenantAlvo: request.TenantAlvo);
