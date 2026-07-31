@@ -303,8 +303,27 @@ namespace Epros.Tests.Integration
             {
                 builder.UseEnvironment("Testing");
 
+                // "Testing" é tratado como ambiente deployado (fail-closed): o segredo de assinatura
+                // do token NÃO cai mais no valor fixo de dev por causa do ambiente. O host de teste
+                // fornece a chave explicitamente — como um deploy real faria via env/secret.
+                builder.UseSetting("Seguranca:JwtSigningKey", "chave-de-teste-de-assinatura-jwt-com-mais-de-32-chars-0123456789");
+
                 builder.ConfigureServices(services =>
                 {
+                    // Injeta a identidade pelo HOST DE TESTE (fechamento do "gato"): remapeia o
+                    // esquema "EprosToken" para um handler que lê X-Tenant-Id/X-User-Id/etc. Assim os
+                    // testes de integração continuam autenticando por header SEM que o runtime
+                    // deployado tenha qualquer caminho de header. A FallbackPolicy autentica pelo
+                    // esquema "EprosToken", então o remap do HandlerType é suficiente.
+                    services.PostConfigure<Microsoft.AspNetCore.Authentication.AuthenticationOptions>(options =>
+                    {
+                        if (options.SchemeMap.TryGetValue(
+                                Epros.API.Security.EprosTokenAuthenticationHandler.SchemeName, out var scheme))
+                        {
+                            scheme.HandlerType = typeof(HeaderTestAuthHandler);
+                        }
+                    });
+
                     // Remove as opções e contextos default PostgreSQL
                     RemoveDbContext<ContextGestaoClientes>(services);
                     RemoveDbContext<ContextEstoque>(services);

@@ -4,7 +4,10 @@ using Flunt.Notifications;
 
 namespace Epros.Modules.GestaoClientes.Domain.Entities
 {
-    public class Menu : Notifiable<Notification>
+    // Catálogo GLOBAL do sistema (estrutura de menu compartilhada por todos os tenants; a
+    // personalização por tenant é feita via PerfilAcesso, não neste catálogo). Marcado IGlobalEntity
+    // como classificação explícita de fronteira de tenant (REG-001 / barreira de entidade órfã).
+    public class Menu : Notifiable<Notification>, Epros.Shared.Domain.Entities.IGlobalEntity
     {
         public Guid Id { get; private set; }
         public string Descricao { get; private set; } = string.Empty;

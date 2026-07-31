@@ -14,6 +14,12 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public Guid? VendedorId { get; private set; }
         public int DiaVencimento { get; private set; }
         public StatusSaaS StatusSaaS { get; private set; }
+
+        // 1.05 / REG-021 — Instante em que o StatusSaaS atual passou a valer. Fonte da "data do
+        // cancelamento" para a janela somente-leitura de 30 dias (Cancelado/Falha) aplicada no
+        // InquilinoSaaSMiddleware. Preenchido a cada transição de status.
+        public DateTime? StatusSaaSAtualizadoEm { get; private set; }
+
         public bool Ativo { get; private set; }
         public string? Telefone { get; private set; }
         public string? NomeContato { get; private set; }
@@ -62,6 +68,7 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             VendedorId = vendedorId;
             DiaVencimento = diaVencimento;
             StatusSaaS = statusSaaS;
+            StatusSaaSAtualizadoEm = DateTime.UtcNow;
             Ativo = true;
             Telefone = telefone;
             NomeContato = nomeContato;
@@ -133,6 +140,7 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public void AtualizarStatusSaaS(StatusSaaS novoStatus, string alteradoPor)
         {
             StatusSaaS = novoStatus;
+            StatusSaaSAtualizadoEm = DateTime.UtcNow;
             MarcarAlterado(alteradoPor);
         }
 

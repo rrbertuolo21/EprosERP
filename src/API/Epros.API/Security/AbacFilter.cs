@@ -29,10 +29,26 @@ namespace Epros.API.Security
 
         public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
-            // Curto-circuito do operador interno / SuperAdmin: o token do UsuarioInterno carrega
-            // tenantId="system". Esse operador não tem PerfilUsuario em ContextGestaoClientes, então
-            // a verificação ABAC abaixo o barraria. Liberamos antes de consultar PerfisUsuarios.
-            if (string.Equals(_tenantProvider.GetTenantId(), "system", StringComparison.OrdinalIgnoreCase))
+            // Curto-circuito do operador interno da Siser (UsuarioInterno): seu token é emitido pelo
+            // fluxo de autenticação interno com tenantId="system" E perfilId="interno" (ver
+            // AutenticarUsuarioInternoCommandHandler). Esse operador não tem PerfilColaborador em
+            // ContextGestaoClientes, então a verificação ABAC abaixo o barraria — por isso liberamos
+            // antes de consultar PerfisUsuarios.
+            //
+            // SEGURANÇA (fechamento do "gato"): NÃO basta tenantId="system". Como o antigo atalho de
+            // header foi removido do runtime, tenantId="system" só existe num token ASSINADO; ainda
+            // assim exigimos o marcador de operador (claim perfilId="interno") emitido exclusivamente
+            // pela autenticação de UsuarioInterno. Isso fecha o combo "forjo/injeto tenant=system ->
+            // acesso total" e faz o AbacFilter cobrar ACL real de qualquer identidade "system" que não
+            // seja comprovadamente um operador interno.
+            var ehTenantSystem = string.Equals(
+                _tenantProvider.GetTenantId(), "system", StringComparison.OrdinalIgnoreCase);
+            var ehOperadorInterno = ehTenantSystem && string.Equals(
+                context.HttpContext.User.FindFirst("perfilId")?.Value,
+                "interno",
+                StringComparison.OrdinalIgnoreCase);
+
+            if (ehOperadorInterno)
             {
                 return;
             }

@@ -3,7 +3,8 @@ using Flunt.Notifications;
 
 namespace Epros.Modules.GestaoClientes.Domain.Entities
 {
-    public class MenuItemNivel2 : Notifiable<Notification>
+    // Catálogo GLOBAL (item de menu nível 2). Ver Menu — IGlobalEntity classifica a fronteira (REG-001).
+    public class MenuItemNivel2 : Notifiable<Notification>, Epros.Shared.Domain.Entities.IGlobalEntity
     {
         public Guid Id { get; private set; }
         public Guid MenuItemNivel1Id { get; private set; }

@@ -418,29 +418,27 @@ try
     // AUTENTICAÇÃO
     // Esquema nativo do EprosERP (EprosToken): valida os JWTs assinados (HS256, com expiração)
     // emitidos pelo login via IEprosTokenService e materializa o ClaimsPrincipal autenticado.
-    // Em Development/Testing também aceita os headers X-Tenant-Id/X-User-Id (dev local e testes).
+    // SEGURANÇA (fechamento do "gato"): NÃO existe mais autenticação por header no runtime — o
+    // handler aceita apenas o token assinado. Testes injetam identidade pelo host de teste.
     // Mantém o JWT Bearer do Keycloak registrado (como esquema adicional) para migração futura,
     // mas o esquema PADRÃO é o EprosToken — é ele quem impõe a autenticação hoje.
-    var permiteHeadersAuth = builder.Environment.IsDevelopment()
-        || builder.Environment.EnvironmentName == "Testing";
-    builder.Services.AddSingleton<Epros.API.Security.IHostEnvironmentFlags>(
-        new Epros.API.Security.HostEnvironmentFlags(permiteHeadersAuth));
 
     // Serviço central do token nativo (JWT HS256 assinado). Substitui o antigo token em texto
-    // plano forjável. A chave vem de configuração (env/secret em produção). Fail-closed: fora de
-    // Development, chave ausente/curta aborta o startup em vez de operar com token inseguro.
+    // plano forjável. A chave vem de configuração (env/secret). Fail-closed: em QUALQUER ambiente
+    // deployado (Production/Staging/Testing, ou Development em contêiner/CI) a chave é obrigatória
+    // e sua ausência aborta o startup. Só desenvolvimento local puro cai na chave fixa de dev.
+    var permiteFallbackDevLocal = Epros.Shared.Security.AmbienteImplantacao
+        .EhDesenvolvimentoLocal(builder.Environment.EnvironmentName);
     var jwtSigningKey = builder.Configuration["Seguranca:JwtSigningKey"];
     if (string.IsNullOrWhiteSpace(jwtSigningKey))
     {
-        // Fail-closed: em produção/staging a chave é obrigatória (env/secret). Só Development e
-        // Testing (mesmos ambientes que permitem o atalho de headers) caem na chave fixa de dev.
-        if (!permiteHeadersAuth)
+        if (!permiteFallbackDevLocal)
         {
             throw new InvalidOperationException(
-                "Seguranca:JwtSigningKey não configurada. Defina a chave de assinatura do token (env/secret) antes de iniciar em ambiente produtivo.");
+                "Seguranca:JwtSigningKey não configurada. Defina a chave de assinatura do token (env/secret) antes de iniciar fora de desenvolvimento local.");
         }
 
-        // Chave fixa de desenvolvimento (>= 32 chars) — apenas para dev local/testes.
+        // Chave fixa de desenvolvimento (>= 32 chars) — apenas para dev local puro.
         jwtSigningKey = "epros-dev-signing-key-please-change-0123456789";
     }
     builder.Services.AddSingleton<Epros.Shared.Security.IEprosTokenService>(
@@ -480,6 +478,33 @@ try
     }
 
     var app = builder.Build();
+
+    // Barreira de boot (REG-001): falha o startup se alguma entidade mapeada não estiver
+    // classificada quanto ao tenant (não herda EntidadeSaaSBase nem é IGlobalEntity). Fecha o
+    // vazamento silencioso de uma entidade nova criada fora do padrão de isolamento.
+    using (var guardScope = app.Services.CreateScope())
+    {
+        var sp = guardScope.ServiceProvider;
+        var contextosParaValidar = new Microsoft.EntityFrameworkCore.DbContext[]
+        {
+            sp.GetRequiredService<ContextGestaoClientes>(),
+            sp.GetRequiredService<Epros.Modules.Aplicativo.Infrastructure.Data.ContextAplicativo>(),
+            sp.GetRequiredService<ContextEstoque>(),
+            sp.GetRequiredService<ContextFiscal>(),
+            sp.GetRequiredService<ContextFinanceiro>(),
+            sp.GetRequiredService<ContextVendas>(),
+            sp.GetRequiredService<ContextQualidade>(),
+            sp.GetRequiredService<ContextProducao>(),
+            sp.GetRequiredService<ContextRH>(),
+            sp.GetRequiredService<ContextProjetos>(),
+            sp.GetRequiredService<ContextManutencao>(),
+            sp.GetRequiredService<ContextGRC>(),
+            sp.GetRequiredService<ContextESG>(),
+            sp.GetRequiredService<ContextDMS>(),
+            sp.GetRequiredService<ContextImobiliaria>(),
+        };
+        Epros.Infrastructure.Data.GuardaEntidadeOrfa.ValidarModelos(contextosParaValidar);
+    }
 
     if (args.Contains("--seed-fiscal"))
     {
