@@ -294,7 +294,7 @@ namespace Epros.Tests
             var usuarioAlvo = new Usuario("tenant-alvo", "Alvo", "alvo@teste.com", "SenhaForte@1", UsuarioTipo.Company, "system");
             contextApp.Usuarios.Add(usuarioAlvo);
 
-            var vinculo = new UsuarioEmpresa("tenant-alvo", usuarioAlvo.Id, Guid.NewGuid(), null, true, "system");
+            var vinculo = new UsuarioEmpresa("tenant-alvo", usuarioAlvo.Id, Guid.NewGuid(), null, false, "system"); // não-admin (admin é bloqueado pela salvaguarda)
             contextApp.UsuariosEmpresas.Add(vinculo);
             await contextApp.SaveChangesAsync();
 
@@ -322,6 +322,103 @@ namespace Epros.Tests
             Assert.True(resultEncerrar.Sucesso);
             var sessaoFim = await contextApp.SessoesImpersonacao.IgnoreQueryFilters().FirstOrDefaultAsync(s => s.Id == sessao.Id);
             Assert.NotNull(sessaoFim!.FimEm);
+        }
+
+        [Fact]
+        public async Task AcessoSuporte_Valido_Deve_Gerar_Sessao_Escopada_Ao_Cliente()
+        {
+            // Arrange: operador Siser com perfil de suporte, na área Landlord (tenant "system").
+            var operadorId = Guid.NewGuid();
+            var (provider, _, _) = CreateServiceProvider("db_suporte_ok", "system", operadorId.ToString());
+            var mediator = provider.GetRequiredService<IMediator>();
+            var contextApp = provider.GetRequiredService<ContextAplicativo>();
+
+            var operador = new UsuarioInterno("Suporte Tec", "sup@siser.com", "SenhaForte@1", null, null, null, false, "system", "system", PerfilSuporteSiser.SuporteTecnico);
+            typeof(Epros.Shared.Domain.Entities.EntidadeSaaSBase).GetField("<Id>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.SetValue(operador, operadorId);
+            contextApp.UsuariosInternos.Add(operador);
+
+            var usuarioAlvo = new Usuario("cliente-x", "Alvo Cliente", "alvo@cliente-x.com", "SenhaForte@1", UsuarioTipo.Company, "system");
+            contextApp.Usuarios.Add(usuarioAlvo);
+            var vinculo = new UsuarioEmpresa("cliente-x", usuarioAlvo.Id, Guid.NewGuid(), null, false, "system"); // não-admin
+            contextApp.UsuariosEmpresas.Add(vinculo);
+            await contextApp.SaveChangesAsync();
+
+            // Act
+            var command = new IniciarAcessoSuporteCommand("cliente-x", usuarioAlvo.Id, vinculo.EmpresaId, "Investigar erro no cliente");
+            var result = await mediator.Send(command);
+
+            // Assert
+            Assert.True(result.Sucesso);
+            var dados = Assert.IsType<AcessoSuporteResultDto>(result.Dados);
+            Assert.NotNull(dados.Token);
+            Assert.Equal("cliente-x", dados.TenantAlvo);
+            Assert.Equal("SuporteTecnico", dados.PerfilSuporte);
+
+            var sessao = await contextApp.SessoesImpersonacao.IgnoreQueryFilters().FirstOrDefaultAsync(s => s.Id == dados.SessaoSuporteId);
+            Assert.NotNull(sessao);
+            Assert.Equal(TipoSessaoAcesso.SuporteTecnico, sessao!.TipoAcesso);
+            Assert.Equal("cliente-x", sessao.TenantAlvo);
+            Assert.Equal(operadorId, sessao.UsuarioOriginalId);
+
+            // Auditoria via outbox gravada como suporte
+            var outbox = await contextApp.OutboxMessages.IgnoreQueryFilters().FirstOrDefaultAsync(m => m.EventType == "AcessoSuporteIniciado");
+            Assert.NotNull(outbox);
+        }
+
+        [Fact]
+        public async Task AcessoSuporte_Alvo_Admin_Deve_Ser_Bloqueado()
+        {
+            // Arrange
+            var operadorId = Guid.NewGuid();
+            var (provider, _, _) = CreateServiceProvider("db_suporte_admin", "system", operadorId.ToString());
+            var mediator = provider.GetRequiredService<IMediator>();
+            var contextApp = provider.GetRequiredService<ContextAplicativo>();
+
+            var operador = new UsuarioInterno("Suporte Neg", "neg@siser.com", "SenhaForte@1", null, null, null, false, "system", "system", PerfilSuporteSiser.SuporteNegocio);
+            typeof(Epros.Shared.Domain.Entities.EntidadeSaaSBase).GetField("<Id>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.SetValue(operador, operadorId);
+            contextApp.UsuariosInternos.Add(operador);
+
+            var alvoAdmin = new Usuario("cliente-y", "Admin Cliente", "admin@cliente-y.com", "SenhaForte@1", UsuarioTipo.Company, "system");
+            contextApp.Usuarios.Add(alvoAdmin);
+            var vinculoAdmin = new UsuarioEmpresa("cliente-y", alvoAdmin.Id, Guid.NewGuid(), null, true, "system"); // EhAdmin = true
+            contextApp.UsuariosEmpresas.Add(vinculoAdmin);
+            await contextApp.SaveChangesAsync();
+
+            // Act
+            var command = new IniciarAcessoSuporteCommand("cliente-y", alvoAdmin.Id, vinculoAdmin.EmpresaId, "Tentar suporte a admin");
+            var result = await mediator.Send(command);
+
+            // Assert
+            Assert.False(result.Sucesso);
+            Assert.Contains(result.Erros, e => e.Contains("ADMIN"));
+        }
+
+        [Fact]
+        public async Task AcessoSuporte_Sem_Perfil_Suporte_Deve_Ser_Bloqueado()
+        {
+            // Arrange: operador Siser SEM perfil de suporte (Nenhum) e não admin primário.
+            var operadorId = Guid.NewGuid();
+            var (provider, _, _) = CreateServiceProvider("db_suporte_sem_perfil", "system", operadorId.ToString());
+            var mediator = provider.GetRequiredService<IMediator>();
+            var contextApp = provider.GetRequiredService<ContextAplicativo>();
+
+            var operador = new UsuarioInterno("Comum Siser", "comum@siser.com", "SenhaForte@1", null, null, null, false, "system", "system", PerfilSuporteSiser.Nenhum);
+            typeof(Epros.Shared.Domain.Entities.EntidadeSaaSBase).GetField("<Id>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.SetValue(operador, operadorId);
+            contextApp.UsuariosInternos.Add(operador);
+
+            var usuarioAlvo = new Usuario("cliente-z", "Alvo Z", "alvo@cliente-z.com", "SenhaForte@1", UsuarioTipo.Company, "system");
+            contextApp.Usuarios.Add(usuarioAlvo);
+            var vinculo = new UsuarioEmpresa("cliente-z", usuarioAlvo.Id, Guid.NewGuid(), null, false, "system");
+            contextApp.UsuariosEmpresas.Add(vinculo);
+            await contextApp.SaveChangesAsync();
+
+            // Act
+            var command = new IniciarAcessoSuporteCommand("cliente-z", usuarioAlvo.Id, vinculo.EmpresaId, "Sem perfil");
+            var result = await mediator.Send(command);
+
+            // Assert
+            Assert.False(result.Sucesso);
+            Assert.Contains(result.Erros, e => e.Contains("perfil de suporte"));
         }
 
         [Fact]

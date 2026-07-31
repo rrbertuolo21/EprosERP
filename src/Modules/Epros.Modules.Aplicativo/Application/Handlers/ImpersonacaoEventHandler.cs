@@ -19,4 +19,20 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             return Task.CompletedTask;
         }
     }
+
+    /// <summary>
+    /// Auditoria de segurança do acesso de SUPORTE da Siser a um cliente (área Landlord). Mesma
+    /// trilha/alerta da impersonação (REG-033), diferenciando o acesso por perfil de suporte.
+    /// </summary>
+    public class AcessoSuporteEventHandler : INotificationHandler<AcessoSuporteIniciadoEventNotification>
+    {
+        public Task Handle(AcessoSuporteIniciadoEventNotification notification, CancellationToken cancellationToken)
+        {
+            Console.WriteLine($"[SECURITY LOG] SUPPORT ACCESS STARTED: Siser operator '{notification.CriadoPor}' (Original ID: {notification.UsuarioOriginalId}) with support profile '{notification.PerfilSuporte}' has opened a support session on Client Tenant '{notification.TenantAlvo}', target user '{notification.UsuarioAlvoId}' for Company '{notification.EmpresaId}'. SessaoId: {notification.SessaoImpersonacaoId}. Reason: '{notification.Motivo}'");
+
+            Console.WriteLine($"[SECURITY ALERT EMAIL SENT] to tenant administrators of Client '{notification.TenantAlvo}': a Siser support session '{notification.SessaoImpersonacaoId}' ('{notification.PerfilSuporte}') has been initiated by operator '{notification.CriadoPor}' with reason: '{notification.Motivo}'.");
+
+            return Task.CompletedTask;
+        }
+    }
 }

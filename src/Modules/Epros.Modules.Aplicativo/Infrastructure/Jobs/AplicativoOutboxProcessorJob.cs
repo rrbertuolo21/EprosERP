@@ -42,11 +42,12 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Jobs
 
             var messages = await _context.OutboxMessages
                 .IgnoreQueryFilters()
-                .Where(m => (m.EventType == "UsuarioCriado" || 
-                             m.EventType == "UsuarioAtualizado" || 
-                             m.EventType == "UsuarioDeletado" || 
+                .Where(m => (m.EventType == "UsuarioCriado" ||
+                             m.EventType == "UsuarioAtualizado" ||
+                             m.EventType == "UsuarioDeletado" ||
                              m.EventType == "ImpersonacaoIniciada" ||
-                             m.EventType == "ComunicacaoSuperAdminCriada") && 
+                             m.EventType == "AcessoSuporteIniciado" ||
+                             m.EventType == "ComunicacaoSuperAdminCriada") &&
                              m.ProcessadoEm == null && 
                              m.Tentativas < 5)
                 .OrderBy(m => m.CriadoEm)
@@ -130,6 +131,24 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Jobs
                                 Motivo: payload.Motivo,
                                 CriadoPor: payload.CriadoPor,
                                 TenantId: payload.TenantId
+                            );
+                            await _mediator.Publish(notification);
+                        }
+                    }
+                    else if (message.EventType == "AcessoSuporteIniciado")
+                    {
+                        var payload = JsonSerializer.Deserialize<AcessoSuporteIniciadoPayload>(message.Payload, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        if (payload != null)
+                        {
+                            var notification = new AcessoSuporteIniciadoEventNotification(
+                                SessaoImpersonacaoId: payload.SessaoImpersonacaoId,
+                                UsuarioOriginalId: payload.UsuarioOriginalId,
+                                UsuarioAlvoId: payload.UsuarioAlvoId,
+                                EmpresaId: payload.EmpresaId,
+                                Motivo: payload.Motivo,
+                                CriadoPor: payload.CriadoPor,
+                                TenantAlvo: payload.TenantAlvo,
+                                PerfilSuporte: payload.PerfilSuporte
                             );
                             await _mediator.Publish(notification);
                         }
@@ -264,6 +283,18 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Jobs
             public string Motivo { get; set; } = string.Empty;
             public string CriadoPor { get; set; } = string.Empty;
             public string TenantId { get; set; } = string.Empty;
+        }
+
+        private class AcessoSuporteIniciadoPayload
+        {
+            public Guid SessaoImpersonacaoId { get; set; }
+            public Guid UsuarioOriginalId { get; set; }
+            public Guid UsuarioAlvoId { get; set; }
+            public Guid? EmpresaId { get; set; }
+            public string Motivo { get; set; } = string.Empty;
+            public string CriadoPor { get; set; } = string.Empty;
+            public string TenantAlvo { get; set; } = string.Empty;
+            public string PerfilSuporte { get; set; } = string.Empty;
         }
 
         private class ComunicacaoSuperAdminCriadaPayload
