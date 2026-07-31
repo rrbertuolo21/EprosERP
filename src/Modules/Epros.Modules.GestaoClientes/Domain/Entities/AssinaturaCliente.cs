@@ -36,6 +36,13 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         // disparada). Fonte de idempotência do job de fim-de-trial: preenchido → o trial não é reconvertido.
         public DateTime? TrialConvertidoEm { get; private set; }
 
+        // 1.08B — Vínculo da assinatura ao CICLO de cobrança (fecha o desacoplamento assinatura↔recorrência).
+        // ProximaCobrancaEm = vencimento do ciclo em que a próxima fatura deve ser gerada, conforme
+        // PlanoDuration (Mensal → +1 mês; Anual → +1 ano; Vitalicia → null, cobrança única, sem renovação).
+        // O job de renovação usa esta data como âncora idempotente: ao gerar a fatura do ciclo, avança a data.
+        public DateTime? ProximaCobrancaEm { get; private set; }
+        public DateTime? UltimaRenovacaoEm { get; private set; }
+
         protected AssinaturaCliente() { } // EF Core
 
         public AssinaturaCliente(
@@ -100,6 +107,27 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public void MarcarTrialConvertido(string alteradoPor)
         {
             TrialConvertidoEm = DateTime.UtcNow;
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>
+        /// 1.08B — Define o próximo vencimento do ciclo de cobrança conforme a duração do plano.
+        /// <paramref name="proximaCobranca"/> null (plano Vitalícia) desliga a renovação (cobrança única).
+        /// </summary>
+        public void DefinirProximaCobranca(DateTime? proximaCobranca, string alteradoPor)
+        {
+            ProximaCobrancaEm = proximaCobranca;
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>
+        /// 1.08B — Registra que a fatura do ciclo foi gerada e AVANÇA o vínculo para o próximo vencimento
+        /// (idempotência da renovação: o mesmo ciclo não gera fatura duas vezes).
+        /// </summary>
+        public void RegistrarRenovacao(DateTime? proximaCobranca, string alteradoPor)
+        {
+            UltimaRenovacaoEm = DateTime.UtcNow;
+            ProximaCobrancaEm = proximaCobranca;
             MarcarAlterado(alteradoPor);
         }
 

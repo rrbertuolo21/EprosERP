@@ -807,6 +807,31 @@ namespace Epros.Tests
             public Task<Epros.Shared.Application.Models.CommandResult> TestarConexaoAsync(
                 ConfiguracaoGatewayPagamento config, CancellationToken cancellationToken = default)
                 => Task.FromResult(Epros.Shared.Application.Models.CommandResult.Ok("ok"));
+
+            public Task<Epros.Shared.Application.Models.CommandResult> GerarBoletoAsync(
+                Fatura fatura, ConfiguracaoGatewayPagamento config,
+                Epros.Modules.GestaoClientes.Application.Interfaces.DadosPagador pagador, DateTime dataVencimento, CancellationToken cancellationToken = default)
+                => Task.FromResult(Epros.Shared.Application.Models.CommandResult.Ok("ok",
+                    new Epros.Modules.GestaoClientes.Application.Interfaces.CobrancaBoletoResultado(
+                        "boleto-" + Guid.NewGuid().ToString("N"), "00190500954014481606906809350314337370000000100", "03399", dataVencimento, "https://mp/boleto.pdf", "pending")));
+
+            public Task<Epros.Shared.Application.Models.CommandResult> CriarCartaoOnFileAsync(
+                ConfiguracaoGatewayPagamento config, Epros.Modules.GestaoClientes.Application.Interfaces.DadosPagador pagador, string cardToken, CancellationToken cancellationToken = default)
+                => Task.FromResult(Epros.Shared.Application.Models.CommandResult.Ok("ok",
+                    new Epros.Modules.GestaoClientes.Application.Interfaces.CartaoOnFileResultado("cus_1", "card_1", "visa", "4242", 12, 2030)));
+
+            public Task<Epros.Shared.Application.Models.CommandResult> CobrarCartaoAsync(
+                Fatura fatura, ConfiguracaoGatewayPagamento config, string customerId, string cardId,
+                Epros.Modules.GestaoClientes.Application.Interfaces.DadosPagador pagador, CancellationToken cancellationToken = default)
+                => Task.FromResult(Epros.Shared.Application.Models.CommandResult.Ok("ok",
+                    new Epros.Modules.GestaoClientes.Application.Interfaces.ConsultaPagamentoResultado(
+                        "cardpay-" + Guid.NewGuid().ToString("N"), _status, _valor, _tarifa, DateTime.UtcNow, fatura.Id.ToString(), _liquido)));
+
+            public Task<Epros.Shared.Application.Models.CommandResult> CriarPreferenciaCheckoutAsync(
+                Fatura fatura, ConfiguracaoGatewayPagamento config, string descricao,
+                Epros.Modules.GestaoClientes.Application.Interfaces.DadosPagador pagador, string? urlRetorno, CancellationToken cancellationToken = default)
+                => Task.FromResult(Epros.Shared.Application.Models.CommandResult.Ok("ok",
+                    new Epros.Modules.GestaoClientes.Application.Interfaces.PreferenciaCheckoutResultado("pref-123", "https://mp/checkout/pref-123")));
         }
 
         private ContextGestaoClientes CreateInMemoryContext(string databaseName, string tenantId, string userId)

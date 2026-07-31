@@ -114,8 +114,12 @@ try
     });
     builder.Services.AddScoped<Epros.Modules.GestaoClientes.Application.Interfaces.IPaymentGateway, Epros.Modules.GestaoClientes.Infrastructure.Gateways.MercadoPagoGateway>();
 
-    // 1.08A — Cobrança recorrente por cartão-on-file: ponto de extensão (no-op na passada A; cartão/boleto na passada B).
-    builder.Services.AddScoped<Epros.Modules.GestaoClientes.Application.Interfaces.ICobrancaRecorrenteGateway, Epros.Modules.GestaoClientes.Infrastructure.Gateways.CobrancaRecorrenteGatewayNoop>();
+    // 1.08B — Serviço de liquidação de fatura compartilhado (webhook PIX/boleto/checkout + cartão recorrente).
+    builder.Services.AddScoped<Epros.Modules.GestaoClientes.Application.Services.FaturaLiquidacaoService>();
+
+    // 1.08B — Cobrança recorrente por cartão-on-file: implementação CONCRETA (Mercado Pago Customers/Cards).
+    // Substitui o no-op da passada A. ⛔ PCI: só o token do MP toca o backend, nunca PAN/CVV.
+    builder.Services.AddScoped<Epros.Modules.GestaoClientes.Application.Interfaces.ICobrancaRecorrenteGateway, Epros.Modules.GestaoClientes.Infrastructure.Gateways.CobrancaRecorrenteGatewayMercadoPago>();
 
     // Registra o serviço de notificações (Mock para homologação local) (REG-020)
     builder.Services.AddScoped<INotificacaoService, Epros.Infrastructure.Services.MockNotificacaoService>();
@@ -319,6 +323,15 @@ try
             .ForJob(encerrarTrialsJobKey)
             .WithIdentity("EncerrarTrialsExpiradosJob-trigger")
             .WithCronSchedule("0 20 0 * * ?"));
+
+        // 1.08B — Renova assinaturas por ciclo (mensal/anual; vitalícia não renova). Diário às 00:25.
+        var renovacaoJobKey = new JobKey("ProcessarRenovacaoAssinaturasJob");
+        q.AddJob<Epros.Modules.GestaoClientes.Infrastructure.Jobs.ProcessarRenovacaoAssinaturasJob>(opts => opts.WithIdentity(renovacaoJobKey));
+
+        q.AddTrigger(opts => opts
+            .ForJob(renovacaoJobKey)
+            .WithIdentity("ProcessarRenovacaoAssinaturasJob-trigger")
+            .WithCronSchedule("0 25 0 * * ?"));
 
         var outboxJobKey = new JobKey("OutboxProcessorJob");
         q.AddJob<OutboxProcessorJob>(opts => opts.WithIdentity(outboxJobKey));

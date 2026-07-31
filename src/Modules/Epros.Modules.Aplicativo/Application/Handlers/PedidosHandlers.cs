@@ -224,20 +224,30 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
         }
     }
 
+    /// <summary>
+    /// 1.08B — Checkout online REAL (substitui o stub). Cria uma preferência de Checkout Pro no gateway
+    /// (Mercado Pago): o cliente escolhe o método (PIX/cartão/boleto) e paga na tela HOSPEDADA do gateway;
+    /// o retorno concilia pelo webhook unificado (external_reference = Id da Fatura do pedido).
+    /// ⛔ PCI: nenhum dado de cartão passa pelo backend — o pagamento acontece no ambiente do gateway.
+    /// Fail-closed: sem gateway configurado, o checkout não é iniciado.
+    /// </summary>
     public class IniciarCheckoutCommandHandler : ICommandHandler<IniciarCheckoutCommand>
     {
         private readonly ContextGestaoClientes _context;
         private readonly ITenantProvider _tenantProvider;
         private readonly ICurrentUser _currentUser;
+        private readonly Epros.Modules.GestaoClientes.Application.Interfaces.IPaymentGateway _paymentGateway;
 
         public IniciarCheckoutCommandHandler(
             ContextGestaoClientes context,
             ITenantProvider tenantProvider,
-            ICurrentUser currentUser)
+            ICurrentUser currentUser,
+            Epros.Modules.GestaoClientes.Application.Interfaces.IPaymentGateway paymentGateway)
         {
             _context = context;
             _tenantProvider = tenantProvider;
             _currentUser = currentUser;
+            _paymentGateway = paymentGateway;
         }
 
         public async Task<CommandResult> Handle(IniciarCheckoutCommand request, CancellationToken cancellationToken)
@@ -277,6 +287,39 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 return CommandResult.Falha(new[] { "Assinatura do pedido correspondente não foi encontrada." });
             }
 
+            // Resolve a config do gateway (por tenant, senão global). Fail-closed.
+            var config = await _context.ConfiguracoesGatewayPagamento
+                .Where(c => c.Ativo && (c.TenantAlvo == tenantId || c.TenantAlvo == null))
+                .OrderByDescending(c => c.TenantAlvo == tenantId)
+                .ThenByDescending(c => c.CriadoEm)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (config == null)
+                return CommandResult.Falha(new[] { "Gateway de pagamento não configurado." }, "Gateway não configurado");
+
+            // Fatura de referência do pedido (external_reference do checkout). Se não existir, gera uma.
+            var fatura = await _context.Faturas
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(f => f.ClienteId == pedido.ClienteId && f.Valor == pedido.ValorTotal
+                                          && f.Status == FaturaStatus.Pendente && f.DeletadoEm == null, cancellationToken);
+            if (fatura == null)
+            {
+                fatura = new Fatura(pedido.ClienteId, pedido.ValorTotal, DateTime.UtcNow.AddDays(5), tenantId, criadoPor);
+                if (!fatura.IsValid)
+                    return CommandResult.Falha(fatura.Notifications.Select(n => n.Message), "Falha ao gerar a fatura do checkout");
+                _context.Faturas.Add(fatura);
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+
+            var cliente = await _context.Clientes.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(c => c.Id == pedido.ClienteId && c.DeletadoEm == null, cancellationToken);
+            var pagador = new Epros.Modules.GestaoClientes.Application.Interfaces.DadosPagador(
+                cliente?.Email ?? "sem-email@epros.com", cliente?.RazaoSocial, cliente?.Cnpj);
+
+            var pref = await _paymentGateway.CriarPreferenciaCheckoutAsync(
+                fatura, config, $"Assinatura Epros (pedido {pedido.Id})", pagador, null, cancellationToken);
+            if (!pref.Sucesso || pref.Dados is not Epros.Modules.GestaoClientes.Application.Interfaces.PreferenciaCheckoutResultado dto)
+                return pref;
+
             var sessaoExistente = await _context.SessoesPagamentos
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(s => s.PedidoId == pedido.Id && s.Status == SessaoPagamentoStatus.Pending && s.DeletadoEm == null, cancellationToken);
@@ -284,7 +327,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             if (sessaoExistente == null)
             {
                 sessaoExistente = new SessaoPagamento(
-                    gatewayRef: "gateway-session-" + Guid.NewGuid().ToString("N"),
+                    gatewayRef: dto.PreferenceId,
                     assinaturaId: assinatura.Id,
                     pedidoId: pedido.Id,
                     tenantId: tenantId,
@@ -297,8 +340,10 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             return CommandResult.Ok("Sessão de checkout iniciada com sucesso!", new
             {
                 PedidoId = pedido.Id,
+                FaturaId = fatura.Id,
                 SessaoId = sessaoExistente.Id,
-                CheckoutUrl = "https://checkout.epros.com/session/" + sessaoExistente.GatewayRef,
+                PreferenceId = dto.PreferenceId,
+                CheckoutUrl = dto.InitPoint,
                 Status = sessaoExistente.Status
             });
         }

@@ -109,5 +109,16 @@ namespace Epros.API.Controllers
             if (!result.Sucesso) return UnprocessableEntity(result);
             return Ok(result);
         }
+
+        /// <summary>1.08B — Emite o BOLETO da fatura no gateway ativo (concilia pelo webhook unificado).</summary>
+        [HttpPost("{id}/gerar-boleto")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> GerarBoleto(Guid id)
+        {
+            var result = await _mediator.Send(new GerarBoletoCommand(id));
+            if (!result.Sucesso) return UnprocessableEntity(result);
+            return Ok(result);
+        }
     }
 }

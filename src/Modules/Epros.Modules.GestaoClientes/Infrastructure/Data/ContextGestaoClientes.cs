@@ -16,6 +16,7 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
         public DbSet<AssinaturaCliente> AssinaturasClientes => Set<AssinaturaCliente>();
         public DbSet<PagamentoFatura> PagamentosFaturas => Set<PagamentoFatura>();
         public DbSet<ReciboPagamento> RecibosPagamento => Set<ReciboPagamento>();
+        public DbSet<MeioPagamentoCliente> MeiosPagamentoClientes => Set<MeioPagamentoCliente>();
         public DbSet<ConfiguracaoGatewayPagamento> ConfiguracoesGatewayPagamento => Set<ConfiguracaoGatewayPagamento>();
         public DbSet<ComposicaoFaturamento> ComposicoesFaturamento => Set<ComposicaoFaturamento>();
         public DbSet<HistoricoReajuste> HistoricosReajustes => Set<HistoricoReajuste>();
@@ -253,6 +254,10 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 // Dados da cobrança PIX (payloads podem ser longos → text).
                 entity.Property(p => p.QrCode).HasColumnType("text");
                 entity.Property(p => p.QrCodeBase64).HasColumnType("text");
+                // 1.08B — dados de boleto (linha digitável / código de barras / URL do PDF).
+                entity.Property(p => p.LinhaDigitavel).HasMaxLength(100);
+                entity.Property(p => p.CodigoBarras).HasMaxLength(100);
+                entity.Property(p => p.UrlBoleto).HasColumnType("text");
             });
 
             modelBuilder.Entity<ConfiguracaoGatewayPagamento>(entity =>
@@ -283,6 +288,23 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 entity.HasOne<Fatura>()
                       .WithMany()
                       .HasForeignKey(r => r.FaturaId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // 1.08B — Meio de pagamento salvo do cliente (cartão-on-file tokenizado). Só metadados +
+            // identificadores opacos do gateway (PCI: nunca PAN/CVV).
+            modelBuilder.Entity<MeioPagamentoCliente>(entity =>
+            {
+                entity.HasKey(m => m.Id);
+                entity.Property(m => m.Tipo).HasMaxLength(20);
+                entity.Property(m => m.Bandeira).HasMaxLength(30);
+                entity.Property(m => m.UltimosQuatro).HasMaxLength(4);
+                entity.Property(m => m.CustomerIdGateway).HasMaxLength(100);
+                entity.Property(m => m.CardIdGateway).HasMaxLength(100);
+                entity.HasIndex(m => new { m.ClienteId, m.Ativo }).HasDatabaseName("ix_meios_pagamento_cliente_cliente_ativo");
+                entity.HasOne<Cliente>()
+                      .WithMany()
+                      .HasForeignKey(m => m.ClienteId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 

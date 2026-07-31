@@ -43,17 +43,21 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
         private readonly ContextGestaoClientes _context;
         private readonly IPaymentGateway _paymentGateway;
         private readonly ISegredoCofreService _cofreService;
+        private readonly Epros.Modules.GestaoClientes.Application.Services.FaturaLiquidacaoService _liquidacao;
         private readonly ILogger<ProcessarWebhookPagamentoCommandHandler>? _logger;
 
         public ProcessarWebhookPagamentoCommandHandler(
             ContextGestaoClientes context,
             IPaymentGateway paymentGateway,
             ISegredoCofreService cofreService,
+            Epros.Modules.GestaoClientes.Application.Services.FaturaLiquidacaoService? liquidacao = null,
             ILogger<ProcessarWebhookPagamentoCommandHandler>? logger = null)
         {
             _context = context;
             _paymentGateway = paymentGateway;
             _cofreService = cofreService;
+            // Fallback para o serviço sem estado — mantém compatibilidade dos call sites (testes) 3-arg.
+            _liquidacao = liquidacao ?? new Epros.Modules.GestaoClientes.Application.Services.FaturaLiquidacaoService(context);
             _logger = logger;
         }
 
@@ -142,85 +146,17 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             var tarifa = pg.ValorTarifa;
             var liquido = pg.ValorLiquido ?? (valorBruto - (tarifa ?? 0m));
 
-            // 6a) Baixa da fatura + split de comissão (mesma apuração do BaixarFaturaCommandHandler, porém
-            // sem depender de contexto de tenant HTTP — o webhook chega anônimo).
-            await BaixarFaturaComComissaoAsync(fatura, alteradoPor, cancellationToken);
-
-            // 6b) Liquida o PagamentoFatura PIX pendente (criado em GerarCobrancaPixCommandHandler) com os
-            // valores reais do gateway. Se não existir, cria o registro já liquidado.
-            var pagamento = await _context.PagamentosFaturas
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(p => p.FaturaId == fatura.Id
-                                          && (p.IdentificadorPagamento == paymentId
-                                              || (p.TipoPagamento == "PIX" && p.Status == PagamentoFaturaStatus.Pending))
-                                          && p.DeletadoEm == null, cancellationToken);
-
-            if (pagamento == null)
-            {
-                pagamento = new PagamentoFatura(
-                    faturaId: fatura.Id,
-                    tipoPagamento: "PIX",
-                    status: PagamentoFaturaStatus.Paid,
-                    valorPago: valorBruto,
-                    valorTarifa: tarifa,
-                    identificadorPagamento: paymentId,
-                    pagoManualmente: false,
-                    dataPagamento: DateTime.UtcNow,
-                    tenantId: fatura.TenantId,
-                    criadoPor: alteradoPor);
-                pagamento.Liquidar(valorBruto, tarifa, alteradoPor, liquido, pg.DataAprovacao);
-                _context.PagamentosFaturas.Add(pagamento);
-            }
-            else
-            {
-                pagamento.Liquidar(valorBruto, tarifa, alteradoPor, liquido, pg.DataAprovacao);
-            }
-
-            // 6c) Ativa a assinatura mais recente do cliente + move o StatusSaaS do tenant para Ativo (§12).
-            var assinatura = await _context.AssinaturasClientes
-                .IgnoreQueryFilters()
-                .Where(a => a.ClienteId == fatura.ClienteId && a.DeletadoEm == null && !a.Arquivada)
-                .OrderByDescending(a => a.CriadoEm)
+            // Descobre o meio pelo PagamentoFatura pendente (PIX/Boleto); default PIX.
+            var meio = await _context.PagamentosFaturas.IgnoreQueryFilters()
+                .Where(p => p.FaturaId == fatura.Id && (p.IdentificadorPagamento == paymentId || p.Status == PagamentoFaturaStatus.Pending) && p.DeletadoEm == null)
+                .OrderByDescending(p => p.CriadoEm)
+                .Select(p => p.TipoPagamento)
                 .FirstOrDefaultAsync(cancellationToken);
+            if (string.IsNullOrWhiteSpace(meio)) meio = "PIX";
 
-            var cliente = await _context.Clientes
-                .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(c => c.Id == fatura.ClienteId && c.DeletadoEm == null, cancellationToken);
-
-            if (assinatura != null)
-                assinatura.Ativar(alteradoPor);
-
-            if (cliente != null)
-            {
-                if (assinatura != null)
-                    cliente.AlterarPlano(assinatura.PlanoId, alteradoPor);
-                cliente.AtualizarStatusSaaS(StatusSaaS.Ativo, alteradoPor);
-            }
-
-            // 6d) Pagamento global (histórico consolidado) + recibo do cliente.
-            if (assinatura != null)
-            {
-                _context.PagamentosGlobais.Add(new PagamentoGlobal(
-                    assinaturaId: assinatura.Id,
-                    pedidoId: null,
-                    faturaId: fatura.Id,
-                    dataPagamento: DateTime.UtcNow,
-                    valor: valorBruto,
-                    gateway: "MercadoPago",
-                    transactionId: paymentId,
-                    tenantId: fatura.TenantId,
-                    criadoPor: alteradoPor));
-            }
-
-            var recibo = ReciboPagamento.Emitir(
-                fatura: fatura,
-                pagamentoFaturaId: pagamento.Id,
-                valorPago: valorBruto,
-                meioPagamento: "PIX",
-                pagadorNome: cliente?.RazaoSocial,
-                pagadorDocumento: cliente?.Cnpj,
-                criadoPor: alteradoPor);
-            _context.RecibosPagamento.Add(recibo);
+            // 6a-6d) Liquidação (caminho único da passada A, agora compartilhado com cartão/boleto/checkout).
+            var recibo = await _liquidacao.LiquidarAsync(
+                fatura, paymentId, meio, "MercadoPago", valorBruto, tarifa, liquido, pg.DataAprovacao, alteradoPor, cancellationToken);
 
             // 6e) Idempotência: marca o evento processado.
             await RegistrarEventoProcessadoAsync(paymentId, request.Action, cancellationToken, salvar: false);
@@ -234,48 +170,8 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 ValorBruto = valorBruto,
                 Tarifa = tarifa,
                 Liquido = liquido,
-                ReciboNumero = recibo.Numero
+                ReciboNumero = recibo?.Numero
             });
-        }
-
-        /// <summary>Baixa a fatura apurando o split de comissão (idêntico ao BaixarFaturaCommandHandler).</summary>
-        private async Task BaixarFaturaComComissaoAsync(Fatura fatura, string alteradoPor, CancellationToken cancellationToken)
-        {
-            var cliente = await _context.Clientes.IgnoreQueryFilters()
-                .FirstOrDefaultAsync(c => c.Id == fatura.ClienteId, cancellationToken);
-
-            decimal percentualRevenda = 0, percentualVendedor = 0;
-            if (cliente != null)
-            {
-                if (cliente.RevendaId.HasValue)
-                {
-                    var revenda = await _context.Revendas.IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(r => r.Id == cliente.RevendaId.Value && r.Ativo, cancellationToken);
-                    if (revenda != null) percentualRevenda = revenda.PercentualComissao;
-                }
-                if (cliente.VendedorId.HasValue)
-                {
-                    var vendedor = await _context.Vendedores.IgnoreQueryFilters()
-                        .FirstOrDefaultAsync(v => v.Id == cliente.VendedorId.Value && v.Ativo, cancellationToken);
-                    if (vendedor != null) percentualVendedor = vendedor.PercentualComissao;
-                }
-            }
-
-            fatura.CalcularSplitComissao(percentualRevenda, percentualVendedor);
-            fatura.Baixar(alteradoPor);
-
-            var payloadComissao = new
-            {
-                FaturaId = fatura.Id,
-                ClienteId = fatura.ClienteId,
-                ValorTotal = fatura.Valor,
-                PercentualComissaoRevenda = fatura.PercentualComissaoRevenda,
-                PercentualComissaoVendedor = fatura.PercentualComissaoVendedor,
-                ValorComissaoRevenda = fatura.ValorComissaoRevenda,
-                ValorComissaoVendedor = fatura.ValorComissaoVendedor,
-                ApuradoEm = DateTime.UtcNow
-            };
-            _context.OutboxMessages.Add(new OutboxMessage(fatura.TenantId, "ComissaoApuradaEvent", JsonSerializer.Serialize(payloadComissao)));
         }
 
         /// <summary>Prefere a config global (plataforma) com segredo; senão qualquer config ativa.</summary>

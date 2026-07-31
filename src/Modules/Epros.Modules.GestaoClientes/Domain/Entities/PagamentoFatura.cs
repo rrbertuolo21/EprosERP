@@ -25,6 +25,12 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public string? QrCodeBase64 { get; private set; }   // imagem do QR em base64
         public string? TicketUrl { get; private set; }      // URL do comprovante/checkout no gateway
 
+        // 1.08B — Dados da cobrança BOLETO gerada no gateway (concilia pelo MESMO webhook unificado).
+        public string? LinhaDigitavel { get; private set; }     // linha digitável do boleto
+        public string? CodigoBarras { get; private set; }       // código de barras do boleto
+        public string? UrlBoleto { get; private set; }          // URL do PDF/visualização do boleto
+        public DateTime? DataVencimentoBoleto { get; private set; }
+
         protected PagamentoFatura() { } // EF Core
 
         public PagamentoFatura(
@@ -70,6 +76,23 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             TicketUrl = ticketUrl;
             if (dataExpiracao.HasValue)
                 DataExpiracao = dataExpiracao;
+            Status = PagamentoFaturaStatus.Pending;
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>
+        /// 1.08B — Registra os dados de um BOLETO gerado no gateway (linha digitável, código de barras,
+        /// vencimento e URL do PDF). Mantém o pagamento em <see cref="PagamentoFaturaStatus.Pending"/> até a
+        /// confirmação via webhook unificado (mesmo caminho de conciliação do PIX real).
+        /// </summary>
+        public void RegistrarCobrancaBoleto(string? identificadorPagamento, string? linhaDigitavel, string? codigoBarras, string? urlBoleto, DateTime? dataVencimento, string alteradoPor)
+        {
+            if (!string.IsNullOrWhiteSpace(identificadorPagamento))
+                IdentificadorPagamento = identificadorPagamento;
+            LinhaDigitavel = linhaDigitavel;
+            CodigoBarras = codigoBarras;
+            UrlBoleto = urlBoleto;
+            DataVencimentoBoleto = dataVencimento;
             Status = PagamentoFaturaStatus.Pending;
             MarcarAlterado(alteradoPor);
         }

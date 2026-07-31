@@ -129,6 +129,18 @@ namespace Epros.Tests
 
             public Task<CommandResult> TestarConexaoAsync(ConfiguracaoGatewayPagamento config, CancellationToken cancellationToken = default)
                 => Task.FromResult(CommandResult.Ok("ok"));
+
+            public Task<CommandResult> GerarBoletoAsync(Fatura fatura, ConfiguracaoGatewayPagamento config, Epros.Modules.GestaoClientes.Application.Interfaces.DadosPagador pagador, DateTime dataVencimento, CancellationToken cancellationToken = default)
+                => Task.FromResult(CommandResult.Ok("ok", new Epros.Modules.GestaoClientes.Application.Interfaces.CobrancaBoletoResultado("boleto-1", "0019050095", "03399", dataVencimento, "https://mp/boleto.pdf", "pending")));
+
+            public Task<CommandResult> CriarCartaoOnFileAsync(ConfiguracaoGatewayPagamento config, Epros.Modules.GestaoClientes.Application.Interfaces.DadosPagador pagador, string cardToken, CancellationToken cancellationToken = default)
+                => Task.FromResult(CommandResult.Ok("ok", new Epros.Modules.GestaoClientes.Application.Interfaces.CartaoOnFileResultado("cus_1", "card_1", "visa", "4242", 12, 2030)));
+
+            public Task<CommandResult> CobrarCartaoAsync(Fatura fatura, ConfiguracaoGatewayPagamento config, string customerId, string cardId, Epros.Modules.GestaoClientes.Application.Interfaces.DadosPagador pagador, CancellationToken cancellationToken = default)
+                => Task.FromResult(CommandResult.Ok("ok", new Epros.Modules.GestaoClientes.Application.Interfaces.ConsultaPagamentoResultado("cardpay-1", _status, _valor, _tarifa, DateTime.UtcNow, fatura.Id.ToString(), _liquido)));
+
+            public Task<CommandResult> CriarPreferenciaCheckoutAsync(Fatura fatura, ConfiguracaoGatewayPagamento config, string descricao, Epros.Modules.GestaoClientes.Application.Interfaces.DadosPagador pagador, string? urlRetorno, CancellationToken cancellationToken = default)
+                => Task.FromResult(CommandResult.Ok("ok", new Epros.Modules.GestaoClientes.Application.Interfaces.PreferenciaCheckoutResultado("pref-1", "https://mp/checkout/pref-1")));
         }
 
         #endregion

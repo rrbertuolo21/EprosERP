@@ -8,6 +8,7 @@
  *
  * Endpoints: GET /aplicativo/assinaturas/faturas (filtradas por vencidas),
  *            POST /aplicativo/assinaturas/faturas/{id}/pix
+ *            POST /aplicativo/assinaturas/faturas/{id}/boleto  (1.08B)
  */
 import { ref, onMounted, computed } from 'vue'
 import { useApi, extrairDados } from '~/composables/useApi'
@@ -120,6 +121,47 @@ function copiarCodigoPix() {
   setTimeout(() => (copiado.value = false), 2000)
 }
 
+// 1.08B — Boleto: emite via gateway (concilia pelo mesmo webhook do PIX) e mostra linha digitável/PDF.
+interface BoletoResponse {
+  linhaDigitavel?: string
+  codigoBarras?: string
+  urlBoleto?: string
+  dataVencimento?: string
+}
+const boletoDialogVisivel = ref(false)
+const gerandoBoleto = ref(false)
+const boletoData = ref<BoletoResponse | null>(null)
+const boletoCopiado = ref(false)
+
+async function gerarBoleto(fatura: Fatura) {
+  gerandoBoleto.value = true
+  try {
+    const resposta = await useApi<{ dados?: BoletoResponse; data?: BoletoResponse }>(
+      '/aplicativo/assinaturas/faturas/{id}/boleto',
+      { method: 'POST', params: { id: fatura.id } }
+    )
+    const dados = extrairDados<BoletoResponse>(resposta)
+    if (dados) {
+      boletoData.value = dados
+      boletoDialogVisivel.value = true
+      boletoCopiado.value = false
+    } else {
+      toast.error('Não foi possível gerar o boleto.')
+    }
+  } catch (e) {
+    toast.error(obterMensagemErro(e))
+  } finally {
+    gerandoBoleto.value = false
+  }
+}
+
+function copiarLinhaDigitavel() {
+  if (!boletoData.value?.linhaDigitavel) return
+  navigator.clipboard.writeText(boletoData.value.linhaDigitavel)
+  boletoCopiado.value = true
+  setTimeout(() => (boletoCopiado.value = false), 2000)
+}
+
 function irParaPagina(p: number) {
   pagina.value = p
   void buscarFaturasVencidas()
@@ -161,6 +203,9 @@ onMounted(() => {
           <button type="button" class="btn btn-primary btn-sm" :disabled="gerandoPix" @click.stop="gerarPix(row)">
             Pagar com PIX
           </button>
+          <button type="button" class="btn btn-secondary btn-sm" :disabled="gerandoBoleto" @click.stop="gerarBoleto(row)">
+            Boleto
+          </button>
         </template>
       </DataTable>
     </div>
@@ -199,8 +244,35 @@ onMounted(() => {
         <button type="button" class="btn btn-secondary" @click="pixDialogVisivel = false">Fechar</button>
       </template>
     </AppDialog>
+
+    <AppDialog v-model="boletoDialogVisivel" title="Boleto da assinatura" width="520px">
+      <div v-if="boletoData" class="pix-body">
+        <div class="field">
+          <label class="field-label">Linha digitável</label>
+          <div class="copia-cola-wrapper">
+            <input type="text" class="input" readonly :value="boletoData.linhaDigitavel" />
+            <button type="button" class="btn btn-secondary btn-sm" @click="copiarLinhaDigitavel">
+              {{ boletoCopiado ? 'Copiado!' : 'Copiar' }}
+            </button>
+          </div>
+        </div>
+
+        <p v-if="boletoData.dataVencimento" class="pix-expira">
+          Vencimento: {{ formatarData(boletoData.dataVencimento) }}
+        </p>
+
+        <a v-if="boletoData.urlBoleto" :href="boletoData.urlBoleto" target="_blank" rel="noopener" class="btn btn-primary btn-sm">
+          Abrir boleto (PDF)
+        </a>
+      </div>
+
+      <template #footer>
+        <button type="button" class="btn btn-secondary" @click="boletoDialogVisivel = false">Fechar</button>
+      </template>
+    </AppDialog>
   </div>
 </template>
+
 
 <style scoped>
 .faturas-vencidas-wrapper {
