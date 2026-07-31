@@ -93,8 +93,11 @@ namespace Epros.API.Controllers
             return Ok(result);
         }
 
+        // 1.08A — ALIAS INTERNO/simulado (payload próprio com FaturaId/PedidoId prontos). NÃO é o webhook
+        // real do Mercado Pago. O motor de cobrança CANÔNICO que concilia o PIX real (valida x-signature,
+        // consulta o gateway e usa a tarifa real) é POST /api/v1/plataforma/clientes/webhooks/mercadopago.
         [HttpPost("webhook")]
-        [AllowAnonymous] // Webhook externo de pagamento: validado por assinatura no handler, não por token.
+        [AllowAnonymous] // Webhook interno/simulado: idempotência por TransactionId no handler.
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<CommandResult>> ProcessarWebhook([FromBody] ProcessarWebhookPagamentoCommand command)

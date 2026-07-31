@@ -145,8 +145,13 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Gateways
                 decimal? valor = LerDecimal(root, "transaction_amount");
                 decimal? tarifa = SomarTarifas(root);
                 var dataAprovacao = LerData(root, "date_approved");
+                var externalReference = LerString(root, "external_reference");
+                // Líquido informado pelo gateway (transaction_details.net_received_amount) — fidelidade de dado.
+                decimal? liquido = null;
+                if (root.TryGetProperty("transaction_details", out var td) && td.ValueKind == JsonValueKind.Object)
+                    liquido = LerDecimal(td, "net_received_amount");
 
-                var dto = new ConsultaPagamentoResultado(paymentId, status, valor, tarifa, dataAprovacao);
+                var dto = new ConsultaPagamentoResultado(paymentId, status, valor, tarifa, dataAprovacao, externalReference, liquido);
                 return CommandResult.Ok("Consulta realizada com sucesso.", dto);
             }
             catch (TaskCanceledException)

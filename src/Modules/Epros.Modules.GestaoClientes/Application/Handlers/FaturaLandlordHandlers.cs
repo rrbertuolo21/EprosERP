@@ -285,4 +285,37 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             };
         }
     }
+
+    /// <summary>1.08A — Obtém o recibo mais recente de uma fatura (para download pelo cliente).</summary>
+    public class ObterReciboPorFaturaQueryHandler : IQueryHandler<ObterReciboPorFaturaQuery, ReciboPagamentoDto?>
+    {
+        private readonly ContextGestaoClientes _context;
+
+        public ObterReciboPorFaturaQueryHandler(ContextGestaoClientes context)
+        {
+            _context = context;
+        }
+
+        public async Task<ReciboPagamentoDto?> Handle(ObterReciboPorFaturaQuery request, CancellationToken cancellationToken)
+        {
+            var r = await _context.RecibosPagamento
+                .Where(x => x.FaturaId == request.FaturaId)
+                .OrderByDescending(x => x.CriadoEm)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (r == null) return null;
+
+            return new ReciboPagamentoDto
+            {
+                Id = r.Id,
+                Numero = r.Numero,
+                FaturaId = r.FaturaId,
+                ClienteId = r.ClienteId,
+                Valor = r.Valor,
+                DataPagamento = r.DataPagamento,
+                MeioPagamento = r.MeioPagamento,
+                PagadorNome = r.PagadorNome,
+                PagadorDocumento = r.PagadorDocumento
+            };
+        }
+    }
 }

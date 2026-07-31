@@ -32,6 +32,10 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public string? OperadorAprovacao { get; private set; }
         public string? JustificativaAprovacao { get; private set; }
 
+        // 1.08A — Instante em que o fim do trial foi processado (fatura da 1ª mensalidade gerada + cobrança
+        // disparada). Fonte de idempotência do job de fim-de-trial: preenchido → o trial não é reconvertido.
+        public DateTime? TrialConvertidoEm { get; private set; }
+
         protected AssinaturaCliente() { } // EF Core
 
         public AssinaturaCliente(
@@ -86,6 +90,16 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
                 DataFim = DateTime.UtcNow.AddDays(30);
             }
             
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>
+        /// 1.08A — Marca que o fim do trial já foi processado (fatura gerada + cobrança disparada),
+        /// tornando o job de fim-de-trial idempotente. Não altera o Status da assinatura.
+        /// </summary>
+        public void MarcarTrialConvertido(string alteradoPor)
+        {
+            TrialConvertidoEm = DateTime.UtcNow;
             MarcarAlterado(alteradoPor);
         }
 

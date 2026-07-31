@@ -114,6 +114,9 @@ try
     });
     builder.Services.AddScoped<Epros.Modules.GestaoClientes.Application.Interfaces.IPaymentGateway, Epros.Modules.GestaoClientes.Infrastructure.Gateways.MercadoPagoGateway>();
 
+    // 1.08A — Cobrança recorrente por cartão-on-file: ponto de extensão (no-op na passada A; cartão/boleto na passada B).
+    builder.Services.AddScoped<Epros.Modules.GestaoClientes.Application.Interfaces.ICobrancaRecorrenteGateway, Epros.Modules.GestaoClientes.Infrastructure.Gateways.CobrancaRecorrenteGatewayNoop>();
+
     // Registra o serviço de notificações (Mock para homologação local) (REG-020)
     builder.Services.AddScoped<INotificacaoService, Epros.Infrastructure.Services.MockNotificacaoService>();
     
@@ -307,6 +310,15 @@ try
             .WithIdentity("ReajusteContratoJob-trigger")
             // Cron expression para rodar mensalmente no dia 1 às 00:30
             .WithCronSchedule("0 30 0 1 * ?"));
+
+        // 1.08A — Encerra trials expirados (gera 1ª fatura + dispara cobrança). Diário às 00:20.
+        var encerrarTrialsJobKey = new JobKey("EncerrarTrialsExpiradosJob");
+        q.AddJob<Epros.Modules.GestaoClientes.Infrastructure.Jobs.EncerrarTrialsExpiradosJob>(opts => opts.WithIdentity(encerrarTrialsJobKey));
+
+        q.AddTrigger(opts => opts
+            .ForJob(encerrarTrialsJobKey)
+            .WithIdentity("EncerrarTrialsExpiradosJob-trigger")
+            .WithCronSchedule("0 20 0 * * ?"));
 
         var outboxJobKey = new JobKey("OutboxProcessorJob");
         q.AddJob<OutboxProcessorJob>(opts => opts.WithIdentity(outboxJobKey));

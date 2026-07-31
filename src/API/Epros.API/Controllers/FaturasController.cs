@@ -88,6 +88,17 @@ namespace Epros.API.Controllers
             return Ok(result);
         }
 
+        /// <summary>1.08A — Recibo de pagamento da fatura quitada (documento simples; NFS-e diferida).</summary>
+        [HttpGet("{id}/recibo")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ObterRecibo(Guid id)
+        {
+            var recibo = await _mediator.Send(new ObterReciboPorFaturaQuery(id));
+            if (recibo == null) return NotFound();
+            return Ok(recibo);
+        }
+
         /// <summary>Gera a cobrança PIX da fatura no gateway ativo (config por tenant, senão global).</summary>
         [HttpPost("{id}/gerar-cobranca-pix")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]

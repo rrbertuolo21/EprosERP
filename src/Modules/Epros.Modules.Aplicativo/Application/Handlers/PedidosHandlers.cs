@@ -479,6 +479,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                             if (cliente != null)
                             {
                                 cliente.AlterarPlano(pedido.PlanoId, alteradoPor);
+                                cliente.AtualizarStatusSaaS(StatusSaaS.Ativo, alteradoPor);
                             }
                         }
                     }
@@ -509,6 +510,10 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                         );
                         _context.PagamentosFaturas.Add(pgFatura);
 
+                        // 1.08A — recibo do pagamento offline (transferência/comprovante).
+                        _context.RecibosPagamento.Add(ReciboPagamento.Emitir(
+                            fatura, pgFatura.Id, pagamento.Valor, "Transferencia", null, null, alteradoPor));
+
                         // Se ainda não ativou a assinatura
                         if (assinaturaId == null)
                         {
@@ -527,6 +532,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                                 if (cliente != null)
                                 {
                                     cliente.AlterarPlano(assinatura.PlanoId, alteradoPor);
+                                    cliente.AtualizarStatusSaaS(StatusSaaS.Ativo, alteradoPor);
                                 }
                             }
                         }
@@ -631,9 +637,13 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                         .IgnoreQueryFilters()
                         .FirstOrDefaultAsync(p => p.FaturaId == fatura.Id && p.DeletadoEm == null, cancellationToken);
 
+                    // 1.08A — caminho INTERNO/simulado (não é o webhook real do MP). A tarifa REAL só é
+                    // conhecida consultando o gateway, o que acontece no motor unificado
+                    // (GestaoClientes.ProcessarWebhookPagamentoCommandHandler / webhook mercadopago). Aqui NÃO
+                    // fabricamos tarifa: registramos tarifa desconhecida (null) → líquido = bruto.
                     if (pagFatura != null)
                     {
-                        pagFatura.Liquidar(request.Valor, 0.75m, alteradoPor);
+                        pagFatura.Liquidar(request.Valor, null, alteradoPor);
                     }
                     else
                     {
@@ -642,7 +652,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                             tipoPagamento: request.Gateway,
                             status: PagamentoFaturaStatus.Paid,
                             valorPago: request.Valor,
-                            valorTarifa: 0.75m,
+                            valorTarifa: null,
                             identificadorPagamento: request.TransactionId,
                             pagoManualmente: false,
                             dataPagamento: DateTime.UtcNow,
@@ -651,6 +661,10 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                         );
                         _context.PagamentosFaturas.Add(pagFatura);
                     }
+
+                    // 1.08A — recibo de pagamento (documento simples; NFS-e diferida).
+                    _context.RecibosPagamento.Add(ReciboPagamento.Emitir(
+                        fatura, pagFatura.Id, request.Valor, request.Gateway, null, null, alteradoPor));
 
                     // Ativa a assinatura
                     var assinatura = await _context.AssinaturasClientes
@@ -668,6 +682,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                         if (cliente != null)
                         {
                             cliente.AlterarPlano(assinatura.PlanoId, alteradoPor);
+                            cliente.AtualizarStatusSaaS(StatusSaaS.Ativo, alteradoPor); // §12: awaiting-payment → active
                         }
                     }
                 }
@@ -700,6 +715,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                         if (cliente != null)
                         {
                             cliente.AlterarPlano(pedido.PlanoId, alteradoPor);
+                            cliente.AtualizarStatusSaaS(StatusSaaS.Ativo, alteradoPor); // §12: awaiting-payment → active
                         }
                     }
 
@@ -712,12 +728,13 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     {
                         faturaVinculada.Baixar(alteradoPor);
 
+                        // 1.08A — tarifa desconhecida no caminho interno (null), NÃO fabricada.
                         var pagFatura = new PagamentoFatura(
                             faturaId: faturaVinculada.Id,
                             tipoPagamento: request.Gateway,
                             status: PagamentoFaturaStatus.Paid,
                             valorPago: request.Valor,
-                            valorTarifa: 0.75m,
+                            valorTarifa: null,
                             identificadorPagamento: request.TransactionId,
                             pagoManualmente: false,
                             dataPagamento: DateTime.UtcNow,
@@ -725,6 +742,10 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                             criadoPor: alteradoPor
                         );
                         _context.PagamentosFaturas.Add(pagFatura);
+
+                        // 1.08A — recibo de pagamento (documento simples; NFS-e diferida).
+                        _context.RecibosPagamento.Add(ReciboPagamento.Emitir(
+                            faturaVinculada, pagFatura.Id, request.Valor, request.Gateway, null, null, alteradoPor));
                     }
                 }
             }

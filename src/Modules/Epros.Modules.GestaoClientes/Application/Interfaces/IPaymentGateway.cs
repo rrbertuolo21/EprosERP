@@ -24,7 +24,9 @@ namespace Epros.Modules.GestaoClientes.Application.Interfaces
         string Status,
         decimal? ValorTransacao,
         decimal? ValorTarifa,
-        DateTime? DataAprovacao);
+        DateTime? DataAprovacao,
+        string? ExternalReference = null,
+        decimal? ValorLiquido = null);
 
     /// <summary>
     /// Abstração do lado OUTBOUND de pagamento (criação da cobrança e consulta).

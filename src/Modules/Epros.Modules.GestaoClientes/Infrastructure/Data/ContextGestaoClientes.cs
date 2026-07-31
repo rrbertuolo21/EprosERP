@@ -15,6 +15,7 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
         public DbSet<GrupoPlano> GrupoPlanos => Set<GrupoPlano>();
         public DbSet<AssinaturaCliente> AssinaturasClientes => Set<AssinaturaCliente>();
         public DbSet<PagamentoFatura> PagamentosFaturas => Set<PagamentoFatura>();
+        public DbSet<ReciboPagamento> RecibosPagamento => Set<ReciboPagamento>();
         public DbSet<ConfiguracaoGatewayPagamento> ConfiguracoesGatewayPagamento => Set<ConfiguracaoGatewayPagamento>();
         public DbSet<ComposicaoFaturamento> ComposicoesFaturamento => Set<ComposicaoFaturamento>();
         public DbSet<HistoricoReajuste> HistoricosReajustes => Set<HistoricoReajuste>();
@@ -267,6 +268,22 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 entity.Property(g => g.TenantAlvo).HasMaxLength(100);
                 entity.HasIndex(g => new { g.TenantAlvo, g.Provedor, g.Ativo })
                       .HasDatabaseName("ix_config_gateway_pagamento_tenant_provedor_ativo");
+            });
+
+            // 1.08A — Recibo de pagamento (documento simples; NFS-e é diferida). Número único por recibo.
+            modelBuilder.Entity<ReciboPagamento>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.Numero).HasMaxLength(40);
+                entity.Property(r => r.MeioPagamento).HasMaxLength(30);
+                entity.Property(r => r.PagadorNome).HasMaxLength(200);
+                entity.Property(r => r.PagadorDocumento).HasMaxLength(30);
+                entity.HasIndex(r => r.Numero).IsUnique().HasDatabaseName("ux_recibos_pagamento_numero");
+                entity.HasIndex(r => r.FaturaId).HasDatabaseName("ix_recibos_pagamento_fatura");
+                entity.HasOne<Fatura>()
+                      .WithMany()
+                      .HasForeignKey(r => r.FaturaId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<Cupom>(entity =>

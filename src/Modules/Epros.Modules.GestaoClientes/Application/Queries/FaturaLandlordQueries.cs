@@ -13,6 +13,22 @@ namespace Epros.Modules.GestaoClientes.Application.Queries
 
     public record ObterFaturaPorIdQuery(Guid Id) : IQuery<FaturaDetalhadaDto>;
 
+    /// <summary>1.08A — Recibo(s) de pagamento de uma fatura (documento simples; NFS-e diferida).</summary>
+    public record ObterReciboPorFaturaQuery(Guid FaturaId) : IQuery<ReciboPagamentoDto?>;
+
+    public class ReciboPagamentoDto
+    {
+        public Guid Id { get; set; }
+        public string Numero { get; set; } = string.Empty;
+        public Guid FaturaId { get; set; }
+        public Guid ClienteId { get; set; }
+        public decimal Valor { get; set; }
+        public DateTime DataPagamento { get; set; }
+        public string MeioPagamento { get; set; } = string.Empty;
+        public string? PagadorNome { get; set; }
+        public string? PagadorDocumento { get; set; }
+    }
+
     public class FaturaListaDto
     {
         public Guid Id { get; set; }
