@@ -414,6 +414,29 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             var (empresasDto, exigeSelecao, empresaUnica) =
                 await LerEmpresasAsync(context, contextGestao, usuario.Id, tenantEfetivo, cancellationToken);
 
+            // Sem acesso a NENHUMA empresa (decisão Rafael, item 2): a identidade autenticou mas não tem
+            // membership ativa NEM vínculo de empresa. Não é erro cru e não entra num tenant vazio: devolve
+            // o estado SemAcesso para o front oferecer onboarding/contato. O token de sessão já foi emitido
+            // (identidade autenticada), então "trocar de empresa depois" e o onboarding continuam possíveis.
+            // Nota: usuário convidado tem vínculo de empresa (empresasDto.Count > 0), logo NÃO cai aqui —
+            // preserva o fallback legado do tenant de origem para quem só tem UsuarioEmpresa, sem membership.
+            if (acessos.Count == 0 && empresasDto.Count == 0)
+            {
+                var dtoSemAcesso = new AuthResponseDto(
+                    Token: tokenSessao,
+                    Expiracao: expiracaoSessao,
+                    UsuarioId: usuario.Id,
+                    Nome: usuario.Nome,
+                    Email: usuario.Email,
+                    ExigeSelecaoEmpresa: false,
+                    TenantId: usuario.TenantId,
+                    Block: false,
+                    Empresas: null,
+                    SemAcesso: true);
+
+                return CommandResult.Ok("Autenticação realizada, mas você ainda não tem acesso a nenhuma empresa.", dtoSemAcesso);
+            }
+
             var block = await TenantInadimplenteAsync(contextGestao, tenantEfetivo, cancellationToken);
 
             var tokenRetorno = tokenSessao;

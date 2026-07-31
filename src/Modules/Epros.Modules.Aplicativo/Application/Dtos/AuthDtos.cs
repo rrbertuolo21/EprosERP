@@ -15,7 +15,11 @@ namespace Epros.Modules.Aplicativo.Application.Dtos
         // Acesso multi-tenant (1.04 PASS 2): quando a identidade global tem acesso a mais de um tenant,
         // o login não escopa direto — devolve a lista e exige seleção de tenant antes da de empresa.
         bool ExigeSelecaoTenant = false,
-        List<TenantDisponivelDto>? Tenants = null
+        List<TenantDisponivelDto>? Tenants = null,
+        // UX de entrada (decisão Rafael): identidade que autenticou mas não tem acesso a NENHUMA
+        // empresa (0 memberships e 0 vínculos). O login não falha (não é erro cru) — devolve este
+        // estado para o front oferecer onboarding/contato em vez de entrar num tenant vazio.
+        bool SemAcesso = false
     );
 
     public record UsuarioEmpresaDto(

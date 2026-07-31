@@ -52,7 +52,9 @@
             <AppIcon name="chevron-right" :size="12" class="chevron" :class="{ open: menuAberto }" />
           </button>
           <div v-if="menuAberto" class="user-dropdown">
-            <NuxtLink to="/area-cliente/planos" class="user-dropdown-item" @click="menuAberto = false">
+            <!-- Item 5 (UX de entrada): volta aos cards de empresas SEM relogar — reusa a mesma tela.
+                 A lista é recarregada pelo token de sessão (claim), não exige novo login. -->
+            <NuxtLink to="/auth/selecionar-tenant" class="user-dropdown-item" @click="menuAberto = false">
               <AppIcon name="building" :size="15" /> Trocar Empresa
             </NuxtLink>
             <NuxtLink to="/area-cliente/minhas-faturas" class="user-dropdown-item" @click="menuAberto = false">

@@ -119,6 +119,20 @@ async function processar() {
       return
     }
 
+    // 2b. Sem acesso a nenhuma empresa → mesma tela de seleção no estado vazio (onboarding/contato).
+    if (dados.semAcesso) {
+      const partial = {
+        email: dados.email,
+        usuarioId: dados.usuarioId,
+        tenantId: dados.tenantId,
+        tenants: [],
+        semAcesso: true
+      }
+      localStorage.setItem('epros_user', JSON.stringify(partial))
+      router.replace('/auth/selecionar-tenant')
+      return
+    }
+
     // 3. Tenant único → entra direto (grava empresa ativa como no login por senha).
     const userData = {
       email: dados.email,

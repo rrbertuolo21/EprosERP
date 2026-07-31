@@ -215,8 +215,25 @@ const handleLogin = async () => {
         return
       }
 
+      // Sem acesso a nenhuma empresa (decisão UX): autenticou mas não tem vínculo. Não é erro —
+      // reusa a tela de seleção no estado vazio, que oferece onboarding/contato.
+      if (dados.semAcesso) {
+        const partial = {
+          email: dados.email ?? form.email,
+          usuarioId: dados.usuarioId,
+          tenantId: dados.tenantId,
+          tenants: [],
+          semAcesso: true
+        }
+        localStorage.setItem('epros_user', JSON.stringify(partial))
+        loading.value = false
+        router.push('/auth/selecionar-tenant')
+        return
+      }
+
       const userData = {
         email: dados.email ?? form.email,
+        usuarioId: dados.usuarioId,
         tenantId: dados.tenantId ?? form.tenant.toLowerCase().trim(),
         tenantName: dados.nome ?? 'Empresa',
         planName: 'Plano Demo',

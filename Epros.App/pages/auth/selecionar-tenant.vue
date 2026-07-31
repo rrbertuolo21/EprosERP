@@ -30,6 +30,8 @@ interface SessaoParcial {
   usuarioId?: string
   tenantId?: string
   tenants?: TenantDisponivel[]
+  /** Identidade autenticada mas sem acesso a nenhuma empresa (backend: AuthResponseDto.SemAcesso). */
+  semAcesso?: boolean
 }
 
 const router = useRouter()
@@ -39,6 +41,18 @@ const emailUsuario = ref<string>('')
 const carregando = ref(true)
 const selecionando = ref<string>('')
 const errorMessage = ref<string>('')
+/** Estado vazio (0 empresas): mostra onboarding/contato em vez de cards. */
+const semAcesso = ref(false)
+
+/** Rótulo amigável do papel do usuário no tenant (enum PapelAcessoTenant → PT-BR). */
+function papelLabel(papel?: string): string {
+  switch (papel) {
+    case 'Proprietario': return 'Proprietário'
+    case 'ContadorParceiro': return 'Contador Parceiro'
+    case 'Membro': return 'Membro'
+    default: return papel || ''
+  }
+}
 
 /** Extrai a mensagem de erro do envelope CommandResult devolvido pelo ofetch (422). */
 function extrairErro(e: unknown, fallback: string): string {
@@ -51,40 +65,45 @@ function extrairErro(e: unknown, fallback: string): string {
 async function carregar() {
   carregando.value = true
   errorMessage.value = ''
-  const raw = import.meta.client ? localStorage.getItem('epros_user') : null
-  if (!raw) {
+
+  // A tela reusa-se em dois momentos: logo após o login (sessão parcial com a lista) e no "Trocar
+  // Empresa" já autenticado (item 5). Em ambos, a autenticação é o TOKEN de sessão — sem token, login.
+  const token = import.meta.client ? localStorage.getItem('epros_token') : null
+  if (!token) {
     router.replace('/')
     return
   }
+
+  const raw = import.meta.client ? localStorage.getItem('epros_user') : null
   let sessao: SessaoParcial = {}
-  try {
-    sessao = JSON.parse(raw) as SessaoParcial
-  } catch {
-    router.replace('/')
-    return
+  if (raw) {
+    try {
+      sessao = JSON.parse(raw) as SessaoParcial
+    } catch {
+      sessao = {}
+    }
   }
 
   usuarioId.value = String(sessao.usuarioId ?? '')
   emailUsuario.value = sessao.email ?? ''
+  semAcesso.value = sessao.semAcesso === true
 
-  // Preferência: lista já entregue pelo login. Fallback: recarrega do backend.
+  // Preferência: lista já entregue pelo login. Fallback (ex.: "Trocar Empresa" no meio da sessão):
+  // recarrega do backend — a identidade vem do TOKEN de sessão (claim), NÃO de query param (anti-IDOR).
   if (sessao.tenants && sessao.tenants.length) {
     tenants.value = sessao.tenants
-  } else if (usuarioId.value) {
+  } else if (!semAcesso.value) {
     try {
-      const data = await useApi<TenantDisponivel[]>('/auth/tenants-disponiveis', {
-        query: { usuarioId: usuarioId.value }
-      })
+      const data = await useApi<TenantDisponivel[]>('/auth/tenants-disponiveis')
       tenants.value = Array.isArray(data) ? data : []
     } catch (e) {
-      errorMessage.value = extrairErro(e, 'Falha ao carregar os tenants disponíveis.')
+      errorMessage.value = extrairErro(e, 'Falha ao carregar as empresas disponíveis.')
     }
   }
 
-  // Sem tenants ou sessão inválida: volta ao login.
-  if (!usuarioId.value || tenants.value.length === 0) {
-    router.replace('/')
-    return
+  // Sem nenhum tenant/empresa: NÃO volta ao login — mostra o estado vazio com CTA de onboarding.
+  if (tenants.value.length === 0) {
+    semAcesso.value = true
   }
 
   carregando.value = false
@@ -162,10 +181,11 @@ onMounted(carregar)
 
         <main class="tenant-card glass-panel">
           <header class="tenant-card-head">
-            <h2 class="tenant-title">Selecione o ambiente</h2>
+            <h2 class="tenant-title">{{ semAcesso ? 'Sem empresas disponíveis' : 'Selecione a empresa' }}</h2>
             <p class="tenant-subtitle">
               <template v-if="emailUsuario">{{ emailUsuario }} —</template>
-              você tem acesso a mais de um tenant. Escolha para continuar.
+              <template v-if="semAcesso">sua conta ainda não tem acesso a nenhuma empresa.</template>
+              <template v-else>escolha a empresa para continuar.</template>
             </p>
           </header>
 
@@ -173,8 +193,20 @@ onMounted(carregar)
             <span>❌ {{ errorMessage }}</span>
           </div>
 
-          <p v-if="carregando" class="tenant-loading">Carregando tenants…</p>
+          <p v-if="carregando" class="tenant-loading">Carregando…</p>
 
+          <!-- Estado vazio (0 empresas): onboarding/contato em vez de cards. -->
+          <div v-else-if="semAcesso" class="tenant-empty">
+            <div class="tenant-empty-icon" aria-hidden="true">🏢</div>
+            <p class="tenant-empty-text">
+              Você entrou, mas ainda não está vinculado a nenhuma empresa. Cadastre a sua empresa
+              para começar ou fale com o administrador para receber um convite de acesso.
+            </p>
+            <NuxtLink to="/cadastro" class="tenant-empty-cta">Cadastrar minha empresa</NuxtLink>
+            <a href="mailto:suporte@epros.com.br" class="tenant-empty-contact">Falar com o suporte</a>
+          </div>
+
+          <!-- N empresas: cards com nome do cliente + papel do usuário. -->
           <ul v-else class="tenant-list">
             <li v-for="t in tenants" :key="t.tenantId">
               <button
@@ -186,7 +218,7 @@ onMounted(carregar)
                 <span class="tenant-item-avatar">{{ (t.nome || t.tenantId).charAt(0).toUpperCase() }}</span>
                 <span class="tenant-item-body">
                   <span class="tenant-item-name">{{ t.nome || t.tenantId }}</span>
-                  <span v-if="t.papel" class="tenant-item-role">{{ t.papel }}</span>
+                  <span v-if="t.papel" class="tenant-item-role">{{ papelLabel(t.papel) }}</span>
                 </span>
                 <span v-if="selecionando === t.tenantId" class="spinner"></span>
                 <span v-else class="tenant-item-arrow" aria-hidden="true">→</span>
@@ -342,6 +374,49 @@ onMounted(carregar)
 .tenant-item-arrow {
   color: var(--text-muted);
   font-size: 16px;
+}
+.tenant-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  padding: 8px 4px 4px;
+}
+.tenant-empty-icon {
+  font-size: 40px;
+  line-height: 1;
+}
+.tenant-empty-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+.tenant-empty-cta {
+  display: inline-block;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.tenant-empty-cta:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+.tenant-empty-contact {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+.tenant-empty-contact:hover {
+  color: var(--primary);
+  text-decoration: underline;
 }
 .tenant-back {
   margin-top: 20px;
