@@ -122,6 +122,17 @@ try
     builder.Services.AddSingleton<IPermissaoCacheManager, Epros.Modules.Aplicativo.Application.Services.PermissaoCacheManager>();
     builder.Services.AddSingleton<Epros.Modules.GestaoClientes.Application.Contracts.IConfiguracaoGlobalCache, Epros.Modules.GestaoClientes.Infrastructure.Services.ConfiguracaoGlobalCache>();
 
+    // Login social (1.04 PASS 3): OAuth 2.0 / OIDC (Google + Microsoft). Config por IConfiguration
+    // (Autenticacao:Social:{Google|Microsoft}) — segredos via env/secret; sem hardcode. HttpClient
+    // nomeado para discovery/token/JWKS + cliente OIDC (valida id_token contra o JWKS do provedor).
+    builder.Services.Configure<Epros.Modules.Aplicativo.Application.Services.AutenticacaoSocialOptions>(
+        builder.Configuration.GetSection(Epros.Modules.Aplicativo.Application.Services.AutenticacaoSocialOptions.SecaoConfig));
+    builder.Services.AddHttpClient(Epros.Modules.Aplicativo.Infrastructure.Services.OidcSocialClient.HttpClientName, client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(15);
+    });
+    builder.Services.AddScoped<Epros.Modules.Aplicativo.Infrastructure.Services.IOidcSocialClient, Epros.Modules.Aplicativo.Infrastructure.Services.OidcSocialClient>();
+
     // Registra o interceptor de RLS
     builder.Services.AddScoped<TenantRlsInterceptor>();
 

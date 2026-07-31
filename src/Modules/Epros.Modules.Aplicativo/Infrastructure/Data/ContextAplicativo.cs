@@ -22,6 +22,8 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
         public DbSet<LogExecucaoMassa> LogsExecucaoMassa => Set<LogExecucaoMassa>();
         public DbSet<Usuario> Usuarios => Set<Usuario>();
         public DbSet<UsuarioEmpresa> UsuariosEmpresas => Set<UsuarioEmpresa>();
+        public DbSet<AcessoUsuarioTenant> AcessosUsuarioTenant => Set<AcessoUsuarioTenant>();
+        public DbSet<IdentidadeExterna> IdentidadesExternas => Set<IdentidadeExterna>();
         public DbSet<SessaoUsuario> SessoesUsuarios => Set<SessaoUsuario>();
         public DbSet<PersonalAccessToken> PersonalAccessTokens => Set<PersonalAccessToken>();
         public DbSet<HistoricoLogin> HistoricosLogin => Set<HistoricoLogin>();
@@ -217,6 +219,24 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
                 entity.HasKey(ue => ue.Id);
                 entity.HasIndex(ue => new { ue.UsuarioId, ue.EmpresaId }).IsUnique().HasDatabaseName("ix_usuario_empresas_usuario_empresa");
                 entity.Property(ue => ue.PerfilAcessoId).HasColumnName("perfil_usuario_id");
+            });
+
+            modelBuilder.Entity<AcessoUsuarioTenant>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                // Membership N:N: um vínculo por (identidade global, tenant concedido).
+                entity.HasIndex(a => new { a.UsuarioId, a.TenantId }).IsUnique().HasDatabaseName("ix_acessos_usuario_tenant_usuario_tenant");
+            });
+
+            modelBuilder.Entity<IdentidadeExterna>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.SubjectId).HasMaxLength(255);
+                entity.Property(i => i.EmailProvedor).HasMaxLength(320);
+                // Login social (1.04 PASS 3): o par (provedor, sub) identifica unicamente a conta social.
+                entity.HasIndex(i => new { i.Provedor, i.SubjectId }).IsUnique().HasDatabaseName("ix_identidades_externas_provedor_subject");
+                // Lookup por usuário (listar/gerir vínculos sociais de uma identidade).
+                entity.HasIndex(i => i.UsuarioId).HasDatabaseName("ix_identidades_externas_usuario");
             });
 
             modelBuilder.Entity<SessaoUsuario>(entity =>

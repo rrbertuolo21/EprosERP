@@ -77,6 +77,27 @@ namespace Epros.Modules.Aplicativo.Application.Commands
         }
     }
 
+    /// <summary>
+    /// Acesso multi-tenant (1.04 PASS 2): após o login global, a identidade escolhe UM tenant a que tem
+    /// acesso (membership ativa). Emite token escopado ao tenant — reaproveita o padrão de selecionar-empresa.
+    /// </summary>
+    public record SelecionarTenantCommand(
+        Guid UsuarioId,
+        string TenantId
+    ) : ICommand;
+
+    public class SelecionarTenantCommandValidator : AbstractValidator<SelecionarTenantCommand>
+    {
+        public SelecionarTenantCommandValidator()
+        {
+            RuleFor(x => x.UsuarioId)
+                .NotEmpty().WithMessage("O ID do usuário é obrigatório.");
+
+            RuleFor(x => x.TenantId)
+                .NotEmpty().WithMessage("O tenant é obrigatório.");
+        }
+    }
+
     public record SolicitarRecuperacaoSenhaCommand(
         string Email
     ) : ICommand;
@@ -196,6 +217,47 @@ namespace Epros.Modules.Aplicativo.Application.Commands
                 .NotEmpty().WithMessage("O tipo de telefone é obrigatório.")
                 .Must(t => Array.Exists(TiposTelefoneValidos, v => string.Equals(v, t, StringComparison.OrdinalIgnoreCase)))
                 .WithMessage("Tipo de telefone inválido. Valores aceitos: Fixo, Celular, Comercial, Whatsapp.");
+        }
+    }
+
+    /// <summary>
+    /// Login social (1.04 PASS 3): inicia o fluxo OAuth/OIDC (Authorization Code). Gera state + nonce,
+    /// guarda-os no servidor e devolve a URL de autorização do provedor (Google/Microsoft).
+    /// </summary>
+    public record IniciarLoginSocialCommand(
+        string Provedor
+    ) : ICommand;
+
+    public class IniciarLoginSocialCommandValidator : AbstractValidator<IniciarLoginSocialCommand>
+    {
+        public IniciarLoginSocialCommandValidator()
+        {
+            RuleFor(x => x.Provedor)
+                .NotEmpty().WithMessage("O provedor é obrigatório.");
+        }
+    }
+
+    /// <summary>
+    /// Login social (1.04 PASS 3): callback do provedor. Valida o state (anti-CSRF), troca o code por
+    /// token, valida o id_token (assinatura/emissor/audiência/nonce) e resolve a identidade: vínculo
+    /// existente → loga; e-mail verificado casa com usuário → vincula e loga; identidade nova →
+    /// encaminha ao onboarding (não cria tenant fiscal sozinho).
+    /// </summary>
+    public record CallbackLoginSocialCommand(
+        string Provedor,
+        string? Code,
+        string? State,
+        string? Error,
+        string IpAddress,
+        string UserAgent
+    ) : ICommand;
+
+    public class CallbackLoginSocialCommandValidator : AbstractValidator<CallbackLoginSocialCommand>
+    {
+        public CallbackLoginSocialCommandValidator()
+        {
+            RuleFor(x => x.Provedor)
+                .NotEmpty().WithMessage("O provedor é obrigatório.");
         }
     }
 

@@ -115,93 +115,14 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 return CommandResult.Falha(new[] { "E-mail ou senha incorretos." });
             }
 
-            // 5. Sucesso
+            // 5. Sucesso. A partir daqui, a emissão de sessão + resolução multi-tenant é compartilhada
+            //    com o login social (1.04 PASS 3) — ver AcessoMultiTenant.EmitirResultadoLoginAsync.
             usuario.ResetarFalhasLogin();
 
-            // Gerar token básico e sessão. O jti liga o JWT à SessaoUsuario (logout/revogação — REG-013).
-            var jti = Guid.NewGuid();
-            var tokenSessao = _tokenService.GerarBasico(usuario.TenantId, usuario.Id.ToString(), jti.ToString());
-            var expiracaoSessao = DateTime.UtcNow.Add(_tokenService.Validade); // Fonte única de expiração (8h — REG-024)
-
-            var sessao = new SessaoUsuario(
-                usuario.TenantId,
-                usuario.Id,
-                tokenSessao,
-                request.IpAddress,
-                request.UserAgent,
-                expiracaoSessao,
-                usuario.Id.ToString(),
-                jti
-            );
-
-            var historicoSucesso = new HistoricoLogin(usuario.TenantId, usuario.Id, emailLower, request.IpAddress, request.UserAgent, true, "Login realizado com sucesso.", usuario.Id.ToString());
-            
-            _context.SessoesUsuarios.Add(sessao);
-            _context.HistoricosLogin.Add(historicoSucesso);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            // Verifica as empresas do usuário
-            var empresasVinculadas = await _context.UsuariosEmpresas
-                .Where(ue => ue.UsuarioId == usuario.Id && ue.DeletadoEm == null)
-                .ToListAsync(cancellationToken);
-
-            // Buscar informações de Razão Social da Gestão de Clientes para as empresas do usuário
-            var empresaIds = empresasVinculadas.Select(ue => ue.EmpresaId).ToList();
-            var empresasDetalhadas = await _contextGestao.Empresas
-                .Where(e => e.TenantId == usuario.TenantId && empresaIds.Contains(e.Id) && e.DeletadoEm == null)
-                .ToListAsync(cancellationToken);
-
-            var empresasDto = empresasVinculadas.Select(ue =>
-            {
-                var emp = empresasDetalhadas.FirstOrDefault(e => e.Id == ue.EmpresaId);
-                return new UsuarioEmpresaDto(
-                    ue.EmpresaId,
-                    emp?.RazaoSocial ?? "Empresa Desconhecida",
-                    ue.EhAdmin,
-                    ue.PerfilAcessoId
-                );
-            }).ToList();
-
-            // Verificar se o tenant está inadimplente (Bloqueio SaaS)
-            var cliente = await _contextGestao.Clientes
-                .FirstOrDefaultAsync(c => c.TenantId == usuario.TenantId && c.DeletadoEm == null, cancellationToken);
-
-            var block = false;
-            if (cliente != null && cliente.Ativo)
-            {
-                var dataLimite = DateTime.UtcNow.AddDays(-15);
-                block = await _contextGestao.Faturas
-                    .AnyAsync(f => f.ClienteId == cliente.Id &&
-                                   f.Status != FaturaStatus.Paga &&
-                                   f.Status != FaturaStatus.Cancelada &&
-                                   f.DataVencimento < dataLimite &&
-                                   f.DeletadoEm == null, cancellationToken);
-            }
-
-            var exigeSelecao = empresasVinculadas.Count > 1;
-            var tokenRetorno = tokenSessao;
-
-            // Se o usuário tem apenas uma empresa vinculada, emite token completo direto
-            if (empresasVinculadas.Count == 1)
-            {
-                var vinculo = empresasVinculadas.First();
-                // Reusa o MESMO jti da sessão para que o token completo retornado permaneça vinculado à SessaoUsuario.
-                tokenRetorno = _tokenService.GerarCompleto(usuario.TenantId, usuario.Id.ToString(), vinculo.EmpresaId.ToString(), vinculo.PerfilAcessoId?.ToString() ?? "null", jti.ToString());
-            }
-
-            var dto = new AuthResponseDto(
-                Token: tokenRetorno,
-                Expiracao: expiracaoSessao,
-                UsuarioId: usuario.Id,
-                Nome: usuario.Nome,
-                Email: usuario.Email,
-                ExigeSelecaoEmpresa: exigeSelecao,
-                TenantId: usuario.TenantId,
-                Block: block,
-                Empresas: empresasDto
-            );
-
-            return CommandResult.Ok("Autenticação realizada com sucesso!", dto);
+            return await AcessoMultiTenant.EmitirResultadoLoginAsync(
+                _context, _contextGestao, _tokenService, _httpContextAccessor,
+                usuario, request.IpAddress, request.UserAgent, emailLower,
+                "Login realizado com sucesso.", cancellationToken);
         }
 
         private void DefinirTenantDaRequisicao(string tenantId)
@@ -327,6 +248,294 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             );
 
             return CommandResult.Ok("Empresa selecionada e contexto completo emitido com sucesso!", dto);
+        }
+    }
+
+    /// <summary>
+    /// Acesso multi-tenant (1.04 PASS 2): a identidade global escolhe UM tenant a que tem acesso
+    /// (membership ativa) e recebe um token escopado a ele. Espelha selecionar-empresa, mas um nível acima:
+    /// tenant → (depois) empresa. Se o tenant tiver uma única empresa vinculada, já emite o token completo.
+    /// A validação de membership e as leituras de empresa/cliente são cross-tenant (bypass de RLS), pois o
+    /// token corrente ainda está escopado à identidade/tenant de origem, não ao tenant-alvo.
+    /// </summary>
+    public class SelecionarTenantCommandHandler : ICommandHandler<SelecionarTenantCommand>
+    {
+        private readonly ContextAplicativo _context;
+        private readonly ContextGestaoClientes _contextGestao;
+        private readonly IEprosTokenService _tokenService;
+
+        public SelecionarTenantCommandHandler(ContextAplicativo context, ContextGestaoClientes contextGestao, IEprosTokenService tokenService)
+        {
+            _context = context;
+            _contextGestao = contextGestao;
+            _tokenService = tokenService;
+        }
+
+        public async Task<CommandResult> Handle(SelecionarTenantCommand request, CancellationToken cancellationToken)
+        {
+            // 1. Valida a membership ativa (identidade global × tenant-alvo), cross-tenant.
+            await AuthRlsBypass.EnableAsync(_context, cancellationToken);
+            var acesso = await _context.AcessosUsuarioTenant
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(a => a.UsuarioId == request.UsuarioId
+                                          && a.TenantId == request.TenantId
+                                          && a.Ativo
+                                          && a.DeletadoEm == null, cancellationToken);
+
+            var usuario = await _context.Usuarios
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Id == request.UsuarioId && u.DeletadoEm == null, cancellationToken);
+            await AuthRlsBypass.DisableAsync(_context, cancellationToken);
+
+            if (acesso == null)
+            {
+                return CommandResult.Falha(new[] { "O usuário não possui acesso ao tenant informado." });
+            }
+
+            if (usuario == null || usuario.Status != UsuarioStatus.Active)
+            {
+                return CommandResult.Falha(new[] { "Usuário inválido ou inativo." });
+            }
+
+            // 2. Empresas do usuário DENTRO do tenant-alvo e bloqueio SaaS (por-tenant).
+            var (empresasDto, exigeSelecao, empresaUnica) =
+                await AcessoMultiTenant.LerEmpresasAsync(_context, _contextGestao, usuario.Id, request.TenantId, cancellationToken);
+
+            var block = await AcessoMultiTenant.TenantInadimplenteAsync(_contextGestao, request.TenantId, cancellationToken);
+
+            // 3. Token escopado ao tenant. Empresa única → token completo direto; senão, básico + seleção de empresa.
+            string token;
+            if (empresaUnica != null)
+            {
+                token = _tokenService.GerarCompleto(request.TenantId, usuario.Id.ToString(), empresaUnica.EmpresaId.ToString(), empresaUnica.PerfilUsuarioId?.ToString() ?? "null");
+            }
+            else
+            {
+                token = _tokenService.GerarBasico(request.TenantId, usuario.Id.ToString());
+            }
+
+            var expiracao = DateTime.UtcNow.Add(_tokenService.Validade); // Fonte única de expiração (8h — REG-024)
+
+            var dto = new AuthResponseDto(
+                Token: token,
+                Expiracao: expiracao,
+                UsuarioId: usuario.Id,
+                Nome: usuario.Nome,
+                Email: usuario.Email,
+                ExigeSelecaoEmpresa: exigeSelecao,
+                TenantId: request.TenantId,
+                Block: block,
+                Empresas: empresasDto
+            );
+
+            return CommandResult.Ok("Tenant selecionado com sucesso!", dto);
+        }
+    }
+
+    /// <summary>
+    /// Rotinas compartilhadas do acesso multi-tenant (1.04 PASS 2) entre o login e a seleção de tenant:
+    /// leitura de memberships e de empresas por tenant e checagem de inadimplência. Todas as leituras
+    /// cross-tenant usam <see cref="AuthRlsBypass"/> + IgnoreQueryFilters, pois ocorrem antes do token
+    /// estar escopado ao tenant-alvo.
+    /// </summary>
+    internal static class AcessoMultiTenant
+    {
+        /// <summary>
+        /// Emite o resultado final de um login já autenticado (por senha OU social — 1.04 PASS 3):
+        /// cria a <see cref="SessaoUsuario"/> (jti liga o JWT à sessão — logout/revogação REG-013),
+        /// grava o <see cref="HistoricoLogin"/> e resolve o acesso multi-tenant (0/1/N tenants →
+        /// entra direto ou exige seleção de tenant). Centraliza o que antes vivia só no login por senha,
+        /// para o login social cair EXATAMENTE no mesmo fluxo (Pass 2). O <paramref name="usuario"/> deve
+        /// estar sendo rastreado por <paramref name="context"/> (alterações pendentes são persistidas aqui).
+        /// </summary>
+        public static async Task<CommandResult> EmitirResultadoLoginAsync(
+            ContextAplicativo context,
+            ContextGestaoClientes contextGestao,
+            IEprosTokenService tokenService,
+            IHttpContextAccessor httpContextAccessor,
+            Usuario usuario,
+            string ipAddress,
+            string userAgent,
+            string emailLog,
+            string mensagemHistorico,
+            CancellationToken cancellationToken)
+        {
+            // Escopa a requisição ao tenant de origem para que a escrita de sessão/histórico satisfaça a RLS.
+            DefinirTenantDaRequisicao(httpContextAccessor, usuario.TenantId);
+
+            var jti = Guid.NewGuid();
+            var tokenSessao = tokenService.GerarBasico(usuario.TenantId, usuario.Id.ToString(), jti.ToString());
+            var expiracaoSessao = DateTime.UtcNow.Add(tokenService.Validade); // Fonte única de expiração (8h — REG-024)
+
+            var sessao = new SessaoUsuario(
+                usuario.TenantId, usuario.Id, tokenSessao, ipAddress, userAgent, expiracaoSessao, usuario.Id.ToString(), jti);
+            var historicoSucesso = new HistoricoLogin(
+                usuario.TenantId, usuario.Id, emailLog, ipAddress, userAgent, true, mensagemHistorico, usuario.Id.ToString());
+
+            context.SessoesUsuarios.Add(sessao);
+            context.HistoricosLogin.Add(historicoSucesso);
+            await context.SaveChangesAsync(cancellationToken);
+
+            // Acesso multi-tenant (1.04 PASS 2): a identidade global pode ter acesso a vários tenants
+            // (ex.: contador parceiro). Lê as memberships ativas cross-tenant (login anônimo quanto ao
+            // inquilino). Fallback: sem membership (base pré-1.04) → trata o tenant de origem como único.
+            var acessos = await LerAcessosAtivosAsync(context, usuario.Id, cancellationToken);
+            var tenantsAcessiveis = acessos.Select(a => a.TenantId).Distinct().ToList();
+            if (tenantsAcessiveis.Count == 0)
+            {
+                tenantsAcessiveis.Add(usuario.TenantId);
+            }
+
+            // Mais de um tenant: não escopa direto — devolve a lista e exige a seleção de tenant.
+            if (tenantsAcessiveis.Count > 1)
+            {
+                var tenantsDto = await MontarTenantsDtoAsync(contextGestao, acessos, cancellationToken);
+
+                var dtoMulti = new AuthResponseDto(
+                    Token: tokenSessao,
+                    Expiracao: expiracaoSessao,
+                    UsuarioId: usuario.Id,
+                    Nome: usuario.Nome,
+                    Email: usuario.Email,
+                    ExigeSelecaoEmpresa: false,
+                    TenantId: usuario.TenantId,
+                    Block: false,
+                    Empresas: null,
+                    ExigeSelecaoTenant: true,
+                    Tenants: tenantsDto);
+
+                return CommandResult.Ok("Autenticação realizada. Selecione o tenant para continuar.", dtoMulti);
+            }
+
+            // Exatamente um tenant acessível: escopa direto (fluxo single-tenant preservado).
+            var tenantEfetivo = tenantsAcessiveis[0];
+            DefinirTenantDaRequisicao(httpContextAccessor, tenantEfetivo);
+
+            var (empresasDto, exigeSelecao, empresaUnica) =
+                await LerEmpresasAsync(context, contextGestao, usuario.Id, tenantEfetivo, cancellationToken);
+
+            var block = await TenantInadimplenteAsync(contextGestao, tenantEfetivo, cancellationToken);
+
+            var tokenRetorno = tokenSessao;
+            if (empresaUnica != null)
+            {
+                // Reusa o MESMO jti da sessão para que o token completo permaneça vinculado à SessaoUsuario.
+                tokenRetorno = tokenService.GerarCompleto(tenantEfetivo, usuario.Id.ToString(), empresaUnica.EmpresaId.ToString(), empresaUnica.PerfilUsuarioId?.ToString() ?? "null", jti.ToString());
+            }
+
+            var dto = new AuthResponseDto(
+                Token: tokenRetorno,
+                Expiracao: expiracaoSessao,
+                UsuarioId: usuario.Id,
+                Nome: usuario.Nome,
+                Email: usuario.Email,
+                ExigeSelecaoEmpresa: exigeSelecao,
+                TenantId: tenantEfetivo,
+                Block: block,
+                Empresas: empresasDto);
+
+            return CommandResult.Ok("Autenticação realizada com sucesso!", dto);
+        }
+
+        private static void DefinirTenantDaRequisicao(IHttpContextAccessor httpContextAccessor, string tenantId)
+        {
+            var httpContext = httpContextAccessor.HttpContext;
+            if (httpContext != null)
+            {
+                httpContext.Items["TenantId"] = tenantId;
+            }
+        }
+
+        public static async Task<List<AcessoUsuarioTenant>> LerAcessosAtivosAsync(ContextAplicativo context, Guid usuarioId, CancellationToken cancellationToken)
+        {
+            await AuthRlsBypass.EnableAsync(context, cancellationToken);
+            var acessos = await context.AcessosUsuarioTenant
+                .IgnoreQueryFilters()
+                .Where(a => a.UsuarioId == usuarioId && a.Ativo && a.DeletadoEm == null)
+                .ToListAsync(cancellationToken);
+            await AuthRlsBypass.DisableAsync(context, cancellationToken);
+            return acessos;
+        }
+
+        /// <summary>Monta os DTOs de tenant (com nome do cliente) para a lista de seleção.</summary>
+        public static async Task<List<TenantDisponivelDto>> MontarTenantsDtoAsync(ContextGestaoClientes contextGestao, List<AcessoUsuarioTenant> acessos, CancellationToken cancellationToken)
+        {
+            var tenantIds = acessos.Select(a => a.TenantId).Distinct().ToList();
+
+            await AuthRlsBypass.EnableAsync(contextGestao, cancellationToken);
+            var nomes = await contextGestao.Clientes
+                .IgnoreQueryFilters()
+                .Where(c => tenantIds.Contains(c.TenantId) && c.DeletadoEm == null)
+                .ToDictionaryAsync(c => c.TenantId, c => c.RazaoSocial, cancellationToken);
+            await AuthRlsBypass.DisableAsync(contextGestao, cancellationToken);
+
+            return acessos
+                .GroupBy(a => a.TenantId)
+                .Select(g => new TenantDisponivelDto(
+                    TenantId: g.Key,
+                    Nome: nomes.TryGetValue(g.Key, out var nome) ? nome : g.Key,
+                    Papel: g.First().Papel.ToString()
+                ))
+                .ToList();
+        }
+
+        /// <summary>
+        /// Empresas vinculadas ao usuário dentro de um tenant. Retorna os DTOs, se exige seleção (mais de uma)
+        /// e o vínculo único (quando há exatamente uma), para emissão direta de token completo.
+        /// </summary>
+        public static async Task<(List<UsuarioEmpresaDto> Empresas, bool ExigeSelecao, UsuarioEmpresaDto? EmpresaUnica)> LerEmpresasAsync(
+            ContextAplicativo context, ContextGestaoClientes contextGestao, Guid usuarioId, string tenantId, CancellationToken cancellationToken)
+        {
+            await AuthRlsBypass.EnableAsync(context, cancellationToken);
+            var vinculos = await context.UsuariosEmpresas
+                .IgnoreQueryFilters()
+                .Where(ue => ue.UsuarioId == usuarioId && ue.TenantId == tenantId && ue.DeletadoEm == null)
+                .ToListAsync(cancellationToken);
+            await AuthRlsBypass.DisableAsync(context, cancellationToken);
+
+            var empresaIds = vinculos.Select(v => v.EmpresaId).ToList();
+
+            await AuthRlsBypass.EnableAsync(contextGestao, cancellationToken);
+            var empresas = await contextGestao.Empresas
+                .IgnoreQueryFilters()
+                .Where(e => e.TenantId == tenantId && empresaIds.Contains(e.Id) && e.DeletadoEm == null)
+                .ToDictionaryAsync(e => e.Id, e => e.RazaoSocial, cancellationToken);
+            await AuthRlsBypass.DisableAsync(contextGestao, cancellationToken);
+
+            var dtos = vinculos.Select(v => new UsuarioEmpresaDto(
+                EmpresaId: v.EmpresaId,
+                RazaoSocial: empresas.TryGetValue(v.EmpresaId, out var nome) ? nome : "Empresa Desconhecida",
+                EhAdmin: v.EhAdmin,
+                PerfilUsuarioId: v.PerfilAcessoId
+            )).ToList();
+
+            var exigeSelecao = dtos.Count > 1;
+            var unica = dtos.Count == 1 ? dtos[0] : null;
+            return (dtos, exigeSelecao, unica);
+        }
+
+        /// <summary>Inadimplência SaaS do tenant (15 dias — decisão 1.01). Leitura cross-tenant.</summary>
+        public static async Task<bool> TenantInadimplenteAsync(ContextGestaoClientes contextGestao, string tenantId, CancellationToken cancellationToken)
+        {
+            await AuthRlsBypass.EnableAsync(contextGestao, cancellationToken);
+            var cliente = await contextGestao.Clientes
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(c => c.TenantId == tenantId && c.DeletadoEm == null, cancellationToken);
+
+            var block = false;
+            if (cliente != null && cliente.Ativo)
+            {
+                var dataLimite = DateTime.UtcNow.AddDays(-15);
+                block = await contextGestao.Faturas
+                    .IgnoreQueryFilters()
+                    .AnyAsync(f => f.ClienteId == cliente.Id &&
+                                   f.Status != FaturaStatus.Paga &&
+                                   f.Status != FaturaStatus.Cancelada &&
+                                   f.DataVencimento < dataLimite &&
+                                   f.DeletadoEm == null, cancellationToken);
+            }
+            await AuthRlsBypass.DisableAsync(contextGestao, cancellationToken);
+            return block;
         }
     }
 
@@ -723,6 +932,17 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 );
 
                 _contextAplicativo.UsuariosEmpresas.Add(vinculo);
+
+                // 6.1. Membership N:N (1.04 PASS 2): vincula a identidade global ao tenant recém-criado como
+                //      Proprietário. É a base do acesso multi-tenant — o login lista tenants a partir daqui.
+                var acessoTenant = new AcessoUsuarioTenant(
+                    tenantId: tenantId,
+                    usuarioId: usuarioAdmin.Id,
+                    papel: PapelAcessoTenant.Proprietario,
+                    criadoPor: criadoPor
+                );
+                _contextAplicativo.AcessosUsuarioTenant.Add(acessoTenant);
+
                 await _contextAplicativo.SaveChangesAsync(cancellationToken);
 
                 // 6.5. Criar ConfiguracaoEmpresa padrão

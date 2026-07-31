@@ -3,6 +3,7 @@ using System;
 using Epros.Modules.Aplicativo.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Epros.Modules.Aplicativo.Migrations
 {
     [DbContext(typeof(ContextAplicativo))]
-    partial class ContextAplicativoModelSnapshot : ModelSnapshot
+    [Migration("20260731173338_Implanta_1_04_LoginSocial")]
+    partial class Implanta_1_04_LoginSocial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
