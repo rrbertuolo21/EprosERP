@@ -93,7 +93,6 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             AddNotifications(new Contract<Empresa>()
                 .Requires()
                 .IsNotNullOrEmpty(razaoSocial, nameof(RazaoSocial), "Razão Social é obrigatória")
-                .IsNotNullOrEmpty(cnpj, nameof(Cnpj), "CNPJ é obrigatório")
                 .IsNotNull(endereco, nameof(Endereco), "Endereço é obrigatório")
                 .HasMaxLen(razaoSocial, 250, nameof(RazaoSocial), "Razão Social deve ter no máximo 250 caracteres")
                 .HasMaxLen(nomeFantasia ?? string.Empty, 250, nameof(NomeFantasia), "Nome Fantasia deve ter no máximo 250 caracteres")
@@ -105,11 +104,30 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
                 .HasMaxLen(logo ?? string.Empty, 500, nameof(Logo), "Logo deve ter no máximo 500 caracteres")
             );
 
-            // Validar CNPJ
-            var cnpjVo = new Cnpj(cnpj);
-            if (!cnpjVo.IsValid)
+            // 1.07 — Emitente PJ (CNPJ) ou PF (somente CPF: autônomo/produtor rural/MEI). Exige-se ao
+            // menos UM documento fiscal íntegro. O CNPJ, quando informado, é validado por dígito; a PF
+            // mantém o CNPJ vazio (nulo deliberado — nunca placeholder). O dígito do CPF é conferido no
+            // fluxo de aplicação (self-register), preservando a integridade fiscal (REG-036).
+            var possuiCnpj = !string.IsNullOrWhiteSpace(cnpj);
+            var possuiCpf = !string.IsNullOrWhiteSpace(cpf);
+            var cnpjValor = string.Empty;
+
+            if (!possuiCnpj && !possuiCpf)
             {
-                AddNotifications(cnpjVo.Notifications);
+                AddNotifications(new Contract<Empresa>().Requires()
+                    .IsTrue(false, nameof(Cnpj), "Informe um documento fiscal: CNPJ (pessoa jurídica) ou CPF (pessoa física)."));
+            }
+            else if (possuiCnpj)
+            {
+                var cnpjVo = new Cnpj(cnpj);
+                if (!cnpjVo.IsValid)
+                {
+                    AddNotifications(cnpjVo.Notifications);
+                }
+                else
+                {
+                    cnpjValor = cnpjVo.Valor;
+                }
             }
 
             if (endereco != null)
@@ -119,7 +137,7 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
 
             RazaoSocial = razaoSocial;
             NomeFantasia = nomeFantasia;
-            Cnpj = cnpjVo.Valor;
+            Cnpj = cnpjValor;
             InscricaoEstadual = inscricaoEstadual;
             InscricaoMunicipal = inscricaoMunicipal;
             InscricaoSuframa = inscricaoSuframa;

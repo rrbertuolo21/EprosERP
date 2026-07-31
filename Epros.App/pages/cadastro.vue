@@ -61,55 +61,76 @@
         <!-- STEP 2: Corporate Data -->
         <div v-if="currentStep === 2" class="step-panel animate-fade">
           <h2 class="step-title">Dados da sua Empresa</h2>
-          <p class="step-subtitle">Insira as informações de faturamento e regime tributário.</p>
+          <p class="step-subtitle">Pessoa jurídica (CNPJ) ou pessoa física (CPF: autônomo/produtor rural/MEI).</p>
+
+          <!-- Toggle PF / PJ -->
+          <div class="tipo-pessoa-toggle">
+            <button type="button" :class="['toggle-btn', { active: form.tipoPessoa === 'PJ' }]" @click="form.tipoPessoa = 'PJ'">Pessoa Jurídica (CNPJ)</button>
+            <button type="button" :class="['toggle-btn', { active: form.tipoPessoa === 'PF' }]" @click="form.tipoPessoa = 'PF'">Pessoa Física (CPF)</button>
+          </div>
 
           <div class="form-grid">
-            <div class="input-group">
-              <label for="razaoSocial">Razão Social *</label>
-              <input 
-                type="text" 
-                id="razaoSocial" 
-                v-model="form.razaoSocial" 
-                placeholder="Ex: Minha Empresa S.A."
-                required
-              />
+            <div class="input-group col-span-2">
+              <label for="razaoSocial">{{ form.tipoPessoa === 'PJ' ? 'Razão Social *' : 'Nome Completo *' }}</label>
+              <input type="text" id="razaoSocial" v-model="form.razaoSocial" :placeholder="form.tipoPessoa === 'PJ' ? 'Ex: Minha Empresa S.A.' : 'Ex: José da Silva'" required />
             </div>
 
-            <div class="input-group">
+            <div v-if="form.tipoPessoa === 'PJ'" class="input-group">
               <label for="cnpj">CNPJ *</label>
-              <input 
-                type="text" 
-                id="cnpj" 
-                v-model="form.cnpj" 
-                placeholder="00.000.000/0000-00"
-                @input="handleCnpjInput"
-                maxlength="18"
-                required
-              />
+              <input type="text" id="cnpj" v-model="form.cnpj" placeholder="00.000.000/0000-00" @input="handleCnpjInput" maxlength="18" required />
+            </div>
+
+            <div v-else class="input-group">
+              <label for="cpf">CPF *</label>
+              <input type="text" id="cpf" v-model="form.cpf" placeholder="000.000.000-00" @input="handleCpfInput" maxlength="14" required />
             </div>
 
             <div class="input-group">
-              <label for="nomeFantasia">Nome Fantasia (Será seu Tenant ID) *</label>
-              <input 
-                type="text" 
-                id="nomeFantasia" 
-                v-model="form.nomeFantasia" 
-                placeholder="Ex: minhaempresa"
-                required
-              />
-              <span class="input-hint" v-if="form.nomeFantasia">
-                Identificador único no sistema: <code>{{ slugifiedTenantId }}</code>
-              </span>
-            </div>
-
-            <div class="input-group">
-              <label for="regimeTributario">Regime Tributário *</label>
-              <select id="regimeTributario" v-model="form.regimeTributario" required>
-                <option value="" disabled>Selecione um regime...</option>
-                <option value="Simples Nacional">Simples Nacional</option>
-                <option value="Lucro Presumido">Lucro Presumido</option>
-                <option value="Lucro Real">Lucro Real</option>
+              <label for="uf">UF *</label>
+              <select id="uf" v-model="form.uf" @change="carregarMunicipios" required>
+                <option value="" disabled>Selecione...</option>
+                <option v-for="u in ufs" :key="u" :value="u">{{ u }}</option>
               </select>
+            </div>
+
+            <div class="input-group col-span-2">
+              <label for="municipio">Município *</label>
+              <select id="municipio" v-model="form.municipioIbge" :disabled="!form.uf || municipios.length === 0" required>
+                <option value="" disabled>{{ form.uf ? (municipios.length ? 'Selecione o município...' : 'Carregando...') : 'Selecione a UF primeiro' }}</option>
+                <option v-for="m in municipios" :key="m.codigoIbge" :value="m.codigoIbge">{{ m.nome }}</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label for="telefone">Telefone *</label>
+              <input type="text" id="telefone" v-model="form.telefone" placeholder="(00) 00000-0000" required />
+            </div>
+
+            <div class="input-group">
+              <label for="tipoTelefone">Tipo de Telefone *</label>
+              <select id="tipoTelefone" v-model="form.tipoTelefone" required>
+                <option value="Celular">Celular</option>
+                <option value="Fixo">Fixo</option>
+                <option value="Comercial">Comercial</option>
+                <option value="Whatsapp">Whatsapp</option>
+              </select>
+            </div>
+
+            <div class="input-group col-span-2">
+              <label for="logradouro">Endereço (opcional)</label>
+              <input type="text" id="logradouro" v-model="form.logradouro" placeholder="Logradouro" />
+            </div>
+            <div class="input-group">
+              <label for="numero">Número</label>
+              <input type="text" id="numero" v-model="form.numero" placeholder="Nº" />
+            </div>
+            <div class="input-group">
+              <label for="bairro">Bairro</label>
+              <input type="text" id="bairro" v-model="form.bairro" placeholder="Bairro" />
+            </div>
+            <div class="input-group">
+              <label for="cep">CEP</label>
+              <input type="text" id="cep" v-model="form.cep" placeholder="00000-000" maxlength="9" />
             </div>
           </div>
         </div>
@@ -144,13 +165,14 @@
 
             <div class="input-group col-span-2">
               <label for="adminPassword">Senha de Acesso *</label>
-              <input 
-                type="password" 
-                id="adminPassword" 
-                v-model="form.adminPassword" 
-                placeholder="Mínimo 6 caracteres"
+              <input
+                type="password"
+                id="adminPassword"
+                v-model="form.adminPassword"
+                placeholder="Mínimo 8 caracteres, com letra e número"
                 required
               />
+              <span class="input-hint">Mínimo 8 caracteres, contendo ao menos uma letra e um número.</span>
             </div>
           </div>
         </div>
@@ -266,12 +288,24 @@ const plans = ref([
   }
 ])
 
+// 1.07 — UFs do Brasil (dado estático); municípios vêm do endpoint público por UF.
+const ufs = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']
+const municipios = ref([])
+
 const form = reactive({
   selectedPlan: null,
+  tipoPessoa: 'PJ',       // 'PJ' (CNPJ) | 'PF' (CPF)
   razaoSocial: '',
   cnpj: '',
-  nomeFantasia: '',
-  regimeTributario: '',
+  cpf: '',
+  uf: '',
+  municipioIbge: '',      // CodigoIbge (7 dígitos) exigido pelo backend
+  telefone: '',
+  tipoTelefone: 'Celular',
+  logradouro: '',
+  numero: '',
+  bairro: '',
+  cep: '',
   adminName: '',
   adminEmail: '',
   adminPassword: ''
@@ -281,98 +315,85 @@ onMounted(async () => {
   // Pre-seleciona o plano Gold (Popular) por padrão
   form.selectedPlan = plans.value.find(p => p.isPopular) || plans.value[0]
 
-  let apiOnline = false
+  // Carrega os planos reais (públicos). O id é um Guid do backend (PlanoId como Guid).
   try {
-    await useApi('/plataforma/clientes')
-    apiOnline = true
-  } catch (e) {
-    apiOnline = false
-  }
-
-  if (apiOnline) {
-    try {
-      const planRes = await useApi('/public/AreaPublica/planos')
-      if (planRes && planRes.length > 0) {
-        plans.value = planRes.map(p => ({
-          id: p.id,
-          name: p.nome,
-          price: p.preco,
-          description: p.nome === 'Plano Silver' ? 'Ideal para pequenas empresas iniciando no controle de gestão empresarial.' : (p.nome === 'Plano Gold' ? 'Perfeito para empresas em crescimento com necessidades fiscais e financeiras.' : 'Completo para médias e grandes corporações filiais.'),
-          features: p.recursosInclusos ? p.recursosInclusos.split(';') : p.modulos,
-          isPopular: p.nome === 'Plano Gold'
-        }))
-        form.selectedPlan = plans.value.find(p => p.isPopular) || plans.value[0]
-      }
-    } catch (err) {
-      console.warn('Erro ao carregar planos da API pública no wizard.', err)
-      loadPlansFromLocalStorage()
+    const planRes = await useApi('/public/AreaPublica/planos')
+    const lista = planRes?.dados ?? planRes
+    if (Array.isArray(lista) && lista.length > 0) {
+      plans.value = lista.map(p => ({
+        id: p.id,
+        name: p.nome,
+        price: p.preco,
+        description: p.recursosInclusos || 'Plano EprosERP.',
+        features: p.recursosInclusos ? String(p.recursosInclusos).split(';') : (p.modulos || []),
+        isPopular: /gold/i.test(p.nome)
+      }))
+      form.selectedPlan = plans.value.find(p => p.isPopular) || plans.value[0]
     }
-  } else {
-    loadPlansFromLocalStorage()
+  } catch (err) {
+    console.warn('Não foi possível carregar os planos públicos. Mantendo lista padrão.', err)
   }
 })
 
-const loadPlansFromLocalStorage = () => {
-  const storedPlans = localStorage.getItem('epros_plans')
-  if (storedPlans) {
-    const updatedPlans = JSON.parse(storedPlans)
-    plans.value.forEach(p => {
-      const match = updatedPlans.find(up => up.id === p.id || up.name === p.name)
-      if (match) {
-        p.price = match.price
-      }
-    })
+// Carrega os municípios da UF selecionada a partir do endpoint público (IBGE).
+const carregarMunicipios = async () => {
+  form.municipioIbge = ''
+  municipios.value = []
+  if (!form.uf) return
+  try {
+    const res = await useApi('/public/AreaPublica/municipios/{uf}', { params: { uf: form.uf } })
+    const lista = res?.dados ?? res
+    municipios.value = Array.isArray(lista) ? lista : []
+  } catch (err) {
+    console.warn('Falha ao carregar municípios da UF.', err)
+    municipios.value = []
   }
 }
 
-const slugifiedTenantId = computed(() => {
-  if (!form.nomeFantasia) return ''
-  return form.nomeFantasia.toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]/g, "_")
-    .replace(/^_+|_+$/g, "")
-})
-
 const handleCnpjInput = (event) => {
-  let value = event.target.value
-  let cleaned = value.replace(/\D/g, '')
-  if (cleaned.length > 14) cleaned = cleaned.slice(0, 14)
-  
+  let cleaned = event.target.value.replace(/\D/g, '').slice(0, 14)
   let formatted = cleaned
-  if (cleaned.length > 2) {
-    formatted = cleaned.slice(0, 2) + '.' + cleaned.slice(2)
-  }
-  if (cleaned.length > 5) {
-    formatted = formatted.slice(0, 6) + '.' + formatted.slice(6)
-  }
-  if (cleaned.length > 8) {
-    formatted = formatted.slice(0, 10) + '/' + formatted.slice(10)
-  }
-  if (cleaned.length > 12) {
-    formatted = formatted.slice(0, 15) + '-' + formatted.slice(15)
-  }
+  if (cleaned.length > 2) formatted = cleaned.slice(0, 2) + '.' + cleaned.slice(2)
+  if (cleaned.length > 5) formatted = formatted.slice(0, 6) + '.' + formatted.slice(6)
+  if (cleaned.length > 8) formatted = formatted.slice(0, 10) + '/' + formatted.slice(10)
+  if (cleaned.length > 12) formatted = formatted.slice(0, 15) + '-' + formatted.slice(15)
   form.cnpj = formatted
+}
+
+const handleCpfInput = (event) => {
+  let cleaned = event.target.value.replace(/\D/g, '').slice(0, 11)
+  let formatted = cleaned
+  if (cleaned.length > 3) formatted = cleaned.slice(0, 3) + '.' + cleaned.slice(3)
+  if (cleaned.length > 6) formatted = formatted.slice(0, 7) + '.' + formatted.slice(7)
+  if (cleaned.length > 9) formatted = formatted.slice(0, 11) + '-' + formatted.slice(11)
+  form.cpf = formatted
 }
 
 const selectPlan = (plan) => {
   form.selectedPlan = plan
 }
 
+// Pol\u00edtica de senha alinhada ao backend (REG-032): m\u00ednimo 8 + ao menos uma letra e um n\u00famero.
+const isSenhaValida = (senha) => senha.length >= 8 && /[A-Za-z]/.test(senha) && /[0-9]/.test(senha)
+
 const isCurrentStepValid = computed(() => {
   if (currentStep.value === 1) {
     return !!form.selectedPlan
   }
   if (currentStep.value === 2) {
+    const docOk = form.tipoPessoa === 'PJ'
+      ? form.cnpj.replace(/\D/g, '').length === 14
+      : form.cpf.replace(/\D/g, '').length === 11
     return form.razaoSocial.trim().length > 0 &&
-      form.cnpj.replace(/\D/g, '').length === 14 &&
-      form.nomeFantasia.trim().length > 0 &&
-      form.regimeTributario.trim().length > 0
+      docOk &&
+      String(form.municipioIbge).length === 7 &&
+      form.telefone.replace(/\D/g, '').length >= 8 &&
+      !!form.tipoTelefone
   }
   if (currentStep.value === 3) {
     return form.adminName.trim().length > 0 &&
       isValidEmail(form.adminEmail) &&
-      form.adminPassword.length >= 6
+      isSenhaValida(form.adminPassword)
   }
   return false
 })
@@ -397,80 +418,43 @@ const prevStep = () => {
 
 const handleRegister = async () => {
   if (!isCurrentStepValid.value) return
-  
+
   loading.value = true
   errorMessage.value = ''
-  const tenantId = slugifiedTenantId.value
 
+  // Payload real do self-register (POST /api/v1/public/auth/registrar-tenant → RegistrarNovoTenantCommand).
+  // O tenant nasce em TRIAL automático (backend); o plano escolhido é referência para upgrade futuro.
   const payload = {
-    RazaoSocial: form.razaoSocial,
-    Cnpj: form.cnpj.replace(/\D/g, ''),
-    Email: form.adminEmail,
-    PlanoId: form.selectedPlan.id,
-    NomeContato: form.adminName,
-    Telefone: ''
+    NomeEmpresa: form.razaoSocial,
+    Cnpj: form.tipoPessoa === 'PJ' ? form.cnpj.replace(/\D/g, '') : '',
+    Cpf: form.tipoPessoa === 'PF' ? form.cpf.replace(/\D/g, '') : null,
+    NomeAdmin: form.adminName,
+    EmailAdmin: form.adminEmail,
+    SenhaAdmin: form.adminPassword,
+    CodigoIbgeMunicipio: Number(form.municipioIbge),
+    Telefone: form.telefone.replace(/\D/g, ''),
+    TipoTelefone: form.tipoTelefone,
+    Logradouro: form.logradouro?.trim() || null,
+    Numero: form.numero?.trim() || null,
+    Bairro: form.bairro?.trim() || null,
+    Cep: form.cep ? form.cep.replace(/\D/g, '') : null
   }
 
-  // Tenta enviar POST à API real
   try {
-    await useApi('/plataforma/clientes', {
-      method: 'POST',
-      body: payload
-    }).catch(err => {
-      console.warn('API real offline/indisponível. Provisionando localmente no localStorage.', err)
-    })
-  } catch (error) {
-    // Ignora falhas de CORS ou indisponibilidade
-  }
-
-  // Simula o delay de provisionamento com a barra de progresso
-  setTimeout(() => {
-    let tenants = []
-    const storedTenants = localStorage.getItem('epros_tenants')
-    if (storedTenants) {
-      tenants = JSON.parse(storedTenants)
-    } else {
-      tenants = [
-        { id: 'empresa_teste', name: 'Empresa Teste Ltda', plan: 'Plano Silver', status: 'Ativo', email: 'contato@teste.com' },
-        { id: 'gold_inovacao', name: 'Gold Inovação Ltda', plan: 'Plano Gold', status: 'Ativo', email: 'contato@gold.com' },
-        { id: 'platinum_corp', name: 'Platinum Corp', plan: 'Plano Platinum', status: 'Ativo', email: 'ceo@platinum.com' },
-        { id: 'bloqueado', name: 'Inadimplência S.A.', plan: 'Plano Bronze', status: 'Atrasado', email: 'financeiro@inadimplente.com' }
-      ]
-    }
-
-    if (tenants.some(t => t.id === tenantId)) {
+    const res = await useApi('/public/auth/registrar-tenant', { method: 'POST', body: payload })
+    const ok = res?.sucesso ?? true
+    if (!ok) {
       loading.value = false
-      errorMessage.value = `O identificador único de inquilino '${tenantId}' já está em uso. Escolha outro Nome Fantasia.`
+      errorMessage.value = (res?.erros && res.erros.join(' ')) || res?.mensagem || 'Não foi possível concluir o cadastro.'
       return
     }
-
-    // Registra inquilino no localStorage
-    const newTenant = {
-      id: tenantId,
-      name: form.razaoSocial,
-      plan: form.selectedPlan.name,
-      status: 'Ativo',
-      email: form.adminEmail,
-      cnpj: form.cnpj,
-      fantasia: form.nomeFantasia,
-      regime: form.regimeTributario
-    }
-    tenants.push(newTenant)
-    localStorage.setItem('epros_tenants', JSON.stringify(tenants))
-
-    // Grava login ativo do usuário
-    const userData = {
-      email: form.adminEmail,
-      tenantId: tenantId,
-      tenantName: form.razaoSocial,
-      planName: form.selectedPlan.name,
-      status: 'Ativo'
-    }
-    localStorage.setItem('epros_user', JSON.stringify(userData))
-
+    // Sucesso: ambiente provisionado (trial). Encaminha ao login para o primeiro acesso.
+    router.push('/?cadastro=ok')
+  } catch (err) {
     loading.value = false
-    router.push('/dashboard?new=true')
-  }, 1800)
+    const corpo = err?.data ?? err?.response?._data
+    errorMessage.value = (corpo?.erros && corpo.erros.join(' ')) || corpo?.mensagem || 'Erro ao comunicar com o servidor. Tente novamente.'
+  }
 }
 </script>
 
@@ -754,6 +738,33 @@ const handleRegister = async () => {
 
 .features-list-mini .check-icon {
   color: var(--success);
+}
+
+/* Toggle PF / PJ */
+.tipo-pessoa-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.toggle-btn {
+  flex: 1;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.toggle-btn.active {
+  border-color: var(--primary);
+  background: rgba(99, 102, 241, 0.06);
+  color: var(--text-primary);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.12);
 }
 
 /* Forms Grid */

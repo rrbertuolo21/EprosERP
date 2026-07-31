@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Epros.Modules.Aplicativo.Application.Commands;
 using Epros.Modules.Aplicativo.Application.Dtos;
 using Epros.Modules.Aplicativo.Application.Queries;
+using Epros.Modules.Aplicativo.Application.Services;
 using Epros.Modules.Aplicativo.Domain.Entities;
 using Epros.Modules.Aplicativo.Infrastructure.Data;
 using Epros.Modules.GestaoClientes.Infrastructure.Data;
@@ -208,21 +209,19 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 return CommandResult.Falha("Plano SaaS informado é inválido ou está inativo.");
             }
 
-            var cliente = new Epros.Modules.GestaoClientes.Domain.Entities.Cliente(
+            // Reusa o ponto único de criação de Cliente SaaS (1.07) — mesma lógica do self-register.
+            var cliente = OnboardingSaaSProvisioner.CriarCliente(
+                tenantId: request.TenantId,
                 razaoSocial: request.RazaoSocial,
-                cnpj: request.Cnpj,
+                documento: request.Cnpj,
                 email: request.Email,
                 planoId: request.PlanoId,
-                revendaId: null,
-                vendedorId: null,
-                diaVencimento: request.DiaVencimento,
                 statusSaaS: Epros.Modules.GestaoClientes.Domain.Entities.StatusSaaS.Ativo,
-                tenantId: request.TenantId,
+                diaVencimento: request.DiaVencimento,
                 criadoPor: criadoPor,
                 telefone: request.Telefone,
                 nomeContato: request.NomeContato,
-                isDemo: request.IsDemo,
-                tokenAcesso: null);
+                isDemo: request.IsDemo);
 
             if (!cliente.IsValid)
             {
@@ -358,7 +357,12 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     limiteUsuarios = plano.LimiteUsuarios;
                 }
 
-                if (cliente.StatusSaaS != Epros.Modules.GestaoClientes.Domain.Entities.StatusSaaS.Ativo || !cliente.Ativo)
+                // 1.07 (destrava §3.2) — TrialGratuito opera normalmente (alinhado ao InquilinoSaaSMiddleware,
+                // que trata Ativo/TrialGratuito como operacionais). Só bloqueia fora desses dois status ou
+                // se o cliente estiver inativo. O fim do trial recai no gating de StatusSaaS (1.01/REG-021).
+                if ((cliente.StatusSaaS != Epros.Modules.GestaoClientes.Domain.Entities.StatusSaaS.Ativo
+                     && cliente.StatusSaaS != Epros.Modules.GestaoClientes.Domain.Entities.StatusSaaS.TrialGratuito)
+                    || !cliente.Ativo)
                 {
                     block = true;
                 }

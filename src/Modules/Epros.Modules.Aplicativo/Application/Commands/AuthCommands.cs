@@ -175,7 +175,14 @@ namespace Epros.Modules.Aplicativo.Application.Commands
         long CodigoIbgeMunicipio,
         string Telefone,
         string TipoTelefone,
-        string? Cpf = null
+        string? Cpf = null,
+        // 1.07 — Endereço informado no cadastro (opcional). Quando presente, é persistido de verdade
+        // (não mais placeholder "A informar"). Cidade/UF continuam vindo do catálogo IBGE.
+        string? Logradouro = null,
+        string? Numero = null,
+        string? Complemento = null,
+        string? Bairro = null,
+        string? Cep = null
     ) : ICommand;
 
     public class RegistrarNovoTenantCommandValidator : AbstractValidator<RegistrarNovoTenantCommand>

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using Epros.Modules.Aplicativo.Application.Commands;
 using Epros.Modules.Aplicativo.Application.Queries;
+using Epros.Modules.GestaoClientes.Application.Queries;
 using Epros.Shared.Application.Models;
 
 namespace Epros.API.Controllers
@@ -61,6 +62,19 @@ namespace Epros.API.Controllers
         public async Task<ActionResult<CommandResult>> ListarPlanosPublicos()
         {
             var result = await _mediator.Send(new ListarPlanosPublicosQuery());
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// 1.07 — Lista pública de municípios por UF, para o seletor de município do cadastro/onboarding
+        /// (self-register é anônimo). Dado de referência IBGE, sem informação sensível. O front usa o
+        /// CodigoIbge retornado no <c>POST /public/auth/registrar-tenant</c>.
+        /// </summary>
+        [HttpGet("municipios/{uf}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> ListarMunicipiosPorUf(string uf)
+        {
+            var result = await _mediator.Send(new ListarMunicipiosPorUfQuery(uf));
             return Ok(result);
         }
     }

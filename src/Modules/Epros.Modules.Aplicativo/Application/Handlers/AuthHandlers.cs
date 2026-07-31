@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Epros.Modules.Aplicativo.Application.Commands;
 using Epros.Modules.Aplicativo.Application.Dtos;
+using Epros.Modules.Aplicativo.Application.Services;
 using Epros.Modules.Aplicativo.Domain.Entities;
 using Epros.Modules.Aplicativo.Infrastructure.Data;
 using Epros.Modules.GestaoClientes.Domain.Entities;
@@ -752,17 +754,23 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
         private readonly ContextGestaoClientes _contextGestaoClientes;
         private readonly IPasswordHasher _passwordHasher;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        // 1.07 (REG-045) — Serviço de notificação para o e-mail de boas-vindas/1º acesso. Injetado como
+        // IEnumerable para não quebrar quem não o registra (ex.: providers de teste): resolve vazio e o
+        // envio vira no-op. Em produção há um INotificacaoService registrado (Program.cs) → o hook liga.
+        private readonly IEnumerable<INotificacaoService> _notificacaoServices;
 
         public RegistrarNovoTenantCommandHandler(
             ContextAplicativo contextAplicativo,
             ContextGestaoClientes contextGestaoClientes,
             IPasswordHasher passwordHasher,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IEnumerable<INotificacaoService> notificacaoServices)
         {
             _contextAplicativo = contextAplicativo;
             _contextGestaoClientes = contextGestaoClientes;
             _passwordHasher = passwordHasher;
             _httpContextAccessor = httpContextAccessor;
+            _notificacaoServices = notificacaoServices;
         }
 
         public async Task<CommandResult> Handle(RegistrarNovoTenantCommand request, CancellationToken cancellationToken)
@@ -776,7 +784,17 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             var cpfInformado = request.Cpf?.Trim() ?? string.Empty;
             string? cpfLimpo = null;
 
-            if (!string.IsNullOrWhiteSpace(cpfInformado))
+            // 1.07 (REG-004 / EF §7.1,11.1) — Emitente PJ (CNPJ) OU PF (somente CPF: autônomo/produtor
+            // rural/MEI). Ao menos um documento fiscal é obrigatório. Nenhum dos dois → rejeita.
+            var possuiCnpj = !string.IsNullOrWhiteSpace(cnpjInformado);
+            var possuiCpf = !string.IsNullOrWhiteSpace(cpfInformado);
+
+            if (!possuiCnpj && !possuiCpf)
+            {
+                return CommandResult.Falha(new[] { "Informe um documento fiscal: CNPJ (pessoa jurídica) ou CPF (pessoa física)." });
+            }
+
+            if (possuiCpf)
             {
                 var cpfDigitos = SomenteDigitos(cpfInformado);
                 if (!ValidarCpf(cpfDigitos))
@@ -786,17 +804,17 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 cpfLimpo = cpfDigitos;
             }
 
-            if (string.IsNullOrWhiteSpace(cnpjInformado))
+            // CNPJ (quando informado) validado por dígito verificador; PF mantém o CNPJ vazio (nulo
+            // deliberado — nunca placeholder). REG-036: integridade fiscal preservada.
+            var cnpjFormatado = string.Empty;
+            if (possuiCnpj)
             {
-                // A entidade Empresa (emitente) exige CNPJ. O emitente pessoa física (somente CPF)
-                // depende de flexibilizar essa invariante do agregado — fica para o passe de emitente PF.
-                return CommandResult.Falha(new[] { "Informe o CNPJ da empresa. O cadastro somente por CPF (emitente pessoa física) será habilitado em etapa posterior." });
-            }
-
-            var cnpjVo = new Cnpj(cnpjInformado);
-            if (!cnpjVo.IsValid)
-            {
-                return CommandResult.Falha(new[] { "CNPJ inválido." });
+                var cnpjVo = new Cnpj(cnpjInformado);
+                if (!cnpjVo.IsValid)
+                {
+                    return CommandResult.Falha(new[] { "CNPJ inválido." });
+                }
+                cnpjFormatado = cnpjVo.Valor;
             }
 
             // 1. Validar duplicidade de e-mail na base de usuários (cross-tenant)
@@ -814,11 +832,22 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 return CommandResult.Falha(new[] { "Já existe um usuário cadastrado com este e-mail." });
             }
 
-            // 2. Validar duplicidade de CNPJ (comparação pelos dígitos limpos — a Empresa armazena limpo).
-            var cnpjFormatado = cnpjVo.Valor;
-            var cnpjExiste = await _contextGestaoClientes.Empresas
-                .IgnoreQueryFilters()
-                .AnyAsync(e => e.Cnpj == cnpjFormatado && e.DeletadoEm == null, cancellationToken);
+            // 2. Validar duplicidade do documento fiscal (dígitos limpos — a Empresa armazena limpo).
+            //    PJ → CNPJ único (REG-003); PF → CPF único (REG-004).
+            var cnpjExiste = false;
+            var cpfExiste = false;
+            if (possuiCnpj)
+            {
+                cnpjExiste = await _contextGestaoClientes.Empresas
+                    .IgnoreQueryFilters()
+                    .AnyAsync(e => e.Cnpj == cnpjFormatado && e.DeletadoEm == null, cancellationToken);
+            }
+            else if (possuiCpf)
+            {
+                cpfExiste = await _contextGestaoClientes.Empresas
+                    .IgnoreQueryFilters()
+                    .AnyAsync(e => e.Cpf == cpfLimpo && e.DeletadoEm == null, cancellationToken);
+            }
 
             await AuthRlsBypass.DisableAsync(_contextGestaoClientes, cancellationToken);
             await AuthRlsBypass.DisableAsync(_contextAplicativo, cancellationToken);
@@ -826,6 +855,10 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             if (cnpjExiste)
             {
                 return CommandResult.Falha(new[] { "Já existe uma empresa cadastrada com este CNPJ." });
+            }
+            if (cpfExiste)
+            {
+                return CommandResult.Falha(new[] { "Já existe um cadastro com este CPF." });
             }
 
             // 2.5. REG-036: município IBGE precisa existir no cadastro de geografia (catálogo global).
@@ -874,9 +907,24 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     _httpContextAccessor.HttpContext.Items["TenantId"] = tenantId;
                 }
 
-                // Endereço com município IBGE REAL validado (cidade/UF vindos do catálogo). O detalhe
-                // de logradouro/número/bairro/CEP é completado no onboarding — cidade/UF já são íntegros.
-                var endereco = new Epros.Modules.GestaoClientes.Domain.ValueObjects.Endereco("A informar", "S/N", "Self Register", "A informar", "00000000", cidadeMunicipio, ufMunicipio);
+                // 1.07 — Endereço: quando o cadastro informa o logradouro, persiste o endereço REAL; caso
+                // contrário mantém um mínimo VÁLIDO com cidade/UF reais do IBGE. Obs.: "nulos honestos"
+                // para logradouro/CEP não são viáveis sem relaxar o VO Endereco (invariante compartilhada
+                // exige campos não-vazios) — registrado na MC como ponto adiado. Cidade/UF são íntegros.
+                var temEnderecoReal = !string.IsNullOrWhiteSpace(request.Logradouro);
+                var numeroEndereco = string.IsNullOrWhiteSpace(request.Numero) ? "S/N" : request.Numero!.Trim();
+                var endereco = new Epros.Modules.GestaoClientes.Domain.ValueObjects.Endereco(
+                    logradouro: temEnderecoReal ? request.Logradouro!.Trim() : "Não informado",
+                    numero: numeroEndereco,
+                    complemento: string.IsNullOrWhiteSpace(request.Complemento) ? null : request.Complemento!.Trim(),
+                    bairro: string.IsNullOrWhiteSpace(request.Bairro) ? "Não informado" : request.Bairro!.Trim(),
+                    cep: string.IsNullOrWhiteSpace(request.Cep) ? "00000000" : SomenteDigitos(request.Cep!),
+                    cidade: cidadeMunicipio,
+                    estado: ufMunicipio);
+
+                var enderecoTexto = temEnderecoReal
+                    ? $"{request.Logradouro!.Trim()}, {numeroEndereco} - {cidadeMunicipio}/{ufMunicipio}"
+                    : $"{cidadeMunicipio}/{ufMunicipio}";
 
                 // 3.5. Criar PessoaGrupo para o tenant
                 var pessoaGrupo = new PessoaGrupo(
@@ -923,6 +971,49 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 }
 
                 _contextGestaoClientes.Empresas.Add(empresa);
+                await _contextGestaoClientes.SaveChangesAsync(cancellationToken);
+
+                // 4.5. TRIAL AUTOMÁTICO (1.07 — destrava §3.2): na MESMA transação atômica, cria o Cliente
+                //      SaaS em StatusSaaS.TrialGratuito + assinatura (data-fim = agora + trial_days) num
+                //      plano trial. Sem isto o tenant nasceria bloqueado (ObterContextoSessao: cliente ==
+                //      null → block). Reusa OnboardingSaaSProvisioner (mesma lógica do handler cliente-saas).
+                var documentoFiscal = possuiCnpj ? cnpjFormatado : (cpfLimpo ?? string.Empty);
+
+                var planoTrial = await OnboardingSaaSProvisioner.ObterOuCriarPlanoTrialAsync(
+                    _contextGestaoClientes, tenantId, criadoPor, cancellationToken);
+
+                var trialDays = await OnboardingSaaSProvisioner.ObterTrialDaysAsync(_contextGestaoClientes, cancellationToken);
+                var trialAte = DateTime.UtcNow.AddDays(trialDays);
+
+                var clienteSaaS = OnboardingSaaSProvisioner.CriarCliente(
+                    tenantId: tenantId,
+                    razaoSocial: request.NomeEmpresa,
+                    documento: documentoFiscal,
+                    email: emailLower,
+                    planoId: planoTrial.Id,
+                    statusSaaS: StatusSaaS.TrialGratuito,
+                    diaVencimento: 10,
+                    criadoPor: criadoPor,
+                    telefone: request.Telefone,
+                    nomeContato: request.NomeAdmin,
+                    isDemo: false);
+
+                if (!clienteSaaS.IsValid)
+                {
+                    var erros = clienteSaaS.Notifications.Select(n => n.Message);
+                    return CommandResult.Falha(erros, "Erro ao criar a assinatura trial do tenant.");
+                }
+                _contextGestaoClientes.Clientes.Add(clienteSaaS);
+                await _contextGestaoClientes.SaveChangesAsync(cancellationToken);
+
+                var assinaturaTrial = OnboardingSaaSProvisioner.CriarAssinaturaTrial(
+                    tenantId, clienteSaaS.Id, planoTrial.Id, trialAte, criadoPor);
+                if (!assinaturaTrial.IsValid)
+                {
+                    var erros = assinaturaTrial.Notifications.Select(n => n.Message);
+                    return CommandResult.Falha(erros, "Erro ao criar a assinatura trial do tenant.");
+                }
+                _contextGestaoClientes.AssinaturasClientes.Add(assinaturaTrial);
                 await _contextGestaoClientes.SaveChangesAsync(cancellationToken);
 
                 // 5. Criar Usuário Admin no schema aplicativo (ContextAplicativo)
@@ -975,7 +1066,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     nome: request.NomeEmpresa,
                     email: emailLower,
                     telefone: request.Telefone,
-                    endereco: $"{cidadeMunicipio}/{ufMunicipio}",
+                    endereco: enderecoTexto,
                     timeZoneId: 1,
                     dateFormat: "DD-MM-YYYY",
                     currencyId: 1,
@@ -985,7 +1076,9 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     footerText: null,
                     logo: null,
                     favicon: null,
-                    criadoPor: criadoPor
+                    criadoPor: criadoPor,
+                    // 1.07 — tipo de telefone agora persistido (antes validado e descartado).
+                    telefoneTipo: request.TipoTelefone
                 );
                 _contextAplicativo.ConfiguracoesEmpresas.Add(configEmpresa);
 
@@ -1013,6 +1106,11 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     await transaction.CommitAsync(cancellationToken);
                 }
 
+                // 7. REG-045 — E-mail de boas-vindas / 1º acesso. DEPOIS do commit e SEM bloquear o
+                //    cadastro: falha de e-mail nunca desfaz o tenant já criado (try/catch + no-op se não
+                //    houver provedor configurado). Ver EnviarEmailBoasVindasAsync.
+                await EnviarEmailBoasVindasAsync(emailLower, request.NomeAdmin, request.NomeEmpresa);
+
                 return CommandResult.Ok("Tenant e administrador registrados com sucesso!", new Dictionary<string, object>
                 {
                     { "TenantId", tenantId },
@@ -1039,6 +1137,38 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
 
         private static string SomenteDigitos(string valor)
             => string.IsNullOrEmpty(valor) ? string.Empty : new string(valor.Where(char.IsDigit).ToArray());
+
+        /// <summary>
+        /// REG-045 — Dispara o e-mail de boas-vindas / primeiro acesso ao fim do onboarding. Resiliente:
+        /// se nenhum <see cref="INotificacaoService"/> estiver registrado (ex.: ambiente sem provedor),
+        /// vira no-op; qualquer exceção do provedor é engolida (log) para NÃO bloquear o cadastro — o
+        /// tenant já foi criado e comitado. A pendência de um provedor SMTP real é registrada na MC.
+        /// </summary>
+        private async Task EnviarEmailBoasVindasAsync(string emailDestino, string nomeAdmin, string nomeEmpresa)
+        {
+            var notificador = _notificacaoServices?.FirstOrDefault();
+            if (notificador == null)
+            {
+                return; // hook pronto, sem provedor configurado → no-op
+            }
+
+            try
+            {
+                var assunto = "Bem-vindo(a) ao EprosERP — seu ambiente está pronto";
+                var corpo =
+                    $"<p>Olá, {nomeAdmin}!</p>" +
+                    $"<p>O ambiente da empresa <strong>{nomeEmpresa}</strong> foi criado com sucesso e já está " +
+                    $"disponível em período de avaliação (trial).</p>" +
+                    $"<p>Acesse com o e-mail <strong>{emailDestino}</strong> e a senha que você definiu no cadastro " +
+                    $"para começar a configurar sua operação.</p>" +
+                    $"<p>Equipe EprosERP.</p>";
+                await notificador.EnviarEmailAsync(emailDestino, assunto, corpo);
+            }
+            catch
+            {
+                // Envio de e-mail é best-effort: falha aqui não desfaz o cadastro já concluído.
+            }
+        }
 
         /// <summary>Valida CPF pelos dois dígitos verificadores (rejeita sequências repetidas).</summary>
         private static bool ValidarCpf(string cpf)

@@ -21,7 +21,7 @@ namespace Epros.Tests
 {
     public class OnboardingTenantTests
     {
-        private (ServiceProvider Provider, TestTenantProvider TenantProvider) CreateServiceProvider(string databaseName, string tenantInicial = "system")
+        private (ServiceProvider Provider, TestTenantProvider TenantProvider) CreateServiceProvider(string databaseName, string tenantInicial = "system", INotificacaoService? notificacao = null)
         {
             var services = new ServiceCollection();
 
@@ -41,6 +41,13 @@ namespace Epros.Tests
             services.AddSingleton<ICurrentUser>(currentUser);
             services.AddSingleton<IPasswordHasher, Epros.Infrastructure.Services.Pbkdf2PasswordHasher>();
             services.AddSingleton<Microsoft.AspNetCore.Http.IHttpContextAccessor, Microsoft.AspNetCore.Http.HttpContextAccessor>();
+
+            // 1.07 — Só registra INotificacaoService quando o teste quer inspecionar o e-mail de boas-vindas.
+            // Sem registro, o handler resolve IEnumerable vazio e o envio vira no-op (não quebra o cadastro).
+            if (notificacao != null)
+            {
+                services.AddSingleton(notificacao);
+            }
 
             services.AddMediatR(cfg =>
             {
@@ -273,7 +280,204 @@ namespace Epros.Tests
             Assert.Contains(lista, e => e.EmpresaId == empresaId2 && e.RazaoSocial == "Empresa 2 SA" && !e.EhAdmin);
         }
 
+        // ---------------------------------------------------------------------
+        // 1.07 — Trial automático, PF, tipo de telefone, endereço e e-mail
+        // ---------------------------------------------------------------------
+
+        /// <summary>Semeia o catálogo mínimo de geografia (País → UF → Município) para o IBGE informado.</summary>
+        private static async Task SemearMunicipioAsync(ContextGestaoClientes contextGestao, long ibge, string cidade, string uf)
+        {
+            var pais = new Pais("Brasil", "BR", "BRA", "076", "Brasília", "+55", "system");
+            contextGestao.Paises.Add(pais);
+            await contextGestao.SaveChangesAsync();
+            var subdivisao = new Subdivisao(pais.Id, $"BR-{uf}", "Estado", TipoSubdivisao.Estado, null, "system");
+            contextGestao.Subdivisoes.Add(subdivisao);
+            await contextGestao.SaveChangesAsync();
+            var municipio = new Municipio(pais.Id, subdivisao.Id, cidade, (int)ibge, null, null, "system", uf);
+            contextGestao.Municipios.Add(municipio);
+            await contextGestao.SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task RegistrarNovoTenant_Deve_Criar_Cliente_Trial_E_Nao_Bloquear_Sessao()
+        {
+            var (serviceProvider, _) = CreateServiceProvider("db_onboarding_trial", "system");
+            var mediator = serviceProvider.GetRequiredService<IMediator>();
+            var contextGestao = serviceProvider.GetRequiredService<ContextGestaoClientes>();
+            await SemearMunicipioAsync(contextGestao, 4105508, "Cianorte", "PR");
+
+            var command = new RegistrarNovoTenantCommand(
+                "Trial Empresa Ltda", "12345678000195", "Admin Trial", "admin@trial.com", "SenhaForte@123",
+                CodigoIbgeMunicipio: 4105508, Telefone: "44999990000", TipoTelefone: "Celular");
+
+            var result = await mediator.Send(command);
+            Assert.True(result.Sucesso);
+            var dados = Assert.IsType<Dictionary<string, object>>(result.Dados);
+            var tenantId = (string)dados["TenantId"];
+            var usuarioId = (Guid)dados["UsuarioAdminId"];
+
+            // Cliente SaaS em TrialGratuito criado na mesma transação.
+            var cliente = await contextGestao.Clientes.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.TenantId == tenantId);
+            Assert.NotNull(cliente);
+            Assert.Equal(StatusSaaS.TrialGratuito, cliente!.StatusSaaS);
+
+            // Assinatura de trial com data-fim ~ agora + 30 dias (default trial_days).
+            var assinatura = await contextGestao.AssinaturasClientes.IgnoreQueryFilters().FirstOrDefaultAsync(a => a.ClienteId == cliente.Id);
+            Assert.NotNull(assinatura);
+            Assert.NotNull(assinatura!.TrialAte);
+            Assert.InRange(assinatura.TrialAte!.Value, DateTime.UtcNow.AddDays(29), DateTime.UtcNow.AddDays(31));
+
+            // Plano trial vinculado e ativo.
+            var plano = await contextGestao.Planos.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == cliente.PlanoId);
+            Assert.NotNull(plano);
+            Assert.True(plano!.Ativo);
+
+            // §3.2 destravada: a sessão do tenant novo NÃO nasce bloqueada.
+            var contexto = await mediator.Send(new ObterContextoSessaoQuery(tenantId, usuarioId));
+            Assert.False(contexto.Block);
+        }
+
+        [Fact]
+        public async Task RegistrarNovoTenant_Com_CPF_PessoaFisica_Deve_Criar_Tenant_Sem_Cnpj()
+        {
+            var (serviceProvider, _) = CreateServiceProvider("db_onboarding_pf", "system");
+            var mediator = serviceProvider.GetRequiredService<IMediator>();
+            var contextGestao = serviceProvider.GetRequiredService<ContextGestaoClientes>();
+            await SemearMunicipioAsync(contextGestao, 4105508, "Cianorte", "PR");
+
+            // PF: somente CPF (válido), sem CNPJ.
+            var command = new RegistrarNovoTenantCommand(
+                "Jose Produtor Rural", Cnpj: "", NomeAdmin: "Jose", EmailAdmin: "jose@pf.com", SenhaAdmin: "SenhaForte@123",
+                CodigoIbgeMunicipio: 4105508, Telefone: "44999990000", TipoTelefone: "Celular", Cpf: "39053344705");
+
+            var result = await mediator.Send(command);
+            Assert.True(result.Sucesso);
+            var dados = Assert.IsType<Dictionary<string, object>>(result.Dados);
+            var empresaId = (Guid)dados["EmpresaId"];
+
+            var empresa = await contextGestao.Empresas.IgnoreQueryFilters().FirstOrDefaultAsync(e => e.Id == empresaId);
+            Assert.NotNull(empresa);
+            Assert.Equal("39053344705", empresa!.Cpf);
+            Assert.True(string.IsNullOrEmpty(empresa.Cnpj)); // PF mantém CNPJ vazio (nulo deliberado)
+        }
+
+        [Fact]
+        public async Task RegistrarNovoTenant_Sem_Documento_Fiscal_Deve_Falhar()
+        {
+            var (serviceProvider, _) = CreateServiceProvider("db_onboarding_sem_doc", "system");
+            var mediator = serviceProvider.GetRequiredService<IMediator>();
+            var contextGestao = serviceProvider.GetRequiredService<ContextGestaoClientes>();
+            await SemearMunicipioAsync(contextGestao, 4105508, "Cianorte", "PR");
+
+            var command = new RegistrarNovoTenantCommand(
+                "Sem Documento", Cnpj: "", NomeAdmin: "X", EmailAdmin: "x@sd.com", SenhaAdmin: "SenhaForte@123",
+                CodigoIbgeMunicipio: 4105508, Telefone: "44999990000", TipoTelefone: "Celular", Cpf: null);
+
+            var result = await mediator.Send(command);
+            Assert.False(result.Sucesso);
+        }
+
+        [Fact]
+        public async Task RegistrarNovoTenant_Deve_Persistir_TipoTelefone_E_Endereco_Real()
+        {
+            var (serviceProvider, _) = CreateServiceProvider("db_onboarding_tel_end", "system");
+            var mediator = serviceProvider.GetRequiredService<IMediator>();
+            var contextApp = serviceProvider.GetRequiredService<ContextAplicativo>();
+            var contextGestao = serviceProvider.GetRequiredService<ContextGestaoClientes>();
+            await SemearMunicipioAsync(contextGestao, 4105508, "Cianorte", "PR");
+
+            var command = new RegistrarNovoTenantCommand(
+                "Empresa Endereco", "12345678000195", "Admin", "admin@end.com", "SenhaForte@123",
+                CodigoIbgeMunicipio: 4105508, Telefone: "44999990000", TipoTelefone: "Whatsapp",
+                Cpf: null, Logradouro: "Rua das Flores", Numero: "123", Complemento: "Sala 4", Bairro: "Centro", Cep: "87200000");
+
+            var result = await mediator.Send(command);
+            Assert.True(result.Sucesso);
+            var dados = Assert.IsType<Dictionary<string, object>>(result.Dados);
+            var empresaId = (Guid)dados["EmpresaId"];
+
+            var config = await contextApp.ConfiguracoesEmpresas.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.EmpresaId == empresaId);
+            Assert.NotNull(config);
+            Assert.Equal("Whatsapp", config!.TelefoneTipo);
+
+            var empresa = await contextGestao.Empresas.IgnoreQueryFilters().FirstOrDefaultAsync(e => e.Id == empresaId);
+            Assert.NotNull(empresa);
+            Assert.Equal("Rua das Flores", empresa!.Endereco.Logradouro);
+            Assert.Equal("123", empresa.Endereco.Numero);
+            Assert.Equal("Centro", empresa.Endereco.Bairro);
+            Assert.Equal("87200000", empresa.Endereco.Cep);
+        }
+
+        [Fact]
+        public async Task RegistrarNovoTenant_Deve_Ler_TrialDays_Da_ConfiguracaoGlobal()
+        {
+            var (serviceProvider, _) = CreateServiceProvider("db_onboarding_trialdays", "system");
+            var mediator = serviceProvider.GetRequiredService<IMediator>();
+            var contextGestao = serviceProvider.GetRequiredService<ContextGestaoClientes>();
+            await SemearMunicipioAsync(contextGestao, 4105508, "Cianorte", "PR");
+
+            contextGestao.ConfiguracoesGlobais.Add(new ConfiguracaoGlobal("trial_days", "7", false, "Duração do trial", "system", "system"));
+            await contextGestao.SaveChangesAsync();
+
+            var command = new RegistrarNovoTenantCommand(
+                "Trial Sete Dias", "12345678000195", "Admin", "admin@sete.com", "SenhaForte@123",
+                CodigoIbgeMunicipio: 4105508, Telefone: "44999990000", TipoTelefone: "Celular");
+
+            var result = await mediator.Send(command);
+            Assert.True(result.Sucesso);
+            var tenantId = (string)((Dictionary<string, object>)result.Dados!)["TenantId"];
+
+            var cliente = await contextGestao.Clientes.IgnoreQueryFilters().FirstAsync(c => c.TenantId == tenantId);
+            var assinatura = await contextGestao.AssinaturasClientes.IgnoreQueryFilters().FirstAsync(a => a.ClienteId == cliente.Id);
+            Assert.InRange(assinatura.TrialAte!.Value, DateTime.UtcNow.AddDays(6), DateTime.UtcNow.AddDays(8));
+        }
+
+        [Fact]
+        public async Task RegistrarNovoTenant_Deve_Disparar_Email_BoasVindas()
+        {
+            var spy = new SpyNotificacaoService();
+            var (serviceProvider, _) = CreateServiceProvider("db_onboarding_email", "system", spy);
+            var mediator = serviceProvider.GetRequiredService<IMediator>();
+            var contextGestao = serviceProvider.GetRequiredService<ContextGestaoClientes>();
+            await SemearMunicipioAsync(contextGestao, 4105508, "Cianorte", "PR");
+
+            var command = new RegistrarNovoTenantCommand(
+                "Empresa Email", "12345678000195", "Admin Email", "admin@email.com", "SenhaForte@123",
+                CodigoIbgeMunicipio: 4105508, Telefone: "44999990000", TipoTelefone: "Celular");
+
+            var result = await mediator.Send(command);
+            Assert.True(result.Sucesso);
+            Assert.Equal(1, spy.EmailsEnviados);
+            Assert.Equal("admin@email.com", spy.UltimoDestinatario);
+        }
+
+        [Fact]
+        public void EmpresaParametrosDfe_Default_Deve_Ser_Homologacao()
+        {
+            // 1.07 (decisão fiscal) — o default de ambiente DF-e é HOMOLOGAÇÃO (2), nunca produção.
+            var parametros = Epros.Modules.GestaoClientes.Domain.Entities.EmpresaParametrosDfe
+                .CriarPadraoHomologacao(Guid.NewGuid(), "tenant-x", "system");
+            Assert.True(parametros.IsValid);
+            Assert.Equal(Epros.Modules.GestaoClientes.Domain.Entities.ETipoAmbiente.Homologacao, parametros.TipoAmbienteNfe);
+            Assert.Equal(Epros.Modules.GestaoClientes.Domain.Entities.ETipoAmbiente.Homologacao, parametros.TipoAmbienteNfce);
+        }
+
         #region Provedores de Teste
+
+        private class SpyNotificacaoService : INotificacaoService
+        {
+            public int EmailsEnviados { get; private set; }
+            public string? UltimoDestinatario { get; private set; }
+            public Task EnviarEmailAsync(string destinatario, string assunto, string corpoHtml)
+            {
+                EmailsEnviados++;
+                UltimoDestinatario = destinatario;
+                return Task.CompletedTask;
+            }
+            public Task EnviarSmsAsync(string telefone, string mensagem) => Task.CompletedTask;
+            public Task EnviarWhatsAppAsync(string telefone, string mensagem) => Task.CompletedTask;
+        }
+
         public class TestTenantProvider : ITenantProvider
         {
             public string TenantId { get; set; }
