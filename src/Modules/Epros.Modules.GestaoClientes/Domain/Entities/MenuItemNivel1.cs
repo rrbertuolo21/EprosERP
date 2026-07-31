@@ -14,11 +14,13 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public string? To { get; private set; }
         public int Ordem { get; private set; }
         public string? Modulo { get; private set; }
+        // 1.10 — capacidade RBAC exigida para ver este item (ver Menu.CapacidadeRequerida).
+        public string? CapacidadeRequerida { get; private set; }
         public List<MenuItemNivel2> ItensNivel2 { get; private set; } = new();
 
         protected MenuItemNivel1() { } // EF Core
 
-        public MenuItemNivel1(Guid menuId, string descricao, string? icon, string? to, int ordem, string? modulo)
+        public MenuItemNivel1(Guid menuId, string descricao, string? icon, string? to, int ordem, string? modulo, string? capacidadeRequerida = null)
         {
             if (menuId == Guid.Empty)
                 AddNotification(nameof(MenuId), "O ID do menu principal é obrigatório.");
@@ -32,9 +34,10 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             To = to;
             Ordem = ordem;
             Modulo = modulo;
+            CapacidadeRequerida = string.IsNullOrWhiteSpace(capacidadeRequerida) ? null : capacidadeRequerida.Trim().ToLowerInvariant();
         }
 
-        public void Alterar(string descricao, string? icon, string? to, int ordem, string? modulo)
+        public void Alterar(string descricao, string? icon, string? to, int ordem, string? modulo, string? capacidadeRequerida = null)
         {
             Clear();
             if (string.IsNullOrWhiteSpace(descricao))
@@ -46,6 +49,7 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             To = to;
             Ordem = ordem;
             Modulo = modulo;
+            CapacidadeRequerida = string.IsNullOrWhiteSpace(capacidadeRequerida) ? null : capacidadeRequerida.Trim().ToLowerInvariant();
         }
     }
 }

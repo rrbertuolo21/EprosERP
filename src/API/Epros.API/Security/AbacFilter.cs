@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Epros.API.Seed;
+using Epros.Modules.GestaoClientes.Application.Services;
 using Epros.Modules.GestaoClientes.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
 using Microsoft.AspNetCore.Mvc;
@@ -63,11 +64,12 @@ namespace Epros.API.Security
                 return;
             }
 
-            // ================= 1.09: AUTORIZAÇÃO UNIFICADA POR RBAC (fonte autoritativa) =================
+            // ================= 1.09/1.10: AUTORIZAÇÃO UNIFICADA POR RBAC (fonte autoritativa) =================
             // Capacidades efetivas do usuário = união das capacidades dos PAPÉIS atribuídos a ele NA
-            // EMPRESA CORRENTE (papel com EmpresaId nulo vale p/ todas as empresas) + GRANT direto, MENOS o
-            // DENY direto (deny SOBREPÕE — REG-040/041). Se a capacidade exigida pelo [AbacAuthorize] está no
-            // conjunto efetivo → permite. Só vale para identidade real (userId é Guid de Usuario); operadores
+            // EMPRESA CORRENTE (papel com EmpresaId nulo vale p/ todas as empresas) + GRANT direto, com o
+            // DENY direto SOBREPONDO (REG-040/041). O cálculo agora vive em ICapacidadesEfetivasService —
+            // MESMA fonte que a projeção de menu (GET /menu), garantindo o invariante "item visível ⇔ o gate
+            // autoriza" (LC-1/LC-2). Só vale para identidade real (userId é Guid de Usuario); operadores
             // internos e o legado com id textual seguem pelo caminho legado abaixo (intacto).
             if (Guid.TryParse(userId, out var usuarioGuid))
             {
@@ -79,67 +81,28 @@ namespace Epros.API.Security
                         ? eid
                         : (Guid?)null;
 
+                // Resolve o serviço Scoped do request (compartilha o cache por request com o menu); em testes
+                // unitários que constroem o filtro sem DI, cai para uma instância direta sobre o mesmo contexto.
+                var servico =
+                    context.HttpContext.RequestServices?.GetService(typeof(ICapacidadesEfetivasService)) as ICapacidadesEfetivasService
+                    ?? new CapacidadesEfetivasService(_context);
+
+                var efetivas = await servico.ObterAsync(usuarioGuid, empresaCorrente);
+
                 // DENY direto sobrepõe tudo (REG-041): capacidade exigida negada ao usuário → 403.
-                var negadasIds = await _context.UsuariosCapacidades
-                    .Where(uc => uc.UsuarioId == usuarioGuid && !uc.Granted)
-                    .Select(uc => uc.CapacidadeId)
-                    .ToListAsync();
-
-                if (negadasIds.Count > 0)
+                if (efetivas.Negadas.Contains(requerida))
                 {
-                    var nomesNegados = await _context.Capacidades
-                        .IgnoreQueryFilters()
-                        .Where(c => negadasIds.Contains(c.Id) && c.DeletadoEm == null)
-                        .Select(c => c.Name)
-                        .ToListAsync();
-
-                    if (nomesNegados.Any(n => string.Equals(n, requerida, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        Log.Warning("Acesso negado (deny direto — REG-041) do usuário {UserId} em {Recurso}:{Acao}", userId, _recurso, _acao);
-                        context.Result = new ForbidResult();
-                        return;
-                    }
+                    Log.Warning("Acesso negado (deny direto — REG-041) do usuário {UserId} em {Recurso}:{Acao}", userId, _recurso, _acao);
+                    context.Result = new ForbidResult();
+                    return;
                 }
 
-                // Capacidades dos papéis do usuário na empresa corrente (papel EmpresaId nulo = todas).
-                var papelIds = await _context.UsuariosPapeis
-                    .Where(up => up.UsuarioId == usuarioGuid && (up.EmpresaId == null || up.EmpresaId == empresaCorrente))
-                    .Select(up => up.PapelId)
-                    .ToListAsync();
-
-                var capIds = new HashSet<Guid>();
-                if (papelIds.Count > 0)
+                if (efetivas.Concedidas.Contains(requerida))
                 {
-                    var capsDoPapel = await _context.PapeisCapacidades
-                        .IgnoreQueryFilters()
-                        .Where(pc => papelIds.Contains(pc.PapelId) && pc.DeletadoEm == null)
-                        .Select(pc => pc.CapacidadeId)
-                        .ToListAsync();
-                    foreach (var id in capsDoPapel) capIds.Add(id);
-                }
-
-                // Grants diretos (REG-040).
-                var grantsIds = await _context.UsuariosCapacidades
-                    .Where(uc => uc.UsuarioId == usuarioGuid && uc.Granted)
-                    .Select(uc => uc.CapacidadeId)
-                    .ToListAsync();
-                foreach (var id in grantsIds) capIds.Add(id);
-
-                if (capIds.Count > 0)
-                {
-                    var nomesEfetivos = await _context.Capacidades
-                        .IgnoreQueryFilters()
-                        .Where(c => capIds.Contains(c.Id) && c.DeletadoEm == null)
-                        .Select(c => c.Name)
-                        .ToListAsync();
-
-                    if (nomesEfetivos.Any(n => string.Equals(n, requerida, StringComparison.OrdinalIgnoreCase)))
-                    {
-                        return; // Autorizado pelo RBAC unificado.
-                    }
+                    return; // Autorizado pelo RBAC unificado.
                 }
             }
-            // =============== fim RBAC 1.09; abaixo o caminho LEGADO (transitório, preservado) ===============
+            // =============== fim RBAC 1.09/1.10; abaixo o caminho LEGADO (transitório, preservado) ===============
 
             // Busca o perfil do usuário no tenant atual (o tenant filter é aplicado automaticamente pelo EF Core)
             var perfil = await _context.PerfisUsuarios

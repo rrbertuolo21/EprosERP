@@ -1,23 +1,38 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import AppSidebarGroup from './AppSidebarGroup.vue'
 import { erpMenu, type MenuGroup } from './menu'
+import { useMenu } from '../composables/useMenu'
 
 /**
  * AppSidebar — navegação lateral do ERP, agrupada por módulo.
  *
- * Contrato:
- *   props: { menu?: MenuGroup[] }  // default: erpMenu (definido em components/menu.ts)
- * Botão de recolher (rail) controla o modo compacto (só ícones).
+ * 1.10 (PERMISSOES_DE_MENU): passa a consumir `GET /api/v1/menu` (via useMenu) e renderizar SÓ os
+ * itens visíveis, projetados das capacidades efetivas do RBAC (LC-3/§8.2/REG-002). Enquanto o menu
+ * do servidor não chega (ou vem vazio — catálogo ainda sem capacidades semeadas), cai para a árvore
+ * estática `erpMenu` como fallback. A prop `menu`, quando passada, tem prioridade (uso em testes/telas).
  */
-withDefaults(
+const props = withDefaults(
   defineProps<{
     menu?: MenuGroup[]
   }>(),
-  { menu: () => erpMenu }
+  { menu: undefined }
 )
 
 const colapsada = ref(false)
+const { grupos, carregar } = useMenu()
+
+onMounted(() => {
+  // Best-effort: se falhar, `grupos` fica vazio e o fallback estático assume.
+  carregar()
+})
+
+// Precedência: prop explícita > menu do servidor (por capacidade) > árvore estática (fallback).
+const menuEfetivo = computed<MenuGroup[]>(() => {
+  if (props.menu && props.menu.length > 0) return props.menu
+  if (grupos.value.length > 0) return grupos.value
+  return erpMenu
+})
 </script>
 
 <template>
@@ -34,7 +49,7 @@ const colapsada = ref(false)
 
     <nav class="sidebar-nav">
       <AppSidebarGroup
-        v-for="grupo in menu"
+        v-for="grupo in menuEfetivo"
         :key="grupo.label"
         :group="grupo"
         :collapsed="colapsada"

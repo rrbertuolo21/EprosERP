@@ -18,7 +18,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
 
         public async Task<CommandResult> Handle(CriarMenuCommand request, CancellationToken cancellationToken)
         {
-            var menu = new Menu(request.Descricao, request.Icon, request.To, request.Ordem, request.Modulo);
+            var menu = new Menu(request.Descricao, request.Icon, request.To, request.Ordem, request.Modulo, request.CapacidadeRequerida);
             if (!menu.IsValid)
                 return CommandResult.Falha(menu.Notifications.Select(n => n.Message).Distinct(), "Menu inválido.");
 
@@ -40,7 +40,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             if (menu == null)
                 return CommandResult.Falha(new[] { "Menu não encontrado." });
 
-            menu.Alterar(request.Descricao, request.Icon, request.To, request.Ordem, request.Modulo);
+            menu.Alterar(request.Descricao, request.Icon, request.To, request.Ordem, request.Modulo, request.CapacidadeRequerida);
             if (!menu.IsValid)
                 return CommandResult.Falha(menu.Notifications.Select(n => n.Message).Distinct(), "Menu inválido.");
 
@@ -79,7 +79,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             if (!menuExiste)
                 return CommandResult.Falha(new[] { "Menu principal não encontrado." });
 
-            var item = new MenuItemNivel1(request.MenuId, request.Descricao, request.Icon, request.To, request.Ordem, request.Modulo);
+            var item = new MenuItemNivel1(request.MenuId, request.Descricao, request.Icon, request.To, request.Ordem, request.Modulo, request.CapacidadeRequerida);
             if (!item.IsValid)
                 return CommandResult.Falha(item.Notifications.Select(n => n.Message).Distinct(), "Item de nível 1 inválido.");
 
@@ -101,7 +101,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             if (item == null)
                 return CommandResult.Falha(new[] { "Item de nível 1 não encontrado." });
 
-            item.Alterar(request.Descricao, request.Icon, request.To, request.Ordem, request.Modulo);
+            item.Alterar(request.Descricao, request.Icon, request.To, request.Ordem, request.Modulo, request.CapacidadeRequerida);
             if (!item.IsValid)
                 return CommandResult.Falha(item.Notifications.Select(n => n.Message).Distinct(), "Item de nível 1 inválido.");
 
@@ -140,7 +140,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             if (!itemN1Existe)
                 return CommandResult.Falha(new[] { "Item de nível 1 não encontrado." });
 
-            var item = new MenuItemNivel2(request.MenuItemNivel1Id, request.Descricao, request.Icon, request.To, request.Ordem, request.Modulo);
+            var item = new MenuItemNivel2(request.MenuItemNivel1Id, request.Descricao, request.Icon, request.To, request.Ordem, request.Modulo, request.CapacidadeRequerida);
             if (!item.IsValid)
                 return CommandResult.Falha(item.Notifications.Select(n => n.Message).Distinct(), "Item de nível 2 inválido.");
 
@@ -162,7 +162,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             if (item == null)
                 return CommandResult.Falha(new[] { "Item de nível 2 não encontrado." });
 
-            item.Alterar(request.Descricao, request.Icon, request.To, request.Ordem, request.Modulo);
+            item.Alterar(request.Descricao, request.Icon, request.To, request.Ordem, request.Modulo, request.CapacidadeRequerida);
             if (!item.IsValid)
                 return CommandResult.Falha(item.Notifications.Select(n => n.Message).Distinct(), "Item de nível 2 inválido.");
 

@@ -100,6 +100,10 @@ try
     // Registra o serviço de hashing de senhas (PBKDF2 / HMAC-SHA256). Sem estado -> Singleton.
     builder.Services.AddSingleton<IPasswordHasher, Epros.Infrastructure.Services.Pbkdf2PasswordHasher>();
     builder.Services.AddScoped<IValidadorLimitesSaaS, Epros.Modules.Aplicativo.Application.Services.ValidadorLimitesSaaS>();
+    // 1.10 (PERMISSOES_DE_MENU) — fonte única das capacidades efetivas do RBAC. Scoped: vive por request
+    // (memoiza por usuário/empresa — REG-070/item 6), compartilhada entre o AbacFilter (gate) e a projeção
+    // de menu (GET /menu), garantindo "item visível ⇔ endpoint autoriza" (LC-1/LC-2).
+    builder.Services.AddScoped<Epros.Modules.GestaoClientes.Application.Services.ICapacidadesEfetivasService, Epros.Modules.GestaoClientes.Application.Services.CapacidadesEfetivasService>();
     // Serviço de cálculo de próximas execuções de agendamentos de workflow (PLT-WF §7.4.3).
     builder.Services.AddScoped<Epros.Modules.Aplicativo.Application.Services.IAgendaIntervalarService, Epros.Modules.Aplicativo.Application.Services.AgendaIntervalarService>();
 
