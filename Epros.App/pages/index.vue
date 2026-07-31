@@ -105,6 +105,43 @@
             </button>
           </form>
 
+          <!-- Login social (1.04): entra via Google/Microsoft -->
+          <div class="social-divider"><span>ou continue com</span></div>
+
+          <div class="social-buttons">
+            <button
+              type="button"
+              class="btn btn-secondary social-btn"
+              :disabled="!!socialLoading"
+              @click="iniciarLoginSocial('Google')"
+            >
+              <svg v-if="socialLoading !== 'Google'" class="social-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1Z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z" />
+                <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z" />
+              </svg>
+              <span v-if="socialLoading !== 'Google'">Entrar com Google</span>
+              <span v-else class="spinner"></span>
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-secondary social-btn"
+              :disabled="!!socialLoading"
+              @click="iniciarLoginSocial('Microsoft')"
+            >
+              <svg v-if="socialLoading !== 'Microsoft'" class="social-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="#F25022" d="M2 2h9.5v9.5H2z" />
+                <path fill="#7FBA00" d="M12.5 2H22v9.5h-9.5z" />
+                <path fill="#00A4EF" d="M2 12.5h9.5V22H2z" />
+                <path fill="#FFB900" d="M12.5 12.5H22V22h-9.5z" />
+              </svg>
+              <span v-if="socialLoading !== 'Microsoft'">Entrar com Microsoft</span>
+              <span v-else class="spinner"></span>
+            </button>
+          </div>
+
           <p class="signup-prompt">
             Não tem uma conta?
             <NuxtLink to="/cadastro" class="signup-link">Cadastre-se</NuxtLink>
@@ -127,6 +164,8 @@ const router = useRouter()
 const loading = ref(false)
 const errorMessage = ref('')
 const showPassword = ref(false)
+// Provedor social em processamento ('Google' | 'Microsoft' | '') — controla o spinner do botão.
+const socialLoading = ref('')
 
 // Tenant não é mais exposto na UI de produção (multi-tenant é resolvido pela
 // API a partir do login/e-mail). Mantido no estado com default vazio para
@@ -156,6 +195,26 @@ const handleLogin = async () => {
     const dados = resp?.dados ?? resp?.data ?? resp
     if (resp?.sucesso !== false && dados?.token) {
       localStorage.setItem('epros_token', dados.token)
+
+      // Multi-tenant (1.04): identidade global com acesso a mais de um tenant.
+      // O backend não escopa direto — devolve a lista e exige a seleção do tenant.
+      // Guarda uma sessão parcial (token básico + tenants) e encaminha à tela de seleção.
+      if (dados.exigeSelecaoTenant) {
+        const partial = {
+          email: dados.email ?? form.email,
+          usuarioId: dados.usuarioId,
+          tenantId: dados.tenantId,
+          tenantName: 'Selecione o tenant',
+          planName: 'Plano Demo',
+          status: 'Ativo',
+          tenants: dados.tenants ?? []
+        }
+        localStorage.setItem('epros_user', JSON.stringify(partial))
+        loading.value = false
+        router.push('/auth/selecionar-tenant')
+        return
+      }
+
       const userData = {
         email: dados.email ?? form.email,
         tenantId: dados.tenantId ?? form.tenant.toLowerCase().trim(),
@@ -227,6 +286,30 @@ const handleLogin = async () => {
   // 3) Fallback simulado local (demo sem backend)
   loading.value = false
   executeSimulatedLogin()
+}
+
+// Login social (1.04 PASS 3): pede a URL de autorização ao backend e redireciona o
+// navegador para o provedor. Guarda o provedor para a página de callback identificar
+// qual `/auth/social/{provedor}/callback` chamar na volta.
+const iniciarLoginSocial = async (provedor) => {
+  socialLoading.value = provedor
+  errorMessage.value = ''
+  try {
+    localStorage.setItem('epros_social_provedor', provedor)
+    const resp = await $fetch(apiUrl(`/api/v1/auth/social/${provedor}/start`))
+    const dados = resp?.dados ?? resp?.data ?? resp
+    const url = dados?.urlAutorizacao ?? dados?.UrlAutorizacao
+    if (url) {
+      window.location.href = url
+      return
+    }
+    errorMessage.value = resp?.erros?.join(' ') || resp?.mensagem || 'Não foi possível iniciar o login social.'
+  } catch (e) {
+    const erros = e?.data?.erros ?? e?.response?._data?.erros
+    errorMessage.value = erros?.length ? erros.join(' ') : (e?.data?.mensagem || 'Falha ao iniciar o login social.')
+  } finally {
+    socialLoading.value = ''
+  }
 }
 
 const executeSimulatedLogin = () => {
@@ -541,6 +624,43 @@ const executeSimulatedLogin = () => {
   padding: 13px;
   width: 100%;
   font-size: 15px;
+}
+
+/* ==== Login social ==== */
+.social-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0 16px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.social-divider::before,
+.social-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+.social-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px;
+  font-size: 14px;
+}
+.social-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+  flex-shrink: 0;
 }
 
 .signup-prompt {

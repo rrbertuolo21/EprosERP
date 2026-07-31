@@ -15,7 +15,9 @@ export default defineNuxtRouteMiddleware((to) => {
   const storedUser = localStorage.getItem('epros_user')
 
   // Rotas públicas (sem autenticação).
-  const rotasPublicas = ['/', '/cadastro', '/recuperar-senha']
+  // `/auth/social-callback` é público: o provedor social redireciona o navegador para cá
+  // ANTES de existir sessão (o token só é criado quando o callback do backend responde).
+  const rotasPublicas = ['/', '/cadastro', '/recuperar-senha', '/auth/social-callback', '/auth/selecionar-tenant']
 
   // 1. Sem usuário logado.
   if (!storedUser) {
