@@ -599,6 +599,32 @@ try
         }
     }
 
+    // Seed de VALIDAÇÃO ponta a ponta (multi-tenant / contador parceiro + isolamento).
+    // Gating DURO:
+    //  - Roda SÓ em Development/Staging; FAIL-CLOSED em Production (e em qualquer outro ambiente,
+    //    inclusive "Testing" do host de testes) — a condição exige explicitamente Dev OU Staging.
+    //  - Guardado atrás da config "Seed:Validacao": default LIGADO em Development, DESLIGADO caso
+    //    contrário (em Staging é preciso setar Seed:Validacao=true para ligar). Setar =false desliga.
+    //  - Executa DEPOIS das migrations e do CatalogoFiscalSeeder, no mesmo ponto de bootstrap.
+    //  - Idempotente e envolto em try/catch: nunca derruba o boot.
+    {
+        var ambienteElegivel = app.Environment.IsDevelopment() || app.Environment.IsStaging();
+        var seedValidacaoLigado = app.Configuration.GetValue<bool?>("Seed:Validacao") ?? app.Environment.IsDevelopment();
+
+        if (ambienteElegivel && !app.Environment.IsProduction() && seedValidacaoLigado)
+        {
+            using var scope = app.Services.CreateScope();
+            try
+            {
+                await Epros.API.Seed.SeedValidacaoSeeder.SeedAsync(scope.ServiceProvider, app.Environment.EnvironmentName);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Falha ao executar o seed de validação no bootstrap (boot continua).");
+            }
+        }
+    }
+
     // Inicializa o Cofre de Segredos (Vault/Local)
     using (var scope = app.Services.CreateScope())
     {
