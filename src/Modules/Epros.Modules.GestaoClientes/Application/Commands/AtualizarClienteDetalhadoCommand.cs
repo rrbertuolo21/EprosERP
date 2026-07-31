@@ -23,7 +23,9 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
         List<SalvarComposicaoDto> Composicoes,
         int? CotaUsuarios = null,
         int? CotaEmpresas = null,
-        int? CotaPermissoes = null
+        int? CotaPermissoes = null,
+        // 1.06 — override (snapshot) do limite de CLIENTES do tenant; null = usa Plano.LimiteClientes.
+        int? CotaClientes = null
     ) : ICommand;
 
     public class SalvarEnderecoDto

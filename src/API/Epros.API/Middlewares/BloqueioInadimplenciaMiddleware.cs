@@ -51,7 +51,23 @@ namespace Epros.API.Middlewares
 
                     if (cliente != null)
                     {
-                        var dataLimite = DateTime.UtcNow.AddDays(-15);
+                        // 1.06 — prazo de tolerância por PLANO (antes era 15 hardcoded). Lê o valor
+                        // do plano contratado; fallback 15 dias se ausente/nulo ou plano não resolvido.
+                        int diasTolerancia = 15;
+                        if (cliente.PlanoId != Guid.Empty)
+                        {
+                            var diasPlano = await contextGestao.Planos
+                                .IgnoreQueryFilters()
+                                .Where(p => p.Id == cliente.PlanoId && p.DeletadoEm == null)
+                                .Select(p => p.DiasToleranciaInadimplencia)
+                                .FirstOrDefaultAsync();
+                            if (diasPlano.HasValue && diasPlano.Value > 0)
+                            {
+                                diasTolerancia = diasPlano.Value;
+                            }
+                        }
+
+                        var dataLimite = DateTime.UtcNow.AddDays(-diasTolerancia);
 
                         var inadimplente = await contextGestao.Faturas
                             .IgnoreQueryFilters()

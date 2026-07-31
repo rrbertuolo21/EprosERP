@@ -18,16 +18,22 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
         private readonly ContextGestaoClientes _context;
         private readonly ITenantProvider _tenantProvider;
         private readonly ICurrentUser _currentUser;
+        private readonly IValidadorLimitesSaaS _validadorLimites;
 
-        public CriarPapelCommandHandler(ContextGestaoClientes context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        public CriarPapelCommandHandler(ContextGestaoClientes context, ITenantProvider tenantProvider, ICurrentUser currentUser, IValidadorLimitesSaaS validadorLimites)
         {
-            _context = context; _tenantProvider = tenantProvider; _currentUser = currentUser;
+            _context = context; _tenantProvider = tenantProvider; _currentUser = currentUser; _validadorLimites = validadorLimites;
         }
 
         public async Task<CommandResult> Handle(CriarPapelCommand request, CancellationToken cancellationToken)
         {
             var tenantId = _tenantProvider.GetTenantId();
             var userId = _currentUser.GetUserId() ?? "system";
+
+            // 1.06 — enforcement do limite de PERMISSÕES/PAPÉIS (RBAC), liga a cota CotaPermissoes.
+            var (excedeuLimite, msgLimite) = await _validadorLimites.ValidarLimitePermissoesAsync(tenantId, cancellationToken);
+            if (excedeuLimite)
+                return CommandResult.Falha(new[] { msgLimite }, "Limite de papéis/permissões excedido");
 
             var duplicado = await _context.Papeis.AnyAsync(p => p.Name == request.Name && p.TenantId == tenantId, cancellationToken);
             if (duplicado)

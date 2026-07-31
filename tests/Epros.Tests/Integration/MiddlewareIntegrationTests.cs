@@ -158,18 +158,64 @@ namespace Epros.Tests.Integration
         }
 
         [Fact]
-        public async Task Deve_Bloquear_Acesso_A_Modulo_Para_Tenant_Bloqueado()
+        public async Task Deve_Bloquear_Acesso_A_Modulo_Nao_Contratado_No_Plano()
         {
+            // 1.06 — entitlement REAL: o stub demonstrativo (tenant hardcoded + /financas) foi
+            // removido. O bloqueio agora cruza a ROTA do módulo com a FLAG do plano do tenant.
+            // Semeamos um plano SEM o módulo Financeiro (flags nascem false) + cliente ativo nele;
+            // a rota do Financeiro deve responder 403 "modulo_nao_contratado".
             using var factory = new CustomWebApplicationFactory();
-            var client = factory.CreateClient();
-            client.DefaultRequestHeaders.Add("X-Tenant-Id", "tenant-teste-bloqueado");
 
-            // Acesso ao financeiro (financas) bloqueado para "tenant-teste-bloqueado" no ModuloTenantMiddleware
-            var response = await client.GetAsync("/api/v1/financas/contas-pagar");
+            const string tenant = "tenant-sem-financeiro";
+            Guid planoId;
+            using (var scope = factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<ContextGestaoClientes>();
+                var plano = new Plano("Plano Básico Sem Financeiro", 99.90m, tenant, "seed"); // ModuloFinanceiro=false
+                db.Planos.Add(plano);
+                var cliente = new Cliente("Cliente Sem Financeiro Ltda", "22222222000122", "sf@cliente.com", plano.Id, tenant, "seed");
+                db.Clientes.Add(cliente);
+                await db.SaveChangesAsync();
+                planoId = plano.Id;
+            }
+
+            var client = factory.CreateClient();
+            client.DefaultRequestHeaders.Add("X-Tenant-Id", tenant);
+
+            var response = await client.GetAsync("/api/v1/financeiro/contas-pagar");
 
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
             var content = await response.Content.ReadAsStringAsync();
-            Assert.Contains("Módulo desabilitado", content);
+            Assert.Contains("modulo_nao_contratado", content);
+        }
+
+        [Fact]
+        public async Task Deve_Permitir_Acesso_A_Modulo_Contratado_No_Plano()
+        {
+            // Contrapartida: plano COM a flag Financeiro → o ModuloTenantMiddleware NÃO barra por
+            // entitlement. Isolamos o middleware: o corpo NÃO deve conter o código do gate de módulo
+            // ("modulo_nao_contratado"). O que vier depois (401/403 de ABAC, 404, 200) é de outra camada.
+            using var factory = new CustomWebApplicationFactory();
+
+            const string tenant = "tenant-com-financeiro";
+            using (var scope = factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<ContextGestaoClientes>();
+                var plano = new Plano("Plano Completo", 499.90m, null, 999, 99, null, tenant, "seed",
+                    moduloCrm: true, moduloProjetos: true, moduloRh: true, moduloFinanceiro: true, moduloPdv: true);
+                db.Planos.Add(plano);
+                var cliente = new Cliente("Cliente Com Financeiro Ltda", "33333333000133", "cf@cliente.com", plano.Id, tenant, "seed");
+                db.Clientes.Add(cliente);
+                await db.SaveChangesAsync();
+            }
+
+            var client = factory.CreateClient();
+            client.DefaultRequestHeaders.Add("X-Tenant-Id", tenant);
+
+            var response = await client.GetAsync("/api/v1/financeiro/contas-pagar");
+
+            var content = await response.Content.ReadAsStringAsync();
+            Assert.DoesNotContain("modulo_nao_contratado", content);
         }
 
         [Fact]

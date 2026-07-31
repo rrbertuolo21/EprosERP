@@ -58,7 +58,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             );
 
             // 1.01 — cota (snapshot) que sobrepõe os limites do plano
-            cliente.AtualizarCota(request.CotaUsuarios, request.CotaEmpresas, request.CotaPermissoes, alteradoPor);
+            cliente.AtualizarCota(request.CotaUsuarios, request.CotaEmpresas, request.CotaPermissoes, alteradoPor, request.CotaClientes);
 
             if (!cliente.IsValid)
             {

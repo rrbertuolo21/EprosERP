@@ -39,7 +39,10 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
         bool ModuloRh = false,
         bool ModuloFinanceiro = false,
         bool ModuloPdv = false,
-        List<ModuloPlanoInput>? Modulos = null
+        List<ModuloPlanoInput>? Modulos = null,
+        // 1.06 — 0 = ilimitado; DiasToleranciaInadimplencia null → fallback 15 no middleware.
+        int LimiteClientes = 0,
+        int? DiasToleranciaInadimplencia = 15
     ) : ICommand;
 
     public class CriarPlanoRicoCommandValidator : AbstractValidator<CriarPlanoRicoCommand>
@@ -52,11 +55,15 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
             RuleFor(p => p.Valor)
                 .GreaterThanOrEqualTo(0).WithMessage("O Valor do plano deve ser maior ou igual a zero.");
 
+            // 1.06 (REG-014): 0 = ilimitado.
             RuleFor(p => p.LimiteUsuarios)
-                .GreaterThan(0).WithMessage("O Limite de usuários deve ser maior que zero.");
+                .GreaterThanOrEqualTo(0).WithMessage("O Limite de usuários deve ser maior ou igual a zero (0 = ilimitado).");
 
             RuleFor(p => p.LimiteEmpresas)
-                .GreaterThan(0).WithMessage("O Limite de empresas deve ser maior que zero.");
+                .GreaterThanOrEqualTo(0).WithMessage("O Limite de empresas deve ser maior ou igual a zero (0 = ilimitado).");
+
+            RuleFor(p => p.LimiteClientes)
+                .GreaterThanOrEqualTo(0).WithMessage("O Limite de clientes deve ser maior ou igual a zero (0 = ilimitado).");
         }
     }
 
@@ -80,7 +87,10 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
         bool ModuloRh = false,
         bool ModuloFinanceiro = false,
         bool ModuloPdv = false,
-        List<ModuloPlanoInput>? Modulos = null
+        List<ModuloPlanoInput>? Modulos = null,
+        // 1.06 — 0 = ilimitado; DiasToleranciaInadimplencia null → fallback 15 no middleware.
+        int LimiteClientes = 0,
+        int? DiasToleranciaInadimplencia = 15
     ) : ICommand;
 
     public class AtualizarPlanoCommandValidator : AbstractValidator<AtualizarPlanoCommand>
@@ -96,11 +106,15 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
             RuleFor(p => p.Valor)
                 .GreaterThanOrEqualTo(0).WithMessage("O Valor do plano deve ser maior ou igual a zero.");
 
+            // 1.06 (REG-014): 0 = ilimitado.
             RuleFor(p => p.LimiteUsuarios)
-                .GreaterThan(0).WithMessage("O Limite de usuários deve ser maior que zero.");
+                .GreaterThanOrEqualTo(0).WithMessage("O Limite de usuários deve ser maior ou igual a zero (0 = ilimitado).");
 
             RuleFor(p => p.LimiteEmpresas)
-                .GreaterThan(0).WithMessage("O Limite de empresas deve ser maior que zero.");
+                .GreaterThanOrEqualTo(0).WithMessage("O Limite de empresas deve ser maior ou igual a zero (0 = ilimitado).");
+
+            RuleFor(p => p.LimiteClientes)
+                .GreaterThanOrEqualTo(0).WithMessage("O Limite de clientes deve ser maior ou igual a zero (0 = ilimitado).");
         }
     }
 

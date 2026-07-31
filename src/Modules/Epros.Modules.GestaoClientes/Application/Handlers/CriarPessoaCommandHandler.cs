@@ -20,21 +20,35 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
         private readonly ContextGestaoClientes _context;
         private readonly ITenantProvider _tenantProvider;
         private readonly ICurrentUser _currentUser;
+        private readonly IValidadorLimitesSaaS _validadorLimites;
 
         public CriarPessoaCommandHandler(
             ContextGestaoClientes context,
             ITenantProvider tenantProvider,
-            ICurrentUser currentUser)
+            ICurrentUser currentUser,
+            IValidadorLimitesSaaS validadorLimites)
         {
             _context = context;
             _tenantProvider = tenantProvider;
             _currentUser = currentUser;
+            _validadorLimites = validadorLimites;
         }
 
         public async Task<CommandResult> Handle(CriarPessoaCommand request, CancellationToken cancellationToken)
         {
             var tenantId = _tenantProvider.GetTenantId();
             var criadoPor = _currentUser.GetUserId() ?? "system";
+
+            // 1.06 — enforcement do limite de CLIENTES do plano/cota do tenant, ANTES de persistir.
+            // Só se aplica quando a Pessoa está sendo cadastrada com o papel Cliente.
+            if (request.EhCliente)
+            {
+                var (excedeuLimite, msgLimite) = await _validadorLimites.ValidarLimiteClientesAsync(tenantId, cancellationToken);
+                if (excedeuLimite)
+                {
+                    return CommandResult.Falha(new[] { msgLimite }, "Limite de clientes excedido");
+                }
+            }
 
             // Obter documento do consumidor final padrão para permitir duplicidade (REG-PEM-006)
             string? documentoConsumidorPadrao = null;

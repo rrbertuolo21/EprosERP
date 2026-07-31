@@ -71,6 +71,20 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 }
             }
 
+            // 2. Idempotência (REG-035 / 1.06): dedupe por id de evento/pagamento. Se este pagamento já
+            // foi processado, ignoramos a reentrega retornando Ok (sem reprocessar a baixa). O índice
+            // único (provedor, evento_id) protege contra corrida de webhooks concorrentes.
+            const string provedorWebhook = "mercadopago";
+            var jaProcessado = await _context.WebhookEventosProcessados
+                .IgnoreQueryFilters()
+                .AnyAsync(w => w.Provedor == provedorWebhook && w.EventoId == request.Data.Id && w.DeletadoEm == null, cancellationToken);
+
+            if (jaProcessado)
+            {
+                _logger?.LogInformation("Webhook de pagamento {EventoId} já processado anteriormente — reentrega ignorada (idempotência).", request.Data.Id);
+                return CommandResult.Ok("Evento de webhook já processado anteriormente (idempotência).");
+            }
+
             // Tenta converter o id do pagamento do Mercado Pago para GUID (que no nosso fluxo representa o Id da Fatura)
             if (!Guid.TryParse(request.Data.Id, out var faturaId))
             {
@@ -90,6 +104,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             // Se a fatura já estiver paga, apenas retorna Ok para evitar processamento duplicado
             if (fatura.Status == FaturaStatus.Paga)
             {
+                await RegistrarEventoProcessadoAsync(provedorWebhook, request.Data.Id, request.Action, cancellationToken);
                 return CommandResult.Ok("Fatura já se encontra baixada/paga.");
             }
 
@@ -101,7 +116,28 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 return CommandResult.Falha(result.Erros, $"Erro ao processar a baixa da fatura {faturaId} via webhook.");
             }
 
+            // Marca o evento como processado (idempotência) após a baixa bem-sucedida.
+            await RegistrarEventoProcessadoAsync(provedorWebhook, request.Data.Id, request.Action, cancellationToken);
+
             return CommandResult.Ok("Baixa da fatura processada com sucesso via webhook!");
+        }
+
+        /// <summary>
+        /// Persiste o registro de idempotência do evento. Uma colisão de índice único (webhook
+        /// concorrente que já gravou o mesmo evento) é tratada como sucesso — o evento está processado.
+        /// </summary>
+        private async Task RegistrarEventoProcessadoAsync(string provedor, string eventoId, string acao, CancellationToken cancellationToken)
+        {
+            try
+            {
+                _context.WebhookEventosProcessados.Add(new WebhookEventoProcessado(provedor, eventoId, acao, "system"));
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException)
+            {
+                // Reentrega concorrente já registrou este evento — idempotência garantida pelo índice único.
+                _logger?.LogInformation("Registro de idempotência do webhook {EventoId} já existente (corrida de reentrega).", eventoId);
+            }
         }
     }
 }

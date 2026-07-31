@@ -115,6 +115,9 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
         public DbSet<FusoHorario> FusosHorarios => Set<FusoHorario>();
         public DbSet<Moeda> Moedas => Set<Moeda>();
         public DbSet<UpgradePlano> UpgradesPlanos => Set<UpgradePlano>();
+
+        // 1.06 — Idempotência do webhook de pagamento (dedupe por id de evento/pagamento).
+        public DbSet<WebhookEventoProcessado> WebhookEventosProcessados => Set<WebhookEventoProcessado>();
         public DbSet<ExercicioFinanceiro> ExerciciosFinanceiros => Set<ExercicioFinanceiro>();
         public DbSet<Categoria> Categorias => Set<Categoria>();
         public DbSet<UnidadeMedida> UnidadesMedida => Set<UnidadeMedida>();
@@ -163,6 +166,18 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
             modelBuilder.Entity<ModuloPlano>(entity =>
             {
                 entity.HasKey(m => m.Id);
+            });
+
+            // 1.06 — Idempotência de webhook: índice único por (provedor, evento_id) garante que o
+            // mesmo pagamento não seja processado duas vezes mesmo sob concorrência/reentrega.
+            modelBuilder.Entity<WebhookEventoProcessado>(entity =>
+            {
+                entity.HasKey(w => w.Id);
+                entity.Property(w => w.Provedor).HasMaxLength(50);
+                entity.Property(w => w.EventoId).HasMaxLength(200);
+                entity.HasIndex(w => new { w.Provedor, w.EventoId })
+                      .IsUnique()
+                      .HasDatabaseName("ux__webhook_evento_provedor_evento_id");
             });
 
             modelBuilder.Entity<Cliente>(entity =>

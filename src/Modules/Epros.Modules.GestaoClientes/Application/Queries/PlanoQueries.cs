@@ -40,6 +40,9 @@ namespace Epros.Modules.GestaoClientes.Application.Queries
         public string? DescricaoCompleta { get; set; }
         public int LimiteUsuarios { get; set; }
         public int LimiteEmpresas { get; set; }
+        // 1.06 — 0 = ilimitado; DiasToleranciaInadimplencia null → fallback 15.
+        public int LimiteClientes { get; set; }
+        public int? DiasToleranciaInadimplencia { get; set; }
         public string? RecursosInclusos { get; set; }
         public DateTime? DataInicio { get; set; }
         public DateTime? DataFim { get; set; }

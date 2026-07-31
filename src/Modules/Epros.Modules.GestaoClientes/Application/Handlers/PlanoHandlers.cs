@@ -80,7 +80,9 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 request.ModuloProjetos,
                 request.ModuloRh,
                 request.ModuloFinanceiro,
-                request.ModuloPdv
+                request.ModuloPdv,
+                request.LimiteClientes,
+                request.DiasToleranciaInadimplencia
             );
 
             if (request.Modulos != null)
@@ -168,7 +170,9 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 request.ModuloProjetos,
                 request.ModuloRh,
                 request.ModuloFinanceiro,
-                request.ModuloPdv
+                request.ModuloPdv,
+                request.LimiteClientes,
+                request.DiasToleranciaInadimplencia
             );
 
             if (!plano.IsValid)
@@ -341,6 +345,8 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 DescricaoCompleta = p.DescricaoCompleta,
                 LimiteUsuarios = p.LimiteUsuarios,
                 LimiteEmpresas = p.LimiteEmpresas,
+                LimiteClientes = p.LimiteClientes,
+                DiasToleranciaInadimplencia = p.DiasToleranciaInadimplencia,
                 RecursosInclusos = p.RecursosInclusos,
                 DataInicio = p.DataInicio,
                 DataFim = p.DataFim,

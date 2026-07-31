@@ -32,6 +32,10 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public int? CotaEmpresas { get; private set; }
         public int? CotaPermissoes { get; private set; }
 
+        // 1.06 — Cota (snapshot) de CLIENTES (customers do tenant) contratada por este cliente-assinante.
+        // null = usa Plano.LimiteClientes; valor preenchido = override específico deste cliente.
+        public int? CotaClientes { get; private set; }
+
         protected Cliente() { } // EF Core
 
         public Cliente(
@@ -179,11 +183,12 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         /// Define a cota (snapshot) contratada por este cliente, que sobrepõe os limites do plano base.
         /// null em qualquer campo mantém o limite do plano para aquele recurso (EF 5.11/6.2).
         /// </summary>
-        public void AtualizarCota(int? cotaUsuarios, int? cotaEmpresas, int? cotaPermissoes, string alteradoPor)
+        public void AtualizarCota(int? cotaUsuarios, int? cotaEmpresas, int? cotaPermissoes, string alteradoPor, int? cotaClientes = null)
         {
             CotaUsuarios = cotaUsuarios;
             CotaEmpresas = cotaEmpresas;
             CotaPermissoes = cotaPermissoes;
+            CotaClientes = cotaClientes;
             MarcarAlterado(alteradoPor);
         }
     }
