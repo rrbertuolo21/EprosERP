@@ -1,10 +1,15 @@
 name: CI/CD Pipeline - Epros ERP
 
+# Só no PR (gate antes do merge). Evita segunda execução no push após merge.
+# workflow_dispatch: reexecução manual quando necessário.
 on:
-  push:
-    branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-sast-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
