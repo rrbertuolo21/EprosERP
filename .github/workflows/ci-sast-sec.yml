@@ -1,9 +1,13 @@
 name: CI/CD Pipeline - Epros ERP
 
-# Só no PR (gate antes do merge). Evita segunda execução no push após merge.
-# workflow_dispatch: reexecução manual quando necessário.
+# - pull_request: gate antes do merge
+# - push em main/develop: push direto (hotfix etc.)
+# - workflow_dispatch: reexecução manual
+# Merge via UI do GitHub (committer web-flow) NÃO reexecuta — o PR já validou.
 on:
   pull_request:
+    branches: [ main, develop ]
+  push:
     branches: [ main, develop ]
   workflow_dispatch:
 
@@ -14,6 +18,10 @@ concurrency:
 jobs:
   build-and-test:
     name: Build & Unit Tests
+    if: >
+      github.event_name == 'pull_request' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.event.head_commit.committer.username != 'web-flow')
     runs-on: ubuntu-latest
 
     steps:
@@ -39,6 +47,10 @@ jobs:
 
   security-sast:
     name: Security SAST & Secrets Scan
+    if: >
+      github.event_name == 'pull_request' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.event.head_commit.committer.username != 'web-flow')
     runs-on: ubuntu-latest
     needs: build-and-test
 
