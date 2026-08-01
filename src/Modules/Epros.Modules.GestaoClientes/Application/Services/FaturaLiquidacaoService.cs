@@ -135,6 +135,22 @@ namespace Epros.Modules.GestaoClientes.Application.Services
                 criadoPor: alteradoPor);
             _context.RecibosPagamento.Add(recibo);
 
+            // 1.08C — ENTREGA do recibo: além de registrar o ReciboPagamento, enfileira ReciboEmitidoEvent no
+            // Outbox (committado junto pelo orquestrador). O GestaoClientesOutboxProcessorJob dispara a
+            // notificação com o resumo do recibo via INotificacaoService. (PDF do recibo = outra fatia; o
+            // gancho de anexo/link do PDF está marcado no processador.)
+            var reciboPayload = JsonSerializer.Serialize(new
+            {
+                ClienteId = fatura.ClienteId,
+                TenantId = fatura.TenantId,
+                FaturaId = fatura.Id,
+                ReciboNumero = recibo.Numero,
+                Valor = valorBruto,
+                MeioPagamento = meioPagamento,
+                DataPagamento = recibo.DataPagamento
+            });
+            _context.OutboxMessages.Add(new OutboxMessage(fatura.TenantId, "ReciboEmitidoEvent", reciboPayload));
+
             return recibo;
         }
 

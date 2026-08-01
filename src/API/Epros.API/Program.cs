@@ -361,6 +361,17 @@ try
             .WithIdentity("AplicativoOutboxProcessorJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
 
+        // 1.08C — Processador de Outbox do GestaoClientes: ENTREGA os alertas da régua de cobrança
+        // (FaturaAlertaCobrancaEvent), fim de trial (TrialEncerradoEvent) e recibo (ReciboEmitidoEvent),
+        // que antes eram enfileirados e nunca consumidos.
+        var gestaoClientesOutboxJobKey = new JobKey("GestaoClientesOutboxProcessorJob");
+        q.AddJob<Epros.Modules.GestaoClientes.Infrastructure.Jobs.GestaoClientesOutboxProcessorJob>(opts => opts.WithIdentity(gestaoClientesOutboxJobKey));
+
+        q.AddTrigger(opts => opts
+            .ForJob(gestaoClientesOutboxJobKey)
+            .WithIdentity("GestaoClientesOutboxProcessorJob-trigger")
+            .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
+
         var qualidadeOutboxJobKey = new JobKey("QualidadeOutboxProcessorJob");
         q.AddJob<QualidadeOutboxProcessorJob>(opts => opts.WithIdentity(qualidadeOutboxJobKey));
 

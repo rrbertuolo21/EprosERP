@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
+using Epros.Shared.Domain.Events;
 using Epros.Modules.GestaoClientes.Application.Commands;
 using Epros.Modules.GestaoClientes.Application.Interfaces;
 using Epros.Modules.GestaoClientes.Domain.Entities;
@@ -75,6 +77,10 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             {
                 var plano = await _context.Planos.FirstOrDefaultAsync(p => p.Id == assinatura.PlanoId, cancellationToken);
 
+                Guid? faturaGeradaId = null;
+                decimal? faturaValor = null;
+                DateTime? faturaVencimento = null;
+
                 // Gera a 1ª fatura apenas quando há valor a cobrar (plano pago). Plano free → apenas transita
                 // o StatusSaaS (o tenant precisa contratar um plano pago para seguir).
                 if (plano != null && plano.Preco > 0)
@@ -90,6 +96,9 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                     {
                         _context.Faturas.Add(fatura);
                         faturasParaCobrar.Add((fatura.Id, assinatura.ClienteId));
+                        faturaGeradaId = fatura.Id;
+                        faturaValor = fatura.Valor;
+                        faturaVencimento = fatura.DataVencimento;
                     }
                 }
 
@@ -99,6 +108,19 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
 
                 assinatura.MarcarTrialConvertido(criadoPor);
                 trialsEncerrados++;
+
+                // 1.08C — ENTREGA da notificação de fim de trial ("trial encerrado + 1ª fatura disponível").
+                // Enfileira no Outbox de GestaoClientes; o GestaoClientesOutboxProcessorJob dispara o e-mail
+                // via INotificacaoService (best-effort/resiliente, sem travar o encerramento já persistido).
+                var trialPayload = JsonSerializer.Serialize(new
+                {
+                    ClienteId = assinatura.ClienteId,
+                    TenantId = assinatura.TenantId,
+                    FaturaId = faturaGeradaId,
+                    Valor = faturaValor,
+                    DataVencimento = faturaVencimento
+                });
+                _context.OutboxMessages.Add(new OutboxMessage(assinatura.TenantId, "TrialEncerradoEvent", trialPayload));
             }
 
             if (trialsEncerrados > 0)
