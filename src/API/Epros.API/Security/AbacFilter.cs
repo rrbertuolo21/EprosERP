@@ -29,14 +29,6 @@ namespace Epros.API.Security
 
         public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
-            // Curto-circuito do operador interno / SuperAdmin: o token do UsuarioInterno carrega
-            // tenantId="system". Esse operador não tem PerfilUsuario em ContextGestaoClientes, então
-            // a verificação ABAC abaixo o barraria. Liberamos antes de consultar PerfisUsuarios.
-            if (string.Equals(_tenantProvider.GetTenantId(), "system", StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
             var userId = _currentUser.GetUserId();
             if (string.IsNullOrEmpty(userId))
             {
@@ -45,6 +37,8 @@ namespace Epros.API.Security
                 return;
             }
 
+            var isSystemTenant = string.Equals(_tenantProvider.GetTenantId(), "system", StringComparison.OrdinalIgnoreCase);
+
             // Busca o perfil do usuário no tenant atual (o tenant filter é aplicado automaticamente pelo EF Core)
             var perfil = await _context.PerfisUsuarios
                 .Include(p => p.Permissoes)
@@ -52,6 +46,13 @@ namespace Epros.API.Security
 
             if (perfil == null || !perfil.Ativo)
             {
+                // UsuarioInterno (tenant "system") sem PerfilUsuario em GestaoClientes: libera.
+                // Se há perfil no tenant system (ex.: Operador/Administrador Siser), aplica ABAC abaixo.
+                if (isSystemTenant)
+                {
+                    return;
+                }
+
                 Log.Warning("Acesso negado: Perfil não encontrado ou inativo para o usuário {UserId} no recurso {Recurso}:{Acao}", userId, _recurso, _acao);
                 context.Result = new ForbidResult();
                 return;

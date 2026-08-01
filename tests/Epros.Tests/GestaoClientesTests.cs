@@ -384,6 +384,31 @@ namespace Epros.Tests
         }
 
         [Fact]
+        public async Task Deve_Negar_Operador_System_Sem_Permissao_No_AbacFilter()
+        {
+            // Tenant "system" sem PerfilUsuario libera (UsuarioInterno). Com perfil Operador,
+            // ABAC deve aplicar ACL e negar SuperAdmin:Configurar sem permissão explícita.
+            var dbName = Guid.NewGuid().ToString();
+            using var context = CreateInMemoryContext(dbName, "system", "operator-siser");
+
+            var perfil = new PerfilColaborador("operator-siser", "Op Siser", "op@siser.com", "Operador", "TI", 0m, "system", "system");
+            context.PerfisUsuarios.Add(perfil);
+            await context.SaveChangesAsync();
+
+            var currentUser = new TestCurrentUser("operator-siser");
+            var tenantProvider = new TestTenantProvider("system");
+            var filter = new AbacFilter("SuperAdmin", "Configurar", context, currentUser, tenantProvider);
+
+            var actionContext = new ActionContext(new DefaultHttpContext(), new RouteData(), new ActionDescriptor());
+            var filterContext = new AuthorizationFilterContext(actionContext, new List<IFilterMetadata>());
+
+            await filter.OnAuthorizationAsync(filterContext);
+
+            Assert.NotNull(filterContext.Result);
+            Assert.IsType<ForbidResult>(filterContext.Result);
+        }
+
+        [Fact]
         public async Task Deve_Negar_Acesso_Se_Perfil_Inexistente_Ou_Inativo_No_AbacFilter()
         {
             // Arrange
