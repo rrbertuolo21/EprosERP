@@ -28,9 +28,15 @@ de origem e regenere (script em `scratchpad`/`cursor-install`).
 
 Comece pelas **Camadas 0 e 1** (S01–S15), que são as de maior uso no dia a dia. As de
 especialização (S25–S30) e de fase (S16–S24) entram conforme o time formaliza cada fase.
-Detalhe em `../MANUAL.md §6` (ondas) e `../CONFIGURAR-CURSOR.md`.
+Detalhe em [CONFIGURAR-CURSOR.md](../CONFIGURAR-CURSOR.md).
 
 ## Regenerar
 
 Quando as skills mudarem, rode o gerador (`gen_cursor_rules.py`) de novo — ele reescreve
 todos os `.mdc` a partir das skills atuais. Assim as regras nunca divergem das skills.
+
+Instalar no produto (a partir da raiz do repo):
+```bash
+cp docs/fabrica/cursor/cursor-install/rules/*.mdc .cursor/rules/
+```
+
