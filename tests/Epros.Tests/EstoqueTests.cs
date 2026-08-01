@@ -267,6 +267,7 @@ namespace Epros.Tests
             Assert.Equal(10m, ficha.QuantidadeSaldo);
 
             var movimento = await context.EstoqueMovimentosManuais.FirstOrDefaultAsync(m => m.ProdutoId == produtoId);
+            Assert.NotNull(movimento);
             Assert.Equal(Epros.Modules.Estoque.Domain.Enums.EStatusMovimentoEstoque.Aplicado, movimento.Situacao);
         }
 

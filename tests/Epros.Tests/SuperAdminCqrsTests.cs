@@ -204,7 +204,7 @@ namespace Epros.Tests
                 var resCriar = await handlerCriar.Handle(cmdCriar, CancellationToken.None);
                 Assert.True(resCriar.Sucesso);
 
-                execId = (Guid)resCriar.Dados.GetType().GetProperty("ExecucaoMassaGlobalId").GetValue(resCriar.Dados);
+                execId = (Guid)resCriar.Dados!.GetType().GetProperty("ExecucaoMassaGlobalId")!.GetValue(resCriar.Dados)!;
             }
 
             // 2. Tenta aprovar usando o mesmo Maker (deve falhar - Checker tem que ser outro)
@@ -257,7 +257,7 @@ namespace Epros.Tests
             var handlerPage = new CriarCustomPageCommandHandler(context, tenantProvider, currentUser);
             var resPage = await handlerPage.Handle(new CriarCustomPageCommand("politica-privacidade", "<h1>Privacidade</h1>"), CancellationToken.None);
             Assert.True(resPage.Sucesso);
-            var pageId = (Guid)resPage.Dados.GetType().GetProperty("CustomPageId").GetValue(resPage.Dados);
+            var pageId = (Guid)resPage.Dados!.GetType().GetProperty("CustomPageId")!.GetValue(resPage.Dados)!;
 
             var handlerPublish = new PublicarCustomPageCommandHandler(context, tenantProvider, currentUser);
             var resPublish = await handlerPublish.Handle(new PublicarCustomPageCommand(pageId), CancellationToken.None);
@@ -270,7 +270,7 @@ namespace Epros.Tests
             var handlerNews = new InscreverNewsletterCommandHandler(context, tenantProvider, currentUser);
             var resNews = await handlerNews.Handle(new InscreverNewsletterCommand("usuario@teste.com"), CancellationToken.None);
             Assert.True(resNews.Sucesso);
-            var subId = (Guid)resNews.Dados.GetType().GetProperty("NewsletterSubscriberId").GetValue(resNews.Dados);
+            var subId = (Guid)resNews.Dados!.GetType().GetProperty("NewsletterSubscriberId")!.GetValue(resNews.Dados)!;
 
             var handlerCancel = new CancelarNewsletterCommandHandler(context, tenantProvider, currentUser);
             var resCancel = await handlerCancel.Handle(new CancelarNewsletterCommand(subId), CancellationToken.None);

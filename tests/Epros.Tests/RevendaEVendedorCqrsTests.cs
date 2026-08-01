@@ -44,7 +44,7 @@ namespace Epros.Tests
 
             // Assert - Criar
             Assert.True(createResult.Sucesso);
-            var revendaId = (Guid)createResult.Dados.GetType().GetProperty("RevendaId")!.GetValue(createResult.Dados)!;
+            var revendaId = (Guid)createResult.Dados!.GetType().GetProperty("RevendaId")!.GetValue(createResult.Dados)!;
             var revendaSalva = await context.Revendas.FindAsync(revendaId);
             Assert.NotNull(revendaSalva);
             Assert.Equal("Revenda Teste TI", revendaSalva.Nome);
@@ -73,7 +73,7 @@ namespace Epros.Tests
             // Criar revenda primeiro
             var revendaHandler = new CriarRevendaCommandHandler(context, tenantProvider, currentUser);
             var revResult = await revendaHandler.Handle(new CriarRevendaCommand("Revenda Alfa", 10m), CancellationToken.None);
-            var revendaId = (Guid)revResult.Dados.GetType().GetProperty("RevendaId")!.GetValue(revResult.Dados)!;
+            var revendaId = (Guid)revResult.Dados!.GetType().GetProperty("RevendaId")!.GetValue(revResult.Dados)!;
 
             var createHandler = new CriarVendedorCommandHandler(context, tenantProvider, currentUser);
             var updateHandler = new AtualizarVendedorCommandHandler(context, currentUser);
@@ -84,7 +84,7 @@ namespace Epros.Tests
 
             // Assert - Criar
             Assert.True(createResult.Sucesso);
-            var vendedorId = (Guid)createResult.Dados.GetType().GetProperty("VendedorId")!.GetValue(createResult.Dados)!;
+            var vendedorId = (Guid)createResult.Dados!.GetType().GetProperty("VendedorId")!.GetValue(createResult.Dados)!;
             var vendedorSalvo = await context.Vendedores.FindAsync(vendedorId);
             Assert.NotNull(vendedorSalvo);
             Assert.Equal("Vendedor Roberto", vendedorSalvo.Nome);

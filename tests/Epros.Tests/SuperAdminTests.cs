@@ -246,7 +246,7 @@ namespace Epros.Tests
                 var resCriar = await handlerCriar.Handle(cmdCriar, CancellationToken.None);
                 Assert.True(resCriar.Sucesso);
 
-                var execId = (Guid)resCriar.Dados.GetType().GetProperty("ExecucaoMassaId").GetValue(resCriar.Dados);
+                var execId = (Guid)resCriar.Dados!.GetType().GetProperty("ExecucaoMassaId")!.GetValue(resCriar.Dados)!;
 
                 // Tenta aprovar novamente com o mesmo usuário Maker (deve falhar - checker deve ser outro)
                 var handlerAprovar = new AprovarExecucaoMassaCommandHandler(context, tenantProvider, currentUserMaker);
@@ -314,7 +314,7 @@ namespace Epros.Tests
                 var cmdCriar = new CriarExecucaoMassaCommand("SuspenderInadimplentes", "{\"DiasAtraso\": 15}");
                 var resCriar = await handlerCriar.Handle(cmdCriar, CancellationToken.None);
 
-                var execId = (Guid)resCriar.Dados.GetType().GetProperty("ExecucaoMassaId").GetValue(resCriar.Dados);
+                var execId = (Guid)resCriar.Dados!.GetType().GetProperty("ExecucaoMassaId")!.GetValue(resCriar.Dados)!;
 
                 // Checker aprova e executa
                 var currentUserChecker = new TestCurrentUser("admin-checker");

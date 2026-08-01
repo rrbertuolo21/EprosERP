@@ -82,12 +82,12 @@ namespace Epros.Tests
             // Act - Lancar
             var result = await lancarHandler.Handle(command, CancellationToken.None);
             Assert.True(result.Sucesso);
-            var compraId = (Guid)result.Dados.GetType().GetProperty("CompraId")!.GetValue(result.Dados)!;
+            var compraId = (Guid)result.Dados!.GetType().GetProperty("CompraId")!.GetValue(result.Dados)!;
 
             // Act - Listar
             var listResult = await listQueryHandler.Handle(new ListarComprasQuery("Fornecedor", 1, 10), CancellationToken.None);
             Assert.True(listResult.Sucesso);
-            var listDados = listResult.Dados;
+            var listDados = listResult.Dados!;
             var total = (int)listDados.GetType().GetProperty("Total")!.GetValue(listDados)!;
             Assert.Equal(1, total);
 
