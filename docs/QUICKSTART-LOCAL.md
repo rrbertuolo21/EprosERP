@@ -12,7 +12,8 @@
 ## 2. Subir o sistema (1 comando)
 ```bash
 docker compose -f docker-compose.local.yml up -d --build
-./scripts/seed-local.sh
+./scripts/seed-local.sh          # Unix / macOS / Git Bash
+# Windows PowerShell: ./scripts/seed-local.ps1
 ```
 Se o build da API der `DeadlineExceeded` (timeout do BuildKit):
 ```bash

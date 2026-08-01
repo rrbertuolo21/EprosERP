@@ -1,0 +1,48 @@
+---
+description: "As 20 ADRs (Architecture Decision Records) do Epros: 15 decisões técnicas fechadas (stack) + 5 decisões de fronteira entre módulos, com template padrão e processo de criação/revisão/reversão. Use quando alguém questionar decisões de stack ('por que EF Core e não Dapper'), propor troca de componente, tomar decisão arquitetural nova, ou precisar do formato ADR."
+globs:
+alwaysApply: false
+---
+
+# epros-adrs
+
+> **S05 · Camada 0 — Fundação** — Epros Dev Framework
+
+## Quando usar
+
+Ative esta skill quando a tarefa envolver: **ADR, decisão arquitetural, por que usamos, trocar biblioteca, trocar banco, substituir, decisão de design, fronteira entre módulos**.
+
+## O que esta skill cobre
+
+O registro vivo das decisões arquiteturais: as 15 ADRs fechadas (EF Core, Keycloak, Valkey, Vault, OpenTofu, PostgreSQL, Nuxt 4, Electron, Capacitor, Guid, Sync, Multi-tenancy, Caddy, Hercules NF-e, Quartz) mais as 5 ADRs de fronteira de módulos, com o template e o processo de criar/revisar/reverter decisões.
+
+Impedir que decisões já tomadas sejam rediscutidas do zero ou revertidas sem processo, e dar ao Architect Agent o formato padrão para registrar decisões novas de forma rastreável.
+
+## Instruções para o agente
+
+1. Quando questionado 'por que usamos X e não Y', responda citando a ADR correspondente — não reabra o debate sem novo ADR.
+2. Proposta de mudança em item coberto por ADR: exija ADR novo referenciando o antigo (atenção à ADR-014: trocar lib NF-e exige +90 dias de testes).
+3. Toda decisão arquitetural significativa identificada numa conversa deve virar proposta de ADR no template desta skill.
+4. As ADRs de fronteira (COM vs EST-SC, VEN-GAR vs CON-GAR, câmbio no FIN-CAM, IMO placeholder, códigos APP) resolvem sobreposições de módulos — cite-as em specs.
+
+## Recursos desta skill
+
+> Legenda: ✅ pronto · ⬜ a construir (ver "Como completar" abaixo)
+
+- ✅ `SKILL.md` — este arquivo (semente v1)
+- ⬜ `templates/adr.md` — template padrão de ADR
+- ⬜ `exemplos/adr-boa-vs-ruim.md` — uma ADR bem escrita vs uma vaga, anotadas
+- ⬜ `adrs/` — as 20 ADRs completas, uma por arquivo
+
+## Como completar esta skill (do v1-semente à versão completa)
+
+1. Consolide as 15 ADRs técnicas (já listadas no Context Agent) em arquivos individuais no template.
+2. Adicione as 5 ADRs de fronteira de módulos (documento C5).
+3. Defina o processo: quem propõe, quem aprova, evento que dispara revisão.
+4. Escreva o exemplo comparativo boa vs ruim usando uma ADR real reescrita de propósito de forma vaga.
+
+## Regras de manutenção
+
+- Detalhe profundo vai para `exemplos/` e `checklists/` — este arquivo fica abaixo de 500 linhas.
+- Todo conteúdo deve ser específico do Epros (código real, casos reais, dados de homologação).
+- Ao concluir os recursos, mude `status:` para `completa` e atualize a data de revisão.

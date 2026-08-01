@@ -1,0 +1,47 @@
+﻿---
+name: S17-discovery-sintese
+description: >-
+  Síntese de discovery do Epros: codificação de entrevistas, biblioteca de personas de ERP (contador, gestor, operador de caixa...), JTBD e Problem Statement. Use ao analisar entrevistas, notas de campo ou relatos de usuários, consolidar personas ou redigir problem statements.
+---
+
+# discovery-sintese
+
+> **S17 · Camada 2 — Fases de produto** — Epros Dev Framework
+
+## Quando usar
+
+Ative esta skill quando a tarefa envolver: **entrevista, discovery, persona, JTBD, dor do usuário, problem statement, pesquisa com usuário, síntese**.
+
+## O que esta skill cobre
+
+O método de síntese de discovery: codificação de entrevistas (dores por frequência × severidade), a biblioteca de personas já consolidadas do Epros (contador, gestor financeiro, operador de caixa, comprador...), formato JTBD e template de Problem Statement.
+
+Transformar conversa bruta com usuário em insight acionável sem recriar personas do zero a cada ciclo — e manter o rigor de separar sintoma de causa raiz com evidência.
+
+## Instruções para o agente
+
+1. Ao analisar entrevistas: agrupe dores por frequência, separe sintoma de causa raiz (pergunte 'por quê' 3×), cite trechos como evidência.
+2. ANTES de criar persona nova, verifique a biblioteca — provavelmente ela já existe; enriqueça em vez de duplicar.
+3. Menos de 5 entrevistas = hipótese, não conclusão. Sinalize sempre.
+4. JTBD no formato: 'Quando [situação], quero [motivação], para [resultado]'.
+
+## Recursos desta skill
+
+> Legenda: ✅ pronto · ⬜ a construir (ver "Como completar" abaixo)
+
+- ✅ `SKILL.md` — este arquivo (semente v1)
+- ⬜ `exemplos/personas-epros.md` — biblioteca de personas consolidadas
+- ⬜ `templates/roteiro-entrevista.md` — roteiro base por módulo
+- ⬜ `exemplos/sintese-real-anotada.md` — uma síntese real com comentários do método
+
+## Como completar esta skill (do v1-semente à versão completa)
+
+1. Consolide as personas que emergiram das pesquisas anteriores em biblioteca única.
+2. Documente o método de codificação com uma síntese real anotada.
+3. Crie roteiros de entrevista base para os módulos dos próximos blocos.
+
+## Regras de manutenção
+
+- Detalhe profundo vai para `exemplos/` e `checklists/` — este arquivo fica abaixo de 500 linhas.
+- Todo conteúdo deve ser específico do Epros (código real, casos reais, dados de homologação).
+- Ao concluir os recursos, mude `status:` para `completa` e atualize a data de revisão.

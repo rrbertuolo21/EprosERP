@@ -9,11 +9,11 @@ services:
     image: postgres:16-alpine
     container_name: epros-novo-db
     environment:
-      POSTGRES_DB: epros
-      POSTGRES_USER: epros
-      POSTGRES_PASSWORD: epros_dev
+      POSTGRES_DB: ${POSTGRES_DB:-epros}
+      POSTGRES_USER: ${POSTGRES_USER:-epros}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-epros_dev}
     ports:
-      - "55432:5432"
+      - "${POSTGRES_PORT:-55432}:5432"
     volumes:
       - epros_novo_pg:/var/lib/postgresql/data
     healthcheck:
@@ -37,9 +37,9 @@ services:
       # usados pelo passo RLS (psql) do migrate-all.sh
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
-      POSTGRES_DB: epros
-      POSTGRES_USER: epros
-      POSTGRES_PASSWORD: epros_dev
+      POSTGRES_DB: ${POSTGRES_DB:-epros}
+      POSTGRES_USER: ${POSTGRES_USER:-epros}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-epros_dev}
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,12 +55,12 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: "http://+:8080"
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=epros;Username=epros;Password=epros_dev"
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-epros};Username=${POSTGRES_USER:-epros};Password=${POSTGRES_PASSWORD:-epros_dev}"
       Cofre__KekLocal: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
       Seguranca__JwtSigningKey: "epros-local-dev-signing-key-0123456789-abcdef-xyz"
       CORS_ORIGINS: "http://localhost:3000"
     ports:
-      - "8080:8080"
+      - "${API_PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -77,7 +77,7 @@ services:
         NUXT_PUBLIC_API_BASE_URL: "http://localhost:8080"
     container_name: epros-novo-web
     ports:
-      - "3000:80"
+      - "${WEB_PORT:-3000}:80"
     depends_on:
       - api
     restart: unless-stopped

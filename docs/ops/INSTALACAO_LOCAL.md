@@ -20,14 +20,15 @@ Na raiz do repositório:
 
 ```bash
 docker compose -f docker-compose.local.yml up -d --build
-./scripts/seed-local.sh
+./scripts/seed-local.sh          # Unix / macOS / Git Bash
+# Windows PowerShell: ./scripts/seed-local.ps1
 ```
 
 Se o build da API der `DeadlineExceeded` (BuildKit):
 
 ```bash
 DOCKER_BUILDKIT=0 docker compose -f docker-compose.local.yml build && docker compose -f docker-compose.local.yml up -d
-./scripts/seed-local.sh
+./scripts/seed-local.sh          # ou ./scripts/seed-local.ps1 no Windows
 ```
 
 | Serviço | URL / porta |
@@ -36,7 +37,7 @@ DOCKER_BUILDKIT=0 docker compose -f docker-compose.local.yml build && docker com
 | API / Swagger | http://localhost:8080/swagger |
 | PostgreSQL | `localhost:5432` — `epros` / `epros_dev_password` / DB `epros` |
 
-### Credenciais após o seed (`scripts/seed-local.sh`)
+### Credenciais após o seed (`scripts/seed-local.sh` / `scripts/seed-local.ps1`)
 
 | Perfil | E-mail | Senha |
 |--------|--------|-------|

@@ -1,0 +1,48 @@
+﻿---
+name: S16-business-case
+description: >-
+  Business Case e priorização estratégica do Epros: template com exemplo real, scoring de demandas, árvore de OKRs vigente e matriz de conflito com o roadmap de blocos. Use ao avaliar qualquer nova demanda, ideia de módulo, pedido de cliente grande ou decisão de go/no-go.
+---
+
+# business-case
+
+> **S16 · Camada 2 — Fases de produto** — Epros Dev Framework
+
+## Quando usar
+
+Ative esta skill quando a tarefa envolver: **business case, nova demanda, novo módulo, viabilidade, go/no-go, OKR, priorização, roadmap, custo de oportunidade**.
+
+## O que esta skill cobre
+
+O método de avaliação de demandas da fase de Estratégia: template de Business Case preenchido com exemplo real, framework de scoring adaptado ao Epros, a árvore de OKRs vigente e a matriz de conflito com o roadmap de blocos.
+
+Dar ao Strategy Agent material concreto para recomendar go/no-go com base em dados — cruzando toda demanda com OKR, esforço, custo de oportunidade e o que já está nos blocos.
+
+## Instruções para o agente
+
+1. Toda análise de demanda produz o Business Case no template — resumo executivo, viabilidade, impacto no roadmap, OKR, esforço, riscos, recomendação.
+2. Demanda sem OKR vinculável: aponte como risco número 1 antes de qualquer outra análise.
+3. Cruze com a matriz de blocos: o que a demanda desloca? Diga explicitamente.
+4. Use o scoring para comparar demandas concorrentes — números antes de opinião.
+
+## Recursos desta skill
+
+> Legenda: ✅ pronto · ⬜ a construir (ver "Como completar" abaixo)
+
+- ✅ `SKILL.md` — este arquivo (semente v1)
+- ⬜ `templates/business-case.md` — template completo
+- ⬜ `exemplos/business-case-modulo-compras.md` — exemplo real preenchido
+- ⬜ `exemplos/okrs-vigentes.md` — árvore de OKRs — atualizar por trimestre
+
+## Como completar esta skill (do v1-semente à versão completa)
+
+1. Mova o formato de saída do prompt do Strategy Agent para o template.
+2. Preencha um Business Case real retroativo (ex: a decisão do Bloco 6) como exemplo.
+3. Registre os OKRs vigentes com a liderança e agende atualização trimestral.
+4. Defina o scoring (ex: RICE adaptado) com pesos validados pelos sócios.
+
+## Regras de manutenção
+
+- Detalhe profundo vai para `exemplos/` e `checklists/` — este arquivo fica abaixo de 500 linhas.
+- Todo conteúdo deve ser específico do Epros (código real, casos reais, dados de homologação).
+- Ao concluir os recursos, mude `status:` para `completa` e atualize a data de revisão.

@@ -16,6 +16,7 @@ Diário: `HISTORICO-DESENVOLVIMENTO-IA.md`.
 ## Rodar local (1 comando + seed)
 ```bash
 docker compose -f docker-compose.local.yml up -d --build && ./scripts/seed-local.sh
+# Windows PowerShell: ... ; ./scripts/seed-local.ps1
 # se o BuildKit der DeadlineExceeded: DOCKER_BUILDKIT=0 docker compose -f docker-compose.local.yml build && docker compose -f docker-compose.local.yml up -d
 ```
 Front http://localhost:3000 · API/Swagger http://localhost:8080/swagger · Admin `admin@epros.local/Admin@12345` · Cliente `cliente@demo.local/Cliente@12345`.
