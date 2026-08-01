@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using Epros.API.Security;
 using Epros.Modules.GestaoClientes.Application.Commands;
+using Epros.Modules.GestaoClientes.Application.Documentos;
 using Epros.Modules.GestaoClientes.Application.Queries;
 using Epros.Shared.Application.Models;
 
@@ -99,6 +100,42 @@ namespace Epros.API.Controllers
             var recibo = await _mediator.Send(new ObterReciboPorFaturaQuery(id));
             if (recibo == null) return NotFound();
             return Ok(recibo);
+        }
+
+        /// <summary>1.08F — PDF da fatura (nº, tenant, itens, valores, vencimento, status). application/pdf.</summary>
+        [HttpGet("{id}/pdf")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ObterFaturaPdf(Guid id)
+        {
+            var doc = await _mediator.Send(new ObterFaturaPdfQuery(id));
+            if (doc == null) return NotFound();
+            return File(doc.Conteudo, doc.ContentType, doc.NomeArquivo);
+        }
+
+        /// <summary>1.08F — PDF do recibo de pagamento da fatura (nº, pagador, valor, data, meio). application/pdf.</summary>
+        [HttpGet("{id}/recibo/pdf")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ObterReciboPdf(Guid id)
+        {
+            var doc = await _mediator.Send(new ObterReciboPdfQuery(id));
+            if (doc == null) return NotFound();
+            return File(doc.Conteudo, doc.ContentType, doc.NomeArquivo);
+        }
+
+        /// <summary>
+        /// 1.08F — Boleto: o gateway (Mercado Pago) já hospeda o PDF do boleto; aqui apenas EXPOMOS/redirecionamos
+        /// para essa URL (não geramos boleto do zero). 302 para a URL do gateway; 404 se não houver boleto emitido.
+        /// </summary>
+        [HttpGet("{id}/boleto/pdf")]
+        [ProducesResponseType(StatusCodes.Status302Found)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ObterBoletoPdf(Guid id)
+        {
+            var link = await _mediator.Send(new ObterBoletoLinkQuery(id));
+            if (link?.UrlBoleto == null) return NotFound();
+            return Redirect(link.UrlBoleto);
         }
 
         /// <summary>Gera a cobrança PIX da fatura no gateway ativo (config por tenant, senão global).</summary>

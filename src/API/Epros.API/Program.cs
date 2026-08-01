@@ -121,6 +121,10 @@ try
     // 1.08B — Serviço de liquidação de fatura compartilhado (webhook PIX/boleto/checkout + cartão recorrente).
     builder.Services.AddScoped<Epros.Modules.GestaoClientes.Application.Services.FaturaLiquidacaoService>();
 
+    // 1.08F — Renderizador de documentos financeiros (PDF real via QuestPDF, licença Community).
+    builder.Services.AddScoped<Epros.Modules.GestaoClientes.Application.Documentos.IDocumentoFinanceiroRenderer,
+        Epros.Modules.GestaoClientes.Infrastructure.Documentos.QuestPdfDocumentoFinanceiroRenderer>();
+
     // 1.08B — Cobrança recorrente por cartão-on-file: implementação CONCRETA (Mercado Pago Customers/Cards).
     // Substitui o no-op da passada A. ⛔ PCI: só o token do MP toca o backend, nunca PAN/CVV.
     builder.Services.AddScoped<Epros.Modules.GestaoClientes.Application.Interfaces.ICobrancaRecorrenteGateway, Epros.Modules.GestaoClientes.Infrastructure.Gateways.CobrancaRecorrenteGatewayMercadoPago>();
