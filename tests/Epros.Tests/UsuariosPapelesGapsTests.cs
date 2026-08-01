@@ -205,7 +205,7 @@ namespace Epros.Tests
 
             var usuarioAlvo = new Usuario("tenant-alvo", "Usuário Alvo", "alvo@epros.com", "senha", UsuarioTipo.Company, "system");
             contextApp.Usuarios.Add(usuarioAlvo);
-            
+
             var vinculo = new UsuarioEmpresa("tenant-alvo", usuarioAlvo.Id, Guid.NewGuid(), null, true, "system");
             contextApp.UsuariosEmpresas.Add(vinculo);
             await contextApp.SaveChangesAsync();

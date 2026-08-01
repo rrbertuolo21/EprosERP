@@ -148,8 +148,8 @@ namespace Epros.API.Security
             );
 
             // Localiza a regra correspondente
-            var regra = permissoes.FirstOrDefault(p => p.MenuId == menuId && 
-                                                      p.MenuItemNivel1Id == nivel1Id && 
+            var regra = permissoes.FirstOrDefault(p => p.MenuId == menuId &&
+                                                      p.MenuItemNivel1Id == nivel1Id &&
                                                       p.MenuItemNivel2Id == nivel2Id);
 
             if (regra == null)

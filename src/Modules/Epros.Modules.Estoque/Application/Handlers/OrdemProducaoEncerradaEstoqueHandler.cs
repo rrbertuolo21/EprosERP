@@ -39,7 +39,7 @@ namespace Epros.Modules.Estoque.Application.Handlers
 
                     // Lança a saída do estoque
                     insumo.LancarSaidaEstoque(insumoConsumido.QuantidadeConsumida, "system_production");
-                    
+
                     if (insumo.IsValid)
                     {
                         _context.Produtos.Update(insumo);
@@ -60,7 +60,7 @@ namespace Epros.Modules.Estoque.Application.Handlers
 
                     // Lança a entrada do produto acabado no estoque
                     produtoAcabado.LancarEntradaEstoque(notification.QuantidadeProduzida, precoUnitario, "system_production");
-                    
+
                     if (produtoAcabado.IsValid)
                     {
                         _context.Produtos.Update(produtoAcabado);

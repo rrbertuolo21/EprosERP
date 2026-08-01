@@ -91,7 +91,8 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 .Where(c => pagTransferenciaIds.Contains(c.PagamentoTransferenciaId) && c.DeletadoEm == null)
                 .ToDictionaryAsync(c => c.PagamentoTransferenciaId, cancellationToken);
 
-            return transferencias.Select(t => {
+            return transferencias.Select(t =>
+            {
                 comprovantes.TryGetValue(t.Id, out var comp);
                 return new TransferenciaPendenteDto(
                     Id: t.Id,

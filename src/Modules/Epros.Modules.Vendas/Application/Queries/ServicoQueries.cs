@@ -101,8 +101,19 @@ namespace Epros.Modules.Vendas.Application.Queries
                 .Take(request.TamanhoPagina)
                 .Select(f => new
                 {
-                    f.Id, f.NumeroFatura, f.ClienteId, f.FuncionarioId, f.DataFatura, f.Status,
-                    f.ValorImposto, f.TotalImposto, f.TotalGeral, f.TotalLiquido, f.ValorPago, f.SaldoDevido, f.Troco
+                    f.Id,
+                    f.NumeroFatura,
+                    f.ClienteId,
+                    f.FuncionarioId,
+                    f.DataFatura,
+                    f.Status,
+                    f.ValorImposto,
+                    f.TotalImposto,
+                    f.TotalGeral,
+                    f.TotalLiquido,
+                    f.ValorPago,
+                    f.SaldoDevido,
+                    f.Troco
                 })
                 .ToListAsync(cancellationToken);
 
@@ -131,9 +142,25 @@ namespace Epros.Modules.Vendas.Application.Queries
             // EF §9.14: a consulta da fatura deve recuperar as linhas vinculadas.
             return CommandResult.Ok("Fatura encontrada.", new
             {
-                f.Id, f.NumeroFatura, f.EmpresaId, f.ClienteId, f.FuncionarioId, f.ContaPagamentoId,
-                f.DataFatura, f.Status, f.DescontoCabecalho, f.TotalDesconto, f.ValorImposto, f.TotalImposto,
-                f.CustoEnvioEntrega, f.TotalGeral, f.TotalLiquido, f.ValorPago, f.SaldoDevido, f.Troco, f.Detalhes,
+                f.Id,
+                f.NumeroFatura,
+                f.EmpresaId,
+                f.ClienteId,
+                f.FuncionarioId,
+                f.ContaPagamentoId,
+                f.DataFatura,
+                f.Status,
+                f.DescontoCabecalho,
+                f.TotalDesconto,
+                f.ValorImposto,
+                f.TotalImposto,
+                f.CustoEnvioEntrega,
+                f.TotalGeral,
+                f.TotalLiquido,
+                f.ValorPago,
+                f.SaldoDevido,
+                f.Troco,
+                f.Detalhes,
                 Linhas = f.Linhas.Select(l => new { l.Id, l.ServicoId, l.NomeServico, l.Descricao, l.Quantidade, l.PrecoUnitario, l.DescontoPercentual, l.Total })
             });
         }

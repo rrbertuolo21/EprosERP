@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.DfeCalculos.Models
+namespace Epros.ERP.DfeCalculos.Models
 {
     public class Cfop
     {

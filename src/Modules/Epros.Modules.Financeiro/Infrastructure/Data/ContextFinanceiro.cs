@@ -293,7 +293,7 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
                 entity.Property(c => c.FoneGerente).HasMaxLength(150);
                 entity.Property(c => c.Detalhe).HasMaxLength(1000);
                 entity.Property(c => c.DigitoAgencia).HasMaxLength(2);
-                
+
                 entity.HasOne(c => c.Banco)
                       .WithMany()
                       .HasForeignKey(c => c.BancoId)

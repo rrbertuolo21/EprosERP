@@ -129,7 +129,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
 
                     execucao.Executar(logResult, finalStatus, userId);
                     await _context.SaveChangesAsync(cancellationToken);
-                    
+
                     if (transaction != null)
                     {
                         await transaction.CommitAsync(cancellationToken);

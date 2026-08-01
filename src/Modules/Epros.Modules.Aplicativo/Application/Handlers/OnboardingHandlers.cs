@@ -22,7 +22,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
         private readonly ITenantProvider _tenantProvider;
 
         public SalvarConfiguracaoEmpresaCommandHandler(
-            ContextAplicativo context, 
+            ContextAplicativo context,
             ICurrentUser currentUser,
             ITenantProvider tenantProvider)
         {
@@ -97,7 +97,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
         private readonly ITenantProvider _tenantProvider;
 
         public HabilitarIdiomaCommandHandler(
-            ContextAplicativo context, 
+            ContextAplicativo context,
             ICurrentUser currentUser,
             ITenantProvider tenantProvider)
         {
@@ -365,7 +365,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
 
                 var hasOverdueInvoice = await _contextGestaoClientes.Faturas
                     .IgnoreQueryFilters()
-                    .AnyAsync(f => f.ClienteId == cliente.Id && 
+                    .AnyAsync(f => f.ClienteId == cliente.Id &&
                                    (f.Status == Epros.Modules.GestaoClientes.Domain.Entities.FaturaStatus.Pendente || f.Status == Epros.Modules.GestaoClientes.Domain.Entities.FaturaStatus.Atrasada) &&
                                    f.DataVencimento.AddDays(15) < DateTime.UtcNow, cancellationToken);
 

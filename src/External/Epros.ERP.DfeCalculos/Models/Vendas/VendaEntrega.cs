@@ -1,4 +1,4 @@
-﻿using DFe.Classes.Entidades;
+using DFe.Classes.Entidades;
 using Flunt.Notifications;
 using ProsisPDV.Domain.ValueObjects.Geral;
 

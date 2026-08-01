@@ -27,9 +27,9 @@ namespace Epros.Modules.Estoque.Application.Handlers
                 var historicoIdentificador = $"Venda ID: {notification.VendaId}";
                 var jaProcessado = await _context.MovimentosEstoque
                     .IgnoreQueryFilters()
-                    .AnyAsync(m => m.TenantId == notification.TenantId && 
-                                   m.ProdutoId == item.ProdutoId && 
-                                   m.Tipo == "Entrada" && 
+                    .AnyAsync(m => m.TenantId == notification.TenantId &&
+                                   m.ProdutoId == item.ProdutoId &&
+                                   m.Tipo == "Entrada" &&
                                    m.Historico.Contains(historicoIdentificador), cancellationToken);
 
                 if (jaProcessado)

@@ -11,9 +11,9 @@ namespace Epros.Modules.Aplicativo.Domain.Entities
         public bool DatabaseInitialized { get; private set; }
         public bool AdminCreated { get; private set; }
         public bool SystemSettingsSeeded { get; private set; }
-        
+
         protected InstalacaoState() { } // EF Core
-        
+
         public InstalacaoState(string tenantId, string criadoPor) : base(tenantId, criadoPor)
         {
             IsCompleted = false;

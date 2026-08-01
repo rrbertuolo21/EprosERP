@@ -52,9 +52,18 @@ namespace Epros.Modules.Fiscal.Application.Queries
         {
             c.Id,
             c.EmpresaId,
-            c.NFeSerieProducao, c.NFeUltimoNrProducao, c.NFeSerieHomologacao, c.NFeUltimoNrHomologacao,
-            c.NfceCscProducao, c.NfceIdCscProducao, c.NfceSerieProducao, c.NfceUltimoNrProducao,
-            c.NfceCscHomologacao, c.NfceIdCscHomologacao, c.NfceSerieHomologacao, c.NfceUltimoNrHomologacao
+            c.NFeSerieProducao,
+            c.NFeUltimoNrProducao,
+            c.NFeSerieHomologacao,
+            c.NFeUltimoNrHomologacao,
+            c.NfceCscProducao,
+            c.NfceIdCscProducao,
+            c.NfceSerieProducao,
+            c.NfceUltimoNrProducao,
+            c.NfceCscHomologacao,
+            c.NfceIdCscHomologacao,
+            c.NfceSerieHomologacao,
+            c.NfceUltimoNrHomologacao
         };
     }
 

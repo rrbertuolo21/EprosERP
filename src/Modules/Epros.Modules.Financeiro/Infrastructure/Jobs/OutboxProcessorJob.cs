@@ -75,7 +75,7 @@ namespace Epros.Modules.Financeiro.Infrastructure.Jobs
                             {
                                 // Criar novo fornecedor na tabela compartilhada
                                 fornecedorId = Guid.NewGuid();
-                                
+
                                 var novaPessoa = new PessoaLookup
                                 {
                                     Id = fornecedorId,

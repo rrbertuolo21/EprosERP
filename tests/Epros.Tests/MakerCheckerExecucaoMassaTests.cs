@@ -57,7 +57,7 @@ namespace Epros.Tests
             var setting1 = new SystemSetting("limite_usuarios", "10", "global", false, "system", "system");
             var setting2 = new SystemSetting("limite_empresas", "100", "global", false, "system", "system");
             var setting3 = new SystemSetting("smtp_host", "smtp.epros.com", "global", false, "system", "system"); // Não numérico, deve ser ignorado no ajuste
-            
+
             contextApp.SystemSettings.AddRange(setting1, setting2, setting3);
             await contextApp.SaveChangesAsync();
 
@@ -85,7 +85,7 @@ namespace Epros.Tests
 
             // Assert 2: Simulação bem-sucedida e log de dry-run registrado
             Assert.True(resultSimular.Sucesso);
-            
+
             var execucaoSimuladaDb = await contextApp.ExecucoesMassaGlobal.FindAsync(execucaoDb.Id);
             Assert.Contains("[SIMULAÇÃO EM SANDBOX COMPLETA COM ROLLBACK]", execucaoSimuladaDb!.ResultadoLog);
             Assert.Contains("limite_usuarios: alterado de 10 para 11.00", execucaoSimuladaDb.ResultadoLog);
@@ -108,7 +108,7 @@ namespace Epros.Tests
             var ativarHandler = new AtivarExecucaoMassaGlobalCommandHandler(contextApp, tenantProvider, currentUser);
             var resultAtivarMesmoUser = await ativarHandler.Handle(new AtivarExecucaoMassaGlobalCommand(execucaoDb.Id), CancellationToken.None);
             Assert.False(resultAtivarMesmoUser.Sucesso);
-            Assert.True(resultAtivarMesmoUser.Erros.Any(e => e.ToLower().Contains("aprovador")));
+            Assert.Contains(resultAtivarMesmoUser.Erros, e => e.ToLower().Contains("aprovador"));
 
             // 3.2. Usuário diferente aprova (Deve aceitar)
             contextApp.ChangeTracker.Clear();

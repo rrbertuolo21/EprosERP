@@ -174,7 +174,7 @@ namespace Epros.Tests
             var compraIdObj = compraIdProperty.GetValue(resultLancar.Dados);
             Assert.NotNull(compraIdObj);
             var compraId = (Guid)compraIdObj;
-            
+
             var cancelarHandler = new CancelarCompraCommandHandler(estoqueContext, tenantProvider, currentUser);
             var commandCancelar = new CancelarCompraCommand(compraId, "Erro no lancamento da nota fiscal");
 
@@ -205,7 +205,7 @@ namespace Epros.Tests
             });
 
             var outboxJobCancel = new OutboxProcessorJob(financeiroContext, mediatorCancel, httpContextAccessor);
-            
+
             // Execute outbox for cancellation
             await outboxJobCancel.Execute(null!);
 

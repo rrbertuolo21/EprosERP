@@ -194,7 +194,7 @@ namespace Epros.Tests
 
             var cfop1 = new Cfop(1102, "Compra A", "Compra", "1102", true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, EIncidenciaSimples.RevendaMercadorias, "5202", "tenant-123", "user-123");
             var cfop2 = new Cfop(5102, "Venda B", "Venda", "5102", true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, EIncidenciaSimples.RevendaMercadorias, "1202", "tenant-123", "user-123");
-            
+
             context.Cfops.AddRange(cfop1, cfop2);
             await context.SaveChangesAsync();
 

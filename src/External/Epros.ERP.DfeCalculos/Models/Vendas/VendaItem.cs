@@ -1,4 +1,4 @@
-﻿using DFe.Classes.Flags;
+using DFe.Classes.Flags;
 using Epros.ERP.DfeCalculos.Models.Vendas.VendaItemProdutosEspecificos;
 using Epros.ERP.DfeCalculos.Validations;
 using Epros.ERP.DfeCalculos.Validations.Nfces.CfopCsosns;

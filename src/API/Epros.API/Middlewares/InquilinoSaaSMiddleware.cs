@@ -77,7 +77,7 @@ namespace Epros.API.Middlewares
 
             if (context.User.Identity?.IsAuthenticated == true)
             {
-                var isDemoClaim = context.User.FindFirst("isDemo")?.Value ?? 
+                var isDemoClaim = context.User.FindFirst("isDemo")?.Value ??
                                   context.User.FindFirst("is_demo")?.Value;
                 if (!string.IsNullOrEmpty(isDemoClaim) && bool.TryParse(isDemoClaim, out var parsedIsDemo))
                 {

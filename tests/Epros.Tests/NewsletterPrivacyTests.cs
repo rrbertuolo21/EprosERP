@@ -142,7 +142,7 @@ namespace Epros.Tests
 
             // Assert
             Assert.True(result.Sucesso);
-            
+
             var subSalvo = await context.NewsletterSubscribers.AsNoTracking().FirstOrDefaultAsync(x => x.Id == subscriber.Id);
             Assert.False(subSalvo!.Ativo);
             Assert.NotNull(subSalvo.DesativadoEm);
@@ -153,7 +153,7 @@ namespace Epros.Tests
         {
             // Arrange
             var context = CreateInMemoryContext("db_news_purge_job");
-            
+
             // 1. Assinante inativo há 31 dias (deve ser expurgado)
             var subExpurgar = new NewsletterSubscriber("expurgar@teste.com", "system", "system");
             subExpurgar.CancelarInscricao("system");
@@ -190,7 +190,7 @@ namespace Epros.Tests
 
             // Assert
             var subscribers = await context.NewsletterSubscribers.IgnoreQueryFilters().ToListAsync();
-            
+
             Assert.Equal(2, subscribers.Count);
             Assert.Contains(subscribers, s => s.Email == "manterinativo@teste.com");
             Assert.Contains(subscribers, s => s.Email == "ativo@teste.com");

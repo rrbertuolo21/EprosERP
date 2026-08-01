@@ -154,7 +154,7 @@ namespace Epros.Tests
             var logs = (await logsQueryHandler.Handle(new ListarUpdateLogsQuery(), CancellationToken.None)).ToList();
 
             Assert.NotEmpty(logs);
-            Assert.Equal(1, logs.Count);
+            Assert.Single(logs);
             Assert.Equal("v2026.06.18.1", logs[0].VersaoAlvo);
             Assert.True(logs[0].Sucesso);
             Assert.Equal("system-installer", logs[0].ExecutadoPor);

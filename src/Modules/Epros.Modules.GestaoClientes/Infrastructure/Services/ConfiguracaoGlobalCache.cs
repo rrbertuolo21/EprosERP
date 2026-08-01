@@ -30,8 +30,8 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Services
             _memoryCache = memoryCache;
             _logger = logger;
 
-            var connectionString = configuration.GetConnectionString("RedisConnection") ?? 
-                                   configuration.GetValue<string>("RedisConnection") ?? 
+            var connectionString = configuration.GetConnectionString("RedisConnection") ??
+                                   configuration.GetValue<string>("RedisConnection") ??
                                    "localhost:6379";
 
             try
@@ -42,7 +42,7 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Services
                 options.AbortOnConnectFail = false; // Não lança exceção em caso de erro ao conectar
 
                 _redis = ConnectionMultiplexer.Connect(options);
-                
+
                 if (_redis.IsConnected)
                 {
                     _redisDb = _redis.GetDatabase();

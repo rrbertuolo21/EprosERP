@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.DfeCalculos.Impostos.Cofins
+namespace Epros.ERP.DfeCalculos.Impostos.Cofins
 {
     public class VendaItemCofins
     {

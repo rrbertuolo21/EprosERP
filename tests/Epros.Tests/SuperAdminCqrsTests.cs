@@ -193,7 +193,7 @@ namespace Epros.Tests
             // Arrange
             var dbName = "db_mass_flow_" + Guid.NewGuid().ToString();
             var tenantProvider = new TestTenantProvider("system");
-            
+
             // 1. Maker cria a execução em rascunho
             Guid execId;
             using (var context = CreateInMemoryContext(dbName, "system", "operador-maker"))
@@ -204,7 +204,7 @@ namespace Epros.Tests
                 var resCriar = await handlerCriar.Handle(cmdCriar, CancellationToken.None);
                 Assert.True(resCriar.Sucesso);
 
-                execId = (Guid)resCriar.Dados.GetType().GetProperty("ExecucaoMassaGlobalId").GetValue(resCriar.Dados);
+                execId = (Guid)resCriar.Dados!.GetType().GetProperty("ExecucaoMassaGlobalId")!.GetValue(resCriar.Dados)!;
             }
 
             // 2. Tenta aprovar usando o mesmo Maker (deve falhar - Checker tem que ser outro)
@@ -257,7 +257,7 @@ namespace Epros.Tests
             var handlerPage = new CriarCustomPageCommandHandler(context, tenantProvider, currentUser);
             var resPage = await handlerPage.Handle(new CriarCustomPageCommand("politica-privacidade", "<h1>Privacidade</h1>"), CancellationToken.None);
             Assert.True(resPage.Sucesso);
-            var pageId = (Guid)resPage.Dados.GetType().GetProperty("CustomPageId").GetValue(resPage.Dados);
+            var pageId = (Guid)resPage.Dados!.GetType().GetProperty("CustomPageId")!.GetValue(resPage.Dados)!;
 
             var handlerPublish = new PublicarCustomPageCommandHandler(context, tenantProvider, currentUser);
             var resPublish = await handlerPublish.Handle(new PublicarCustomPageCommand(pageId), CancellationToken.None);
@@ -270,7 +270,7 @@ namespace Epros.Tests
             var handlerNews = new InscreverNewsletterCommandHandler(context, tenantProvider, currentUser);
             var resNews = await handlerNews.Handle(new InscreverNewsletterCommand("usuario@teste.com"), CancellationToken.None);
             Assert.True(resNews.Sucesso);
-            var subId = (Guid)resNews.Dados.GetType().GetProperty("NewsletterSubscriberId").GetValue(resNews.Dados);
+            var subId = (Guid)resNews.Dados!.GetType().GetProperty("NewsletterSubscriberId")!.GetValue(resNews.Dados)!;
 
             var handlerCancel = new CancelarNewsletterCommandHandler(context, tenantProvider, currentUser);
             var resCancel = await handlerCancel.Handle(new CancelarNewsletterCommand(subId), CancellationToken.None);
@@ -448,7 +448,7 @@ namespace Epros.Tests
             var comunicacaoIdProp = statusType.GetProperty("ComunicacaoId");
             Assert.NotNull(comunicacaoIdProp);
             var comunicacaoId = (Guid)comunicacaoIdProp.GetValue(statusResult)!;
-            
+
             var comunicacao = await context.ComunicacoesSuperAdmin.FirstOrDefaultAsync(c => c.Id == comunicacaoId);
             Assert.NotNull(comunicacao);
             Assert.Equal("Pendente", comunicacao.Status);
@@ -463,7 +463,7 @@ namespace Epros.Tests
             var spyNotif = new SpyNotificacaoService();
             var mockHttpContextAccessor = new Microsoft.AspNetCore.Http.HttpContextAccessor();
             var outboxProcessor = new AplicativoOutboxProcessorJob(context, contextGestao, null!, mockHttpContextAccessor, spyNotif);
-            
+
             await outboxProcessor.Execute(null!);
 
             // Assert 2: Status updated to Sucesso and channels called
@@ -533,7 +533,7 @@ namespace Epros.Tests
             for (int i = 1; i <= 5; i++)
             {
                 await outboxProcessor.Execute(null!);
-                
+
                 var outboxMessage = await context.OutboxMessages.AsNoTracking().FirstOrDefaultAsync(o => o.EventType == "ComunicacaoSuperAdminCriada");
                 Assert.Equal(i, outboxMessage!.Tentativas);
                 Assert.Null(outboxMessage.ProcessadoEm);

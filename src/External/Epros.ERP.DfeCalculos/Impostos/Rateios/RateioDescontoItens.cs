@@ -1,4 +1,4 @@
-﻿using Epros.ERP.DfeCalculos.Models.Vendas;
+using Epros.ERP.DfeCalculos.Models.Vendas;
 using Epros.ERP.Shared.Extensions;
 
 namespace Epros.ERP.DfeCalculos.Impostos.Rateios

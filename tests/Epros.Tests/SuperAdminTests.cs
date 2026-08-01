@@ -215,7 +215,7 @@ namespace Epros.Tests
             Assert.Equal(AssinaturaStatus.Aprovada, assinaturaAtualizada!.Status);
             Assert.Equal("Operador Siser Alfa", assinaturaAtualizada.OperadorAprovacao);
             Assert.Equal("Justificativa para homologar cliente no ambiente.", assinaturaAtualizada.JustificativaAprovacao);
-            
+
             // REG-008: DataInicio deve ser hoje (UtcNow) e DataFim recalculada para DataInicio + 30 dias
             Assert.True((DateTime.UtcNow - assinaturaAtualizada.DataInicio!.Value).TotalMinutes < 2);
             Assert.Equal(assinaturaAtualizada.DataInicio.Value.AddDays(30).Date, assinaturaAtualizada.DataFim!.Value.Date);
@@ -229,7 +229,7 @@ namespace Epros.Tests
                 .Options;
 
             var tenantProvider = new TestTenantProvider("system");
-            
+
             // Administrador 1 (Maker) cria o lote
             var currentUserMaker = new TestCurrentUser("admin-maker");
             using (var context = new ContextGestaoClientes(options, tenantProvider, currentUserMaker))
@@ -242,11 +242,11 @@ namespace Epros.Tests
 
                 var handlerCriar = new CriarExecucaoMassaCommandHandler(context, tenantProvider, currentUserMaker);
                 var cmdCriar = new CriarExecucaoMassaCommand("AtualizarPrecosPlanos", "{\"Percentual\": 20}");
-                
+
                 var resCriar = await handlerCriar.Handle(cmdCriar, CancellationToken.None);
                 Assert.True(resCriar.Sucesso);
-                
-                var execId = (Guid)resCriar.Dados.GetType().GetProperty("ExecucaoMassaId").GetValue(resCriar.Dados);
+
+                var execId = (Guid)resCriar.Dados!.GetType().GetProperty("ExecucaoMassaId")!.GetValue(resCriar.Dados)!;
 
                 // Tenta aprovar novamente com o mesmo usuário Maker (deve falhar - checker deve ser outro)
                 var handlerAprovar = new AprovarExecucaoMassaCommandHandler(context, tenantProvider, currentUserMaker);
@@ -258,7 +258,7 @@ namespace Epros.Tests
                 var currentUserChecker = new TestCurrentUser("admin-checker");
                 using var contextChecker = new ContextGestaoClientes(options, tenantProvider, currentUserChecker);
                 var handlerAprovarDiferente = new AprovarExecucaoMassaCommandHandler(contextChecker, tenantProvider, currentUserChecker);
-                
+
                 var resAprovarChecker = await handlerAprovarDiferente.Handle(new AprovarExecucaoMassaCommand(execId), CancellationToken.None);
                 Assert.True(resAprovarChecker.Sucesso);
 
@@ -295,7 +295,7 @@ namespace Epros.Tests
                 var cliente1 = new Cliente("Tenant A Corp", "11111111000111", "a@corp.com", planoId, "tenant-a", "system");
                 var cliente1Id = Guid.NewGuid();
                 typeof(Epros.Shared.Domain.Entities.EntidadeSaaSBase).GetField("<Id>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.SetValue(cliente1, cliente1Id);
-                
+
                 var cliente2 = new Cliente("Tenant B Corp", "22222222000122", "b@corp.com", planoId, "tenant-b", "system");
                 var cliente2Id = Guid.NewGuid();
                 typeof(Epros.Shared.Domain.Entities.EntidadeSaaSBase).GetField("<Id>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.SetValue(cliente2, cliente2Id);
@@ -313,14 +313,14 @@ namespace Epros.Tests
                 var handlerCriar = new CriarExecucaoMassaCommandHandler(context, tenantProvider, currentUserMaker);
                 var cmdCriar = new CriarExecucaoMassaCommand("SuspenderInadimplentes", "{\"DiasAtraso\": 15}");
                 var resCriar = await handlerCriar.Handle(cmdCriar, CancellationToken.None);
-                
-                var execId = (Guid)resCriar.Dados.GetType().GetProperty("ExecucaoMassaId").GetValue(resCriar.Dados);
+
+                var execId = (Guid)resCriar.Dados!.GetType().GetProperty("ExecucaoMassaId")!.GetValue(resCriar.Dados)!;
 
                 // Checker aprova e executa
                 var currentUserChecker = new TestCurrentUser("admin-checker");
                 using var contextChecker = new ContextGestaoClientes(options, tenantProvider, currentUserChecker);
                 var handlerAprovar = new AprovarExecucaoMassaCommandHandler(contextChecker, tenantProvider, currentUserChecker);
-                
+
                 var resAprovar = await handlerAprovar.Handle(new AprovarExecucaoMassaCommand(execId), CancellationToken.None);
                 Assert.True(resAprovar.Sucesso);
 

@@ -1,4 +1,4 @@
-﻿using Epros.ERP.DfeCalculos.Validations.Nfces.CfopCst;
+using Epros.ERP.DfeCalculos.Validations.Nfces.CfopCst;
 
 namespace Epros.ERP.DfeCalculos.Validations.Nfces.CfopCsosns
 {

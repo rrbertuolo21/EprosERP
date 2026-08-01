@@ -76,8 +76,8 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                     using var doc = JsonDocument.Parse(content);
                     var root = doc.RootElement;
 
-                    if (root.TryGetProperty("erro", out var erroProp) && 
-                        ((erroProp.ValueKind == JsonValueKind.True) || 
+                    if (root.TryGetProperty("erro", out var erroProp) &&
+                        ((erroProp.ValueKind == JsonValueKind.True) ||
                          (erroProp.ValueKind == JsonValueKind.String && string.Equals(erroProp.GetString(), "true", StringComparison.OrdinalIgnoreCase))))
                     {
                         // CEP não existe

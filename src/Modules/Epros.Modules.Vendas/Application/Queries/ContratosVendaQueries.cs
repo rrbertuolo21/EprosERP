@@ -78,9 +78,19 @@ namespace Epros.Modules.Vendas.Application.Queries
             var renovacoes = await _context.ContratoRenovacoes.AsNoTracking().Where(a => a.TenantId == tenantId && a.ContratoId == request.Id).Select(a => new { a.Id, a.DataInicio, a.DataFim, a.Valor, Status = a.Status.ToString() }).ToListAsync(cancellationToken);
             return CommandResult.Ok("Contrato encontrado.", new
             {
-                contrato.Id, contrato.NumeroContrato, contrato.Assunto, contrato.ClienteId, contrato.Valor,
-                contrato.DataInicio, contrato.DataFim, Status = contrato.Status.ToString(),
-                contrato.EmpresaAssinou, contrato.ClienteAssinou, anexos, comentarios, renovacoes
+                contrato.Id,
+                contrato.NumeroContrato,
+                contrato.Assunto,
+                contrato.ClienteId,
+                contrato.Valor,
+                contrato.DataInicio,
+                contrato.DataFim,
+                Status = contrato.Status.ToString(),
+                contrato.EmpresaAssinou,
+                contrato.ClienteAssinou,
+                anexos,
+                comentarios,
+                renovacoes
             });
         }
     }
