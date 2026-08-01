@@ -50,6 +50,55 @@ namespace Epros.API.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// 1.08D — Mudança de plano SELF-SERVICE (upgrade/downgrade) com proração pro-rata por dias.
+        /// Reavalia limites/entitlement (não apaga excedente) e gera o ajuste (fatura de diferença no
+        /// débito, crédito registrado para a próxima fatura). ⚠️ política de proração = valida contador.
+        /// </summary>
+        [HttpPost("mudar-plano")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> MudarPlano([FromBody] MudarPlanoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            if (!result.Sucesso)
+            {
+                return UnprocessableEntity(result);
+            }
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// 1.08D — Cancelamento self-service GOVERNADO. Entra na janela somente-leitura/export de 30 dias
+        /// (REG-021); registra motivo/quem/quando. Reversível via <c>reativar</c> dentro da janela.
+        /// </summary>
+        [HttpPost("cancelar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Cancelar([FromBody] CancelarAssinaturaCommand command)
+        {
+            var result = await _mediator.Send(command);
+            if (!result.Sucesso)
+            {
+                return UnprocessableEntity(result);
+            }
+            return Ok(result);
+        }
+
+        /// <summary>1.08D — Reativação self-service dentro da janela de 30 dias (volta a Ativo).</summary>
+        [HttpPost("reativar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Reativar()
+        {
+            var result = await _mediator.Send(new ReativarAssinaturaCommand());
+            if (!result.Sucesso)
+            {
+                return UnprocessableEntity(result);
+            }
+            return Ok(result);
+        }
+
         [HttpGet("faturas")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> ListarFaturas([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 50)

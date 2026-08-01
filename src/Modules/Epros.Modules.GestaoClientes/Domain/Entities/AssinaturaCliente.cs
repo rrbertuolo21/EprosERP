@@ -14,7 +14,10 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         AguardandoAprovacao = 2,
         Recusada = 3,
         Futura = 4,
-        Expirada = 5
+        Expirada = 5,
+        // 1.08D — Cancelamento self-service governado. Persistido como string (HasConversion<string>),
+        // portanto o novo membro não exige alteração de schema para a coluna Status.
+        Cancelada = 6
     }
 
     public class AssinaturaCliente : EntidadeSaaSBase
@@ -42,6 +45,13 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         // O job de renovação usa esta data como âncora idempotente: ao gerar a fatura do ciclo, avança a data.
         public DateTime? ProximaCobrancaEm { get; private set; }
         public DateTime? UltimaRenovacaoEm { get; private set; }
+
+        // 1.08D — Cancelamento self-service GOVERNADO: registra quem/quando/por quê cancelou.
+        // A janela somente-leitura/export de 30 dias (REG-021, InquilinoSaaSMiddleware) é ancorada
+        // em Cliente.StatusSaaSAtualizadoEm; estes campos guardam o rastro no nível da assinatura.
+        public DateTime? CanceladaEm { get; private set; }
+        public string? MotivoCancelamento { get; private set; }
+        public string? CanceladaPor { get; private set; }
 
         protected AssinaturaCliente() { } // EF Core
 
@@ -134,6 +144,57 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public void Expirar(string alteradoPor)
         {
             Status = AssinaturaStatus.Expirada;
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>
+        /// 1.08D — Troca o plano contratado desta assinatura (upgrade/downgrade self-service).
+        /// Não apaga excedente de uso: a reavaliação de limites/entitlement é feita pelo
+        /// <c>ValidadorLimitesSaaS</c>, que lê o plano vigente do Cliente (bloqueia NOVAS criações
+        /// se o novo plano tiver limite menor que o uso atual — decisão da 1.06).
+        /// </summary>
+        public void TrocarPlano(Guid novoPlanoId, string? novosDetalhesPacoteJson, string alteradoPor)
+        {
+            AddNotifications(new Contract<AssinaturaCliente>()
+                .Requires()
+                .AreNotEquals(novoPlanoId, Guid.Empty, nameof(PlanoId), "Novo plano é obrigatório")
+            );
+
+            if (!IsValid) return;
+
+            PlanoId = novoPlanoId;
+            if (novosDetalhesPacoteJson != null)
+            {
+                DetalhesPacoteJson = novosDetalhesPacoteJson;
+            }
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>
+        /// 1.08D — Cancelamento self-service GOVERNADO. Move a assinatura para <c>Cancelada</c> e registra
+        /// quem/quando/por quê. Não bloqueia de imediato: a janela somente-leitura/export de 30 dias
+        /// (REG-021) segue valendo no middleware, ancorada em Cliente.StatusSaaSAtualizadoEm. Reversível
+        /// dentro da janela via <see cref="Reativar"/> (honra a skill jurídica).
+        /// </summary>
+        public void RegistrarCancelamento(string? motivo, string alteradoPor)
+        {
+            Status = AssinaturaStatus.Cancelada;
+            CanceladaEm = DateTime.UtcNow;
+            MotivoCancelamento = motivo;
+            CanceladaPor = alteradoPor;
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>
+        /// 1.08D — Reativa uma assinatura cancelada dentro da janela de 30 dias: volta a <c>Ativa</c> e
+        /// limpa o marco de cancelamento (o rastro de auditoria vive no Outbox e em StatusSaaSAtualizadoEm).
+        /// </summary>
+        public void Reativar(string alteradoPor)
+        {
+            Status = AssinaturaStatus.Ativa;
+            CanceladaEm = null;
+            MotivoCancelamento = null;
+            CanceladaPor = null;
             MarcarAlterado(alteradoPor);
         }
 

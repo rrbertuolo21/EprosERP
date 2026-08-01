@@ -208,13 +208,24 @@ const handleUpgrade = (plan) => {
   setTimeout(async () => {
     try {
       if (apiOnline.value) {
-        await useApi('/aplicativo/assinaturas/contratar', {
-          method: 'POST',
-          body: {
-            PlanoId: plan.id,
-            MetodoPagamento: 'PIX'
-          }
-        })
+        // 1.08D — se o tenant já tem plano ativo, é MUDANÇA de plano (upgrade/downgrade com proração);
+        // caso contrário, é a 1ª contratação. Endpoints da área do cliente (AssinaturasController).
+        if (user.value && user.value.planName) {
+          await useApi('/aplicativo/assinaturas/mudar-plano', {
+            method: 'POST',
+            body: {
+              NovoPlanoId: plan.id
+            }
+          })
+        } else {
+          await useApi('/aplicativo/assinaturas/contratar', {
+            method: 'POST',
+            body: {
+              PlanoId: plan.id,
+              MetodoPagamento: 'PIX'
+            }
+          })
+        }
       } else {
         // Fallback offline
         await useApi('/plataforma/clientes/upgrade', {

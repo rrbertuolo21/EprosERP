@@ -14,6 +14,7 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
         public DbSet<FaturaItem> FaturaItens => Set<FaturaItem>();
         public DbSet<GrupoPlano> GrupoPlanos => Set<GrupoPlano>();
         public DbSet<AssinaturaCliente> AssinaturasClientes => Set<AssinaturaCliente>();
+        public DbSet<AjusteProracao> AjustesProracao => Set<AjusteProracao>();
         public DbSet<PagamentoFatura> PagamentosFaturas => Set<PagamentoFatura>();
         public DbSet<ReciboPagamento> RecibosPagamento => Set<ReciboPagamento>();
         public DbSet<MeioPagamentoCliente> MeiosPagamentoClientes => Set<MeioPagamentoCliente>();
@@ -235,6 +236,23 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                       .WithMany()
                       .HasForeignKey(a => a.PlanoId)
                       .OnDelete(DeleteBehavior.Restrict);
+                // 1.08D — motivo de cancelamento pode ser longo (texto livre do cliente).
+                entity.Property(a => a.MotivoCancelamento).HasColumnType("text");
+                entity.Property(a => a.CanceladaPor).HasMaxLength(200);
+            });
+
+            // 1.08D — Registro de proração por mudança de plano (mecanismo pro-rata por dias).
+            modelBuilder.Entity<AjusteProracao>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                entity.Property(a => a.Tipo).HasConversion<string>().HasMaxLength(20);
+                entity.Property(a => a.Observacao).HasColumnType("text");
+                entity.HasOne<AssinaturaCliente>()
+                      .WithMany()
+                      .HasForeignKey(a => a.AssinaturaClienteId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(a => a.AssinaturaClienteId)
+                      .HasDatabaseName("ix_ajustes_proracao_assinatura");
             });
 
             modelBuilder.Entity<PagamentoFatura>(entity =>
