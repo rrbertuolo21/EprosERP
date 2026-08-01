@@ -1,2 +1,9 @@
 # Git Commit Rules
 - Todas as mensagens de commit sugeridas: português (BR), Conventional Commits, curtas.
+
+# Git Branch + PR (obrigatório para a IA)
+- NUNCA trabalhe diretamente em `main`.
+- Antes de qualquer alteração de código: criar/usar branch dedicada a partir de `main`.
+- Nomenclatura: `feature|bugfix|hotfix|refactor|test|chore|ci|sandbox/…` (kebab-case ASCII; `EP-xxx` quando houver task).
+- Ao finalizar a tarefa: push da branch + abrir PR (base `main`) e devolver a URL.
+- Detalhe: `.cursor/rules/01-git-branch-pr.mdc`.

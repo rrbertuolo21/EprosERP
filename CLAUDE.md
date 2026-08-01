@@ -55,5 +55,7 @@ máquina. `dotnet` → `export DOTNET_ROOT=~/.dotnet`. BuildKit `DeadlineExceede
 - Retomada de onde paramos: `PROMPT_REINICIO.md` / `HISTORICO-DESENVOLVIMENTO-IA.md`
 
 ## Git
-Commit/push só quando pedido; nunca na `main` sem branch. Manter **paridade** com `origin/main`
-(fast-forward). Mensagem de commit termina com a linha de coautoria.
+Commit/push só quando pedido. **Nunca** trabalhar em `main`: branch dedicada antes de qualquer
+alteração (`feature|bugfix|hotfix|chore|ci|…` a partir de `main`). Ao finalizar: push + **PR aberto**
+(base `main`) e URL devolvida. Regra da IA: `.cursor/rules/01-git-branch-pr.mdc`.
+Mensagem de commit em PT-BR (Conventional Commits); termina com a linha de coautoria.
