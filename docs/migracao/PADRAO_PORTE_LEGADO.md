@@ -1,6 +1,6 @@
 # Molde de Porte — Legado Epros → EprosERP
 
-> **Este arquivo é só o MOLDE campo a campo.** As convenções gerais, o mapa completo domínio→módulo→schema, os dois modos de trabalho (Porte/Consolidação) e as regras anti-alucinação estão em **`CONVENCAO_CODIGO.md`**, que é a **fonte canônica**. Em qualquer divergência, o CONVENCAO prevalece.
+> **Este arquivo é só o MOLDE campo a campo.** As convenções gerais estão em **[`CONVENCAO_CODIGO.md`](../../CONVENCAO_CODIGO.md)** (fonte canônica na raiz). Em qualquer divergência, o CONVENCAO prevalece.
 
 Regra mestra: **porte fiel, campo a campo. Não inventar, não simplificar, não remover.** Todo campo/entidade do legado precisa ter destino no novo. Só se traduz de plataforma (SQL Server/long/Entity/Controller) para a plataforma nova (PostgreSQL/Guid/EntidadeSaaSBase/CQRS). Tradução de plataforma resumida: `long Id`+`SequenciaTenantId` → `EntidadeSaaSBase` (+ `SequenciaExibicao long?` quando a UX legada exibia a sequência); FK `long` → `Guid`; Controller → CQRS; enum legado → enum portado (nunca string/int); `DateTime.Now` → base UTC. Detalhes em CONVENCAO §5.4.
 
