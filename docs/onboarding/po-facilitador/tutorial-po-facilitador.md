@@ -25,7 +25,7 @@ last_updated: "2026-07-13"
 
 ## Pré-requisitos
 
-* **Repositório:** abra o **epros** (meta-repo) no Cursor.
+* **Repositório:** abra o **EprosERP** no Cursor.
 * **Context Agent:** ativo automaticamente em todo chat.
 * **Artefatos:** descrição da demanda (01); notas/entrevistas (02); Problem Statement (03).
 * **Skills que o agente consulta:** business case, discovery, US + ACs, impacto fiscal.

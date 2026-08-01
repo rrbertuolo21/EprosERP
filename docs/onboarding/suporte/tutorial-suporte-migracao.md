@@ -33,7 +33,7 @@ last_updated: "2026-07-13"
 
 ## Pré-requisitos
 
-* **Repositório:** abra o **epros** (meta-repo) no Cursor.
+* **Repositório:** abra o **EprosERP** no Cursor.
 * **Context Agent:** ativo automaticamente.
 * **Suporte:** ticket, logs, tenant identificado.
 * **Migração:** dados do cliente legado, mapeamento de módulos, janela de corte.

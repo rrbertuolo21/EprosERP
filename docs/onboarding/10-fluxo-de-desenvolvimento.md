@@ -12,7 +12,7 @@ Você já viu **quem faz o quê** no [artigo 07](07-squads-cerimonias.md). Este 
 
 Em caso de dúvida sobre nomenclatura, responsabilidades ou ciclo de entrega, consulte aqui primeiro.
 
-> **EprosERP:** o fluxo de branches/Jira abaixo veio do monorepo com `epros-back` + `epros-front`. Aqui o trabalho é no clone único **EprosERP** (`src/` + `Epros.App/`). Onde o texto citar dois repos, aplique no mesmo PR ou PRs sequenciais neste repositório.
+> **EprosERP:** o trabalho é no clone único **EprosERP** (`src/` + `Epros.App/`). Onde o texto citar back e front como repos separados, aplique no mesmo PR ou PRs sequenciais neste repositório.
 
 ---
 
@@ -48,12 +48,12 @@ Slug da descrição: ASCII, kebab-case, sem acentos — alinhado ao padrão dos 
 
 ### Ciclo de vida (temporárias)
 
-Nos repositórios de código (**epros-back**, **epros-front**), o GitHub está configurado com **Automatically delete head branches**: ao **mergear o PR**, a branch **head** some no **remoto**. As longas (`main`, `homolog`, `develop`) não são apagadas — o histórico (commits e merge commits) permanece nelas.
+No repositório **EprosERP**, o GitHub está configurado com **Automatically delete head branches**: ao **mergear o PR**, a branch **head** some no **remoto**. As longas (`main`, `homolog`, `develop`) não são apagadas — o histórico (commits e merge commits) permanece nelas.
 
 * **Task** (`feature/`, `bugfix/`, `hotfix/`, etc.): após o merge, não conte com a mesma branch no remoto. Retomar correção ou nova entrega → **criar branch nova** a partir da base correta (`develop`; hotfix crítico → `main`).
 * **Ciclo semanal:** as heads `cycle/…-homolog`, `merge/…-develop` e `cycle/…-develop` somem no remoto ao mergear os três PRs da Etapa 6 — [Rotina de segunda — Etapa 6](tech-lead/rotina-segunda-feira.md#etapa-6--branches-merge-e-prs-para-as-longas).
 
-**Pré-requisito (admin GitHub):** *Settings → General → Pull Requests* → **Automatically delete head branches** em cada repo de código (e no meta-repo se houver PRs de feature).
+**Pré-requisito (admin GitHub):** *Settings → General → Pull Requests* → **Automatically delete head branches**.
 
 ---
 
@@ -125,7 +125,6 @@ Fluxo completo com agentes: [Tutorial — Suporte / Migração](suporte/tutorial
 ### Regras do ciclo
 
 * O pós-reunião **não** altera `homolog`/`develop` por CLI: preparo nas `cycle/YYYY-MM-DD-*`, integração via PR (`cycle/…-homolog` → `main`; `merge/…` → `develop` e `homolog`)
-* Após os PRs do ciclo nos repos de código, o meta-repo `epros` atualiza os ponteiros `backend/` e `frontend/` (submodules) — ver [Rotina de segunda §6.3](tech-lead/rotina-segunda-feira.md)
 * O bump de versão (API, DFe, RealTime, Front — independentes) ocorre **nas `cycle/…` antes** dos PRs de release, para o build de produção já sair versionado
 * O merge da cycle develop para `homolog` na segunda já abre o próximo ciclo de validação
 * Features não validadas até a reunião de segunda são tratadas como rejeitadas — revert nas `cycle/…` (depois propagado às longas), task volta para **Rejeitado** no Jira

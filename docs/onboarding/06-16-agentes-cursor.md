@@ -78,8 +78,8 @@ Rules Cursor: [`docs/fabrica/cursor/cursor-install/rules/`](../fabrica/cursor/cu
 
 Arquivos:
 
-* Meta-repo (`epros`): `.cursor/rules/00-epros-context.mdc`
-* Submódulos `backend/` e `frontend/`: regras `epros-erp-*.mdc`
+* `CLAUDE.md` e `CONVENCAO_CODIGO.md` na raiz do **EprosERP**
+* Regras em `docs/fabrica/cursor/cursor-install/rules/` (ex.: `S01-epros-contexto-dominio.mdc`)
 
 O que ele injeta em toda interação:
 

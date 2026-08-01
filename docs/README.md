@@ -60,21 +60,5 @@ Em seguida: [QUICKSTART-LOCAL.md](QUICKSTART-LOCAL.md) para subir o ambiente.
 
 
 
-
-## Adaptação (material vindo do monorepo `epros`)
-
-
-| Conceito nos textos antigos             | Neste repo                                                |
-| --------------------------------------- | --------------------------------------------------------- |
-| `epros-back` / `epros-front`            | Monólito `EprosERP`: `src/` + `Epros.App/`                |
-| Nuxt 4 + `app/modules/...`              | **Nuxt 3** + `pages/erp|plataforma|area-cliente/`         |
-| Gateway YARP                            | API host em `src/API/Epros.API`                           |
-| `_fabrica/` (pasta na raiz)             | `docs/fabrica/`                                           |
-| `COMECE-POR-AQUI.md` / `COMECE-AQUI.md` | `docs/ROTEIRO-ONBOARDING.md` / `docs/QUICKSTART-LOCAL.md` |
-| `PADRAO_PORTE_LEGADO.md` na raiz        | `docs/migracao/PADRAO_PORTE_LEGADO.md`                    |
-| `./seed-local.sh` na raiz               | `./scripts/seed-local.sh`                                 |
-| “CONTEXT.md fonte única”                | `CLAUDE.md` + `CONVENCAO_CODIGO.md`                       |
-
-
 Front real: [onboarding/estrutura-pastas-front.md](onboarding/estrutura-pastas-front.md).
 Memória de reorganização: [MEMORIA_SESSAO_REORGANIZACAO.md](../MEMORIA_SESSAO_REORGANIZACAO.md).

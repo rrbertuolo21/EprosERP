@@ -7,11 +7,11 @@ last_updated: "2026-07-20"
 
 **Frequência:** Toda segunda-feira, ou primeiro dia útil da semana, sem exceção.
 
-> **EprosERP:** runbook original do monorepo `epros`. Aqui o ciclo Git é **um** repositório (`EprosERP`: `src/` + `Epros.App/`). Ignore ponteiros de submódulo (exceto `Epros.Mobile`). Processo: [`docs/fabrica/`](../../fabrica/).
+> **EprosERP:** ciclo Git em **um** repositório (`src/` + `Epros.App/`). Submódulo opcional: `Epros.Mobile`. Processo: [`docs/fabrica/`](../../fabrica/).
 
 **Contexto:** cerimônia e status canônicos do Jira estão em [Fluxo de desenvolvimento — artigo 10](../10-fluxo-de-desenvolvimento.md) (pauta 75–90 min, blocos 0–5) e [Squads e cerimônias — artigo 07](../07-squads-cerimonias.md). Este documento é o **runbook pós-reunião** (Git, versões, Jira, release) e o detalhe operacional dos boards na reunião.
 
-**Repositórios:** repita as Etapas 2–6 em **`EprosERP (`src/`)`** (`backend/`) e **`Epros.App`** (`frontend/`), salvo quando só um repo tiver mudanças no ciclo. Após os PRs do ciclo (Etapa 6), atualize os ponteiros de submódulo no **meta-repo** `epros` (Etapa 6.3).
+**Repositório:** execute as Etapas 2–6 no clone **EprosERP** (`src/` + `Epros.App/`).
 
 **Serviços com versão independente** (só incremente o que mudou no ciclo):
 
@@ -31,7 +31,6 @@ last_updated: "2026-07-20"
 4  Sync hotfixes    → na cycle/…-develop
 5  Versionar        → nas cycle (antes de qualquer PR de release)
 6  Normalizar + merge/develop + PRs → main, develop e homolog
-6.3 Meta-repo       → atualizar submodules backend/frontend
 7–9 Jira, release notes, ordem da sprint
 ```
 
@@ -47,12 +46,12 @@ Deriva do checklist de encerramento (bloco 5):
 
 | Decisão na reunião | O que fazer |
 | --- | --- |
-| **Ambos** os merges adiados (`cycle/…-homolog` → `main` **e** `cycle/…-develop` → `homolog`), com motivo registrado | **Não** executar Etapas 2–6.3. Siga para Etapas 7–9 apenas se acordado (Jira/release notes). |
+| **Ambos** os merges adiados (`cycle/…-homolog` → `main` **e** `cycle/…-develop` → `homolog`), com motivo registrado | **Não** executar Etapas 2–6. Siga para Etapas 7–9 apenas se acordado (Jira/release notes). |
 | **Só** produção adiada | Abrir `cycle/…`, Etapas 3–5 se aplicável; **pular** PR → `main`; seguir PRs → `develop` / `homolog` se autorizados. |
 | **Só** próximo homolog adiado | Seguir release → `main` se autorizado; **não** abrir/mergear PR `cycle/…-develop` → `homolog`. |
-| Merges autorizados (total ou parcial conforme linhas acima) | Executar Etapas 2–6.3 conforme skip abaixo, por repositório. |
+| Merges autorizados (total ou parcial conforme linhas acima) | Executar Etapas 2–6 conforme skip abaixo. |
 
-**Repositório sem mudança no ciclo:** pule Etapas 2–6 **naquele** repo (`EprosERP (`src/`)` ou `Epros.App`); repita no outro se necessário.
+**Repositório sem mudança no ciclo:** pule Etapas 2–6.
 
 ### Skip por etapa
 
@@ -65,7 +64,6 @@ Deriva do checklist de encerramento (bloco 5):
 | 6 PR → `main` | Zero itens **Pronto p/ Deploy** **ou** produção adiada | Demais PRs se autorizados |
 | 6 PR → `develop` | Nada a propagar (sem reverts, sync nem versão na cycle) — raro | Avaliar caso a caso com TL |
 | 6 PR → `homolog` | Próximo ciclo de homolog adiado | — |
-| 6.3 Meta-repo | Nenhum submódulo entrou no ciclo (back e front sem PR mergeado) | — |
 | 7–9 | Fora do escopo Git | Seguir se o board/Jira/release notes foi acordado mesmo com Git adiado |
 
 ### Abort (parar o fluxo Git)
@@ -455,7 +453,7 @@ git push origin HEAD
 
 Com as `cycle/…` prontas, **não** mergeie por CLI em `main` / `homolog` / `develop`. Abra branches temporárias de integração e PRs.
 
-A rotina (`scripts/rotina-segunda-feira.mjs`, Etapa 6) automatiza **6.0** (normalizar manifests nas `cycle/…`), **6.1** (criar `merge/…-develop` a partir de `cycle/…-develop` e normalizar `-dev` na merge), **6.2** (`gh pr create` com confirmação — merge continua manual no GitHub) e instruções **6.3** (submódulos no meta-repo). Heads de PR somem no remoto com **Automatically delete head branches** ao mergear cada PR.
+A rotina (`scripts/rotina-segunda-feira.mjs`, Etapa 6) automatiza **6.0** (normalizar manifests nas `cycle/…`), **6.1** (criar `merge/…-develop` a partir de `cycle/…-develop` e normalizar `-dev` na merge) e **6.2** (`gh pr create` com confirmação — merge continua manual no GitHub). Heads de PR somem no remoto com **Automatically delete head branches** ao mergear cada PR.
 
 **Ordem obrigatória na Etapa 6:** **6.0** (cycle) → **6.1** (criar merge + normalizar merge) → **6.2** (PRs). Não abra PRs antes de normalizar as branches `cycle/…`; não normalize `merge/…-develop` antes de criá-la.
 
@@ -559,46 +557,7 @@ gh pr checks --watch
 
 > **Proibido:** `git merge` local direto em `main` / `develop` / `homolog`. **`gh pr merge`** (ou botão no GitHub) após PR + checks verdes é o caminho correto.
 
-**Ordem entre repositórios:** se houve mudança de contrato de API, mergeie **`EprosERP (`src/`)` antes de `Epros.App`**.
-
-### 6.3 — Atualizar meta-repo (submodules)
-
-**Skip/abort:** [Pré-condições, skip e abort](#pré-condições-skip-e-abort) — pule se nenhum submódulo entrou no ciclo (sem PR mergeado em back/front).
-
-Com o ciclo Git de **back** e **front** concluído (PRs da Etapa 6 mergeados), alinhe o meta-repo **`epros`** aos SHAs atuais dos submódulos. No monorepo, `backend/` e `frontend/` são os clones de **EprosERP (`src/`)** e **Epros.App** (branch de acompanhamento nos submódulos: `develop` — ver `.gitmodules`). A branch longa do **meta-repo** é **`main`** (não existe `develop` em `epros`).
-
-**Quando:** imediatamente após a conclusão do ciclo de segunda nos repos de código — **antes** das Etapas 7–9 (Jira / release notes / ordem da sprint). Assim o meta-repo reflete o mesmo tip de `develop` (back/front) que acabou de receber reverts, sync e versões.
-
-No clone do meta-repo `epros`:
-
-```powershell
-git checkout main
-git pull origin main
-
-# Atualiza backend/ e frontend/ para o tip atual de develop de cada remoto
-git submodule update --remote --merge backend frontend
-
-git status
-# Deve mostrar backend e/ou frontend modificados (novo SHA)
-
-git add backend frontend
-git commit -m "chore(submodules): atualiza backend e frontend após ciclo YYYY-MM-DD"
-git push origin main
-```
-
-Se a branch `main` do meta-repo for protegida (PR obrigatório):
-
-1. Crie `chore/YYYY-MM-DD-submodules` a partir de `main`.
-2. Rode o `git submodule update --remote --merge` nela.
-3. Abra PR → `main` com o mesmo título/mensagem de commit.
-4. Mergeie via GitHub (nunca force-push nos ponteiros).
-
-| Submódulo | Path no meta-repo | Repositório |
-| --- | --- | --- |
-| EprosERP (`src/`) | `backend/` | API, DFe, RealTime |
-| Epros.App | `frontend/` | Nuxt / front |
-
-> Atualize **só** os submódulos que entraram no ciclo da semana. Se apenas o back mudou, `git add backend` basta.
+**Ordem:** se houve mudança de contrato de API, mergeie commits/PRs de **`src/`** antes de **`Epros.App/`**.
 
 ## Etapa 7 — Atualizar Jira e ciclo de sprints
 
@@ -705,7 +664,7 @@ A rotina (`scripts/rotina-segunda-feira.mjs`, **Etapa 8**) tenta **Cursor CLI** 
 **Fluxo:**
 
 1. Rode a Etapa 8 na rotina; confirme CLI ou use o chat manual.
-2. No modo manual: chat novo no meta-repo `epros` com S24; anexe CSV da sprint encerrada se tiver; salve `resposta-release-notes.json`.
+2. No modo manual: chat novo no **EprosERP** com S24; anexe CSV da sprint encerrada se tiver; salve `resposta-release-notes.json`.
 3. Cole os markdowns técnicos nos PRs → `main`.
 4. Confirme a publicação: grava `changelog/releases/YYYY-MM-DD.md`, atualiza `releases/index.json`, e (com nova confirmação) commit/push no submódulo `epros-changelog`.
 
@@ -794,7 +753,7 @@ Repos: **EprosERP (`src/`)** e **Epros.App**. Contexto de negócio vem do change
 
 ## Resumo da Sequência
 
-Cada etapa Git (2–6.3) pode ser **pulada** ou o fluxo **abortado** — ver [Pré-condições, skip e abort](#pré-condições-skip-e-abort).
+Cada etapa Git (2–6) pode ser **pulada** ou o fluxo **abortado** — ver [Pré-condições, skip e abort](#pré-condições-skip-e-abort).
 
 | Ordem | Etapa |
 | --- | --- |
@@ -804,7 +763,6 @@ Cada etapa Git (2–6.3) pode ser **pulada** ou o fluxo **abortado** — ver [Pr
 | 4 | Fechar hotfixes pendentes **na cycle/develop** |
 | 5 | Versionar serviços **nas cycle** (API / DFe / RealTime / Front) |
 | 6 | Abrir `merge/…` + PRs → `main`, `develop`, `homolog` (+ tags em `main`; auto-delete das heads no GitHub) |
-| 6.3 | Atualizar submodules no meta-repo `epros` (`backend/`, `frontend/`) |
 | 7 | Atualizar Jira e ciclo de sprints |
 | 8 | Gerar release notes + publicar no `epros-changelog` (cards sprint-to-release-md) |
 | 9 | Ordenar sprint ATIVA (Jira API + IA S20 + Rank) |
@@ -813,14 +771,13 @@ Cada etapa Git (2–6.3) pode ser **pulada** ou o fluxo **abortado** — ver [Pr
 
 Marque ao **encerrar a segunda** (ou no início da terça, para itens que dependem do deploy de produção). Use como evidência URLs, SHAs e links de workflow — não marque sem conferir.
 
-### Git e ciclo (`EprosERP (`src/`)` / `Epros.App`)
+### Git e ciclo (`EprosERP`)
 
 - [ ] **Etapa 2–5** executadas ou **puladas** conforme [skip/abort](#pré-condições-skip-e-abort) (cycle abertas só se autorizado)
 - [ ] **Etapa 6 — PR → `main`:** mergeado ou adiado com motivo · URL do PR: ___
 - [ ] **Etapa 6 — PR → `develop`:** mergeado ou N/A · URL: ___
 - [ ] **Etapa 6 — PR → `homolog`:** mergeado ou adiado · URL: ___
 - [ ] **Tags em `main`** criadas por serviço bumpado (api/dfe/realtime/front): ___
-- [ ] **Etapa 6.3:** submodules `backend/` e/ou `frontend/` atualizados no meta-repo `epros` · commit/PR: ___
 
 ### Deploy e Slack (automático)
 
