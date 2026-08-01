@@ -53,6 +53,38 @@ namespace Epros.API.Security
 
             if (ehOperadorInterno)
             {
+                // 1.11 decisão #5 (menor privilégio): o operador interno NÃO é mais "bypass total".
+                // Ele é autorizado pela FAIXA de capacidades do seu perfil de suporte (PrimaryAdmin =
+                // todas). A faixa exigida pelo recurso e o perfil do operador vêm do token (claims
+                // perfilSuporte/primaryAdmin, emitidos por AutenticarUsuarioInternoCommandHandler).
+                var faixaExigida = SuperAdminSeguranca.FaixaDe(_recurso);
+                var primaryAdmin = string.Equals(
+                    context.HttpContext.User.FindFirst(SuperAdminSeguranca.ClaimPrimaryAdmin)?.Value,
+                    "true", StringComparison.OrdinalIgnoreCase);
+                var perfilSuporte = context.HttpContext.User.FindFirst(SuperAdminSeguranca.ClaimPerfilSuporte)?.Value;
+
+                if (SuperAdminSeguranca.OperadorInternoAutorizado(primaryAdmin, perfilSuporte, faixaExigida))
+                {
+                    return;
+                }
+
+                Log.Warning(
+                    "Acesso negado (faixa de suporte insuficiente — 1.11) do operador interno em {Recurso}:{Acao} (perfilSuporte={Perfil}, primaryAdmin={Primary}, faixaExigida={Faixa})",
+                    _recurso, _acao, perfilSuporte ?? "(nenhum)", primaryAdmin, faixaExigida);
+                context.Result = new ForbidResult();
+                return;
+            }
+
+            // 1.11 fix #1 (fecha o escalonamento): recursos SuperAdmin/Landlord (e sub-recursos de
+            // suporte) só podem ser autorizados por um operador interno REAL. Qualquer outra
+            // identidade — inclusive um "Administrador" de tenant comum via fallback legado abaixo —
+            // é barrada aqui, fail-closed, ANTES de qualquer atalho de cargo.
+            if (SuperAdminSeguranca.ExigeOperadorInterno(_recurso))
+            {
+                Log.Warning(
+                    "Acesso negado (recurso super-admin exige operador interno — 1.11) em {Recurso}:{Acao} para identidade não-interna (tenant={Tenant})",
+                    _recurso, _acao, _tenantProvider.GetTenantId());
+                context.Result = new ForbidResult();
                 return;
             }
 

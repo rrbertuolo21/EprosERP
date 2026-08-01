@@ -7,6 +7,7 @@ using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
 using Epros.Modules.GestaoClientes.Application.Commands;
 using Epros.Modules.GestaoClientes.Application.Queries;
+using Epros.Modules.GestaoClientes.Application.Security;
 using Epros.Modules.GestaoClientes.Domain.Entities;
 using Epros.Modules.GestaoClientes.Infrastructure.Data;
 
@@ -19,15 +20,21 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
     {
         private readonly ContextGestaoClientes _context;
         private readonly ICurrentUser _currentUser;
+        private readonly ITenantProvider _tenantProvider;
 
-        public AlterarFaturaCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser)
+        public AlterarFaturaCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser, ITenantProvider tenantProvider)
         {
             _context = context;
             _currentUser = currentUser;
+            _tenantProvider = tenantProvider;
         }
 
         public async Task<CommandResult> Handle(AlterarFaturaCommand request, CancellationToken cancellationToken)
         {
+            // 1.11 fix #2 — fatura landlord (cobrança da Siser) exige operador interno.
+            var guarda = GuardaOperadorInterno.Exigir(_tenantProvider);
+            if (guarda != null) return guarda;
+
             var alteradoPor = _currentUser.GetUserId() ?? "system";
 
             var fatura = await _context.Faturas.FirstOrDefaultAsync(f => f.Id == request.Id, cancellationToken);
@@ -60,15 +67,21 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
     {
         private readonly ContextGestaoClientes _context;
         private readonly ICurrentUser _currentUser;
+        private readonly ITenantProvider _tenantProvider;
 
-        public BaixarFaturaManualCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser)
+        public BaixarFaturaManualCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser, ITenantProvider tenantProvider)
         {
             _context = context;
             _currentUser = currentUser;
+            _tenantProvider = tenantProvider;
         }
 
         public async Task<CommandResult> Handle(BaixarFaturaManualCommand request, CancellationToken cancellationToken)
         {
+            // 1.11 fix #2 — baixa manual de fatura landlord exige operador interno.
+            var guarda = GuardaOperadorInterno.Exigir(_tenantProvider);
+            if (guarda != null) return guarda;
+
             var alteradoPor = _currentUser.GetUserId() ?? "system";
 
             var fatura = await _context.Faturas.FirstOrDefaultAsync(f => f.Id == request.FaturaId, cancellationToken);
@@ -144,15 +157,21 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
     {
         private readonly ContextGestaoClientes _context;
         private readonly ICurrentUser _currentUser;
+        private readonly ITenantProvider _tenantProvider;
 
-        public ExcluirFaturaCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser)
+        public ExcluirFaturaCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser, ITenantProvider tenantProvider)
         {
             _context = context;
             _currentUser = currentUser;
+            _tenantProvider = tenantProvider;
         }
 
         public async Task<CommandResult> Handle(ExcluirFaturaCommand request, CancellationToken cancellationToken)
         {
+            // 1.11 fix #2 — excluir fatura landlord exige operador interno.
+            var guarda = GuardaOperadorInterno.Exigir(_tenantProvider);
+            if (guarda != null) return guarda;
+
             var deletadoPor = _currentUser.GetUserId() ?? "system";
 
             var fatura = await _context.Faturas.FirstOrDefaultAsync(f => f.Id == request.Id, cancellationToken);

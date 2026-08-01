@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Epros.API.Security;
 using Epros.Modules.Aplicativo.Application.Commands;
 using Epros.Modules.Aplicativo.Application.Queries;
 using Epros.Shared.Application.Models;
@@ -10,9 +11,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace Epros.API.Controllers
 {
     /// <summary>Governança de upgrade/versão do Super Admin (APP-TEN-010). Maker-checker + rollback.</summary>
+    // 1.11 fix #3 — antes SÓ a FallbackPolicy protegia (qualquer autenticado rodava MigrateAsync).
+    // Agora exige operador interno real (SuperAdmin) E faixa técnica (SuporteInfra) — fail-closed —
+    // além do guard tenant="system" nos handlers.
     [ApiController]
     [Route("api/v1/super-admin/upgrades")]
     [Produces("application/json")]
+    [AbacAuthorize("SuperAdmin", "Configurar")]
+    [AbacAuthorize(SuperAdminSeguranca.RecursoSuporteInfra, "Executar")]
     public class GovernancaVersaoController : ControllerBase
     {
         private readonly IMediator _mediator;

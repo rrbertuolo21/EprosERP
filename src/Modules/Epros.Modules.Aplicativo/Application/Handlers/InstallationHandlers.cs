@@ -257,19 +257,28 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
         private readonly ContextAplicativo _context;
         private readonly IServiceProvider _serviceProvider;
         private readonly ICurrentUser _currentUser;
+        private readonly ITenantProvider _tenantProvider;
 
         public ExecutarAtualizacaoCommandHandler(
             ContextAplicativo context,
             IServiceProvider serviceProvider,
-            ICurrentUser currentUser)
+            ICurrentUser currentUser,
+            ITenantProvider tenantProvider)
         {
             _context = context;
             _serviceProvider = serviceProvider;
             _currentUser = currentUser;
+            _tenantProvider = tenantProvider;
         }
 
         public async Task<CommandResult> Handle(ExecutarAtualizacaoCommand request, CancellationToken cancellationToken)
         {
+            // 1.11 fix #3 — atualização roda MigrateAsync em todos os contextos: exige operador interno.
+            if (!string.Equals(_tenantProvider.GetTenantId(), "system", StringComparison.OrdinalIgnoreCase))
+            {
+                return CommandResult.Falha(new[] { "Acesso Proibido: a atualização do sistema é restrita ao operador interno da Siser." });
+            }
+
             var executadoPor = _currentUser.GetUserId() ?? "system";
 
             try

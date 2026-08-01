@@ -40,24 +40,13 @@ namespace Epros.Tests.Integration
             });
 
             var client = factory.CreateClient();
-            // API agora exige autenticação (FallbackPolicy). Em ambiente de testes, o esquema EprosToken
-            // autentica via header X-Tenant-Id — necessário para a requisição alcançar o controller e
-            // então exercitar a formatação de erro (ProblemDetails) do ExcecaoGlobalMiddleware.
-            client.DefaultRequestHeaders.Add("X-Tenant-Id", "tenant-teste-erro");
-            client.DefaultRequestHeaders.Add("X-User-Id", "admin-erro");
-
-            // ClientesController agora exige SuperAdmin:Configurar. Cadastra Administrador (ignora ACL no AbacFilter)
-            // para a requisição passar da autorização e alcançar o mediator que lança a exceção simulada.
-            using (var scope = factory.Services.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<ContextGestaoClientes>();
-                var perfil = new PerfilColaborador("admin-erro", "Adm Erro", "adm@erro.com", "Administrador", "TI", 0m, "tenant-teste-erro", "system");
-                typeof(Epros.Shared.Domain.Entities.EntidadeSaaSBase)
-                    .GetField("<Id>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
-                    .SetValue(perfil, Guid.NewGuid());
-                db.PerfisUsuarios.Add(perfil);
-                await db.SaveChangesAsync();
-            }
+            // 1.11 fix #1 — ClientesController (SuperAdmin) só autoriza operador interno REAL. O antigo
+            // atalho "Administrador de tenant comum" foi fechado; autenticamos como operador interno
+            // (tenant="system" + perfilId="interno", PrimaryAdmin por default) para a requisição passar
+            // da autorização e alcançar o mediator que lança a exceção simulada (ProblemDetails).
+            client.DefaultRequestHeaders.Add("X-Tenant-Id", "system");
+            client.DefaultRequestHeaders.Add("X-User-Id", "operador-interno-erro");
+            client.DefaultRequestHeaders.Add("X-Perfil-Id", "interno");
 
             var command = new CriarClienteCommand("Cliente Teste Ltda", "12345678000100", "teste@cliente.com", Guid.NewGuid());
 
@@ -78,27 +67,23 @@ namespace Epros.Tests.Integration
         {
             using var factory = new CustomWebApplicationFactory();
             var client = factory.CreateClient();
-            client.DefaultRequestHeaders.Add("X-Tenant-Id", "tenant-teste-customizado");
-            client.DefaultRequestHeaders.Add("X-User-Id", "admin-customizado");
+            // 1.11 fix #1/#2 — criar cliente é operação landlord: autentica como operador interno
+            // (tenant="system"). O pipeline header->ITenantProvider->entidade continua sendo exercitado
+            // (o X-Tenant-Id="system" flui até o TenantId do Cliente criado).
+            client.DefaultRequestHeaders.Add("X-Tenant-Id", "system");
+            client.DefaultRequestHeaders.Add("X-User-Id", "operador-interno-custom");
+            client.DefaultRequestHeaders.Add("X-Perfil-Id", "interno");
 
             var planoId = Guid.NewGuid();
             using (var scope = factory.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<ContextGestaoClientes>();
-                var plano = new Plano("Plano Teste", 99.90m, "tenant-teste-customizado", "user-teste");
+                var plano = new Plano("Plano Teste", 99.90m, "system", "user-teste");
 
                 // Força a inserção de ID Guid gerado localmente
                 typeof(Epros.Shared.Domain.Entities.EntidadeSaaSBase).GetField("<Id>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.SetValue(plano, planoId);
 
                 db.Planos.Add(plano);
-
-                // ClientesController agora exige SuperAdmin:Configurar — cadastra Administrador (ignora ACL no AbacFilter).
-                var perfil = new PerfilColaborador("admin-customizado", "Adm Custom", "adm@custom.com", "Administrador", "TI", 0m, "tenant-teste-customizado", "system");
-                typeof(Epros.Shared.Domain.Entities.EntidadeSaaSBase)
-                    .GetField("<Id>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
-                    .SetValue(perfil, Guid.NewGuid());
-                db.PerfisUsuarios.Add(perfil);
-
                 await db.SaveChangesAsync();
             }
 
@@ -113,7 +98,7 @@ namespace Epros.Tests.Integration
                 var db = scope.ServiceProvider.GetRequiredService<ContextGestaoClientes>();
                 var cliente = await db.Clientes.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Cnpj == "12345678000100");
                 Assert.NotNull(cliente);
-                Assert.Equal("tenant-teste-customizado", cliente!.TenantId);
+                Assert.Equal("system", cliente!.TenantId);
             }
         }
 
@@ -235,22 +220,11 @@ namespace Epros.Tests.Integration
         {
             using var factory = new CustomWebApplicationFactory();
             var client = factory.CreateClient();
+            // 1.11 fix #1 — o caminho legítimo do landlord é o OPERADOR INTERNO real (perfilId="interno"),
+            // não o cargo "Administrador" de um PerfilColaborador. Autentica como operador interno.
             client.DefaultRequestHeaders.Add("X-Tenant-Id", "system");
-            client.DefaultRequestHeaders.Add("X-User-Id", "admin-siser");
-
-            // Cadastra o PerfilUsuario de Administrador no tenant "system"
-            using (var scope = factory.Services.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<ContextGestaoClientes>();
-                var perfil = new PerfilColaborador("admin-siser", "Adm Siser", "adm@siser.com", "Administrador", "TI", 0m, "system", "system");
-                
-                typeof(Epros.Shared.Domain.Entities.EntidadeSaaSBase)
-                    .GetField("<Id>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
-                    .SetValue(perfil, Guid.NewGuid());
-                
-                db.PerfisUsuarios.Add(perfil);
-                await db.SaveChangesAsync();
-            }
+            client.DefaultRequestHeaders.Add("X-User-Id", "operador-interno-siser");
+            client.DefaultRequestHeaders.Add("X-Perfil-Id", "interno");
 
             var command = new DefinirConfiguracaoGlobalCommand("trial_days", "30", false, "Dias de Trial");
             var response = await client.PostAsJsonAsync("/api/v1/plataforma/configuracoes", command);
@@ -292,7 +266,8 @@ namespace Epros.Tests.Integration
             var command = new DefinirConfiguracaoGlobalCommand("trial_days", "30", false, "Dias de Trial");
             var response = await client.PostAsJsonAsync("/api/v1/plataforma/configuracoes", command);
 
-            // Retorno esperado do AbacFilter (ForbidResult -> 403 Forbidden)
+            // 1.11 fix #1 — sem perfilId="interno" a identidade NÃO é operador interno; recurso SuperAdmin
+            // exige operador interno real. O AbacFilter responde ForbidResult (403).
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
 

@@ -147,18 +147,24 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 throw new UnauthorizedAccessException("Acesso Proibido: Esta operação é restrita ao tenant do sistema (Siser).");
             }
 
+            // 1.11 fix #4 (REG-030 / §19): NUNCA devolver o valor integral de um segredo numa listagem.
+            // Segredos são mascarados; só um operador com capacidade explícita obtém o valor (por um
+            // fluxo dedicado, fora desta listagem). Não-segredos seguem inalterados.
+            const string MascaraSegredo = "••••••";
+
             var settings = await _context.SystemSettings
                 .Where(s => s.DeletadoEm == null)
+                .Select(s => new { s.Id, s.Chave, s.Valor, s.Escopo, s.EhSegredo })
+                .ToListAsync(cancellationToken);
+
+            return settings
                 .Select(s => new SystemSettingDto(
                     s.Id,
                     s.Chave,
-                    s.Valor,
+                    s.EhSegredo ? MascaraSegredo : s.Valor,
                     s.Escopo,
-                    s.EhSegredo
-                ))
-                .ToListAsync(cancellationToken);
-
-            return settings;
+                    s.EhSegredo))
+                .ToList();
         }
     }
 

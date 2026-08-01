@@ -715,9 +715,11 @@ namespace Epros.Tests
         public async Task Deve_Criar_Cliente_Via_Handler_Com_Sucesso()
         {
             // Arrange
-            var tenantProvider = new TestTenantProvider("tenant-h");
+            // 1.11 fix #2 — criar tenant é operação landlord: só o operador interno (tenant="system").
+            // Antes o teste usava um tenant comum ("tenant-h"), o que hoje é bloqueado pelo guard.
+            var tenantProvider = new TestTenantProvider("system");
             var currentUser = new TestCurrentUser("user-h");
-            using var context = CreateInMemoryContext("db_cliente_handler_success", "tenant-h", "user-h");
+            using var context = CreateInMemoryContext("db_cliente_handler_success", "system", "user-h");
             var handler = new CriarClienteCommandHandler(context, tenantProvider, currentUser);
             var planoId = Guid.NewGuid();
             var command = new CriarClienteCommand("Inquilino S.A.", "12.345.678/0001-99", "admin@inquilino.com", planoId);
@@ -735,7 +737,7 @@ namespace Epros.Tests
             Assert.Equal("12.345.678/0001-99", clienteSalvo.Cnpj);
             Assert.Equal("admin@inquilino.com", clienteSalvo.Email);
             Assert.Equal(planoId, clienteSalvo.PlanoId);
-            Assert.Equal("tenant-h", clienteSalvo.TenantId);
+            Assert.Equal("system", clienteSalvo.TenantId);
             Assert.Equal("user-h", clienteSalvo.CriadoPor);
         }
 
@@ -743,9 +745,10 @@ namespace Epros.Tests
         public async Task Nao_Deve_Criar_Cliente_Via_Handler_Se_Invalido()
         {
             // Arrange
-            var tenantProvider = new TestTenantProvider("tenant-h");
+            // 1.11 fix #2 — operador interno (tenant="system") para passar do guard e alcançar a validação.
+            var tenantProvider = new TestTenantProvider("system");
             var currentUser = new TestCurrentUser("user-h");
-            using var context = CreateInMemoryContext("db_cliente_handler_fail", "tenant-h", "user-h");
+            using var context = CreateInMemoryContext("db_cliente_handler_fail", "system", "user-h");
             var handler = new CriarClienteCommandHandler(context, tenantProvider, currentUser);
             // Email inválido
             var command = new CriarClienteCommand("Inquilino S.A.", "12.345.678/0001-99", "email-invalido", Guid.NewGuid());

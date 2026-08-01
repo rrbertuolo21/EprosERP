@@ -8,6 +8,7 @@ using Epros.Shared.Application.Models;
 using Epros.Modules.GestaoClientes.Application.Commands;
 using Epros.Modules.GestaoClientes.Application.Interfaces;
 using Epros.Modules.GestaoClientes.Application.Queries;
+using Epros.Modules.GestaoClientes.Application.Security;
 using Epros.Modules.GestaoClientes.Domain.Entities;
 using Epros.Modules.GestaoClientes.Infrastructure.Data;
 
@@ -42,16 +43,22 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
         private readonly ContextGestaoClientes _context;
         private readonly ICurrentUser _currentUser;
         private readonly ISegredoCofreService _cofreService;
+        private readonly ITenantProvider _tenantProvider;
 
-        public CriarGatewayPagamentoCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser, ISegredoCofreService cofreService)
+        public CriarGatewayPagamentoCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser, ISegredoCofreService cofreService, ITenantProvider tenantProvider)
         {
             _context = context;
             _currentUser = currentUser;
             _cofreService = cofreService;
+            _tenantProvider = tenantProvider;
         }
 
         public async Task<CommandResult> Handle(CriarGatewayPagamentoCommand request, CancellationToken cancellationToken)
         {
+            // 1.11 fix #2 — configuração de gateway (chaves/segredos) é landlord (só operador interno).
+            var guarda = GuardaOperadorInterno.Exigir(_tenantProvider);
+            if (guarda != null) return guarda;
+
             var criadoPor = _currentUser.GetUserId() ?? "system";
 
             var accessTokenCifrado = await _cofreService.CriptografarAsync(request.AccessToken);
@@ -87,16 +94,22 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
         private readonly ContextGestaoClientes _context;
         private readonly ICurrentUser _currentUser;
         private readonly ISegredoCofreService _cofreService;
+        private readonly ITenantProvider _tenantProvider;
 
-        public AtualizarGatewayPagamentoCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser, ISegredoCofreService cofreService)
+        public AtualizarGatewayPagamentoCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser, ISegredoCofreService cofreService, ITenantProvider tenantProvider)
         {
             _context = context;
             _currentUser = currentUser;
             _cofreService = cofreService;
+            _tenantProvider = tenantProvider;
         }
 
         public async Task<CommandResult> Handle(AtualizarGatewayPagamentoCommand request, CancellationToken cancellationToken)
         {
+            // 1.11 fix #2 — configuração de gateway (chaves/segredos) é landlord (só operador interno).
+            var guarda = GuardaOperadorInterno.Exigir(_tenantProvider);
+            if (guarda != null) return guarda;
+
             var alteradoPor = _currentUser.GetUserId() ?? "system";
 
             var config = await _context.ConfiguracoesGatewayPagamento
@@ -138,15 +151,21 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
     {
         private readonly ContextGestaoClientes _context;
         private readonly ICurrentUser _currentUser;
+        private readonly ITenantProvider _tenantProvider;
 
-        public ExcluirGatewayPagamentoCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser)
+        public ExcluirGatewayPagamentoCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser, ITenantProvider tenantProvider)
         {
             _context = context;
             _currentUser = currentUser;
+            _tenantProvider = tenantProvider;
         }
 
         public async Task<CommandResult> Handle(ExcluirGatewayPagamentoCommand request, CancellationToken cancellationToken)
         {
+            // 1.11 fix #2 — excluir gateway é landlord (só operador interno).
+            var guarda = GuardaOperadorInterno.Exigir(_tenantProvider);
+            if (guarda != null) return guarda;
+
             var deletadoPor = _currentUser.GetUserId() ?? "system";
 
             var config = await _context.ConfiguracoesGatewayPagamento
@@ -167,15 +186,21 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
     {
         private readonly ContextGestaoClientes _context;
         private readonly IPaymentGateway _paymentGateway;
+        private readonly ITenantProvider _tenantProvider;
 
-        public TestarConexaoGatewayPagamentoCommandHandler(ContextGestaoClientes context, IPaymentGateway paymentGateway)
+        public TestarConexaoGatewayPagamentoCommandHandler(ContextGestaoClientes context, IPaymentGateway paymentGateway, ITenantProvider tenantProvider)
         {
             _context = context;
             _paymentGateway = paymentGateway;
+            _tenantProvider = tenantProvider;
         }
 
         public async Task<CommandResult> Handle(TestarConexaoGatewayPagamentoCommand request, CancellationToken cancellationToken)
         {
+            // 1.11 fix #2 — testar gateway (usa segredos) é landlord (só operador interno).
+            var guarda = GuardaOperadorInterno.Exigir(_tenantProvider);
+            if (guarda != null) return guarda;
+
             var config = await _context.ConfiguracoesGatewayPagamento
                 .FirstOrDefaultAsync(g => g.Id == request.Id, cancellationToken);
             if (config == null)

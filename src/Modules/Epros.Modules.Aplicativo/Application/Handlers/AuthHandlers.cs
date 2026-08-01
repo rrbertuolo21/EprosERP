@@ -174,8 +174,12 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             }
 
             // Token marca o operador como interno: tenantId="system" (curto-circuito do AbacFilter),
-            // empresaId="system" e perfilId="interno".
-            var token = _tokenService.GerarCompleto("system", usuario.Id.ToString(), "system", "interno");
+            // empresaId="system" e perfilId="interno". 1.11: carrega também a FAIXA de suporte
+            // (primaryAdmin + perfilSuporte) para autorização por menor privilégio no AbacFilter.
+            var token = _tokenService.GerarOperadorInterno(
+                usuario.Id.ToString(),
+                usuario.PrimaryAdmin,
+                usuario.PerfilSuporte.ToString());
 
             return CommandResult.Ok("Autenticação de operador interno realizada com sucesso!", new
             {

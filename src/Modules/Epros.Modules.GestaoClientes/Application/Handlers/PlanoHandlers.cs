@@ -8,6 +8,7 @@ using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
 using Epros.Modules.GestaoClientes.Application.Commands;
 using Epros.Modules.GestaoClientes.Application.Queries;
+using Epros.Modules.GestaoClientes.Application.Security;
 using Epros.Modules.GestaoClientes.Domain.Entities;
 using Epros.Modules.GestaoClientes.Infrastructure.Data;
 
@@ -50,6 +51,10 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
 
         public async Task<CommandResult> Handle(CriarPlanoRicoCommand request, CancellationToken cancellationToken)
         {
+            // 1.11 fix #2 — plano global é catálogo landlord (só operador interno).
+            var guarda = GuardaOperadorInterno.Exigir(_tenantProvider);
+            if (guarda != null) return guarda;
+
             var tenantId = _tenantProvider.GetTenantId();
             var criadoPor = _currentUser.GetUserId() ?? "system";
 
@@ -124,15 +129,21 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
     {
         private readonly ContextGestaoClientes _context;
         private readonly ICurrentUser _currentUser;
+        private readonly ITenantProvider _tenantProvider;
 
-        public AtualizarPlanoCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser)
+        public AtualizarPlanoCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser, ITenantProvider tenantProvider)
         {
             _context = context;
             _currentUser = currentUser;
+            _tenantProvider = tenantProvider;
         }
 
         public async Task<CommandResult> Handle(AtualizarPlanoCommand request, CancellationToken cancellationToken)
         {
+            // 1.11 fix #2 — plano global é catálogo landlord (só operador interno).
+            var guarda = GuardaOperadorInterno.Exigir(_tenantProvider);
+            if (guarda != null) return guarda;
+
             var alteradoPor = _currentUser.GetUserId() ?? "system";
 
             var plano = await _context.Planos
@@ -241,15 +252,21 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
     {
         private readonly ContextGestaoClientes _context;
         private readonly ICurrentUser _currentUser;
+        private readonly ITenantProvider _tenantProvider;
 
-        public ExcluirPlanoCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser)
+        public ExcluirPlanoCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser, ITenantProvider tenantProvider)
         {
             _context = context;
             _currentUser = currentUser;
+            _tenantProvider = tenantProvider;
         }
 
         public async Task<CommandResult> Handle(ExcluirPlanoCommand request, CancellationToken cancellationToken)
         {
+            // 1.11 fix #2 — plano global é catálogo landlord (só operador interno).
+            var guarda = GuardaOperadorInterno.Exigir(_tenantProvider);
+            if (guarda != null) return guarda;
+
             var deletadoPor = _currentUser.GetUserId() ?? "system";
 
             var plano = await _context.Planos.FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);

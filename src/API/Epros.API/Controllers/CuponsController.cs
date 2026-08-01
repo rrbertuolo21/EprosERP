@@ -13,6 +13,8 @@ namespace Epros.API.Controllers
     [Route("api/v1/aplicativo/cupons")]
     [Produces("application/json")]
     [AbacAuthorize("SuperAdmin", "Configurar")]
+    // 1.11 decisão #5 — área comercial: faixa de Suporte Negócio (SuporteTecnico é negado; PrimaryAdmin passa).
+    [AbacAuthorize(SuperAdminSeguranca.RecursoSuporteComercial, "Configurar")]
     public class CuponsController : ControllerBase
     {
         private readonly IMediator _mediator;

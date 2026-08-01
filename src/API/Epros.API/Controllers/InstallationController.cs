@@ -117,8 +117,10 @@ namespace Epros.API.Controllers
         }
 
         // POST api/v1/installation/upgrade
+        // 1.11 fix #3 — além de SuperAdmin, exige faixa técnica (SuporteInfra) e guard system no handler.
         [HttpPost("upgrade")]
         [AbacAuthorize("SuperAdmin", "Configurar")]
+        [AbacAuthorize(SuperAdminSeguranca.RecursoSuporteInfra, "Executar")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<CommandResult>> Upgrade([FromBody] ExecutarAtualizacaoCommand command)

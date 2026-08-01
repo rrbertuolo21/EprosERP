@@ -27,6 +27,14 @@ namespace Epros.Shared.Security
     {
         string GerarCompleto(string tenantId, string usuarioId, string empresaId, string perfilId, string? jti = null);
         string GerarBasico(string tenantId, string usuarioId, string? jti = null);
+
+        /// <summary>
+        /// 1.11 — Emite o token do operador interno da Siser (landlord). Além do shape completo
+        /// (tenant="system", perfilId="interno"), carrega a FAIXA de suporte do operador:
+        /// claim "primaryAdmin" (Lord pleno) e "perfilSuporte" (SuporteTecnico/SuporteNegocio/Nenhum),
+        /// consumidas pelo AbacFilter para autorizar por menor privilégio (decisão #5).
+        /// </summary>
+        string GerarOperadorInterno(string usuarioId, bool primaryAdmin, string? perfilSuporte, string? jti = null);
         ClaimsPrincipal? Validar(string token);
 
         /// <summary>Tempo de vida único do token emitido (fonte de verdade da expiração — REG-024).</summary>
@@ -100,6 +108,22 @@ namespace Epros.Shared.Security
             {
                 claims.Add(new Claim("perfilId", perfilId));
             }
+
+            return Gerar(claims);
+        }
+
+        public string GerarOperadorInterno(string usuarioId, bool primaryAdmin, string? perfilSuporte, string? jti = null)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, usuarioId),
+                new Claim("tenantId", "system"),
+                new Claim("empresaId", "system"),
+                new Claim("perfilId", "interno"),
+                new Claim("primaryAdmin", primaryAdmin ? "true" : "false"),
+                new Claim("perfilSuporte", string.IsNullOrWhiteSpace(perfilSuporte) ? "Nenhum" : perfilSuporte),
+                new Claim(JwtRegisteredClaimNames.Jti, string.IsNullOrWhiteSpace(jti) ? Guid.NewGuid().ToString() : jti)
+            };
 
             return Gerar(claims);
         }

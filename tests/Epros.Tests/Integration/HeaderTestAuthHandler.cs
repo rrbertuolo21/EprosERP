@@ -27,6 +27,8 @@ namespace Epros.Tests.Integration
         public const string UserHeader = "X-User-Id";
         public const string EmpresaHeader = "X-Empresa-Id";
         public const string PerfilHeader = "X-Perfil-Id";
+        public const string PrimaryAdminHeader = "X-Primary-Admin";
+        public const string PerfilSuporteHeader = "X-Perfil-Suporte";
 
         public HeaderTestAuthHandler(
             IOptionsMonitor<AuthenticationSchemeOptions> options,
@@ -64,10 +66,30 @@ namespace Epros.Tests.Integration
             }
 
             // perfilId="interno" identifica o operador interno da Siser (curto-circuito do AbacFilter).
+            var ehInterno = false;
             if (Request.Headers.TryGetValue(PerfilHeader, out var headerPerfil) &&
                 !string.IsNullOrWhiteSpace(headerPerfil.ToString()))
             {
-                claims.Add(new Claim("perfilId", headerPerfil.ToString()));
+                var perfil = headerPerfil.ToString();
+                claims.Add(new Claim("perfilId", perfil));
+                ehInterno = string.Equals(perfil, "interno", System.StringComparison.OrdinalIgnoreCase);
+            }
+
+            // 1.11: para o operador interno, injeta a FAIXA de suporte (primaryAdmin/perfilSuporte)
+            // no MESMO shape do token de produção. Default: PrimaryAdmin (Lord pleno) quando não
+            // especificado, para não travar fluxos de teste que só querem "acesso de operador Siser".
+            if (ehInterno)
+            {
+                var primaryAdmin = !Request.Headers.TryGetValue(PrimaryAdminHeader, out var hPrimary) ||
+                                   string.IsNullOrWhiteSpace(hPrimary.ToString()) ||
+                                   string.Equals(hPrimary.ToString(), "true", System.StringComparison.OrdinalIgnoreCase);
+                claims.Add(new Claim("primaryAdmin", primaryAdmin ? "true" : "false"));
+
+                var perfilSuporte = Request.Headers.TryGetValue(PerfilSuporteHeader, out var hSup) &&
+                                    !string.IsNullOrWhiteSpace(hSup.ToString())
+                    ? hSup.ToString()
+                    : "Nenhum";
+                claims.Add(new Claim("perfilSuporte", perfilSuporte));
             }
 
             var identity = new ClaimsIdentity(claims, Scheme.Name);
