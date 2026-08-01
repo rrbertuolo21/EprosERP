@@ -1,0 +1,48 @@
+﻿---
+name: S10-testes-epros
+description: >-
+  Estratégia de testes do Epros: xUnit + Testcontainers (PostgreSQL/Keycloak/MinIO), builders de dados realistas (Tenant, Produto, NotaFiscal), pirâmide unit/integration/E2E e dados fiscais de homologação. Use ao escrever qualquer teste, revisar cobertura de PR, criar dados de teste ou montar infraestrutura de teste de integração.
+---
+
+# testes-epros
+
+> **S10 · Camada 1 — Engenharia** — Epros Dev Framework
+
+## Quando usar
+
+Ative esta skill quando a tarefa envolver: **teste, xUnit, Testcontainers, cobertura, builder, dados de teste, teste de integração, mock, fixture**.
+
+## O que esta skill cobre
+
+A estratégia de testes do Epros materializada: pirâmide (unit → integration com Testcontainers → E2E), builders de dados realistas (TenantBuilder, ProdutoBuilder, NotaFiscalBuilder), infraestrutura para subir PostgreSQL/Keycloak/MinIO em containers e o conjunto de dados fiscais de homologação.
+
+Baixar o custo de escrever teste bom: com builders e base de integração prontos, testar o caminho fiscal completo custa minutos, não horas — e 'código sem teste é código incompleto' vira viável na prática.
+
+## Instruções para o agente
+
+1. Use os builders de templates/builders/ para dados de teste — nunca 'new' manual com dados irreais.
+2. Teste de integração: herde da IntegrationTestBase (sobe containers) — não mocke o banco em teste de repositório.
+3. Cobertura obrigatória: lógica de negócio da entidade, handlers, eventos publicados e validações. Caminho feliz sozinho não passa em review.
+4. Dados fiscais em teste: só os de homologação documentados aqui.
+
+## Recursos desta skill
+
+> Legenda: ✅ pronto · ⬜ a construir (ver "Como completar" abaixo)
+
+- ✅ `SKILL.md` — este arquivo (semente v1)
+- ⬜ `templates/builders/` — TenantBuilder, ProdutoBuilder, VendaBuilder, NotaFiscalBuilder
+- ⬜ `templates/integration-test-base.cs` — classe base que sobe PostgreSQL/Keycloak/MinIO
+- ⬜ `exemplos/dados-homologacao.md` — CNPJs, NCMs, certificados de teste
+
+## Como completar esta skill (do v1-semente à versão completa)
+
+1. Extraia dos 19 testes do PDV os padrões que funcionaram e generalize.
+2. Construa os 4 builders principais com dados brasileiros realistas.
+3. Monte a IntegrationTestBase com Testcontainers e meça o tempo de subida (otimizar com reuso de container).
+4. Documente a política de cobertura e integre ao checklist de review (S23).
+
+## Regras de manutenção
+
+- Detalhe profundo vai para `exemplos/` e `checklists/` — este arquivo fica abaixo de 500 linhas.
+- Todo conteúdo deve ser específico do Epros (código real, casos reais, dados de homologação).
+- Ao concluir os recursos, mude `status:` para `completa` e atualize a data de revisão.

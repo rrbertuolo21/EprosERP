@@ -1,5 +1,22 @@
 # Memory Index
 
-- [Migração Epros → EprosERP](migracao-epros-eproserp.md) — **ESTADO (07-jul): FASE DE FECHAMENTO pós-auditoria. 14 módulos no padrão hexagonal (257 entidades, 90 controllers), núcleo legado ~93-95% portado, arquitetura conforme. Rodada 1 do fechamento feita (F1 segurança/API fechada, F3 fiscal QR+IBPT+salvar-xml, F5 enums, F6 validações, F7 quarentena) = 381 testes. AO REINICIAR LER `EprosERP/MEMORIA_SESSAO_EQUALIZACAO.md §0` + `EprosERP/docs/migracao/LOG_COMPLETUDE.md` + `EprosERP/PLANO_FECHAMENTO_FINAL.md`. GAP crítico que o "99,3%" escondia: VISUAL ~0% de paridade (rebrand) — em correção agora (F2). Falta: F2 visual, F4 endpoints, F8 qualidade, F9 gate final + ETL/homologação. Usuário quer ACABAR ASAP; decisões: clone-core visual + quarentena dos 8 módulos novos.**
-- [Preferência: paralelismo máximo](preferencia-paralelismo-maximo.md) — usuário quer ~20 agentes, mapa-primeiro, fix-later; reduzir erro na estrutura
-- [Feedback: não pedir permissão](feedback-nao-pedir-permissao.md) — autonomia total no projeto; executar e relatar, nunca perguntar "quer que eu...?"
+> Índice curto para a IA retomar contexto. Canônicos de código: [CONVENCAO_CODIGO.md](CONVENCAO_CODIGO.md) · [CLAUDE.md](CLAUDE.md).  
+> Onboarding humano: [docs/ROTEIRO-ONBOARDING.md](docs/ROTEIRO-ONBOARDING.md) · [docs/QUICKSTART-LOCAL.md](docs/QUICKSTART-LOCAL.md).
+
+## Estado e retomada
+
+- [Histórico da fábrica](HISTORICO-DESENVOLVIMENTO-IA.md) — diário (blocos 0–12), números e decisões de deploy achatado.
+- [Gaps atuais](CONSOLIDACAO-GAPS.md) — roadmap pós-consolidação (DANFE, OFX, SignalR…).
+- [Memória de reorganização](MEMORIA_SESSAO_REORGANIZACAO.md) — mapa de pastas/docs (ago/2026).
+- [Prompt de reinício](PROMPT_REINICIO.md) — colar na primeira mensagem de sessão nova.
+
+## Migração (arquivo)
+
+- [Narrativa Epros → EprosERP](docs/migracao/migracao-epros-eproserp.md) — histórico longo; não usar como estado atual.
+- [Log de completude](docs/migracao/LOG_COMPLETUDE.md) — auditoria por eixo.
+- Planos arquivados: [docs/historico/](docs/historico/).
+
+## Preferências de processo (raiz)
+
+- [Paralelismo máximo](preferencia-paralelismo-maximo.md) — fan-out por pasta disjunta; mapa-primeiro.
+- [Não pedir permissão](feedback-nao-pedir-permissao.md) — executar e relatar; exceção: commit/push e dados reais de clientes.

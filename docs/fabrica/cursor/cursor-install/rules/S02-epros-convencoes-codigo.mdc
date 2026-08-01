@@ -1,0 +1,146 @@
+---
+description: "Convenções de código invioláveis do Epros (.NET 8): EntidadeSaaSBase, soft delete, Guid como ID, DateTime.UtcNow, CQRS sem lógica no controller, precision 18,2, snake_case no PostgreSQL. Use sempre que for gerar, editar ou revisar código C#, criar entidades, handlers, DTOs ou migrations — inclui princípios de código limpo aplicados ao Epros e exemplos certo vs errado."
+globs:
+alwaysApply: false
+---
+
+# epros-convencoes-codigo
+
+> **S02 · Camada 0 — Fundação** — Epros Dev Framework
+> Conhecimento enriquecido por extração de *Código Limpo* (R. C. Martin) → ver `EXTRACOES.md`.
+
+## Quando usar
+
+Ative esta skill quando a tarefa envolver: **criar entidade, nova classe, gerar código, revisar código, convenção, padrão do Epros, EntidadeSaaSBase, CommandResult, soft delete, nomenclatura**.
+
+## O que esta skill cobre
+
+As regras invioláveis de código do Epros (listas SEMPRE/NUNCA do CONTEXT §7) transformadas em conhecimento executável: cada convenção com o porquê, exemplo certo × errado e amarração na `EntidadeSaaSBase` e no CQRS. O objetivo é que o agente **gere código que já nasce no padrão** — sem `DateTime.Now`, sem `context.Remove()`, sem lógica no controller — e ensine devs novos pelo exemplo.
+
+---
+
+## As convenções, por tema
+
+### 1. Nomenclatura — o nome revela o propósito
+
+- **Revele a intenção.** Se um nome precisa de comentário, ele falhou. Nada de `d`, `tmp`, `list1`, `flag`. Comandos/handlers nomeiam a **intenção de negócio** (`EmitirNotaFiscalCommand`), não a mecânica. Casa com `snake_case` nas colunas PostgreSQL e com os nomes da `EntidadeSaaSBase` (`CriadoEm`, `AlteradoEm`, `DeletadoEm`).
+- **Sem desinformação; distinções verdadeiras.** DTO de entrada e entidade têm nomes distintos e honestos (`CriarClienteRequest` × `Cliente`), nunca `ClienteData1`/`ClienteInfo`. O nome deixa claro que tenant é escopo por request via `ITenantProvider` — nunca um `tenant` global ambíguo.
+- **Nomes pesquisáveis; sem número mágico.** Literais soltos (`30`, `86400`, `18,2`) viram constantes nomeadas. O `Precision(18,2)` deve ser uma convenção central, não repetido cru.
+
+```csharp
+// ❌ errado
+var d = DateTime.UtcNow;
+context.Set<Cliente>().Where(x => x.f == true);
+if (dias > 30) { ... }
+
+// ✅ certo
+var criadoEm = DateTime.UtcNow;
+clientes.Where(cliente => cliente.EstaAtivo());
+const int DiasParaVencimentoBoleto = 30;
+```
+
+### 2. Funções — pequenas, uma coisa só, poucos argumentos
+
+- **Pequenas.** Alvo prático: raramente passar de ~20 linhas. Um `CommandHandler` faz: validar → carregar agregado → executar comportamento no domínio → persistir → publicar evento via Outbox. Passou disso, extraia.
+- **Uma coisa, num nível de abstração.** Controller fala HTTP; Handler orquestra o caso de uso; Entidade contém a regra; Repositório fala persistência. Não misturar cálculo de imposto com montagem de DTO no mesmo método. Reforça "zero lógica de negócio no Controller".
+- **Poucos argumentos.** A entrada de um caso de uso é **um** `Command`/`Query` (objeto), não seis parâmetros soltos. Evite argumento-flag (`bool`) — denuncia função que faz duas coisas.
+
+```csharp
+// ❌ errado — controller gordo, muitos args, flags
+AtualizarCliente(Guid id, string nome, string email, bool notificar, bool ativo, string tenant);
+
+// ✅ certo — objeto de comando, handler enxuto
+public Task<CommandResult> Handle(AtualizarClienteCommand cmd, ...) { /* < 20 linhas */ }
+```
+
+### 3. Comentários — o comentário é uma falha do código
+
+- **Explique-se no código, não no comentário.** Todo comentário é uma pequena derrota; comentários mentem com o tempo. Antes de comentar, tente um nome melhor ou uma função extraída. Comentário aceitável: intenção legal/regulatória, ou a **justificativa exigida por `IgnoreQueryFilters()`**.
+- **Nada de código comentado nem TODO órfão.** O `git` é a memória — apague sem medo. TODO só casado com card do Jira (`// TODO(PROJ-123): ...`).
+
+```csharp
+// ❌ errado
+// verifica se o cliente está ativo
+if (c.DeletadoEm == null) { ... }
+// var antigo = context.Remove(entidade); // jeito velho
+
+// ✅ certo
+if (cliente.EstaAtivo()) { ... }   // método já existe na EntidadeSaaSBase
+```
+
+### 4. Tratamento de erro — validação ≠ exceção
+
+- **Validação de negócio usa o padrão Notification**, já embutido na `EntidadeSaaSBase` (`Notifiable<Notification>`, `IsValid`, `Notifications`) — **não é exceção**. O handler decide por `entidade.IsValid` e retorna um resultado de erro tratado.
+- **Exceção é para o excepcional** (infra, invariante violada), capturada no pipeline HTTP (CONTEXT §9). Não afogue a lógica em try/catch nem conduza fluxo normal por código de retorno.
+- **Não retorne null.** Query side retorna coleção vazia (Special Case), nunca `null`. Integrações externas (fiscal) ficam atrás de um wrapper (`INfeGateway`) que traduz erros do provedor em exceção de domínio.
+
+```csharp
+// ❌ errado
+return clientes.Any() ? clientes : null;
+
+// ✅ certo
+if (!cliente.IsValid) return CommandResult.Invalid(cliente.Notifications);
+return clientes; // lista vazia se nada; chamador só faz foreach
+```
+
+### 5. Formatação — imposta por ferramenta, não debatida em PR
+
+Estilo não se discute em review: é imposto por `.editorconfig` + `dotnet format` no CI. Variáveis declaradas perto do uso; conceitos relacionados, próximos. Isso libera o code review (canal `#dev-review`) para discutir regra de negócio, não vírgula.
+
+### 6. Objetos vs. DTOs — encapsulamento e Lei de Demeter
+
+- **Objetos escondem dados e expõem comportamento.** A `EntidadeSaaSBase` esconde os setters (`private set`) e expõe `Deletar(userId)`, `MarcarAlterado(userId)`, `EstaAtivo()`. É por isso que "soft delete via `entidade.Deletar(userId)`, nunca `context.Remove()`" se sustenta — ninguém muda `DeletadoEm` por fora.
+- **DTOs (Command/Query/Response) são dados puros**, sem regra. Não crie híbrido (entidade com setter público + lógica exposta).
+- **Lei de Demeter:** fale só com vizinhos diretos; nada de `pedido.getCliente().getEndereco().getCidade().getUf()` (train wreck).
+
+```csharp
+// ❌ errado
+cliente.DeletadoEm = DateTime.Now;              // viola encapsulamento + DateTime.Now
+
+// ✅ certo
+cliente.Deletar(userId);                        // comportamento no objeto
+public record ClienteResponse(Guid Id, string Nome);  // DTO puro
+```
+
+---
+
+## Instruções para o agente
+
+1. Antes de gerar código C# ou criar entidade, releia as convenções acima e as regras SEMPRE/NUNCA do CONTEXT §7.
+2. Use os templates de `templates/` como ponto de partida — copie e renomeie, não escreva do zero.
+3. Ao revisar, rode o checklist mental de violações; **toda violação apontada vem com a correção**.
+4. Se o dev pedir algo que viole uma regra (ex: `long` como ID), explique a regra e a ADR que a fundamenta antes de recusar.
+
+## Recursos desta skill
+
+> Legenda: ✅ pronto · ⬜ a construir · 🟡 rascunho no `EXTRACOES.md`
+
+- ✅ `SKILL.md` — este arquivo (enriquecido por extração)
+- 🟡 `EXTRACOES.md` — 12 blocos destilados de *Código Limpo*, aterrados no Epros
+- ⬜ `templates/entidade.cs` — entidade padrão herdando EntidadeSaaSBase
+- ⬜ `templates/command-handler.cs` — handler CQRS completo com validação
+- ⬜ `templates/query-handler.cs` — query handler com paginação e AsNoTracking
+- ⬜ `exemplos/violacoes-comuns.md` — top 10 erros reais com correção lado a lado
+- ⬜ `scripts/validar-convencoes.sh` — grep por DateTime.Now, context.Remove, long Id, números mágicos, código comentado
+
+## TODO-Epros (dependem do código real do PlataformaSaaS)
+
+Para fechar esta skill, colar/confirmar do repositório do produto:
+1. Convenção central de **precisão monetária** (helper vs `.HasPrecision(18,2)` repetido).
+2. **Command handler exemplar** (< 20 linhas) → `templates/command-handler.cs`.
+3. Tipo de **Command/CommandResult** adotado (record? class?).
+4. Existe `.editorconfig` + step `dotnet format --verify-no-changes` no CI?
+
+## Como completar (v1-semente → completa)
+
+1. Revisar os 12 blocos do `EXTRACOES.md`, promover o que falta e marcar como `revisado`.
+2. Resolver os 4 TODO-Epros acima com código real do PlataformaSaaS — viram os `templates/`.
+3. Levantar nos PRs recentes as 10 violações mais apontadas → `exemplos/violacoes-comuns.md`.
+4. Escrever o `scripts/validar-convencoes.sh` e integrar ao CI.
+5. Fechados os recursos ⬜, mudar `status:` para `completa` e regenerar o pacote Cursor.
+
+## Regras de manutenção
+
+- Detalhe profundo vai para `exemplos/` e `checklists/` — este arquivo fica abaixo de 500 linhas.
+- Todo conteúdo é específico do Epros (código real, casos reais, dados de homologação).
+- Fonte primária desta versão: *Código Limpo* (R. C. Martin), caps. 2–7 e 17 — ver `EXTRACOES.md`.
