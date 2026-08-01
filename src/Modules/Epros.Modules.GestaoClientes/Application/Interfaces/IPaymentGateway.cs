@@ -54,6 +54,13 @@ namespace Epros.Modules.GestaoClientes.Application.Interfaces
         string PreferenceId,
         string InitPoint);
 
+    /// <summary>1.08E — Resultado de um ESTORNO/refund de pagamento no gateway (MP refunds).</summary>
+    public record EstornoResultado(
+        string RefundId,
+        string PaymentId,
+        decimal? Valor,
+        string Status);
+
     /// <summary>
     /// Abstração do lado OUTBOUND de pagamento (criação da cobrança e consulta).
     /// Implementada por provedor concreto (ex.: <c>MercadoPagoGateway</c>).
@@ -134,6 +141,17 @@ namespace Epros.Modules.GestaoClientes.Application.Interfaces
             string descricao,
             DadosPagador pagador,
             string? urlRetorno,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// 1.08E — Estorna (refund) um pagamento no gateway (Mercado Pago: <c>POST /v1/payments/{id}/refunds</c>).
+        /// <paramref name="valor"/> null → estorno TOTAL; informado → estorno parcial.
+        /// Sucesso → <c>Dados</c> é <see cref="EstornoResultado"/> (refund id + status).
+        /// </summary>
+        Task<CommandResult> EstornarPagamentoAsync(
+            string paymentId,
+            ConfiguracaoGatewayPagamento config,
+            decimal? valor,
             CancellationToken cancellationToken = default);
     }
 }

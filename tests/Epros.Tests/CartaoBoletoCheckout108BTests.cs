@@ -66,6 +66,8 @@ namespace Epros.Tests
             public string CartaoStatus = "approved";
             public bool FalharCartao = false;
             public bool FalharCheckout = false;
+            public bool FalharEstorno = false;
+            public int EstornosChamados = 0;
 
             public Task<CommandResult> GerarCobrancaPixAsync(Fatura f, ConfiguracaoGatewayPagamento c, DadosPagador p, CancellationToken ct = default)
                 => Task.FromResult(CommandResult.Ok("ok", new CobrancaPixResultado("pix-1", "qr", "qrb64", "ticket", DateTime.UtcNow.AddMinutes(30), "pending")));
@@ -85,6 +87,13 @@ namespace Epros.Tests
                 => FalharCheckout
                     ? Task.FromResult(CommandResult.Falha("sem checkout"))
                     : Task.FromResult(CommandResult.Ok("ok", new PreferenciaCheckoutResultado("pref-123", "https://mp/checkout/pref-123")));
+            public Task<CommandResult> EstornarPagamentoAsync(string paymentId, ConfiguracaoGatewayPagamento c, decimal? valor, CancellationToken ct = default)
+            {
+                EstornosChamados++;
+                return FalharEstorno
+                    ? Task.FromResult(CommandResult.Falha("gateway recusou o estorno"))
+                    : Task.FromResult(CommandResult.Ok("ok", new EstornoResultado("refund-1", paymentId, valor, "approved")));
+            }
         }
 
         private static ConfiguracaoGatewayPagamento GatewayGlobal(string userId)
@@ -425,6 +434,7 @@ namespace Epros.Tests
             public Task<CommandResult> CriarCartaoOnFileAsync(ConfiguracaoGatewayPagamento c, DadosPagador p, string t, CancellationToken ct = default) => Task.FromResult(CommandResult.Ok("ok"));
             public Task<CommandResult> CobrarCartaoAsync(Fatura f, ConfiguracaoGatewayPagamento c, string cus, string card, DadosPagador p, CancellationToken ct = default) => Task.FromResult(CommandResult.Ok("ok"));
             public Task<CommandResult> CriarPreferenciaCheckoutAsync(Fatura f, ConfiguracaoGatewayPagamento c, string d, DadosPagador p, string? u, CancellationToken ct = default) => Task.FromResult(CommandResult.Ok("ok"));
+            public Task<CommandResult> EstornarPagamentoAsync(string paymentId, ConfiguracaoGatewayPagamento c, decimal? valor, CancellationToken ct = default) => Task.FromResult(CommandResult.Ok("ok", new EstornoResultado("refund-1", paymentId, valor, "approved")));
         }
 
         #endregion

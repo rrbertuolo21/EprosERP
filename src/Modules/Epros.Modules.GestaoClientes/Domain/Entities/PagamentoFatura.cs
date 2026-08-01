@@ -31,6 +31,11 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public string? UrlBoleto { get; private set; }          // URL do PDF/visualização do boleto
         public DateTime? DataVencimentoBoleto { get; private set; }
 
+        // 1.08E — Estorno/refund do pagamento (gateway: Mercado Pago POST /v1/payments/{id}/refunds).
+        public DateTime? DataEstorno { get; private set; }        // instante em que o estorno foi registrado
+        public string? IdentificadorEstorno { get; private set; } // id do refund no gateway (null se no-op sem credencial/offline)
+        public decimal? ValorEstornado { get; private set; }      // valor efetivamente estornado
+
         protected PagamentoFatura() { } // EF Core
 
         public PagamentoFatura(
@@ -112,6 +117,23 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public void MarcarFalha(string alteradoPor)
         {
             Status = PagamentoFaturaStatus.Failed;
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>True se este pagamento já foi estornado (idempotência do refund).</summary>
+        public bool EstaEstornado => Status == PagamentoFaturaStatus.Refunded;
+
+        /// <summary>
+        /// 1.08E — Marca o pagamento como estornado. <paramref name="identificadorEstorno"/> é o id do refund
+        /// no gateway (null quando o estorno foi um no-op controlado — sem credencial/ambiente — ou offline).
+        /// <paramref name="valorEstornado"/> null assume o valor total pago.
+        /// </summary>
+        public void Estornar(string? identificadorEstorno, decimal? valorEstornado, string alteradoPor)
+        {
+            Status = PagamentoFaturaStatus.Refunded;
+            IdentificadorEstorno = identificadorEstorno;
+            ValorEstornado = valorEstornado ?? ValorPago;
+            DataEstorno = DateTime.UtcNow;
             MarcarAlterado(alteradoPor);
         }
     }

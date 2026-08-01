@@ -860,6 +860,12 @@ namespace Epros.Tests
                 Epros.Modules.GestaoClientes.Application.Interfaces.DadosPagador pagador, string? urlRetorno, CancellationToken cancellationToken = default)
                 => Task.FromResult(Epros.Shared.Application.Models.CommandResult.Ok("ok",
                     new Epros.Modules.GestaoClientes.Application.Interfaces.PreferenciaCheckoutResultado("pref-123", "https://mp/checkout/pref-123")));
+
+            public Task<Epros.Shared.Application.Models.CommandResult> EstornarPagamentoAsync(
+                string paymentId, ConfiguracaoGatewayPagamento config, decimal? valor, CancellationToken cancellationToken = default)
+                => Task.FromResult(Epros.Shared.Application.Models.CommandResult.Ok("ok",
+                    new Epros.Modules.GestaoClientes.Application.Interfaces.EstornoResultado(
+                        "refund-" + Guid.NewGuid().ToString("N"), paymentId, valor, "approved")));
         }
 
         private ContextGestaoClientes CreateInMemoryContext(string databaseName, string tenantId, string userId)

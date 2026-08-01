@@ -37,7 +37,8 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Jobs
         {
             "FaturaAlertaCobrancaEvent",
             "TrialEncerradoEvent",
-            "ReciboEmitidoEvent"
+            "ReciboEmitidoEvent",
+            "PagamentoEstornadoEvent"
         };
 
         private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
@@ -99,6 +100,9 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Jobs
                             break;
                         case "ReciboEmitidoEvent":
                             await ProcessarReciboEmitidoAsync(message.Payload, notificador);
+                            break;
+                        case "PagamentoEstornadoEvent":
+                            await ProcessarPagamentoEstornadoAsync(message.Payload, notificador);
                             break;
                     }
 
@@ -189,6 +193,26 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Jobs
             await notificador.EnviarEmailAsync(cliente.Email, assunto, corpo);
         }
 
+        private async Task ProcessarPagamentoEstornadoAsync(string payloadJson, INotificacaoService? notificador)
+        {
+            var payload = JsonSerializer.Deserialize<PagamentoEstornadoPayload>(payloadJson, JsonOpts);
+            if (payload == null) return;
+
+            var cliente = await ResolverClienteAsync(payload.ClienteId);
+            if (notificador == null || cliente == null || string.IsNullOrWhiteSpace(cliente.Email))
+                return; // sem provedor ou sem destinatário → no-op (mensagem é consumida assim mesmo).
+
+            var assunto = $"[EprosERP] Estorno de pagamento — fatura {payload.FaturaId}";
+            var corpo =
+                $"<p>Olá, {cliente.RazaoSocial}.</p>" +
+                $"<p>Registramos o estorno do pagamento no valor de <strong>R$ {payload.Valor:N2}</strong>" +
+                (payload.DataEstorno != null ? $" em {payload.DataEstorno:dd/MM/yyyy}" : string.Empty) + ".</p>" +
+                (string.IsNullOrWhiteSpace(payload.Motivo) ? string.Empty : $"<p>Motivo: {payload.Motivo}</p>") +
+                "<p>Em caso de dúvidas, fale com nosso time. Equipe EprosERP.</p>";
+
+            await notificador.EnviarEmailAsync(cliente.Email, assunto, corpo);
+        }
+
         private async Task<ClienteDestinatario?> ResolverClienteAsync(Guid clienteId)
         {
             if (clienteId == Guid.Empty) return null;
@@ -237,6 +261,19 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Jobs
             public decimal Valor { get; set; }
             public string MeioPagamento { get; set; } = string.Empty;
             public DateTime DataPagamento { get; set; }
+        }
+
+        private sealed class PagamentoEstornadoPayload
+        {
+            public Guid ClienteId { get; set; }
+            public string TenantId { get; set; } = string.Empty;
+            public Guid FaturaId { get; set; }
+            public Guid PagamentoFaturaId { get; set; }
+            public Guid? PedidoId { get; set; }
+            public decimal? Valor { get; set; }
+            public string? RefundId { get; set; }
+            public string? Motivo { get; set; }
+            public DateTime? DataEstorno { get; set; }
         }
     }
 }

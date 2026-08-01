@@ -122,5 +122,26 @@ namespace Epros.API.Controllers
             if (!result.Sucesso) return UnprocessableEntity(result);
             return Ok(result);
         }
+
+        /// <summary>
+        /// 1.08E — Estorna (refund) um pagamento liquidado da fatura no gateway. Operação landlord: além
+        /// do AbacAuthorize desta controller, o handler exige operador interno (defesa em profundidade 1.11).
+        /// </summary>
+        [HttpPost("pagamentos/{pagamentoFaturaId}/estornar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> Estornar(Guid pagamentoFaturaId, [FromBody] EstornarPagamentoCorpo? corpo)
+        {
+            var result = await _mediator.Send(new EstornarPagamentoFaturaCommand(pagamentoFaturaId, corpo?.Valor, corpo?.Motivo));
+            if (!result.Sucesso) return UnprocessableEntity(result);
+            return Ok(result);
+        }
+
+        /// <summary>Corpo opcional do estorno (valor parcial e motivo).</summary>
+        public sealed class EstornarPagamentoCorpo
+        {
+            public decimal? Valor { get; set; }
+            public string? Motivo { get; set; }
+        }
     }
 }

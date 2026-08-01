@@ -74,9 +74,25 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                     continue;
                 }
 
+                // 1.08E — CUPOM RECORRENTE: se a assinatura tem um cupom vinculado e ele ainda é válido
+                // (validade + limite de uso), aplica o desconto na fatura do ciclo e registra o uso.
+                // Reusa a matemática de desconto de AplicacaoCupom (mesma do fluxo de pedido — sem duplicar).
+                Cupom? cupom = null;
+                var valorCiclo = plano.Preco;
+                if (assinatura.CupomId.HasValue)
+                {
+                    cupom = await _context.Cupons.IgnoreQueryFilters()
+                        .FirstOrDefaultAsync(c => c.Id == assinatura.CupomId.Value && c.DeletadoEm == null, cancellationToken);
+                    var calc = AplicacaoCupom.Calcular(cupom, plano.Preco);
+                    if (calc.Aplicou)
+                        valorCiclo = calc.ValorFinal;
+                    else
+                        cupom = null; // cupom expirado/no limite/inativo → não aplica neste ciclo.
+                }
+
                 var fatura = new Fatura(
                     clienteId: assinatura.ClienteId,
-                    valor: plano.Preco,
+                    valor: valorCiclo,
                     dataVencimento: referencia.AddDays(5),
                     tenantId: assinatura.TenantId,
                     criadoPor: criadoPor);
@@ -85,6 +101,14 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 {
                     _context.Faturas.Add(fatura);
                     faturasParaCobrar.Add((fatura.Id, assinatura.ClienteId));
+
+                    // Registra o uso do cupom recorrente nesta fatura do ciclo e incrementa o contador.
+                    if (cupom != null)
+                    {
+                        _context.UsosCupons.Add(UsoCupom.ParaFatura(
+                            assinatura.ClienteId, cupom.Id, fatura.Id, assinatura.TenantId, criadoPor));
+                        cupom.IncrementarUso(criadoPor);
+                    }
                 }
 
                 // Avança o ciclo a partir do vencimento agendado (mantém a cadência do plano).

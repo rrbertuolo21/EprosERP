@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
 using Epros.Modules.Aplicativo.Application.Commands;
+using Epros.Modules.GestaoClientes.Application.Services;
 using Epros.Modules.GestaoClientes.Domain.Entities;
 using Epros.Modules.GestaoClientes.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -93,7 +94,8 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     return CommandResult.Falha(new[] { "Este cupom está expirado, inativo ou com limite de usos esgotado." });
                 }
 
-                desconto = cupom.CalcularDesconto(plano.Preco);
+                // 1.08E — reusa o cálculo de desconto compartilhado com a renovação (fonte única).
+                desconto = AplicacaoCupom.Calcular(cupom, plano.Preco).Desconto;
             }
 
             var valorTotal = Math.Max(0, plano.Preco - desconto);

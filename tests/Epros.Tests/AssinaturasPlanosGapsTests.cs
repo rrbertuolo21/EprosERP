@@ -141,6 +141,9 @@ namespace Epros.Tests
 
             public Task<CommandResult> CriarPreferenciaCheckoutAsync(Fatura fatura, ConfiguracaoGatewayPagamento config, string descricao, Epros.Modules.GestaoClientes.Application.Interfaces.DadosPagador pagador, string? urlRetorno, CancellationToken cancellationToken = default)
                 => Task.FromResult(CommandResult.Ok("ok", new Epros.Modules.GestaoClientes.Application.Interfaces.PreferenciaCheckoutResultado("pref-1", "https://mp/checkout/pref-1")));
+
+            public Task<CommandResult> EstornarPagamentoAsync(string paymentId, ConfiguracaoGatewayPagamento config, decimal? valor, CancellationToken cancellationToken = default)
+                => Task.FromResult(CommandResult.Ok("ok", new Epros.Modules.GestaoClientes.Application.Interfaces.EstornoResultado("refund-1", paymentId, valor, "approved")));
         }
 
         #endregion

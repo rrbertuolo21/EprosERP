@@ -98,6 +98,19 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             MarcarAlterado(alteradoPor);
         }
 
+        /// <summary>
+        /// 1.08E — Estorna a fatura (refund do pagamento do ciclo): move para <see cref="FaturaStatus.Estornada"/>
+        /// e reabre os campos de quitação (o valor deixou de estar recebido). Reversível por nova cobrança.
+        /// </summary>
+        public void Estornar(string alteradoPor)
+        {
+            Status = FaturaStatus.Estornada;
+            Quitada = false;
+            ValorPago = null;
+            DataPagamento = null;
+            MarcarAlterado(alteradoPor);
+        }
+
         public void MarcarAtrasada(string alteradoPor)
         {
             Status = FaturaStatus.Atrasada;

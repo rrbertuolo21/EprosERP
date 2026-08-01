@@ -19,7 +19,10 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         Pendente,
         Paga,
         Cancelada,
-        Atrasada
+        Atrasada,
+        // 1.08E — Fatura estornada (refund do pagamento do ciclo). Persistido como string
+        // (HasConversion<string>), portanto o novo membro NÃO exige alteração de schema na coluna Status.
+        Estornada
     }
 
     /// <summary>Status de um <c>PagamentoFatura</c>.</summary>
@@ -28,7 +31,10 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         Pending,
         Paid,
         Expired,
-        Failed
+        Failed,
+        // 1.08E — Pagamento estornado (refund no gateway). Persistido como string
+        // (HasConversion<string>), portanto o novo membro NÃO exige alteração de schema na coluna Status.
+        Refunded
     }
 
     /// <summary>Status de um <c>PedidoSaaS</c>.</summary>

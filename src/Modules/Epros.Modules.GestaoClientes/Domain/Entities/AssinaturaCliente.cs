@@ -53,6 +53,11 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public string? MotivoCancelamento { get; private set; }
         public string? CanceladaPor { get; private set; }
 
+        // 1.08E — Cupom de desconto RECORRENTE vinculado à assinatura. Quando presente e válido (validade +
+        // limite de uso do Cupom), o job de renovação aplica o desconto na fatura de cada ciclo até expirar
+        // ou esgotar o limite. Default de produto: aplica o cupom vinculado à assinatura (ajustável).
+        public Guid? CupomId { get; private set; }
+
         protected AssinaturaCliente() { } // EF Core
 
         public AssinaturaCliente(
@@ -91,6 +96,17 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public void Ativar(string alteradoPor)
         {
             Status = AssinaturaStatus.Ativa;
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>
+        /// 1.08E — Vincula (ou desvincula, com null) um cupom de desconto RECORRENTE à assinatura.
+        /// A aplicação de fato acontece na geração da fatura do ciclo (job de renovação), respeitando
+        /// validade e limite de uso do próprio <c>Cupom</c>.
+        /// </summary>
+        public void VincularCupom(Guid? cupomId, string alteradoPor)
+        {
+            CupomId = cupomId == Guid.Empty ? null : cupomId;
             MarcarAlterado(alteradoPor);
         }
 

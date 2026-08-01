@@ -239,6 +239,11 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 // 1.08D — motivo de cancelamento pode ser longo (texto livre do cliente).
                 entity.Property(a => a.MotivoCancelamento).HasColumnType("text");
                 entity.Property(a => a.CanceladaPor).HasMaxLength(200);
+                // 1.08E — cupom recorrente vinculado à assinatura (SetNull: apagar o cupom não apaga a assinatura).
+                entity.HasOne<Cupom>()
+                      .WithMany()
+                      .HasForeignKey(a => a.CupomId)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
 
             // 1.08D — Registro de proração por mudança de plano (mecanismo pro-rata por dias).
@@ -359,6 +364,11 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 entity.HasIndex(u => new { u.ClienteId, u.CupomId, u.PedidoId })
                       .IsUnique()
                       .HasDatabaseName("ix_usos_cupons_usuario_cupom_pedido");
+                // 1.08E — uso recorrente por fatura: um registro por (cliente, cupom, fatura) do ciclo.
+                entity.HasIndex(u => new { u.ClienteId, u.CupomId, u.FaturaId })
+                      .IsUnique()
+                      .HasDatabaseName("ix_usos_cupons_cliente_cupom_fatura")
+                      .HasFilter("fatura_id IS NOT NULL");
                 entity.HasOne<Cliente>()
                       .WithMany()
                       .HasForeignKey(u => u.ClienteId)
@@ -370,6 +380,11 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 entity.HasOne<PedidoSaaS>()
                       .WithMany()
                       .HasForeignKey(u => u.PedidoId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                // 1.08E — vínculo do uso recorrente à fatura do ciclo.
+                entity.HasOne<Fatura>()
+                      .WithMany()
+                      .HasForeignKey(u => u.FaturaId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 

@@ -491,6 +491,64 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Gateways
             }
         }
 
+        // ===== 1.08E — Estorno / refund (POST /v1/payments/{id}/refunds) =====
+
+        public async Task<CommandResult> EstornarPagamentoAsync(
+            string paymentId,
+            ConfiguracaoGatewayPagamento config,
+            decimal? valor,
+            CancellationToken cancellationToken = default)
+        {
+            if (config == null || !config.Ativo)
+                return CommandResult.Falha("Gateway não configurado", "Nenhum gateway de pagamento ativo foi encontrado.");
+            if (string.IsNullOrWhiteSpace(paymentId))
+                return CommandResult.Falha("Identificador do pagamento é obrigatório para o estorno.");
+
+            var (accessToken, erroToken) = await ObterAccessTokenAsync(config);
+            if (erroToken != null)
+                return CommandResult.Falha(erroToken, "Gateway não configurado");
+
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Post, $"v1/payments/{paymentId}/refunds");
+                AplicarAutenticacao(request, accessToken);
+                // Idempotência exigida pelo MP para evitar estornos duplicados.
+                request.Headers.TryAddWithoutValidation("X-Idempotency-Key", $"refund:{paymentId}:{valor?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "total"}");
+                // Corpo apenas no estorno PARCIAL (total = body vazio).
+                request.Content = valor.HasValue
+                    ? JsonContent.Create(new Dictionary<string, object?> { ["amount"] = valor.Value })
+                    : JsonContent.Create(new Dictionary<string, object?>());
+
+                var client = CriarClient();
+                using var response = await client.SendAsync(request, cancellationToken);
+                var json = await LerJsonAsync(response, cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                    return CommandResult.Falha(ExtrairMensagemErro(json, response), "Falha ao estornar o pagamento no Mercado Pago.");
+
+                var root = json.RootElement;
+                var refundId = LerString(root, "id");
+                var status = LerString(root, "status") ?? "approved";
+                decimal? valorEstornado = LerDecimal(root, "amount");
+
+                if (string.IsNullOrWhiteSpace(refundId))
+                    return CommandResult.Falha("O Mercado Pago não retornou o identificador do estorno.", "Falha ao estornar pagamento.");
+
+                var dto = new EstornoResultado(refundId!, paymentId, valorEstornado ?? valor, status);
+                return CommandResult.Ok("Estorno realizado com sucesso.", dto);
+            }
+            catch (TaskCanceledException)
+            {
+                _logger?.LogWarning("Timeout ao estornar o pagamento {PaymentId} no Mercado Pago.", paymentId);
+                return CommandResult.Falha("Tempo limite excedido ao comunicar com o Mercado Pago.", "Falha ao estornar pagamento.");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Erro ao estornar o pagamento {PaymentId} no Mercado Pago.", paymentId);
+                return CommandResult.Falha($"Erro de comunicação com o Mercado Pago: {ex.Message}", "Falha ao estornar pagamento.");
+            }
+        }
+
         // ===== Helpers =====
 
         /// <summary>Busca um customer do MP pelo e-mail; se não existir, cria. Retorna o customer_id.</summary>
