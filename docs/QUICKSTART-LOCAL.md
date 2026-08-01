@@ -1,6 +1,11 @@
-# Quickstart local — EprosERP
+# Quickstart local — EprosERP (teste / validação)
 
-> Em ~15 min você sobe tudo local e trabalha com o processo da fábrica (IA dirigida).
+> Em ~15 min você sobe o **stack Docker completo** (API + front buildados + Postgres + seed)
+> para validar o ambiente e o processo da fábrica (IA dirigida).
+>
+> **Sem hot reload.** Para codar no dia a dia (API/`dotnet watch` + front/`npm run dev`),
+> use [ops/AMBIENTE-DEV.md](ops/AMBIENTE-DEV.md).
+>
 > Roteiro de leitura completo: [ROTEIRO-ONBOARDING.md](ROTEIRO-ONBOARDING.md).
 
 ## 1. Pré-requisitos (instale uma vez)
@@ -51,7 +56,8 @@ Ver [fabrica/skills/fan-out-paralelo.md](fabrica/skills/fan-out-paralelo.md).
 | Preciso de… | Onde |
 |---|---|
 | Cérebro do projeto (a IA lê) | [CLAUDE.md](../CLAUDE.md) |
-| Rodar/deploy (detalhe) | [ops/INSTALACAO_LOCAL.md](ops/INSTALACAO_LOCAL.md) · `docker-compose.prod.yml` (deploy) |
+| Ambiente **dev** (hot reload) | [ops/AMBIENTE-DEV.md](ops/AMBIENTE-DEV.md) |
+| Stack Docker detalhado | [ops/INSTALACAO_LOCAL.md](ops/INSTALACAO_LOCAL.md) · `docker-compose.prod.yml` (deploy) |
 | Convenções de código | [CONVENCAO_CODIGO.md](../CONVENCAO_CODIGO.md) |
 | Diário / retomar | [HISTORICO-DESENVOLVIMENTO-IA.md](../HISTORICO-DESENVOLVIMENTO-IA.md) · [PROMPT_REINICIO.md](../PROMPT_REINICIO.md) |
 | O que falta (roadmap) | [CONSOLIDACAO-GAPS.md](../CONSOLIDACAO-GAPS.md) |

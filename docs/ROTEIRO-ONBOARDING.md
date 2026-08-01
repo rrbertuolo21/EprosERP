@@ -1,13 +1,16 @@
 # Roteiro de onboarding — EprosERP
 
 > Este é o **roteiro de leitura**: leia nesta ordem e em ~30 min você entende o projeto, sobe o sistema
-> e começa a produzir com o processo. Só quer subir agora? → [QUICKSTART-LOCAL.md](QUICKSTART-LOCAL.md).
+> e começa a produzir com o processo.
+> Só validar o stack? → [QUICKSTART-LOCAL.md](QUICKSTART-LOCAL.md).
+> Vai **codar** (hot reload)? → [ops/AMBIENTE-DEV.md](ops/AMBIENTE-DEV.md).
 
 ## Leia nesta ordem
 
-1. **[QUICKSTART-LOCAL.md](QUICKSTART-LOCAL.md)** — pré-requisitos, **subir o sistema em 1 comando**,
-   credenciais de teste, configurar o Cursor, e o **processo em 5 passos**. Comece por ele e já deixe o
-   sistema rodando.
+1. **Subir o ambiente** — escolha um:
+   - [QUICKSTART-LOCAL.md](QUICKSTART-LOCAL.md) — Docker completo (teste/validação, sem hot reload)
+   - [ops/AMBIENTE-DEV.md](ops/AMBIENTE-DEV.md) — Postgres Docker + API/front na máquina (**dev**, hot reload)
+   Credenciais de seed, Cursor e o **processo em 5 passos** estão no quickstart; o fluxo diário de código está no AMBIENTE-DEV.
 2. **[CLAUDE.md](../CLAUDE.md)** — o "cérebro" do projeto (o Cursor/Claude carrega sozinho, mas **você
    leia**): o produto em uma frase, a estrutura, e as **disciplinas inegociáveis** (o gate de 3 camadas,
    "verde não é prova", negócio vem da skill, módulos sobem desabilitados).
@@ -28,7 +31,8 @@
 
 | Momento | Leia |
 |---|---|
-| **Primeiro dia** | 1 (subir o sistema) → 2 (disciplinas) → [CONFIGURAR-CURSOR](fabrica/cursor/CONFIGURAR-CURSOR.md) |
+| **Primeiro dia** | 1 (subir: quickstart **ou** [AMBIENTE-DEV](ops/AMBIENTE-DEV.md)) → 2 (disciplinas) → [CONFIGURAR-CURSOR](fabrica/cursor/CONFIGURAR-CURSOR.md) |
+| **Vai codar** | [ops/AMBIENTE-DEV.md](ops/AMBIENTE-DEV.md) |
 | **Antes de codar** | 3 (convenções) + o agente/skill do tema em [fabrica/](fabrica/) |
 | **Vai fazer muita tela/módulo** | [fan-out-paralelo.md](fabrica/skills/fan-out-paralelo.md) |
 | **Mexer em pagamento** | [integracao-gateway-pagamento.md](fabrica/skills/integracao-gateway-pagamento.md) |

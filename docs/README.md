@@ -1,7 +1,8 @@
 ﻿# Documentação — EprosERP
 
 > **Novo no projeto?** → [ROTEIRO-ONBOARDING.md](ROTEIRO-ONBOARDING.md) (ordem de leitura)
-> **Só subir agora?** → [QUICKSTART-LOCAL.md](QUICKSTART-LOCAL.md) (Docker + seed)
+> **Teste / validação?** → [QUICKSTART-LOCAL.md](QUICKSTART-LOCAL.md) (Docker + seed)
+> **Desenvolver (hot reload)?** → [ops/AMBIENTE-DEV.md](ops/AMBIENTE-DEV.md)
 > Canônicos na raiz: [CLAUDE.md](../CLAUDE.md) · [CONVENCAO_CODIGO.md](../CONVENCAO_CODIGO.md)
 > Fábrica: [fabrica/](fabrica/)
 
@@ -19,7 +20,7 @@ Se você clonou **sem** `--recurse-submodules` (o mobile fica em `Epros.Mobile/`
 git submodule update --init --recursive
 ```
 
-Em seguida: [QUICKSTART-LOCAL.md](QUICKSTART-LOCAL.md) para subir o ambiente.
+Em seguida: [QUICKSTART-LOCAL.md](QUICKSTART-LOCAL.md) (teste) ou [ops/AMBIENTE-DEV.md](ops/AMBIENTE-DEV.md) (dev).
 
 ## Árvore
 
@@ -27,7 +28,8 @@ Em seguida: [QUICKSTART-LOCAL.md](QUICKSTART-LOCAL.md) para subir o ambiente.
 | Pasta / arquivo                                | Papel                                                |
 | ---------------------------------------------- | ---------------------------------------------------- |
 | [ROTEIRO-ONBOARDING.md](ROTEIRO-ONBOARDING.md) | Índice: o que ler e em que ordem                     |
-| [QUICKSTART-LOCAL.md](QUICKSTART-LOCAL.md)     | Subir ambiente local em 1 comando                    |
+| [QUICKSTART-LOCAL.md](QUICKSTART-LOCAL.md)     | Stack Docker de teste/validação (1 comando)          |
+| [ops/AMBIENTE-DEV.md](ops/AMBIENTE-DEV.md)     | Ambiente de desenvolvimento com hot reload           |
 | [fabrica/](fabrica/)                           | Agentes, processo, skills, rules `.mdc`, guias, Jira |
 | [onboarding/](onboarding/)                     | Trilha humana longa (produto, stack, tutoriais)      |
 | [orquestracao/](orquestracao/)                 | Mapa mestre / plano por submódulo                    |
@@ -41,7 +43,7 @@ Em seguida: [QUICKSTART-LOCAL.md](QUICKSTART-LOCAL.md) para subir o ambiente.
 
 ## Primeiro dia
 
-1. [QUICKSTART-LOCAL.md](QUICKSTART-LOCAL.md) — Docker + `./scripts/seed-local.sh`
+1. [QUICKSTART-LOCAL.md](QUICKSTART-LOCAL.md) — Docker + seed (smoke) **ou** [ops/AMBIENTE-DEV.md](ops/AMBIENTE-DEV.md) se for codar
 2. [fabrica/cursor/CONFIGURAR-CURSOR.md](fabrica/cursor/CONFIGURAR-CURSOR.md) — ligar as rules
 3. [onboarding/](onboarding/) — trilha longa (opcional, ~1h45)
 4. [fabrica/processo/PIPELINE.md](fabrica/processo/PIPELINE.md) — esteira de fases

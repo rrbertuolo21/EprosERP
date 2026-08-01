@@ -13,13 +13,17 @@ ERP SaaS multi-tenant. **Monólito modular** .NET 8 (Clean Arch por módulo, **C
 `docker-compose.{local,prod}.yml` · `tests/` · `Epros.sln`. Módulos em `src/Modules/Epros.Modules.<X>/`.
 Diário: `HISTORICO-DESENVOLVIMENTO-IA.md`.
 
-## Rodar local (1 comando + seed)
+## Rodar local
+
+**Teste / validação** (Docker completo, sem hot reload) — 1 comando + seed:
 ```bash
 docker compose -f docker-compose.local.yml up -d --build && ./scripts/seed-local.sh
 # Windows PowerShell: ... ; ./scripts/seed-local.ps1
 # se o BuildKit der DeadlineExceeded: DOCKER_BUILDKIT=0 docker compose -f docker-compose.local.yml build && docker compose -f docker-compose.local.yml up -d
 ```
 Front http://localhost:3000 · API/Swagger http://localhost:8080/swagger · Admin `admin@epros.local/Admin@12345` · Cliente `cliente@demo.local/Cliente@12345`.
+
+**Desenvolvimento** (hot reload): [docs/ops/AMBIENTE-DEV.md](docs/ops/AMBIENTE-DEV.md) — Postgres no Docker + `dotnet watch` + `npm run dev`.
 
 ## Disciplinas inegociáveis (o que faz "1 dev virar 15")
 

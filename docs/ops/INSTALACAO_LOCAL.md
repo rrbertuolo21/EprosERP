@@ -1,20 +1,26 @@
 # Instalação Local — EprosERP (detalhe)
 
-> **Quickstart canônico:** [QUICKSTART-LOCAL.md](../QUICKSTART-LOCAL.md) — um comando + seed.
-
-Guia expandido para quem prefere subir por partes ou depurar o stack.
+> **Dois fluxos distintos:**
+>
+> | Objetivo | Doc |
+> |----------|-----|
+> | Teste / validação (Docker completo, sem hot reload) | [QUICKSTART-LOCAL.md](../QUICKSTART-LOCAL.md) — canônico |
+> | **Desenvolvimento** (hot reload) | [AMBIENTE-DEV.md](AMBIENTE-DEV.md) |
+>
+> Este arquivo expande o stack Docker e variações. Para o dia a dia de código, vá direto ao
+> [AMBIENTE-DEV.md](AMBIENTE-DEV.md).
 
 ---
 
 ## Pré-requisitos
 
 - Docker Desktop (rodando)
-- .NET 8 SDK (migrations/build fora do Docker)
-- Node 20 + npm (typecheck do front na máquina; opcional se validar só via Docker)
+- .NET 8 SDK (API na máquina / migrations fora do Docker)
+- Node 20 + npm (front na máquina; opcional se validar só via Docker)
 
 ---
 
-## 1. Stack completo (recomendado)
+## 1. Stack completo Docker (teste / validação)
 
 Na raiz do repositório:
 
@@ -35,7 +41,10 @@ DOCKER_BUILDKIT=0 docker compose -f docker-compose.local.yml build && docker com
 |---------|-------------|
 | Front ERP | http://localhost:3000 |
 | API / Swagger | http://localhost:8080/swagger |
-| PostgreSQL | `localhost:5432` — `epros` / `epros_dev_password` / DB `epros` |
+| PostgreSQL (host) | `localhost:55432` — user/senha/db: `epros` / `epros_dev` / `epros` |
+
+> Portas e senhas vêm de [`.env.example`](../../.env.example). Não confundir com o
+> `docker-compose.yml` da raiz (Postgres em `5432` / senha `epros_dev_password` — infra completa).
 
 ### Credenciais após o seed (`scripts/seed-local.sh` / `scripts/seed-local.ps1`)
 
@@ -56,15 +65,28 @@ Usa [docker-compose.yml](../../docker-compose.yml) na raiz (Postgres, Keycloak, 
 
 ---
 
-## 3. API fora do Docker (opcional)
+## 3. Desenvolvimento com hot reload
+
+Passo a passo canônico: **[AMBIENTE-DEV.md](AMBIENTE-DEV.md)**  
+(Postgres do `docker-compose.local.yml` + `dotnet watch` + `npm run dev`).
+
+Resumo:
 
 ```bash
-dotnet run --project src/API/Epros.API/Epros.API.csproj --urls "http://localhost:8080"
+# banco + migrate
+docker compose -f docker-compose.local.yml up -d postgres
+docker compose -f docker-compose.local.yml run --rm migrate
+
+# API (com ConnectionStrings__DefaultConnection → localhost:55432 / epros_dev)
+dotnet watch run --project src/API/Epros.API/Epros.API.csproj --urls "http://localhost:8080"
+
+# front (outro terminal)
+cd Epros.App && npm install && npm run dev
 ```
 
-Em **Development**, migrations rodam na subida. Connection string em `appsettings.json` / variáveis de ambiente.
+Seed: `./scripts/seed-local.ps1` ou `./scripts/seed-local.sh` com a API local no ar.
 
-Seed alternativo (PowerShell):
+Seed alternativo (legado/demo):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/seed-ambiente-demo.ps1
@@ -74,32 +96,20 @@ Ou bash: `./scripts/seed-ambiente-demo.sh`
 
 ---
 
-## 4. Frontend fora do Docker (opcional)
-
-```bash
-cd Epros.App
-cp .env.example .env   # NUXT_PUBLIC_API_BASE_URL → http://localhost:8080
-npm install
-npm run dev
-```
-
-App: http://localhost:3000 (ou http://127.0.0.1:3000 no Windows se IPv6 falhar).
-
----
-
-## 5. Problemas comuns
+## 4. Problemas comuns
 
 | Sintoma | Solução |
 |---------|---------|
 | BuildKit timeout | `DOCKER_BUILDKIT=0` (ver [QUICKSTART-LOCAL.md](../QUICKSTART-LOCAL.md)) |
-| API não conecta no Postgres | `docker ps` — container `epros-novo-db` Up? |
-| Migration falha | `scripts/fix-migrations-history.sql` ou reset: `docker compose down -v` |
-| Front tela branca em dev | `rm -rf Epros.App/.nuxt` e rebuild |
-| Rebuild só API/web | `docker compose -f docker-compose.local.yml up -d --build --no-deps api web` |
+| API não conecta no Postgres | `docker ps` — container `epros-novo-db` Up? Porta host **55432**? |
+| Migration falha | `scripts/fix-migrations-history.sql` ou reset: `docker compose -f docker-compose.local.yml down -v` |
+| Front tela branca em dev | Apague `Epros.App/.nuxt` e reinicie `npm run dev` |
+| Porta 8080/3000 em uso no fluxo dev | `docker compose -f docker-compose.local.yml stop api web` |
+| Rebuild só API/web (Docker) | `docker compose -f docker-compose.local.yml up -d --build --no-deps api web` |
 
 ---
 
-## 6. Parar o ambiente
+## 5. Parar o ambiente
 
 ```bash
 docker compose -f docker-compose.local.yml down      # mantém volumes
@@ -108,4 +118,4 @@ docker compose -f docker-compose.local.yml down -v   # apaga dados (reset)
 
 ---
 
-*Atualizado: 2026-08-01 — alinhado a `docker-compose.local.yml` + `scripts/seed-local.sh`.*
+*Atualizado: 2026-08-01 — distingue teste Docker × ambiente dev (hot reload).*
