@@ -132,4 +132,4 @@ Backend pronto e limpo, **0 tela + 0 teste + dívida `string→enum`**: **Produ�
 1. **Rumo visual:** (A) **clone fiel do legado** (claro, navy, Manrope, Material) → cliente não nota, custo alto; ou (B) **rebrand assumido** (moderno + tema claro) → custo baixo, cliente percebe.
 2. **8 módulos novos:** (A) **finalizar** (enum + testes + tela) ; ou (B) **quarentenar** (ocultar do menu / feature-flag) até pós-cutover.
 
-> O `PLANO_FECHAMENTO_FINAL.md` detalha as atividades e ramifica nessas duas escolhas.
+> O [`PLANO_FECHAMENTO_FINAL.md`](../historico/PLANO_FECHAMENTO_FINAL.md) detalha as atividades e ramifica nessas duas escolhas.

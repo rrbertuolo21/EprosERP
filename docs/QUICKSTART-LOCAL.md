@@ -1,7 +1,7 @@
-# Comece aqui — EprosERP (dev onboarding)
+# Quickstart local — EprosERP
 
-> Você recebeu o projeto EprosERP. Em ~15 min você sobe tudo local e trabalha com o processo da fábrica
-> (IA dirigida). Leia isto uma vez; depois o dia-a-dia é rodar e produzir.
+> Em ~15 min você sobe tudo local e trabalha com o processo da fábrica (IA dirigida).
+> Roteiro de leitura completo: [ROTEIRO-ONBOARDING.md](ROTEIRO-ONBOARDING.md).
 
 ## 1. Pré-requisitos (instale uma vez)
 - **Docker Desktop** (obrigatório — sobe todo o stack)
@@ -12,7 +12,7 @@
 ## 2. Subir o sistema (1 comando)
 ```bash
 docker compose -f docker-compose.local.yml up -d --build
-./seed-local.sh
+./scripts/seed-local.sh
 ```
 Se o build da API der `DeadlineExceeded` (timeout do BuildKit):
 ```bash
@@ -30,32 +30,32 @@ Pronto:
 > **terminal** (ou botão direito → "Mostrar Conteúdo do Pacote").
 
 ## 3. Configurar o Cursor (o processo na sua máquina)
-Siga `docs/fabrica/cursor/CONFIGURAR-CURSOR.md`. Em resumo: as **regras `.mdc`** em
+Siga [fabrica/cursor/CONFIGURAR-CURSOR.md](fabrica/cursor/CONFIGURAR-CURSOR.md). Em resumo: as **regras `.mdc`** em
 `docs/fabrica/cursor/cursor-install/rules/` fazem o Cursor seguir as convenções do EprosERP
-automaticamente (multi-tenancy, CQRS, EF, fiscal, segurança…). O `CLAUDE.md` da raiz é carregado
+automaticamente (multi-tenancy, CQRS, EF, fiscal, segurança…). O [`CLAUDE.md`](../CLAUDE.md) da raiz é carregado
 sozinho e traz as **disciplinas** (o gate, o fan-out, "verde não é prova").
 
 ## 4. Como trabalhar (o processo em 5 passos)
 1. **Especifica** a tarefa (com a EF / regra de negócio — negócio vem SEMPRE da skill de negócio).
-2. **Executa** com o agente Dev (`docs/fabrica/agentes/07-dev-agent.md`) carregando as skills certas.
+2. **Executa** com o agente Dev ([fabrica/agentes/07-dev-agent.md](fabrica/agentes/07-dev-agent.md)) carregando as skills certas.
 3. **Auto-valida** (o agente roda o checklist da skill) — isso é entrada, não prova.
 4. **RE-EXECUTA:** você (ou o orquestrador) roda o build/test de novo e **valida no ambiente vivo**
    (banco real, chamada real). *"Build verde" ≠ "funciona".*
 5. **Code Review → você libera.** Commit em branch; manter paridade com `origin/main`.
 
 Para trabalho grande (muitas telas/módulos): **fan-out** — 1 agente por pasta disjunta, molde primeiro.
-Ver `docs/fabrica/skills/fan-out-paralelo.md`.
+Ver [fabrica/skills/fan-out-paralelo.md](fabrica/skills/fan-out-paralelo.md).
 
 ## 5. Onde achar as coisas
 | Preciso de… | Onde |
 |---|---|
-| Cérebro do projeto (a IA lê) | [CLAUDE.md](CLAUDE.md) |
-| Rodar/deploy | `INSTALACAO_LOCAL.md` · `docker-compose.prod.yml` (deploy) |
-| Convenções de código | `CONVENCAO_CODIGO.md` |
-| Diário / retomar de onde paramos | `HISTORICO-DESENVOLVIMENTO-IA.md` · `PROMPT_REINICIO.md` |
-| O que falta (roadmap) | `CONSOLIDACAO-GAPS.md` |
-| Agentes / processo / skills | `docs/fabrica/` |
-| Integração de pagamento (Mercado Pago) | `docs/fabrica/skills/integracao-gateway-pagamento.md` — plugar o access token em **Operação → Integrações / Gateways** |
+| Cérebro do projeto (a IA lê) | [CLAUDE.md](../CLAUDE.md) |
+| Rodar/deploy (detalhe) | [ops/INSTALACAO_LOCAL.md](ops/INSTALACAO_LOCAL.md) · `docker-compose.prod.yml` (deploy) |
+| Convenções de código | [CONVENCAO_CODIGO.md](../CONVENCAO_CODIGO.md) |
+| Diário / retomar | [HISTORICO-DESENVOLVIMENTO-IA.md](../HISTORICO-DESENVOLVIMENTO-IA.md) · [PROMPT_REINICIO.md](../PROMPT_REINICIO.md) |
+| O que falta (roadmap) | [CONSOLIDACAO-GAPS.md](../CONSOLIDACAO-GAPS.md) |
+| Agentes / processo / skills | [fabrica/](fabrica/) |
+| Integração de pagamento (Mercado Pago) | [fabrica/skills/integracao-gateway-pagamento.md](fabrica/skills/integracao-gateway-pagamento.md) — plugar o access token em **Operação → Integrações / Gateways** |
 
 ## 6. Regras de ouro (não esqueça)
 - **Negócio vem da skill de negócio**; fiscal travado até contador; nunca invente regra fiscal.

@@ -5,7 +5,7 @@ confluence_url: "https://rafaelbertuolo.atlassian.net/wiki/spaces/EprosWeb/pages
 last_updated: "2026-08-01"
 ---
 
-> **EprosERP:** trilha trazida de `epros/docs/onboarding`. Quickstart deste repo: [COMECE-AQUI.md](../../COMECE-AQUI.md). Layout front real: [estrutura-pastas-front.md](estrutura-pastas-front.md). Índice geral: [docs/README.md](../README.md).
+> **EprosERP:** trilha trazida de `epros/docs/onboarding`. Quickstart: [QUICKSTART-LOCAL.md](../QUICKSTART-LOCAL.md). Roteiro: [ROTEIRO-ONBOARDING.md](../ROTEIRO-ONBOARDING.md). Layout front: [estrutura-pastas-front.md](estrutura-pastas-front.md). Índice: [docs/README.md](../README.md).
 
 # **Série de Artigos — Onboarding Epros ERP**
 

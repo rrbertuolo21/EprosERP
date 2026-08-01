@@ -112,4 +112,4 @@ API: `src/API/Epros.API/Controllers` — controllers finos, só `_mediator.Send(
 
 - Conceito front: [Trilha Frontend — Nuxt](trilha-frontend-nuxt.md) (runtime atual = **Nuxt 3**)
 - Tutorial: [Tutorial — Dev Frontend](frontend/tutorial-dev-frontend.md)
-- Stack: [COMECE-AQUI.md](../../COMECE-AQUI.md)
+- Stack: [QUICKSTART-LOCAL.md](../QUICKSTART-LOCAL.md)

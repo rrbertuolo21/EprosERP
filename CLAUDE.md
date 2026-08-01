@@ -1,7 +1,7 @@
 # CLAUDE.md — EprosERP (carregado automaticamente pela IA)
 
 > Este arquivo é o cérebro do projeto para o Cursor/Claude Code. **Leia antes de qualquer tarefa.**
-> Onboarding humano: [COMECE-AQUI.md](COMECE-AQUI.md). Processo completo: `docs/fabrica/`.
+> Onboarding humano: [docs/ROTEIRO-ONBOARDING.md](docs/ROTEIRO-ONBOARDING.md) · quickstart: [docs/QUICKSTART-LOCAL.md](docs/QUICKSTART-LOCAL.md). Processo: `docs/fabrica/`.
 
 ## O produto em uma frase
 ERP SaaS multi-tenant. **Monólito modular** .NET 8 (Clean Arch por módulo, **CQRS/MediatR**,
@@ -15,7 +15,7 @@ Diário: `HISTORICO-DESENVOLVIMENTO-IA.md`.
 
 ## Rodar local (1 comando + seed)
 ```bash
-docker compose -f docker-compose.local.yml up -d --build && ./seed-local.sh
+docker compose -f docker-compose.local.yml up -d --build && ./scripts/seed-local.sh
 # se o BuildKit der DeadlineExceeded: DOCKER_BUILDKIT=0 docker compose -f docker-compose.local.yml build && docker compose -f docker-compose.local.yml up -d
 ```
 Front http://localhost:3000 · API/Swagger http://localhost:8080/swagger · Admin `admin@epros.local/Admin@12345` · Cliente `cliente@demo.local/Cliente@12345`.

@@ -61,7 +61,7 @@ Neste projeto há **um** repositório: **EprosERP**.
 
 | Área | Pasta | Público | Onde está o processo |
 | --- | --- | --- | --- |
-| Tudo | raiz do clone | Todos | [COMECE-POR-AQUI.md](../../COMECE-POR-AQUI.md) |
+| Tudo | docs/ | Todos | [ROTEIRO-ONBOARDING.md](../ROTEIRO-ONBOARDING.md) |
 | Backend | `src/` | Dev Backend, QA, Fiscal | [`docs/fabrica/agentes/`](../fabrica/agentes/) + rules `.mdc` |
 | Frontend | `Epros.App/` | Dev Frontend, QA | S11, S19 + [estrutura-pastas-front.md](estrutura-pastas-front.md) |
 | Mobile | `Epros.Mobile/` | Mobile | submódulo |
