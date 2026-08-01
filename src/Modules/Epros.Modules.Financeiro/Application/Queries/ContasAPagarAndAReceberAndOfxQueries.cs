@@ -41,8 +41,18 @@ namespace Epros.Modules.Financeiro.Application.Queries
                 .Take(r.TamanhoPagina)
                 .Select(c => new
                 {
-                    c.Id, c.PessoaId, c.NomePessoa, c.Documento, c.Situacao, c.DataVencimento, c.DataEmissao,
-                    c.DataBaixa, c.ValorTitulo, c.ValorTotalAPagarTitulo, c.ValorTotalPago, c.NumeroParcela
+                    c.Id,
+                    c.PessoaId,
+                    c.NomePessoa,
+                    c.Documento,
+                    c.Situacao,
+                    c.DataVencimento,
+                    c.DataEmissao,
+                    c.DataBaixa,
+                    c.ValorTitulo,
+                    c.ValorTotalAPagarTitulo,
+                    c.ValorTotalPago,
+                    c.NumeroParcela
                 })
                 .ToListAsync(ct);
 
@@ -103,8 +113,18 @@ namespace Epros.Modules.Financeiro.Application.Queries
                 .Take(r.TamanhoPagina)
                 .Select(c => new
                 {
-                    c.Id, c.PessoaId, c.NomePessoa, c.Documento, c.Situacao, c.DataVencimento, c.DataEmissao,
-                    c.DataBaixa, c.ValorTitulo, c.ValorTotalAReceberTitulo, c.ValorTotalRecebido, c.NumeroParcela
+                    c.Id,
+                    c.PessoaId,
+                    c.NomePessoa,
+                    c.Documento,
+                    c.Situacao,
+                    c.DataVencimento,
+                    c.DataEmissao,
+                    c.DataBaixa,
+                    c.ValorTitulo,
+                    c.ValorTotalAReceberTitulo,
+                    c.ValorTotalRecebido,
+                    c.NumeroParcela
                 })
                 .ToListAsync(ct);
 

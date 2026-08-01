@@ -77,7 +77,7 @@ namespace Epros.Tests
 
             // Assertiva
             Assert.True(result.Sucesso);
-            
+
             var atualizado = await context.Colaboradores.FindAsync(colaborador.Id);
             Assert.Equal("Desligado", atualizado!.Status);
             Assert.Equal(demissaoData, atualizado.DataDemissao);

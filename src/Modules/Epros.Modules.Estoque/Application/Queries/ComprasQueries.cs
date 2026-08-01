@@ -33,9 +33,9 @@ namespace Epros.Modules.Estoque.Application.Queries
 
             if (!string.IsNullOrWhiteSpace(request.Localizar))
             {
-                query = query.Where(c => c.FornecedorNome.Contains(request.Localizar) || 
-                                         c.FornecedorCnpj.Contains(request.Localizar) || 
-                                         c.NumeroNota.Contains(request.Localizar) || 
+                query = query.Where(c => c.FornecedorNome.Contains(request.Localizar) ||
+                                         c.FornecedorCnpj.Contains(request.Localizar) ||
+                                         c.NumeroNota.Contains(request.Localizar) ||
                                          c.ChaveAcesso.Contains(request.Localizar));
             }
 

@@ -92,10 +92,10 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             {
                 // Registra tentativa falha e lockout se atingir limite
                 usuario.RegistrarFalhaLogin(5, TimeSpan.FromMinutes(15));
-                
+
                 var historicoFalha = new HistoricoLogin(usuario.TenantId, usuario.Id, emailLower, request.IpAddress, request.UserAgent, false, "Senha incorreta.", "system");
                 _context.HistoricosLogin.Add(historicoFalha);
-                
+
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return CommandResult.Falha(new[] { "E-mail ou senha incorretos." });
@@ -119,7 +119,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             );
 
             var historicoSucesso = new HistoricoLogin(usuario.TenantId, usuario.Id, emailLower, request.IpAddress, request.UserAgent, true, "Login realizado com sucesso.", usuario.Id.ToString());
-            
+
             _context.SessoesUsuarios.Add(sessao);
             _context.HistoricosLogin.Add(historicoSucesso);
             await _context.SaveChangesAsync(cancellationToken);
@@ -400,7 +400,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
 
             // Altera a senha (hash PBKDF2) e limpa o token
             usuario.AlterarSenha(_passwordHasher.Hash(request.NovaSenha), "system-reset");
-            
+
             if (!usuario.IsValid)
             {
                 var erros = usuario.Notifications.Select(n => n.Message);

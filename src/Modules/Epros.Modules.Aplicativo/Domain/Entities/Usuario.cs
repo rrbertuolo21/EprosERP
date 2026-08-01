@@ -50,7 +50,7 @@ namespace Epros.Modules.Aplicativo.Domain.Entities
             string email,
             string passwordHash,
             UsuarioTipo tipo,
-            string criadoPor) 
+            string criadoPor)
             : base(tenantId, criadoPor)
         {
             if (string.IsNullOrWhiteSpace(nome))

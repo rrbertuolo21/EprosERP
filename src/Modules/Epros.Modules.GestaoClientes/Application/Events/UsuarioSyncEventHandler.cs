@@ -91,7 +91,7 @@ namespace Epros.Modules.GestaoClientes.Application.Events
                         limiteDesconto: notification.LimiteDesconto,
                         alteradoPor: notification.AlteradoPor
                     );
-                    
+
                     if (!perfil.Ativo)
                     {
                         perfil.Ativar(notification.AlteradoPor);

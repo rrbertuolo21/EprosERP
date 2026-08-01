@@ -120,10 +120,11 @@ namespace Epros.Modules.Vendas.Application.Handlers
 
             await _context.SaveChangesAsync(cancellationToken);
 
-            return CommandResult.Ok("Caixa fechado com sucesso!", new { 
-                CaixaId = caixa.Id, 
-                SaldoCalculado = saldoCalculado, 
-                Diferenca = caixa.DiferencaFechamento 
+            return CommandResult.Ok("Caixa fechado com sucesso!", new
+            {
+                CaixaId = caixa.Id,
+                SaldoCalculado = saldoCalculado,
+                Diferenca = caixa.DiferencaFechamento
             });
         }
     }

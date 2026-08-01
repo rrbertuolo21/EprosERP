@@ -17,14 +17,14 @@ namespace Epros.Modules.Aplicativo.Domain.Entities
         protected UsuarioInterno() { } // EF Core
 
         public UsuarioInterno(
-            string nome, 
-            string email, 
-            string senha, 
-            Guid? creatorId, 
-            string? uniqueId, 
-            string? timezone, 
+            string nome,
+            string email,
+            string senha,
+            Guid? creatorId,
+            string? uniqueId,
+            string? timezone,
             bool primaryAdmin,
-            string tenantId, 
+            string tenantId,
             string criadoPor) : base(tenantId, criadoPor)
         {
             AddNotifications(new Contract<UsuarioInterno>()

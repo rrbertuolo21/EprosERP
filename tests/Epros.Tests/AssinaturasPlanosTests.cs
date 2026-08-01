@@ -73,7 +73,7 @@ namespace Epros.Tests
             // Assert 2
             Assert.False(result2.Sucesso);
             Assert.Contains(result2.Erros, e => e.Contains("limitado a uma utilização por cliente"));
-            
+
             // Verifica que não foi criada uma nova assinatura
             var assinaturasAposTentativa = await context.AssinaturasClientes.Where(a => a.ClienteId == cliente.Id).ToListAsync();
             Assert.Single(assinaturasAposTentativa);

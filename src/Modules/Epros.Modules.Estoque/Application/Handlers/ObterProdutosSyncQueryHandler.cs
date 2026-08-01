@@ -28,8 +28,8 @@ namespace Epros.Modules.Estoque.Application.Handlers
             var produtos = await _context.Produtos
                 .IgnoreQueryFilters()
                 .Where(p => p.TenantId == tenantId)
-                .Where(p => p.CriadoEm > request.Since 
-                            || (p.AlteradoEm != null && p.AlteradoEm > request.Since) 
+                .Where(p => p.CriadoEm > request.Since
+                            || (p.AlteradoEm != null && p.AlteradoEm > request.Since)
                             || (p.DeletadoEm != null && p.DeletadoEm > request.Since))
                 .Select(p => new ProdutoSyncDto
                 {

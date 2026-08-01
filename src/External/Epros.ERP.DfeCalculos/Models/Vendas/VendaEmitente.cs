@@ -1,4 +1,4 @@
-﻿using Epros.ERP.Shared.Validations.Documentos;
+using Epros.ERP.Shared.Validations.Documentos;
 using Flunt.Notifications;
 using Flunt.Validations;
 using NFe.Classes.Informacoes.Emitente;

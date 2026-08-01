@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.Shared.Formatting.Contatos
+namespace Epros.ERP.Shared.Formatting.Contatos
 {
     public class TelefoneFormatacao
     {

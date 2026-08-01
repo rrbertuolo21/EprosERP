@@ -1,4 +1,4 @@
-﻿using Epros.ERP.Shared.Validations.Contatos;
+using Epros.ERP.Shared.Validations.Contatos;
 using Flunt.Notifications;
 
 namespace Epros.ERP.Shared.ValueObjects.Contatos

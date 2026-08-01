@@ -47,13 +47,13 @@ namespace Epros.Tests
             // Act
             var planoSemNome = new Plano("", 100m, "tenant-1", "user-admin");
             var planoPrecoNegativo = new Plano("Plano Teste", -10m, "tenant-1", "user-admin");
- 
-             // Assert
-             Assert.False(planoSemNome.IsValid);
-             Assert.Contains(planoSemNome.Notifications, n => n.Key == "Nome");
- 
-             Assert.False(planoPrecoNegativo.IsValid);
-             Assert.Contains(planoPrecoNegativo.Notifications, n => n.Key == "Preco");
+
+            // Assert
+            Assert.False(planoSemNome.IsValid);
+            Assert.Contains(planoSemNome.Notifications, n => n.Key == "Nome");
+
+            Assert.False(planoPrecoNegativo.IsValid);
+            Assert.Contains(planoPrecoNegativo.Notifications, n => n.Key == "Preco");
         }
 
         [Fact]
@@ -211,7 +211,7 @@ namespace Epros.Tests
 
             // Assert
             Assert.True(result.Sucesso);
-            
+
             var faturaSalva = await context.Faturas.FirstOrDefaultAsync();
             Assert.NotNull(faturaSalva);
             Assert.Equal(cliente.Id, faturaSalva.ClienteId);
@@ -295,7 +295,7 @@ namespace Epros.Tests
             // Assert: deve retornar ambos os clientes (um ativo e um deletado)
             var lista = result.ToList();
             Assert.Equal(2, lista.Count);
-            
+
             var DtoAtivo = lista.FirstOrDefault(c => c.Id == cliente1.Id);
             Assert.NotNull(DtoAtivo);
             Assert.False(DtoAtivo.Deletado);
@@ -367,7 +367,7 @@ namespace Epros.Tests
         {
             // Arrange
             var perfil = new PerfilColaborador("usr-99", "João Da Silva", "joao@epros.com", "Vendedor", "Comercial", 10.00m, "tenant-1", "user-admin");
-            
+
             // Act
             perfil.AdicionarPermissao("Vendas", "Ler", true, "user-admin");
             perfil.AdicionarPermissao("Vendas", "Criar", false, "user-admin");
@@ -409,7 +409,7 @@ namespace Epros.Tests
             // Arrange
             var dbName = Guid.NewGuid().ToString();
             using var context = CreateInMemoryContext(dbName, "tenant-abac", "user-admin");
-            
+
             var perfil = new PerfilColaborador("user-admin", "Admin User", "admin@epros.com", "Administrador", "TI", 100.00m, "tenant-abac", "system");
             context.PerfisUsuarios.Add(perfil);
             await context.SaveChangesAsync();
@@ -433,7 +433,7 @@ namespace Epros.Tests
             // Arrange
             var dbName = Guid.NewGuid().ToString();
             using var context = CreateInMemoryContext(dbName, "tenant-abac", "user-vendedor");
-            
+
             var perfil = new PerfilColaborador("user-vendedor", "Vendedor 1", "vendedor@epros.com", "Vendedor", "Comercial", 10.00m, "tenant-abac", "system");
             // Adiciona permissão para aplicar desconto
             perfil.AdicionarPermissao("Desconto", "Aplicar", true, "system");
@@ -504,7 +504,7 @@ namespace Epros.Tests
             // Assert
             Assert.True(result.Sucesso);
             var menus = Assert.IsType<List<MenuDinamicoDto>>(result.Dados);
-            
+
             // Deve conter Financeiro (pois está no plano e tem permissão)
             Assert.Contains(menus, m => m.Modulo == "Financeiro");
             // Não deve conter Estoque (está no plano mas não tem permissão)
@@ -549,7 +549,7 @@ namespace Epros.Tests
             var tenantProvider = new TestTenantProvider("tenant-contrato");
             var currentUser = new TestCurrentUser("user-1");
             var context = CreateInMemoryContext("db_contrato_handler", "tenant-contrato", "user-1");
-            
+
             // Adiciona cliente para poder associar o contrato
             var cliente = new Cliente("Cliente Contrato", "00.000.000/0001-00", "cliente@contrato.com", Guid.NewGuid(), "tenant-contrato", "user-1");
             context.Clientes.Add(cliente);
@@ -573,7 +573,7 @@ namespace Epros.Tests
 
             // Assert
             Assert.True(result.Sucesso);
-            
+
             var contratoSalvo = await context.Contratos.Include(c => c.Itens).FirstOrDefaultAsync();
             Assert.NotNull(contratoSalvo);
             Assert.Equal(cliente.Id, contratoSalvo.ClienteId);

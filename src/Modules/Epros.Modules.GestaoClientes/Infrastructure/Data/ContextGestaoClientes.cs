@@ -17,7 +17,7 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
         public DbSet<ConfiguracaoGatewayPagamento> ConfiguracoesGatewayPagamento => Set<ConfiguracaoGatewayPagamento>();
         public DbSet<ComposicaoFaturamento> ComposicoesFaturamento => Set<ComposicaoFaturamento>();
         public DbSet<HistoricoReajuste> HistoricosReajustes => Set<HistoricoReajuste>();
-        
+
         // Novas tabelas do submódulo Pedidos e Cobrança SaaS (APP-TEN-006)
         public DbSet<Cupom> Cupons => Set<Cupom>();
         public DbSet<PedidoSaaS> PedidosSaaS => Set<PedidoSaaS>();

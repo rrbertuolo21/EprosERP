@@ -42,12 +42,12 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Jobs
 
             var messages = await _context.OutboxMessages
                 .IgnoreQueryFilters()
-                .Where(m => (m.EventType == "UsuarioCriado" || 
-                             m.EventType == "UsuarioAtualizado" || 
-                             m.EventType == "UsuarioDeletado" || 
+                .Where(m => (m.EventType == "UsuarioCriado" ||
+                             m.EventType == "UsuarioAtualizado" ||
+                             m.EventType == "UsuarioDeletado" ||
                              m.EventType == "ImpersonacaoIniciada" ||
-                             m.EventType == "ComunicacaoSuperAdminCriada") && 
-                             m.ProcessadoEm == null && 
+                             m.EventType == "ComunicacaoSuperAdminCriada") &&
+                             m.ProcessadoEm == null &&
                              m.Tentativas < 5)
                 .OrderBy(m => m.CriadoEm)
                 .ToListAsync();
@@ -201,7 +201,7 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Jobs
                                 var comunicacao = await _context.ComunicacoesSuperAdmin
                                     .IgnoreQueryFilters()
                                     .FirstOrDefaultAsync(c => c.Id == payload.ComunicacaoId);
-                                
+
                                 if (comunicacao != null)
                                 {
                                     comunicacao.AtualizarStatus("Falha", "OutboxProcessor");

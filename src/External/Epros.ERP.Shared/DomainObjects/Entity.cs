@@ -1,4 +1,4 @@
-﻿using Epros.ERP.Shared.Providers;
+using Epros.ERP.Shared.Providers;
 using Flunt.Notifications;
 
 namespace Epros.ERP.Shared.DomainObjects

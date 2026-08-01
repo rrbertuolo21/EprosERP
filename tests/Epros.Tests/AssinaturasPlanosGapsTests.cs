@@ -250,7 +250,8 @@ namespace Epros.Tests
             // Deve ter gerado 6 alertas (faturaFora é ignorada)
             Assert.Equal(6, alertas.Count);
 
-            var alertasTipos = alertas.Select(a => {
+            var alertasTipos = alertas.Select(a =>
+            {
                 using var doc = System.Text.Json.JsonDocument.Parse(a.Payload);
                 return doc.RootElement.GetProperty("TipoAlerta").GetString();
             }).ToList();
@@ -276,7 +277,7 @@ namespace Epros.Tests
             var userId = "user-webhook";
 
             using var context = CreateInMemoryContext(dbName, tenantId, userId);
-            
+
             // Configura o segredo do webhook no banco
             var configSecret = new ConfiguracaoGlobal("webhook_secret", "meusegredo", false, "Segredo do Webhook", tenantId, userId);
             context.ConfiguracoesGlobais.Add(configSecret);
@@ -324,7 +325,7 @@ namespace Epros.Tests
             // Cria o mediator real chamando o BaixarFaturaCommandHandler
             var currentUser = new TestCurrentUser(userId);
             var baixarHandler = new BaixarFaturaCommandHandler(context, currentUser);
-            
+
             var mediatorMock = new TestMediator(async request =>
             {
                 if (request is BaixarFaturaCommand command)

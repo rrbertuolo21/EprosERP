@@ -1,4 +1,4 @@
-﻿using Flunt.Notifications;
+using Flunt.Notifications;
 using Flunt.Validations;
 using NFe.Classes.Informacoes.Pagamento;
 

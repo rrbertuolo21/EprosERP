@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.Shared.Formatting.Enderecos
+namespace Epros.ERP.Shared.Formatting.Enderecos
 {
     public class CepFormatacao
     {

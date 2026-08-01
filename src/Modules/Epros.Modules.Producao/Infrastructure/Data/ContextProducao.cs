@@ -87,7 +87,7 @@ namespace Epros.Modules.Producao.Infrastructure.Data
                 entity.HasKey(l => l.Id);
                 entity.ToTable("listas_materiais");
                 entity.HasIndex(l => new { l.TenantId, l.ProdutoAcabadoSku });
-                
+
                 entity.HasMany(l => l.Itens)
                     .WithOne()
                     .HasForeignKey(i => i.ListaMateriaisId)

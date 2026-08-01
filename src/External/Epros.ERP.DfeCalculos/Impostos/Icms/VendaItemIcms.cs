@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.DfeCalculos.Impostos.Icms
+namespace Epros.ERP.DfeCalculos.Impostos.Icms
 {
     public class VendaItemIcms
     {

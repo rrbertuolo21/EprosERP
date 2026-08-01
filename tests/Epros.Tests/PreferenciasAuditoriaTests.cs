@@ -36,7 +36,7 @@ namespace Epros.Tests
         {
             // Arrange
             using var context = CreateInMemoryContext("db_prefs_no_audit");
-            
+
             // Setup initial preferences: NegativeCash=true, NegativeStock=true, Mode=CustoMedio
             var pref = new PreferenciaGeral(true, true, true, StockCalculationMode.CustoMedio, false, false, false, false, TenantId, UsuarioId);
             context.PreferenciasGerais.Add(pref);
@@ -69,7 +69,7 @@ namespace Epros.Tests
             Assert.NotNull(updatedPref);
             Assert.False(updatedPref.ShowCurrency);
             Assert.True(updatedPref.Discount);
-            
+
             // Check that no audit log was created
             var auditLogs = await context.LogsAuditoriaConfiguracao.ToListAsync();
             Assert.Empty(auditLogs);
@@ -80,7 +80,7 @@ namespace Epros.Tests
         {
             // Arrange
             using var context = CreateInMemoryContext("db_prefs_fail_audit");
-            
+
             var pref = new PreferenciaGeral(true, true, true, StockCalculationMode.CustoMedio, false, false, false, false, TenantId, UsuarioId);
             context.PreferenciasGerais.Add(pref);
             await context.SaveChangesAsync();
@@ -120,7 +120,7 @@ namespace Epros.Tests
         {
             // Arrange
             using var context = CreateInMemoryContext("db_prefs_success_audit");
-            
+
             var pref = new PreferenciaGeral(true, true, true, StockCalculationMode.CustoMedio, false, false, false, false, TenantId, UsuarioId);
             context.PreferenciasGerais.Add(pref);
             await context.SaveChangesAsync();

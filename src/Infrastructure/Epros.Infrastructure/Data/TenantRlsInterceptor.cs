@@ -66,7 +66,7 @@ namespace Epros.Infrastructure.Data
             if (!string.IsNullOrEmpty(tenantId))
             {
                 var sanitizedTenantId = SanitizeTenantId(tenantId);
-                
+
                 if (command.Connection.State != System.Data.ConnectionState.Open)
                 {
                     command.Connection.Open();

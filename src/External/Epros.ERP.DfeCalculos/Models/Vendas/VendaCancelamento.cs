@@ -1,4 +1,4 @@
-﻿using Flunt.Notifications;
+using Flunt.Notifications;
 using Flunt.Validations;
 
 namespace Epros.ERP.DfeCalculos.Models.Vendas

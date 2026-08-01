@@ -30,8 +30,8 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             var clientes = await _context.Clientes
                 .IgnoreQueryFilters()
                 .Where(c => c.TenantId == tenantId)
-                .Where(c => c.CriadoEm > request.Since 
-                            || (c.AlteradoEm != null && c.AlteradoEm > request.Since) 
+                .Where(c => c.CriadoEm > request.Since
+                            || (c.AlteradoEm != null && c.AlteradoEm > request.Since)
                             || (c.DeletadoEm != null && c.DeletadoEm > request.Since))
                 .Select(c => new ClienteSyncDto
                 {

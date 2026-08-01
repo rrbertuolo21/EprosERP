@@ -50,11 +50,24 @@ namespace Epros.Modules.Fiscal.Application.Queries
 
             var dto = new
             {
-                c.Id, c.Cst, c.Descricao, c.DataInicioVigencia, c.DataFimVigencia,
+                c.Id,
+                c.Cst,
+                c.Descricao,
+                c.DataInicioVigencia,
+                c.DataFimVigencia,
                 ClassesTributarias = c.ClassesTributarias.Select(ct => new
                 {
-                    ct.Id, ct.Codigo, ct.Descricao, ct.DataInicioVigencia, ct.DataFimVigencia,
-                    ct.IndNfe, ct.IndNfce, ct.IndCte, ct.IndCteos, ct.IndNfse, ct.IndTribRegular,
+                    ct.Id,
+                    ct.Codigo,
+                    ct.Descricao,
+                    ct.DataInicioVigencia,
+                    ct.DataFimVigencia,
+                    ct.IndNfe,
+                    ct.IndNfce,
+                    ct.IndCte,
+                    ct.IndCteos,
+                    ct.IndNfse,
+                    ct.IndTribRegular,
                     Anexos = ct.Anexos.Select(a => new { a.Id, a.NroAnexo, a.Codigo, a.DataInicioVigencia, a.DataFimVigencia }).ToList()
                 }).ToList()
             };

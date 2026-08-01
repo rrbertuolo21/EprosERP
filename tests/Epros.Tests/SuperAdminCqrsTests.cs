@@ -193,7 +193,7 @@ namespace Epros.Tests
             // Arrange
             var dbName = "db_mass_flow_" + Guid.NewGuid().ToString();
             var tenantProvider = new TestTenantProvider("system");
-            
+
             // 1. Maker cria a execução em rascunho
             Guid execId;
             using (var context = CreateInMemoryContext(dbName, "system", "operador-maker"))
@@ -448,7 +448,7 @@ namespace Epros.Tests
             var comunicacaoIdProp = statusType.GetProperty("ComunicacaoId");
             Assert.NotNull(comunicacaoIdProp);
             var comunicacaoId = (Guid)comunicacaoIdProp.GetValue(statusResult)!;
-            
+
             var comunicacao = await context.ComunicacoesSuperAdmin.FirstOrDefaultAsync(c => c.Id == comunicacaoId);
             Assert.NotNull(comunicacao);
             Assert.Equal("Pendente", comunicacao.Status);
@@ -463,7 +463,7 @@ namespace Epros.Tests
             var spyNotif = new SpyNotificacaoService();
             var mockHttpContextAccessor = new Microsoft.AspNetCore.Http.HttpContextAccessor();
             var outboxProcessor = new AplicativoOutboxProcessorJob(context, contextGestao, null!, mockHttpContextAccessor, spyNotif);
-            
+
             await outboxProcessor.Execute(null!);
 
             // Assert 2: Status updated to Sucesso and channels called
@@ -533,7 +533,7 @@ namespace Epros.Tests
             for (int i = 1; i <= 5; i++)
             {
                 await outboxProcessor.Execute(null!);
-                
+
                 var outboxMessage = await context.OutboxMessages.AsNoTracking().FirstOrDefaultAsync(o => o.EventType == "ComunicacaoSuperAdminCriada");
                 Assert.Equal(i, outboxMessage!.Tentativas);
                 Assert.Null(outboxMessage.ProcessadoEm);

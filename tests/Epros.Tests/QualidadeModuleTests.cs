@@ -59,7 +59,7 @@ namespace Epros.Tests
             // Assertiva
             var inspecoes = await context.InspecoesLote.ToListAsync();
             Assert.Equal(2, inspecoes.Count);
-            
+
             var inspecao1 = inspecoes.FirstOrDefault(i => i.Sku == "PROD-001");
             Assert.NotNull(inspecao1);
             Assert.Equal("Pendente", inspecao1!.Status);

@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.Shared.Formatting.Documentos
+namespace Epros.ERP.Shared.Formatting.Documentos
 {
     public class CepFormatacao
     {

@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.DfeCalculos.Impostos.Pis
+namespace Epros.ERP.DfeCalculos.Impostos.Pis
 {
     public class VendaItemPis
     {

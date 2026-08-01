@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.Shared.Validations.Documentos
+namespace Epros.ERP.Shared.Validations.Documentos
 {
     public class CPFValidacao
     {

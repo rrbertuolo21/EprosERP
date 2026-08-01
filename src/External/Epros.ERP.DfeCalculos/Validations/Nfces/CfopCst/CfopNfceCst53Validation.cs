@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.DfeCalculos.Validations.Nfces.CfopCst
+namespace Epros.ERP.DfeCalculos.Validations.Nfces.CfopCst
 {
     public class CfopNfceCst53Validation
     {

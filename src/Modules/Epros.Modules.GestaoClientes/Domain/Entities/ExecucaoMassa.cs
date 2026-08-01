@@ -28,7 +28,7 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
 
             TipoOperacao = tipoOperacao;
             Parametros = parametros;
-            
+
             // Adiciona o criador como o primeiro aprovador
             var aprovadores = new List<string> { criadoPor };
             AprovadoresJson = JsonSerializer.Serialize(aprovadores);

@@ -36,9 +36,9 @@ namespace Epros.Modules.Fiscal.Application.Queries
 
             if (!string.IsNullOrWhiteSpace(request.Localizar))
             {
-                query = query.Where(c => 
-                    (c.RazaoSocial != null && c.RazaoSocial.Contains(request.Localizar)) || 
-                    (c.NomeContador != null && c.NomeContador.Contains(request.Localizar)) || 
+                query = query.Where(c =>
+                    (c.RazaoSocial != null && c.RazaoSocial.Contains(request.Localizar)) ||
+                    (c.NomeContador != null && c.NomeContador.Contains(request.Localizar)) ||
                     (c.NumeroCrc != null && c.NumeroCrc.Contains(request.Localizar)));
             }
 

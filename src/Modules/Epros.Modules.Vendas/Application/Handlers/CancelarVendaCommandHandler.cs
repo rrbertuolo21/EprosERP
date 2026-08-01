@@ -81,7 +81,7 @@ namespace Epros.Modules.Vendas.Application.Handlers
             };
 
             var payloadJson = JsonSerializer.Serialize(payload);
-            
+
             // Grava a mensagem na fila do Outbox de forma transacional
             var outboxMessage = new OutboxMessage(tenantId, "VendaCancelada", payloadJson);
             _context.OutboxMessages.Add(outboxMessage);

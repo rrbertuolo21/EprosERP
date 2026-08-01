@@ -50,7 +50,7 @@ namespace Epros.Tests
 
             // Assert
             Assert.True(result.Sucesso);
-            
+
             var pedido = await context.PedidosSaaS.FirstOrDefaultAsync(p => p.ClienteId == cliente.Id);
             Assert.NotNull(pedido);
             Assert.Equal(1000.00m, pedido.ValorBase);
@@ -154,7 +154,7 @@ namespace Epros.Tests
 
             // Assert 1: Deve liquidar com sucesso
             Assert.True(result1.Sucesso);
-            
+
             var faturaDB1 = await context.Faturas.FindAsync(fatura.Id);
             Assert.Equal(FaturaStatus.Paga, faturaDB1!.Status);
 

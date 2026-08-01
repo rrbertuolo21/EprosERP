@@ -99,7 +99,7 @@ namespace Epros.Modules.Projetos.Domain.Entities
 
             decimal oldProgress = PercentualConclusao;
             item.AtualizarProgresso(novoPercentual, usuario);
-            
+
             if (!item.IsValid)
             {
                 AddNotifications(item.Notifications);

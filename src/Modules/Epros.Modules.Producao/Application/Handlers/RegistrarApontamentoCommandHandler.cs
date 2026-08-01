@@ -51,11 +51,11 @@ namespace Epros.Modules.Producao.Application.Handlers
 
             await _context.SaveChangesAsync(cancellationToken);
 
-            return CommandResult.Ok("Apontamento registrado com sucesso!", new 
-            { 
-                OrdemProducaoId = ordem.Id, 
-                QuantidadeProduzida = ordem.QuantidadeProduzida, 
-                QuantidadeRefugada = ordem.QuantidadeRefugada 
+            return CommandResult.Ok("Apontamento registrado com sucesso!", new
+            {
+                OrdemProducaoId = ordem.Id,
+                QuantidadeProduzida = ordem.QuantidadeProduzida,
+                QuantidadeRefugada = ordem.QuantidadeRefugada
             });
         }
     }
