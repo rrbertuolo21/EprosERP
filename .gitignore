@@ -61,6 +61,7 @@ web-build/
 .env
 .env.*
 !.env.example
+!.env.production.example
 *.pfx
 appsettings.*.local.json
 secrets.json

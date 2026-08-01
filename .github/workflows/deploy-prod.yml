@@ -1,0 +1,139 @@
+name: Deploy Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-prod-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_OWNER: ${{ github.repository_owner }}
+
+jobs:
+  ci:
+    name: CI Gate
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.event.head_commit.committer.username != 'web-flow')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore Dependencies
+        run: dotnet restore
+
+      - name: Verify Code Formatting
+        run: dotnet format --verify-no-changes --no-restore
+
+      - name: Build Solution
+        run: dotnet build --configuration Release --no-restore -warnaserror
+
+      - name: Run Unit & Integration Tests
+        run: dotnet test --configuration Release --no-build --verbosity normal
+
+  build-push:
+    name: Build & Push GHCR
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/API/Epros.API/Dockerfile
+          target: runtime
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/epros-api:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/epros-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push Frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./Epros.App
+          file: Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/epros-frontend:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/epros-frontend:latest
+          build-args: |
+            NUXT_PUBLIC_API_BASE_URL=${{ vars.PROD_NUXT_PUBLIC_API_BASE_URL }}
+            NUXT_PUBLIC_REALTIME_URL=${{ vars.PROD_NUXT_PUBLIC_REALTIME_URL }}
+            NUXT_PUBLIC_STORAGE_URI=${{ vars.PROD_NUXT_PUBLIC_STORAGE_URI }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Production VPS
+    needs: build-push
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          REGISTRY: ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}
+          DEPLOY_GIT_REF: ${{ github.sha }}
+          GHCR_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          port: ${{ secrets.PROD_SSH_PORT || 22 }}
+          envs: IMAGE_TAG,REGISTRY,DEPLOY_GIT_REF,GHCR_TOKEN,GHCR_USER
+          script: |
+            set -euo pipefail
+            cd /opt/epros
+            git fetch origin
+            git checkout "${DEPLOY_GIT_REF}"
+            chmod +x scripts/deploy-prod.sh
+            ./scripts/deploy-prod.sh
+
+      - name: Verify health (runner)
+        run: |
+          API_URL="${{ vars.PROD_NUXT_PUBLIC_API_BASE_URL }}"
+          if [[ -z "${API_URL}" ]]; then
+            echo "PROD_NUXT_PUBLIC_API_BASE_URL não configurada — pulando healthcheck externo."
+            exit 0
+          fi
+          for i in $(seq 1 30); do
+            if curl -fsS "${API_URL}/health" >/dev/null; then
+              echo "Health OK: ${API_URL}/health"
+              exit 0
+            fi
+            echo "Aguardando API (${i}/30)..."
+            sleep 5
+          done
+          echo "Healthcheck externo falhou."
+          exit 1
