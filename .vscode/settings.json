@@ -3,5 +3,6 @@
   "files.eol": "\n",
   "files.autoGuessEncoding": false,
   "files.insertFinalNewline": true,
-  "files.trimTrailingWhitespace": true
+  "files.trimTrailingWhitespace": true,
+  "editor.formatOnSave": true
 }
