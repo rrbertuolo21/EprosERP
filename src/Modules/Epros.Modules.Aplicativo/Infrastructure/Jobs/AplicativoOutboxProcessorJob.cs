@@ -48,7 +48,7 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Jobs
                              m.EventType == "ImpersonacaoIniciada" ||
                              m.EventType == "AcessoSuporteIniciado" ||
                              m.EventType == "ComunicacaoSuperAdminCriada") &&
-                             m.ProcessadoEm == null && 
+                             m.ProcessadoEm == null &&
                              m.Tentativas < 5)
                 .OrderBy(m => m.CriadoEm)
                 .ToListAsync();
@@ -220,7 +220,7 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Jobs
                                 var comunicacao = await _context.ComunicacoesSuperAdmin
                                     .IgnoreQueryFilters()
                                     .FirstOrDefaultAsync(c => c.Id == payload.ComunicacaoId);
-                                
+
                                 if (comunicacao != null)
                                 {
                                     comunicacao.AtualizarStatus("Falha", "OutboxProcessor");

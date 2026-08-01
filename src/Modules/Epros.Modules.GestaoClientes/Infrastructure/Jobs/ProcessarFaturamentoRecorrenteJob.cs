@@ -66,9 +66,9 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Jobs
                     _httpContextAccessor.HttpContext = httpContext;
 
                     Console.WriteLine($"[Quartz] Disparando processamento de faturamento para o Tenant {tenantId}");
-                    
+
                     var result = await _mediator.Send(new ProcessarFaturamentoRecorrenteCommand(hoje));
-                    
+
                     if (!result.Sucesso)
                     {
                         var erros = string.Join(", ", result.Erros);

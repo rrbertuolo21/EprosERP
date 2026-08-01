@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.DfeCalculos.Impostos.Ibpts
+namespace Epros.ERP.DfeCalculos.Impostos.Ibpts
 {
     public class IbptCalculo
     {

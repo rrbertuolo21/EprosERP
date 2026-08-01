@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.DfeCalculos.Dtos.V1
+namespace Epros.ERP.DfeCalculos.Dtos.V1
 {
     public record BaixaDocumentoContadorDto(string DocumentoEmitente, DateTime DataEmissaoInicial, DateTime DataEmissaoFinal)
     {

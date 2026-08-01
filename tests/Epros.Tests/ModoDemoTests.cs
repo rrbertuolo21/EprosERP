@@ -83,7 +83,7 @@ namespace Epros.Tests
 
             // Act: Modificar entidade
             usuario.MarcarAlterado("system");
-            
+
             // Assert: Salvar deve disparar exceção
             await Assert.ThrowsAsync<OperacaoBloqueadaModoDemoException>(() => contextApp.SaveChangesAsync());
         }

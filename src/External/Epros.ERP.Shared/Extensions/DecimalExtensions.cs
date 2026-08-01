@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.Shared.Extensions
+namespace Epros.ERP.Shared.Extensions
 {
     public static class DecimalExtensions
     {

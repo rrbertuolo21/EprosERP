@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.Shared.Helpers
+namespace Epros.ERP.Shared.Helpers
 {
     public class SeparaNomeSobrenomeHelper
     {

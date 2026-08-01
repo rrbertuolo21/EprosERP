@@ -72,7 +72,7 @@ namespace Epros.Tests
 
             // Assert
             Assert.False(result.Sucesso);
-            Assert.True(result.Erros.Contains("E-mail ou senha incorretos."));
+            Assert.Contains("E-mail ou senha incorretos.", result.Erros);
         }
 
         [Fact]
@@ -95,7 +95,7 @@ namespace Epros.Tests
 
             // Assert
             Assert.False(result.Sucesso);
-            Assert.True(result.Erros.Contains("E-mail ou senha incorretos."));
+            Assert.Contains("E-mail ou senha incorretos.", result.Erros);
 
             // Verifica incremento de falhas e registro de auditoria
             var usuarioDb = await contextApp.Usuarios.FirstAsync(u => u.Id == usuario.Id);
@@ -130,7 +130,7 @@ namespace Epros.Tests
 
             // Assert
             Assert.False(result.Sucesso);
-            Assert.True(result.Erros.Contains("Conta temporariamente bloqueada."));
+            Assert.Contains("Conta temporariamente bloqueada.", result.Erros);
 
             var usuarioDb = await contextApp.Usuarios.FirstAsync(u => u.Id == usuario.Id);
             Assert.True(usuarioDb.LockoutEnd.HasValue && usuarioDb.LockoutEnd.Value > DateTime.UtcNow);
@@ -226,7 +226,7 @@ namespace Epros.Tests
 
             // Assert
             Assert.False(result.Sucesso);
-            Assert.True(result.Erros.Contains("O usuário não possui permissão de acesso à empresa informada."));
+            Assert.Contains("O usuário não possui permissão de acesso à empresa informada.", result.Erros);
         }
 
         [Fact]
@@ -280,7 +280,7 @@ namespace Epros.Tests
 
             // Assert
             Assert.False(result.Sucesso);
-            Assert.True(result.Erros.Contains("Já existe uma empresa cadastrada com este CNPJ."));
+            Assert.Contains("Já existe uma empresa cadastrada com este CNPJ.", result.Erros);
         }
 
         #region Provedores de Teste

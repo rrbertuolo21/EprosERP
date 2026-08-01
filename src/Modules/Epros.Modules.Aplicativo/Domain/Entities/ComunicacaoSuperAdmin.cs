@@ -18,12 +18,12 @@ namespace Epros.Modules.Aplicativo.Domain.Entities
         protected ComunicacaoSuperAdmin() { } // EF Core
 
         public ComunicacaoSuperAdmin(
-            List<string> businessIds, 
-            string assunto, 
-            string mensagem, 
-            Guid enviadoPor, 
+            List<string> businessIds,
+            string assunto,
+            string mensagem,
+            Guid enviadoPor,
             string status,
-            string tenantId, 
+            string tenantId,
             string criadoPor,
             List<string>? canais = null) : base(tenantId, criadoPor)
         {

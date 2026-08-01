@@ -1,4 +1,4 @@
-﻿using Epros.ERP.Shared.Enums;
+using Epros.ERP.Shared.Enums;
 using Epros.ERP.Shared.ValueObjects.Documentos;
 
 namespace Epros.ERP.DfeCalculos.Dtos
@@ -370,7 +370,7 @@ namespace Epros.ERP.DfeCalculos.Dtos
     }
 
     public class CompraItemImportacaoDto
-    {        
+    {
         public string NumeroDeclaracaoImportacao { get; set; } = null!;
         public DateTime DataDeclaracaoImportacao { get; set; }
         public string LocalDesembaraco { get; set; } = null!;

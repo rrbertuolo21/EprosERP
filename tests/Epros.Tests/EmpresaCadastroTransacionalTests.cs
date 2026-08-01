@@ -37,7 +37,7 @@ namespace Epros.Tests
         {
             // Arrange
             using var context = CreateInMemoryContext("db_empresa_transacao_success");
-            
+
             // Seed a plano system-wide to be selected by the handler
             var planoMaster = new Plano("Plano Teste Master", 150m, "system", "system");
             context.Planos.Add(planoMaster);
@@ -75,7 +75,7 @@ namespace Epros.Tests
 
             // Assert
             Assert.True(result.Sucesso);
-            
+
             // Verify all 4 entities are created
             var empresa = await context.Empresas.FirstOrDefaultAsync(e => e.TenantId == TenantId);
             Assert.NotNull(empresa);

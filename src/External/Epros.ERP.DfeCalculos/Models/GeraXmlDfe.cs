@@ -1,4 +1,4 @@
-﻿using DFe.Classes.Flags;
+using DFe.Classes.Flags;
 using Epros.ERP.DfeCalculos.Impostos;
 using Epros.ERP.DfeCalculos.Models.Vendas;
 using Epros.ERP.Shared.Extensions;

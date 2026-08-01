@@ -508,7 +508,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     if (pedido != null)
                     {
                         var cliente = await _context.Clientes.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Id == pedido.ClienteId, cancellationToken);
-                        
+
                         var assinatura = await _context.AssinaturasClientes
                             .IgnoreQueryFilters()
                             .Where(a => a.ClienteId == pedido.ClienteId && a.PlanoId == pedido.PlanoId && a.DeletadoEm == null && !a.Arquivada)
@@ -520,7 +520,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                             assinatura.Ativar(alteradoPor);
                             assinaturaId = assinatura.Id;
                             pedido.Liquidar(assinatura.Id, alteradoPor);
-                            
+
                             if (cliente != null)
                             {
                                 cliente.AlterarPlano(pedido.PlanoId, alteradoPor);
@@ -671,7 +671,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 var fatura = await _context.Faturas
                     .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(f => f.Id == request.FaturaId.Value && f.DeletadoEm == null, cancellationToken);
-                
+
                 if (fatura != null)
                 {
                     tenantId = fatura.TenantId;

@@ -127,7 +127,7 @@ try
 
     // Registra o serviço de notificações (Mock para homologação local) (REG-020)
     builder.Services.AddScoped<INotificacaoService, Epros.Infrastructure.Services.MockNotificacaoService>();
-    
+
     // Registra o cache de permissões do menu e gerenciador
     builder.Services.AddMemoryCache();
     builder.Services.AddSingleton<IPermissaoCacheManager, Epros.Modules.Aplicativo.Application.Services.PermissaoCacheManager>();

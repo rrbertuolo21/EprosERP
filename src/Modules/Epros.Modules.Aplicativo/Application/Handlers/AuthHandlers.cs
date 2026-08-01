@@ -698,7 +698,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
 
             // Altera a senha (hash PBKDF2) e limpa o token
             usuario.AlterarSenha(_passwordHasher.Hash(request.NovaSenha), "system-reset");
-            
+
             if (!usuario.IsValid)
             {
                 var erros = usuario.Notifications.Select(n => n.Message);

@@ -39,12 +39,12 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         protected Cliente() { } // EF Core
 
         public Cliente(
-            string razaoSocial, 
-            string cnpj, 
-            string email, 
-            Guid planoId, 
-            Guid? revendaId, 
-            Guid? vendedorId, 
+            string razaoSocial,
+            string cnpj,
+            string email,
+            Guid planoId,
+            Guid? revendaId,
+            Guid? vendedorId,
             int diaVencimento,
             StatusSaaS statusSaaS,
             string tenantId,

@@ -19,11 +19,11 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
 {
     // DTOs Auxiliares para o Catálogo e Sessão
     public record PerfilAcessoDto(Guid Id, string Descricao, bool Ativo, int QuantidadeAcessos);
-    
+
     public record PerfilAcessoDetalhadoDto(
-        Guid Id, 
-        string Descricao, 
-        bool Ativo, 
+        Guid Id,
+        string Descricao,
+        bool Ativo,
         List<PerfilAcessoMenuDto> Acessos
     );
 
@@ -447,7 +447,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     continue;
 
                 // Ocultação específica do MEI para o menu principal
-                var ehMenuMei = menu.Descricao.Contains("MEI", StringComparison.OrdinalIgnoreCase) || 
+                var ehMenuMei = menu.Descricao.Contains("MEI", StringComparison.OrdinalIgnoreCase) ||
                                 (menu.Modulo != null && menu.Modulo.Equals("MEI", StringComparison.OrdinalIgnoreCase));
 
                 if (ehMenuMei && !ehSimplesMei)
@@ -479,7 +479,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     // Vamos considerar a verificação se Descricao contém "MEI" ou se o Modulo é "MEI" ou ID funcional é mapeado
                     // O doc funcional diz: "identificado no material pelo id funcional 16"
                     // Vamos criar um Guid determinístico para o Menu/Item MEI de forma que possamos identificá-lo pelo ID ou pelo Modulo / Descricao
-                    var ehItemMei = item1.Descricao.Contains("MEI", StringComparison.OrdinalIgnoreCase) || 
+                    var ehItemMei = item1.Descricao.Contains("MEI", StringComparison.OrdinalIgnoreCase) ||
                                     (item1.Modulo != null && item1.Modulo.Equals("MEI", StringComparison.OrdinalIgnoreCase));
 
                     if (ehItemMei && !ehSimplesMei)
@@ -547,9 +547,9 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                                 D: vinculo.EhAdmin || excluirI2,
                                 Itens: new List<AcessoItemDto>()
                             ));
-                            
+
                             // Se algum item filho for permitido, o pai (nível 1) também se torna implicitamente visível
-                            item1Permitido = true; 
+                            item1Permitido = true;
                         }
                     }
 

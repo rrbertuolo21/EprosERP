@@ -23,8 +23,8 @@ namespace Epros.Modules.Fiscal.Application.Handlers
             // 1. Localizar o rascunho de documento fiscal correspondente à venda de origem
             var documento = await _context.DocumentosFiscais
                 .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(d => d.TenantId == notification.TenantId && 
-                                           d.VendaOrigemId == notification.VendaId && 
+                .FirstOrDefaultAsync(d => d.TenantId == notification.TenantId &&
+                                           d.VendaOrigemId == notification.VendaId &&
                                            d.Status != "Cancelada", cancellationToken);
 
             if (documento == null)
@@ -36,12 +36,12 @@ namespace Epros.Modules.Fiscal.Application.Handlers
             if (documento.Status == "Rascunho")
             {
                 documento.Cancelar("Venda de origem cancelada.", string.Empty, notification.UserId);
-                
+
                 if (documento.IsValid)
                 {
                     _context.DocumentosFiscais.Update(documento);
                     await _context.SaveChangesAsync(cancellationToken);
-                    
+
                     Console.WriteLine($"[Fiscal] Rascunho de NFC-e ID {documento.Id} cancelado com sucesso devido ao cancelamento da Venda {notification.VendaId}.");
                 }
             }

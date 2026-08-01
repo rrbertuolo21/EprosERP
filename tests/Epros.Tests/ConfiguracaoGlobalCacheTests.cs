@@ -49,7 +49,7 @@ namespace Epros.Tests
         {
             // Arrange
             var (context, tenantProvider, _) = CreateContext("db_cache_fallback");
-            
+
             var config = new ConfiguracaoGlobal("smtp_host", "smtp.test.com", false, "SMTP Test", "system", "user-system");
             context.ConfiguracoesGlobais.Add(config);
             await context.SaveChangesAsync();
@@ -87,7 +87,7 @@ namespace Epros.Tests
         {
             // Arrange
             var (context, tenantProvider, _) = CreateContext("db_cache_invalidation");
-            
+
             var config = new ConfiguracaoGlobal("smtp_host", "smtp.test.com", false, "SMTP Test", "system", "user-system");
             context.ConfiguracoesGlobais.Add(config);
             await context.SaveChangesAsync();

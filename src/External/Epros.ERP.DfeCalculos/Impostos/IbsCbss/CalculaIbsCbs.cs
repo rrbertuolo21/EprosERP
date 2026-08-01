@@ -1,4 +1,4 @@
-﻿using Epros.ERP.DfeCalculos.Impostos.Abstracts;
+using Epros.ERP.DfeCalculos.Impostos.Abstracts;
 using Epros.ERP.DfeCalculos.Impostos.Ipis;
 using Epros.ERP.DfeCalculos.Models.Vendas;
 

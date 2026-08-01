@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.Shared.Enums
+namespace Epros.ERP.Shared.Enums
 {
     public enum ECertificadoDigitalTipo
     {

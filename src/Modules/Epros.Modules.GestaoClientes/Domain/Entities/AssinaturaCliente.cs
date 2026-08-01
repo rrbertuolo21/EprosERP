@@ -89,14 +89,14 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             Status = AssinaturaStatus.Ativa;
             OperadorAprovacao = operador;
             JustificativaAprovacao = justificativa;
-            
+
             // REG-008: Alinha as datas de início e fim da vigência com base na data de aprovação
             DataInicio = DateTime.UtcNow;
             if (DataFim.HasValue)
             {
                 DataFim = DateTime.UtcNow.AddDays(30);
             }
-            
+
             MarcarAlterado(alteradoPor);
         }
 

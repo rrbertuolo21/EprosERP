@@ -102,8 +102,8 @@ namespace Epros.Tests
 
             var menuId = Guid.NewGuid();
             var command = new AtualizarPerfilAcessoCommand(
-                perfil.Id, 
-                "Operacional Alterado", 
+                perfil.Id,
+                "Operacional Alterado",
                 new List<AcessoInputDto>
                 {
                     new AcessoInputDto(menuId, null, null, true, false, false)
@@ -437,15 +437,15 @@ namespace Epros.Tests
         {
             var endereco = new Epros.Modules.GestaoClientes.Domain.ValueObjects.Endereco("Rua", "123", "", "Centro", "00000000", "Cidade", "SP");
             var empresa = new Empresa(
-                "Empresa Teste LTDA", 
-                "Fantasia", 
-                "12345678000100", 
-                null, null, null, null, 
-                RegimeTributario.SimplesNacional, 
-                RegimeApuracao.Cumulativo, 
-                null, null, null, null, null, null, null, null, null, null, 
-                endereco, 
-                tenantId, 
+                "Empresa Teste LTDA",
+                "Fantasia",
+                "12345678000100",
+                null, null, null, null,
+                RegimeTributario.SimplesNacional,
+                RegimeApuracao.Cumulativo,
+                null, null, null, null, null, null, null, null, null, null,
+                endereco,
+                tenantId,
                 "system",
                 ehMei
             );

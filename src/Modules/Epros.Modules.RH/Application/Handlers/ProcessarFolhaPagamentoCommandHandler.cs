@@ -50,8 +50,8 @@ namespace Epros.Modules.RH.Application.Handlers
 
             // Verificar se já existe folha processada nesta competência
             var folhaExiste = await _context.FolhasPagamento
-                .AnyAsync(f => f.ColaboradorId == request.ColaboradorId 
-                            && f.MesCompetencia == request.MesCompetencia 
+                .AnyAsync(f => f.ColaboradorId == request.ColaboradorId
+                            && f.MesCompetencia == request.MesCompetencia
                             && f.AnoCompetencia == request.AnoCompetencia, cancellationToken);
 
             if (folhaExiste)

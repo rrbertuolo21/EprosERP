@@ -1,0 +1,129 @@
+---
+description: "Isolamento multi-tenant do Epros: QueryFilter automático, RLS, ITenantProvider, os 3 níveis de deploy e — crucialmente — os pontos cegos onde a proteção automática não alcança (SQL raw, jobs Quartz, cache, background services). Use OBRIGATORIAMENTE ao criar entidades, escrever queries, revisar PRs, desenhar jobs ou qualquer código que toque dados de negócio. Violação de tenant é a falha mais grave possível no sistema."
+globs:
+alwaysApply: false
+---
+
+# epros-multi-tenancy
+
+> **S03 · Camada 0 — Fundação** — Epros Dev Framework
+> Conhecimento enriquecido por extração de *Designing Data-Intensive Applications* (Kleppmann, cap. 6–7) → ver `EXTRACOES.md`.
+
+## Quando usar
+
+Ative esta skill quando a tarefa envolver: **tenant, TenantId, isolamento, QueryFilter, RLS, nova entidade, query, job em background, cache, SQL raw, cross-schema**.
+
+## O que esta skill cobre
+
+A skill mais crítica do catálogo: isolamento de tenants no Epros — os 3 níveis de deploy, o QueryFilter automático via ContextBase, o RLS como segunda barreira, o ciclo de vida do `ITenantProvider` e, principalmente, **os pontos onde a proteção automática NÃO alcança**. Existe para prevenir a falha mais grave possível: um tenant acessar dados de outro.
+
+> **A regra de ouro:** `tenant_id` é a **chave de partição** do Epros. Ele vem **primeiro** em toda chave composta e índice, e é resolvido **uma vez por request** (nunca estático). Tudo abaixo deriva disto.
+
+---
+
+## 1. Por que particionar por tenant (a base)
+
+Particionar existe para **escalar em cluster shared-nothing**: cada partição vive num nó independente, espalhando dados e carga. No Epros, o `tenant_id` é a chave lógica de partição que decide **onde o dado vive** e **como a carga se distribui** — e isso fundamenta os **3 níveis de deploy**:
+
+| Nível | O que é | Quando |
+|---|---|---|
+| **Shared** | Muitos tenants no mesmo banco, isolados por `tenant_id` | Padrão — a maioria dos 20 clientes |
+| **Dedicated** | Tenant grande ganha sua partição/schema | Tenant satura o SLO do cluster (ver §3) |
+| **Private** | Tenant em cluster próprio | Data residency Nível 3 (CONTEXT §15) |
+
+O nível é **atributo do tenant**: ele migra Shared → Dedicated → Private **sem mudar o modelo de dados**.
+
+## 2. ITenantProvider — roteamento por chave de partição
+
+Todo acesso resolve a partição a partir da chave. No Epros, o **`InquilinoSaaSMiddleware`** (CONTEXT §9, passo 3) resolve o `tenant_id` do claim JWT **antes de qualquer query** — é o roteamento por chave. O **`ITenantProvider` scoped** carrega essa chave pelo request inteiro, imutável.
+
+> ⚠️ **Falha #5 do legado (`TenantIdStatic`):** `TenantId` em variável estática/singleton → sob carga concorrente, o request de um tenant enxerga a chave de outro. **Vazamento.** Por isso `ITenantProvider` é **scoped via DI, nunca estático**.
+
+```csharp
+// ❌ vazamento sob concorrência
+public static string TenantId { get; set; }
+
+// ✅ escopo por request, populado uma vez pelo middleware
+public interface ITenantProvider { string TenantId { get; } }   // registrado como Scoped
+```
+
+## 3. O índice como barreira de isolamento
+
+Índice secundário **local** (por partição) obriga scatter/gather — a consulta varre **todas** as partições. A recomendação: estruturar para que a consulta seja servida por **uma única partição**. É a justificativa teórica da regra **"índice composto `(tenant_id, campo)` em toda tabela"** (CONTEXT §7): com `tenant_id` como **primeira coluna**, toda consulta de um tenant começa já restrita à sua fatia — nunca varre nem toca dados de outro.
+
+```sql
+-- ❌ varre pedidos de todos os tenants, depois filtra
+CREATE INDEX ix_pedido_numero ON vendas.pedido (numero_pedido);
+
+-- ✅ busca começa restrita ao tenant
+CREATE INDEX ix_pedido_tenant_numero ON vendas.pedido (tenant_id, numero_pedido);
+```
+
+**Hot spot / tenant "celebridade":** no nível Shared, um tenant muito maior degrada os vizinhos do mesmo cluster — o risco que o `PerformanceSLOTest` (P95 <200ms leitura / <500ms escrita, CONTEXT §8) protege. **Gatilho:** quando um tenant satura o SLO, promova-o a Dedicated **antes** de estourar o P95 dos demais. Monitorar carga **por `tenant_id`**.
+
+## 4. Onde a proteção automática NÃO alcança (os pontos cegos)
+
+O **QueryFilter** do ContextBase (EF Core, ADR-001) injeta `WHERE tenant_id = @atual` automaticamente — mas garantia forte precisa vir do **banco**, não só do código. O filtro da aplicação **não atua** em:
+
+- **SQL raw** (`FromSqlRaw`, `ExecuteSqlRaw`) — sem `WHERE tenant_id` = vazamento total, invisível ao filtro.
+- **Jobs Quartz / background services** — rodam fora do request; sem `ITenantProvider` populado, não há tenant (ver S30).
+- **Cache** (Valkey) — chave sem `tenant_id` serve dado de um tenant para outro.
+- **Consultas cross-schema** e integrações.
+
+## 5. RLS — a segunda barreira (ADR-012)
+
+Como o filtro da aplicação tem pontos cegos, o **Row-Level Security do PostgreSQL** é a **segunda barreira, no banco**, que segura mesmo quando o código falha:
+
+```sql
+-- rede de segurança: mesmo SQL raw sem filtro retorna só o tenant corrente
+CREATE POLICY tenant_isolamento ON vendas.pedido
+  USING (tenant_id = current_setting('app.tenant_id')::uuid);
+```
+
+- `IgnoreQueryFilters()` é **banido** (falha do legado em `importacaoXmlService.cs`) — exceção só com role `super.admin` + audit log documentado.
+- O `TenantLeakTest` (CONTEXT §8) prova o isolamento **nas duas camadas** e bloqueia deploy.
+
+## 6. Operações de tenant (onboarding e promoção)
+
+O "rebalanceamento" do Epros é operacional: **onboarding** (aloca `tenant_id` no nível certo) e **promoção** entre níveis, **sem downtime para os demais** — migração online do tenant-alvo com corte atômico do roteamento (`ITenantProvider`) ao final. Nunca parar o cluster Shared inteiro (afeta os 19 vizinhos).
+
+---
+
+## Instruções para o agente
+
+1. Todo código que toque dados de negócio DEVE considerar o `tenant_id` — verifique antes de responder.
+2. Atenção redobrada aos **pontos cegos** (§4): SQL raw, jobs, background services, cache sem tenant na chave.
+3. Em review, violação de multi-tenancy é **SEMPRE bloqueante**, sem exceção.
+4. Operação legítima cross-tenant (billing, relatórios da plataforma): siga o padrão documentado — nunca improvise bypass.
+5. Sugira o template de teste de isolamento (2 tenants) para toda entidade nova.
+
+## Recursos desta skill
+
+> Legenda: ✅ pronto · ⬜ a construir · 🟡 rascunho no `EXTRACOES.md`
+
+- ✅ `SKILL.md` — este arquivo (enriquecido por extração)
+- 🟡 `EXTRACOES.md` — 7 blocos destilados de Kleppmann, aterrados no Epros
+- ⬜ `checklists/review-multi-tenancy.md` — o que verificar em todo PR
+- ⬜ `exemplos/vazamentos-reais.md` — job sem tenant, cache sem tenant, IN clause errada, hot spot
+- ⬜ `templates/teste-isolamento.cs` — teste xUnit que cria 2 tenants e prova o isolamento
+- ⬜ `exemplos/cross-tenant-legitimo.md` — padrão aprovado para operações da plataforma
+
+## TODO-Epros (dependem do código real do PlataformaSaaS)
+
+1. Colar a **policy RLS real** e como o `ContextBase` seta `SET app.tenant_id` por conexão.
+2. Documentar o **runbook de promoção de tenant** (Shared → Dedicated) — com Agente 14 Migration e S28.
+3. Trecho real do **QueryFilter por reflection** no ContextBase → base do `templates/teste-isolamento.cs`.
+
+## Como completar (v1-semente → completa)
+
+1. Revisar os 7 blocos do `EXTRACOES.md`, promover o restante e marcar `revisado`.
+2. Resolver os 3 TODO-Epros com código real (RLS, ContextBase, runbook).
+3. Escrever o teste de isolamento padrão e rodá-lo contra o FIN-CP para calibrar.
+4. Coletar quase-incidentes anonimizados → `exemplos/vazamentos-reais.md`.
+5. Fechados os recursos ⬜, mudar `status:` para `completa` e regenerar o pacote Cursor.
+
+## Regras de manutenção
+
+- Detalhe profundo vai para `exemplos/` e `checklists/` — este arquivo fica abaixo de 500 linhas.
+- Todo conteúdo é específico do Epros (código real, casos reais, dados de homologação).
+- Fonte primária desta versão: Kleppmann, *DDIA* cap. 6–7 — ver `EXTRACOES.md`. Relacionada: [[S07-ef-core-postgres-multitenant]] (regra do prefixo à esquerda).

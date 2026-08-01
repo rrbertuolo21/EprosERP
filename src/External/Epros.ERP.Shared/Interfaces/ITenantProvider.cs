@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.Shared.Interfaces
+namespace Epros.ERP.Shared.Interfaces
 {
     public interface ITenantProvider
     {

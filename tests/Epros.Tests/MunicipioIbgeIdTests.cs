@@ -12,7 +12,7 @@ namespace Epros.Tests
             var paisId = Guid.NewGuid();
             var subdivisaoId = Guid.NewGuid();
             long ibgeCode = 3550308; // São Paulo
-            
+
             var municipio = new Municipio(paisId, subdivisaoId, "São Paulo", ibgeCode, null, null, "test");
 
             var expectedGuid = new Guid($"00000000-0000-0000-0000-{ibgeCode:D12}");
@@ -28,7 +28,7 @@ namespace Epros.Tests
         {
             var paisId = Guid.NewGuid();
             var subdivisaoId = Guid.NewGuid();
-            
+
             var municipio = new Municipio(paisId, subdivisaoId, "Cidade Teste", codigoInvalido, null, null, "test");
 
             Assert.False(municipio.IsValid);

@@ -81,7 +81,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                     cliente.TenantId,
                     alteradoPor
                 );
-                
+
                 contrato.DefinirValorRecorrenteManual(request.ValorRecorrente, alteradoPor);
                 contrato.AprovarManualmente(request.Operador, request.Justificativa, alteradoPor);
 
@@ -116,7 +116,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             {
                 assinatura.AprovarManualmente(request.Operador, request.Justificativa, alteradoPor);
                 _context.AssinaturasClientes.Update(assinatura);
-                
+
                 // Associa o plano ativo ao cliente
                 cliente.AlterarPlano(assinatura.PlanoId, alteradoPor);
             }

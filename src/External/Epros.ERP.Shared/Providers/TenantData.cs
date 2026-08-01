@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.Shared.Providers
+namespace Epros.ERP.Shared.Providers
 {
     public class TenantData
     {

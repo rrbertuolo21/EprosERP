@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.DfeCalculos.Validations.Nfces.CfopCsosns
+namespace Epros.ERP.DfeCalculos.Validations.Nfces.CfopCsosns
 {
     public class CfopNfceCsosn53Validation
     {

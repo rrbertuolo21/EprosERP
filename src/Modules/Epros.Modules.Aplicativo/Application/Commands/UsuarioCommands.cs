@@ -7,11 +7,11 @@ using FluentValidation;
 namespace Epros.Modules.Aplicativo.Application.Commands
 {
     public record UsuarioEmpresaInput(
-        Guid EmpresaId, 
-        Guid? PerfilUsuarioId, 
-        bool EhAdmin, 
-        string Cargo, 
-        string Departamento, 
+        Guid EmpresaId,
+        Guid? PerfilUsuarioId,
+        bool EhAdmin,
+        string Cargo,
+        string Departamento,
         decimal LimiteDesconto
     );
 

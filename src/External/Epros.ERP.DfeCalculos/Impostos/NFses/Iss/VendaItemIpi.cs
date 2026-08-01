@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.DfeCalculos.Impostos.NFses.Iss
+namespace Epros.ERP.DfeCalculos.Impostos.NFses.Iss
 {
     public class ServicoItemIss
     {

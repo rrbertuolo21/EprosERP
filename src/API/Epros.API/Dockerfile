@@ -48,7 +48,8 @@ COPY --from=build /src /src
 COPY .config/dotnet-tools.json .config/
 COPY scripts/migrate-all.sh /src/scripts/migrate-all.sh
 COPY scripts/apply-auth-rls-policies.sql /src/scripts/apply-auth-rls-policies.sql
-RUN dotnet tool restore \
+RUN sed -i 's/\r$//' /src/scripts/migrate-all.sh \
+    && dotnet tool restore \
     && dotnet restore src/API/Epros.API/Epros.API.csproj \
     && chmod +x /src/scripts/migrate-all.sh
 

@@ -151,8 +151,8 @@ namespace Epros.Tests
             var visiveis = await queryHandler.Handle(new ObterRespostasDenunciaQuery(denuncia.Id, false), CancellationToken.None);
             var todas = await queryHandler.Handle(new ObterRespostasDenunciaQuery(denuncia.Id, true), CancellationToken.None);
 
-            var listaVisiveis = (System.Collections.Generic.List<DenunciaResposta>)visiveis.Dados;
-            var listaTodas = (System.Collections.Generic.List<DenunciaResposta>)todas.Dados;
+            var listaVisiveis = Assert.IsType<System.Collections.Generic.List<DenunciaResposta>>(visiveis.Dados);
+            var listaTodas = Assert.IsType<System.Collections.Generic.List<DenunciaResposta>>(todas.Dados);
             Assert.Single(listaVisiveis);
             Assert.Equal(2, listaTodas.Count);
         }

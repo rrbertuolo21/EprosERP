@@ -136,6 +136,9 @@ namespace Epros.API.Security
             }
             // =============== fim RBAC 1.09/1.10; abaixo o caminho LEGADO (transitório, preservado) ===============
 
+            // origin/main: ABAC no tenant system quando houver perfil; sem perfil, libera (usado abaixo).
+            var isSystemTenant = string.Equals(_tenantProvider.GetTenantId(), "system", StringComparison.OrdinalIgnoreCase);
+
             // Busca o perfil do usuário no tenant atual (o tenant filter é aplicado automaticamente pelo EF Core)
             var perfil = await _context.PerfisUsuarios
                 .Include(p => p.Permissoes)
@@ -143,6 +146,13 @@ namespace Epros.API.Security
 
             if (perfil == null || !perfil.Ativo)
             {
+                // UsuarioInterno (tenant "system") sem PerfilUsuario em GestaoClientes: libera.
+                // Se há perfil no tenant system (ex.: Operador/Administrador Siser), aplica ABAC abaixo.
+                if (isSystemTenant)
+                {
+                    return;
+                }
+
                 Log.Warning("Acesso negado: Perfil não encontrado ou inativo para o usuário {UserId} no recurso {Recurso}:{Acao}", userId, _recurso, _acao);
                 context.Result = new ForbidResult();
                 return;

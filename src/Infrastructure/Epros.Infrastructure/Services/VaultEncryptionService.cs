@@ -100,21 +100,21 @@ namespace Epros.Infrastructure.Services
                 {
                     // Tenta habilitar o transit engine via POST /v1/sys/mounts/transit
                     var responseTransit = await _httpClient.PostAsJsonAsync("v1/sys/mounts/transit", new { type = "transit" });
-                    
+
                     // Se for 200/204 ou se for 400 (porque já está montado/em uso), consideramos sucesso
                     if (responseTransit.IsSuccessStatusCode || responseTransit.StatusCode == System.Net.HttpStatusCode.BadRequest)
                     {
                         _logger.LogInformation("Vault Transit Secret Engine está habilitado.");
-                        
+
                         // Tenta verificar se a chave existe fazendo GET
                         var responseGetChave = await _httpClient.GetAsync($"v1/transit/keys/{_chaveNome}");
                         if (responseGetChave.StatusCode == System.Net.HttpStatusCode.NotFound)
                         {
                             _logger.LogInformation("Chave {ChaveNome} não encontrada. Criando chave no Vault...", _chaveNome);
-                            
+
                             // Cria a chave aes256-gcm96
                             var responseCreateChave = await _httpClient.PostAsJsonAsync($"v1/transit/keys/{_chaveNome}", new { type = "aes256-gcm96" });
-                            
+
                             if (responseCreateChave.IsSuccessStatusCode)
                             {
                                 _logger.LogInformation("Chave {ChaveNome} criada com sucesso no Vault.", _chaveNome);
@@ -244,7 +244,7 @@ namespace Epros.Infrastructure.Services
         private string CriptografarLocal(string valor)
         {
             var plaintextBytes = Encoding.UTF8.GetBytes(valor);
-            
+
             // Gerar Nonce aleatório de 12 bytes
             var nonce = new byte[12];
             RandomNumberGenerator.Fill(nonce);

@@ -254,7 +254,7 @@ namespace Epros.Tests.Integration
             {
                 var db = scope.ServiceProvider.GetRequiredService<ContextGestaoClientes>();
                 var perfil = new PerfilColaborador("operator-siser", "Op Siser", "op@siser.com", "Operador", "TI", 0m, "system", "system");
-                
+
                 typeof(Epros.Shared.Domain.Entities.EntidadeSaaSBase)
                     .GetField("<Id>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
                     .SetValue(perfil, Guid.NewGuid());
@@ -275,7 +275,7 @@ namespace Epros.Tests.Integration
         {
             public Task Publish(object notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
             public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default) where TNotification : INotification => Task.CompletedTask;
-            
+
             public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
             {
                 throw new InvalidOperationException("Erro de negócio simulado na API.");

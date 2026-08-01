@@ -1,0 +1,48 @@
+---
+description: "Release e operação do Epros: checklist de go-live, canary obrigatório para módulos fiscais/cobrança, biblioteca de runbooks de incidente (Outbox travada, certificado expirado, SEFAZ fora, migration falhou) e post-mortem blameless. Use ao preparar deploys, avaliar risco de release, responder incidentes ou escrever runbooks."
+globs:
+alwaysApply: false
+---
+
+# release-runbooks
+
+> **S22 · Camada 2 — Fases de produto** — Epros Dev Framework
+
+## Quando usar
+
+Ative esta skill quando a tarefa envolver: **deploy, release, go-live, rollback, canary, incidente, runbook, post-mortem, produção fora, SEFAZ**.
+
+## O que esta skill cobre
+
+A operação de release e incidente: checklist de go-live, estratégias de deploy por risco (canary obrigatório para fiscal/cobrança), a biblioteca de runbooks passo a passo (Outbox travada, certificado expirado, migration falhou no meio, SEFAZ fora) e o template de post-mortem blameless.
+
+Fazer deploy virar rotina segura e incidente virar procedimento: às 3h da manhã com produção fora, ninguém improvisa — abre o runbook e segue.
+
+## Instruções para o agente
+
+1. Antes de qualquer deploy: percorra o checklist de go-live item a item — CI verde, migration reversível, rollback testado, alertas configurados.
+2. Mudança em módulo fiscal ou de cobrança: canary obrigatório (10% por 30min mínimo). Sem exceção.
+3. Incidente: identifique o cenário e siga o runbook correspondente; se não existir runbook, essa é a primeira ação do post-mortem.
+4. Todo P0 gera post-mortem blameless no template — com ações e donos.
+
+## Recursos desta skill
+
+> Legenda: ✅ pronto · ⬜ a construir (ver "Como completar" abaixo)
+
+- ✅ `SKILL.md` — este arquivo (semente v1)
+- ⬜ `runbooks/` — um arquivo por cenário: outbox-travada, certificado-expirado, migration-falhou, sefaz-fora, tenant-sem-acesso
+- ⬜ `templates/post-mortem.md` — template blameless
+- ⬜ `checklists/go-live.md` — o checklist completo
+
+## Como completar esta skill (do v1-semente à versão completa)
+
+1. Mova o checklist do prompt do Ops Agent para arquivo próprio.
+2. Escreva os 5 primeiros runbooks (os cenários mais prováveis) com quem já operou o legado.
+3. Defina a matriz risco → estratégia de deploy (direto / feature flag / canary / blue-green).
+4. Rode um game day: simule um incidente e teste um runbook de verdade.
+
+## Regras de manutenção
+
+- Detalhe profundo vai para `exemplos/` e `checklists/` — este arquivo fica abaixo de 500 linhas.
+- Todo conteúdo deve ser específico do Epros (código real, casos reais, dados de homologação).
+- Ao concluir os recursos, mude `status:` para `completa` e atualize a data de revisão.

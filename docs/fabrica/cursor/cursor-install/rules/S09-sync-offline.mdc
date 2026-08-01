@@ -1,0 +1,48 @@
+---
+description: "Sincronização offline do Epros (ADR-011): SyncId + SyncVersion, endpoint delta com tombstones, resolução de conflitos por tipo de entidade e PDV offline com contingência NFC-e. Use ao criar entidades sincronizáveis, desenhar features para Desktop/Mobile/PDV, implementar o endpoint de sync ou tratar conflitos de dados offline."
+globs:
+alwaysApply: false
+---
+
+# sync-offline
+
+> **S09 · Camada 1 — Engenharia** — Epros Dev Framework
+
+## Quando usar
+
+Ative esta skill quando a tarefa envolver: **sync, offline, sincronização, conflito, delta, SyncId, SyncVersion, PDV offline, contingência, tombstone, mobile**.
+
+## O que esta skill cobre
+
+O modelo de sincronização offline do Epros (ADR-011): SyncId como chave estável, SyncVersion para detecção de conflito, endpoint delta com tombstones, estratégias de resolução de conflito por tipo de entidade e o fluxo do PDV offline com contingência NFC-e.
+
+Sustentar o diferencial multi-surface do produto: Desktop offline-first (Bloco 9) e PDV que vende sem internet sem perder nota nem duplicar dado quando a conexão volta.
+
+## Instruções para o agente
+
+1. Entidade sincronizável: verifique o checklist (ISyncable, SyncId único, SyncVersion incrementado em MarcarAlterado).
+2. Ao desenhar resolução de conflito, consulte a matriz por tipo de entidade — financeiro nunca resolve por last-write-wins.
+3. O endpoint delta segue o contrato /{modulo}/sync/delta?since={ISO8601} com paginação e tombstones — não invente variações.
+4. NUNCA sincronize secrets, certificados ou dados de outro tenant para o dispositivo.
+
+## Recursos desta skill
+
+> Legenda: ✅ pronto · ⬜ a construir (ver "Como completar" abaixo)
+
+- ✅ `SKILL.md` — este arquivo (semente v1)
+- ⬜ `exemplos/cenarios-conflito.md` — matriz de conflitos e resolução esperada por entidade
+- ⬜ `templates/teste-sync.cs` — teste de ida-e-volta com conflito simulado
+- ⬜ `checklists/entidade-syncavel.md` — o que uma entidade precisa para sincronizar
+
+## Como completar esta skill (do v1-semente à versão completa)
+
+1. Documente o que já existe (contingência do PDV do Bloco 5) como base.
+2. Defina com o Architect a matriz de resolução de conflito por macrodomínio.
+3. Especifique o contrato delta completo (paginação, tombstone, limites).
+4. Escreva o teste padrão de conflito e valide contra o PDV.
+
+## Regras de manutenção
+
+- Detalhe profundo vai para `exemplos/` e `checklists/` — este arquivo fica abaixo de 500 linhas.
+- Todo conteúdo deve ser específico do Epros (código real, casos reais, dados de homologação).
+- Ao concluir os recursos, mude `status:` para `completa` e atualize a data de revisão.

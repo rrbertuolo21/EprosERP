@@ -417,7 +417,7 @@ namespace Epros.ERP.DfeCalculos.Dtos
     }
 
     public class VendaCompletaItemImpostoIbsCbsTributacaoRegular2CreateDto
-    {        
+    {
         public string Cst { get; set; } = null!;
         public string CClassTrib { get; set; } = string.Empty;
         public decimal AliquotaEfetivaIbsEstadual { get; set; }

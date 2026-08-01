@@ -1,0 +1,1312 @@
+{
+  "version": "1.0.0",
+  "updated": "2026-07-18",
+  "source": "docs/onboarding/01-mapa-do-produto-17-modulos.md",
+  "jira_project": "EP",
+  "fields": {
+    "dominio": {
+      "name": "Domínio",
+      "type": "cascading_select",
+      "required": true,
+      "description": "Nível 1 = macromódulo · Nível 2 = submódulo",
+      "transversal": {
+        "parent": "TRV — Trabalho transversal",
+        "child": "TRV — Trabalho transversal"
+      }
+    }
+  },
+  "modules": [
+    {
+      "prefix": "APP",
+      "jira_label": "APP — Aplicativo",
+      "folder": "Aplicativo",
+      "submodule_count": 11
+    },
+    {
+      "prefix": "CAD",
+      "jira_label": "CAD — Cadastros Base",
+      "folder": "CadastrosBase",
+      "submodule_count": 3
+    },
+    {
+      "prefix": "FIN",
+      "jira_label": "FIN — Financeiro",
+      "folder": "Financeiro",
+      "submodule_count": 12
+    },
+    {
+      "prefix": "VEN",
+      "jira_label": "VEN — Vendas",
+      "folder": "Vendas",
+      "submodule_count": 11
+    },
+    {
+      "prefix": "EST",
+      "jira_label": "EST — Estoque",
+      "folder": "Estoque",
+      "submodule_count": 13
+    },
+    {
+      "prefix": "COM",
+      "jira_label": "COM — Compras",
+      "folder": "Compras",
+      "submodule_count": 2
+    },
+    {
+      "prefix": "PRD",
+      "jira_label": "PRD — Produção",
+      "folder": "Producao",
+      "submodule_count": 8
+    },
+    {
+      "prefix": "RH",
+      "jira_label": "RH — Recursos Humanos",
+      "folder": "RecursosHumanos",
+      "submodule_count": 9
+    },
+    {
+      "prefix": "MNT",
+      "jira_label": "MNT — Manutenção",
+      "folder": "Manutencao",
+      "submodule_count": 7
+    },
+    {
+      "prefix": "QA",
+      "jira_label": "QA — Qualidade",
+      "folder": "Qualidade",
+      "submodule_count": 7
+    },
+    {
+      "prefix": "PRJ",
+      "jira_label": "PRJ — Projetos",
+      "folder": "Projetos",
+      "submodule_count": 8
+    },
+    {
+      "prefix": "GOV",
+      "jira_label": "GOV — Governança",
+      "folder": "Governanca",
+      "submodule_count": 6
+    },
+    {
+      "prefix": "ESG",
+      "jira_label": "ESG — ESG",
+      "folder": "Esg",
+      "submodule_count": 6
+    },
+    {
+      "prefix": "CON",
+      "jira_label": "CON — Concessionárias",
+      "folder": "Concessionarias",
+      "submodule_count": 8
+    },
+    {
+      "prefix": "IMO",
+      "jira_label": "IMO — Imobiliária",
+      "folder": "Imoveis",
+      "submodule_count": 1
+    },
+    {
+      "prefix": "REL",
+      "jira_label": "REL — Relatórios",
+      "folder": "Relatorios",
+      "submodule_count": 2
+    },
+    {
+      "prefix": "PLT",
+      "jira_label": "PLT — Plataforma Compartilhada",
+      "folder": "Plataforma",
+      "submodule_count": 18
+    }
+  ],
+  "submodules": [
+    {
+      "code": "APP-ICT-001",
+      "jira_label": "APP-ICT-001 — Identidade e Contexto Tenant",
+      "cascading_path": "APP — Aplicativo > APP-ICT-001 — Identidade e Contexto Tenant",
+      "module_prefix": "APP",
+      "module_jira_label": "APP — Aplicativo",
+      "business_name": "Identidade e Contexto Tenant",
+      "folder": "IdentidadeContextoTenant"
+    },
+    {
+      "code": "APP-OEM-001",
+      "jira_label": "APP-OEM-001 — Onboarding e Empresa",
+      "cascading_path": "APP — Aplicativo > APP-OEM-001 — Onboarding e Empresa",
+      "module_prefix": "APP",
+      "module_jira_label": "APP — Aplicativo",
+      "business_name": "Onboarding e Empresa",
+      "folder": "OnboardingEmpresa"
+    },
+    {
+      "code": "APP-UPA-001",
+      "jira_label": "APP-UPA-001 — Usuários e Papéis",
+      "cascading_path": "APP — Aplicativo > APP-UPA-001 — Usuários e Papéis",
+      "module_prefix": "APP",
+      "module_jira_label": "APP — Aplicativo",
+      "business_name": "Usuários e Papéis",
+      "folder": "UsuariosPapeis"
+    },
+    {
+      "code": "APP-APL-001",
+      "jira_label": "APP-APL-001 — Assinatura e Planos",
+      "cascading_path": "APP — Aplicativo > APP-APL-001 — Assinatura e Planos",
+      "module_prefix": "APP",
+      "module_jira_label": "APP — Aplicativo",
+      "business_name": "Assinatura e Planos",
+      "folder": "AssinaturaPlanos"
+    },
+    {
+      "code": "APP-LPL-001",
+      "jira_label": "APP-LPL-001 — Limites de Plano",
+      "cascading_path": "APP — Aplicativo > APP-LPL-001 — Limites de Plano",
+      "module_prefix": "APP",
+      "module_jira_label": "APP — Aplicativo",
+      "business_name": "Limites de Plano",
+      "folder": "LimitesPlano"
+    },
+    {
+      "code": "APP-PCS-001",
+      "jira_label": "APP-PCS-001 — Pedidos e Cobrança SaaS",
+      "cascading_path": "APP — Aplicativo > APP-PCS-001 — Pedidos e Cobrança SaaS",
+      "module_prefix": "APP",
+      "module_jira_label": "APP — Aplicativo",
+      "business_name": "Pedidos e Cobrança SaaS",
+      "folder": "PedidosCobrancaSaas"
+    },
+    {
+      "code": "APP-PME-001",
+      "jira_label": "APP-PME-001 — Permissões de Menu",
+      "cascading_path": "APP — Aplicativo > APP-PME-001 — Permissões de Menu",
+      "module_prefix": "APP",
+      "module_jira_label": "APP — Aplicativo",
+      "business_name": "Permissões de Menu",
+      "folder": "PermissoesMenu"
+    },
+    {
+      "code": "APP-IDO-001",
+      "jira_label": "APP-IDO-001 — Isolamento de Dados",
+      "cascading_path": "APP — Aplicativo > APP-IDO-001 — Isolamento de Dados",
+      "module_prefix": "APP",
+      "module_jira_label": "APP — Aplicativo",
+      "business_name": "Isolamento de Dados",
+      "folder": "IsolamentoDados"
+    },
+    {
+      "code": "APP-OSA-001",
+      "jira_label": "APP-OSA-001 — Operação Super Admin",
+      "cascading_path": "APP — Aplicativo > APP-OSA-001 — Operação Super Admin",
+      "module_prefix": "APP",
+      "module_jira_label": "APP — Aplicativo",
+      "business_name": "Operação Super Admin",
+      "folder": "OperacaoSuperAdmin"
+    },
+    {
+      "code": "APP-DLA-001",
+      "jira_label": "APP-DLA-001 — Dashboard e Layout",
+      "cascading_path": "APP — Aplicativo > APP-DLA-001 — Dashboard e Layout",
+      "module_prefix": "APP",
+      "module_jira_label": "APP — Aplicativo",
+      "business_name": "Dashboard e Layout",
+      "folder": "DashboardLayout"
+    },
+    {
+      "code": "APP-CGS-001",
+      "jira_label": "APP-CGS-001 — Catálogos Globais SaaS",
+      "cascading_path": "APP — Aplicativo > APP-CGS-001 — Catálogos Globais SaaS",
+      "module_prefix": "APP",
+      "module_jira_label": "APP — Aplicativo",
+      "business_name": "Catálogos Globais SaaS",
+      "folder": "CatalogosGlobaisSaas"
+    },
+    {
+      "code": "CAD-POO-001",
+      "jira_label": "CAD-POO-001 — Pessoa e Organização",
+      "cascading_path": "CAD — Cadastros Base > CAD-POO-001 — Pessoa e Organização",
+      "module_prefix": "CAD",
+      "module_jira_label": "CAD — Cadastros Base",
+      "business_name": "Pessoa e Organização",
+      "folder": "PessoaOrganizacao"
+    },
+    {
+      "code": "CAD-GLO-001",
+      "jira_label": "CAD-GLO-001 — Geografia e Localização",
+      "cascading_path": "CAD — Cadastros Base > CAD-GLO-001 — Geografia e Localização",
+      "module_prefix": "CAD",
+      "module_jira_label": "CAD — Cadastros Base",
+      "business_name": "Geografia e Localização",
+      "folder": "GeografiaLocalizacao"
+    },
+    {
+      "code": "CAD-POP-001",
+      "jira_label": "CAD-POP-001 — Parâmetros Operacionais",
+      "cascading_path": "CAD — Cadastros Base > CAD-POP-001 — Parâmetros Operacionais",
+      "module_prefix": "CAD",
+      "module_jira_label": "CAD — Cadastros Base",
+      "business_name": "Parâmetros Operacionais",
+      "folder": "ParametrosOperacionais"
+    },
+    {
+      "code": "FIN-CGE-001",
+      "jira_label": "FIN-CGE-001 — Contabilidade Geral",
+      "cascading_path": "FIN — Financeiro > FIN-CGE-001 — Contabilidade Geral",
+      "module_prefix": "FIN",
+      "module_jira_label": "FIN — Financeiro",
+      "business_name": "Contabilidade Geral",
+      "folder": "ContabilidadeGeral"
+    },
+    {
+      "code": "FIN-CP-001",
+      "jira_label": "FIN-CP-001 — Contas a Pagar",
+      "cascading_path": "FIN — Financeiro > FIN-CP-001 — Contas a Pagar",
+      "module_prefix": "FIN",
+      "module_jira_label": "FIN — Financeiro",
+      "business_name": "Contas a Pagar",
+      "folder": "ContasAPagar"
+    },
+    {
+      "code": "FIN-CR-001",
+      "jira_label": "FIN-CR-001 — Contas a Receber",
+      "cascading_path": "FIN — Financeiro > FIN-CR-001 — Contas a Receber",
+      "module_prefix": "FIN",
+      "module_jira_label": "FIN — Financeiro",
+      "business_name": "Contas a Receber",
+      "folder": "ContasAReceber"
+    },
+    {
+      "code": "FIN-SFI-001",
+      "jira_label": "FIN-SFI-001 — Serviços Financeiros",
+      "cascading_path": "FIN — Financeiro > FIN-SFI-001 — Serviços Financeiros",
+      "module_prefix": "FIN",
+      "module_jira_label": "FIN — Financeiro",
+      "business_name": "Serviços Financeiros",
+      "folder": "ServicosFinanceiros"
+    },
+    {
+      "code": "FIN-TES-001",
+      "jira_label": "FIN-TES-001 — Tesouraria e Gestão de Liquidez",
+      "cascading_path": "FIN — Financeiro > FIN-TES-001 — Tesouraria e Gestão de Liquidez",
+      "module_prefix": "FIN",
+      "module_jira_label": "FIN — Financeiro",
+      "business_name": "Tesouraria e Gestão de Liquidez",
+      "folder": "Tesouraria"
+    },
+    {
+      "code": "FIN-POR-001",
+      "jira_label": "FIN-POR-001 — Planejamento e Orçamento",
+      "cascading_path": "FIN — Financeiro > FIN-POR-001 — Planejamento e Orçamento",
+      "module_prefix": "FIN",
+      "module_jira_label": "FIN — Financeiro",
+      "business_name": "Planejamento e Orçamento",
+      "folder": "PlanejamentoOrcamento"
+    },
+    {
+      "code": "FIN-AFI-001",
+      "jira_label": "FIN-AFI-001 — Ativos Fixos",
+      "cascading_path": "FIN — Financeiro > FIN-AFI-001 — Ativos Fixos",
+      "module_prefix": "FIN",
+      "module_jira_label": "FIN — Financeiro",
+      "business_name": "Ativos Fixos",
+      "folder": "AtivosFIxos"
+    },
+    {
+      "code": "FIN-CGR-001",
+      "jira_label": "FIN-CGR-001 — Contabilidade Gerencial",
+      "cascading_path": "FIN — Financeiro > FIN-CGR-001 — Contabilidade Gerencial",
+      "module_prefix": "FIN",
+      "module_jira_label": "FIN — Financeiro",
+      "business_name": "Contabilidade Gerencial",
+      "folder": "ContabilidadeGerencial"
+    },
+    {
+      "code": "FIN-CRE-001",
+      "jira_label": "FIN-CRE-001 — Consolidação e Relatórios",
+      "cascading_path": "FIN — Financeiro > FIN-CRE-001 — Consolidação e Relatórios",
+      "module_prefix": "FIN",
+      "module_jira_label": "FIN — Financeiro",
+      "business_name": "Consolidação e Relatórios",
+      "folder": "ConsolidacaoRelatorios"
+    },
+    {
+      "code": "FIN-CRM-001",
+      "jira_label": "FIN-CRM-001 — Câmbio e Risco de Mercado",
+      "cascading_path": "FIN — Financeiro > FIN-CRM-001 — Câmbio e Risco de Mercado",
+      "module_prefix": "FIN",
+      "module_jira_label": "FIN — Financeiro",
+      "business_name": "Câmbio e Risco de Mercado",
+      "folder": "CambioRiscoMercado"
+    },
+    {
+      "code": "FIN-GCF-001",
+      "jira_label": "FIN-GCF-001 — Gestão de Contratos Financeiros",
+      "cascading_path": "FIN — Financeiro > FIN-GCF-001 — Gestão de Contratos Financeiros",
+      "module_prefix": "FIN",
+      "module_jira_label": "FIN — Financeiro",
+      "business_name": "Gestão de Contratos Financeiros",
+      "folder": "GestaoContratosFinanceiros"
+    },
+    {
+      "code": "FIN-SFU-001",
+      "jira_label": "FIN-SFU-001 — Subsídios e Fundos",
+      "cascading_path": "FIN — Financeiro > FIN-SFU-001 — Subsídios e Fundos",
+      "module_prefix": "FIN",
+      "module_jira_label": "FIN — Financeiro",
+      "business_name": "Subsídios e Fundos",
+      "folder": "SubsidiosFundos"
+    },
+    {
+      "code": "VEN-CRM-001",
+      "jira_label": "VEN-CRM-001 — CRM",
+      "cascading_path": "VEN — Vendas > VEN-CRM-001 — CRM",
+      "module_prefix": "VEN",
+      "module_jira_label": "VEN — Vendas",
+      "business_name": "CRM",
+      "folder": "Crm"
+    },
+    {
+      "code": "VEN-GPE-001",
+      "jira_label": "VEN-GPE-001 — Gestão de Pedidos",
+      "cascading_path": "VEN — Vendas > VEN-GPE-001 — Gestão de Pedidos",
+      "module_prefix": "VEN",
+      "module_jira_label": "VEN — Vendas",
+      "business_name": "Gestão de Pedidos",
+      "folder": "GestaoPedidos"
+    },
+    {
+      "code": "VEN-PDV-001",
+      "jira_label": "VEN-PDV-001 — Ponto de Venda PDV",
+      "cascading_path": "VEN — Vendas > VEN-PDV-001 — Ponto de Venda PDV",
+      "module_prefix": "VEN",
+      "module_jira_label": "VEN — Vendas",
+      "business_name": "Ponto de Venda PDV",
+      "folder": "Pdv"
+    },
+    {
+      "code": "VEN-CEI-001",
+      "jira_label": "VEN-CEI-001 — Comércio Eletrônico",
+      "cascading_path": "VEN — Vendas > VEN-CEI-001 — Comércio Eletrônico",
+      "module_prefix": "VEN",
+      "module_jira_label": "VEN — Vendas",
+      "business_name": "Comércio Eletrônico",
+      "folder": "ComercioEletronico"
+    },
+    {
+      "code": "VEN-LSA-001",
+      "jira_label": "VEN-LSA-001 — Logística de Saída",
+      "cascading_path": "VEN — Vendas > VEN-LSA-001 — Logística de Saída",
+      "module_prefix": "VEN",
+      "module_jira_label": "VEN — Vendas",
+      "business_name": "Logística de Saída",
+      "folder": "LogisticaSaida"
+    },
+    {
+      "code": "VEN-GCV-001",
+      "jira_label": "VEN-GCV-001 — Gestão de Contratos de Venda",
+      "cascading_path": "VEN — Vendas > VEN-GCV-001 — Gestão de Contratos de Venda",
+      "module_prefix": "VEN",
+      "module_jira_label": "VEN — Vendas",
+      "business_name": "Gestão de Contratos de Venda",
+      "folder": "GestaoContratosVenda"
+    },
+    {
+      "code": "VEN-PCL-001",
+      "jira_label": "VEN-PCL-001 — Portal do Cliente",
+      "cascading_path": "VEN — Vendas > VEN-PCL-001 — Portal do Cliente",
+      "module_prefix": "VEN",
+      "module_jira_label": "VEN — Vendas",
+      "business_name": "Portal do Cliente",
+      "folder": "PortalCliente"
+    },
+    {
+      "code": "VEN-ESV-001",
+      "jira_label": "VEN-ESV-001 — Gestão de Serviços",
+      "cascading_path": "VEN — Vendas > VEN-ESV-001 — Gestão de Serviços",
+      "module_prefix": "VEN",
+      "module_jira_label": "VEN — Vendas",
+      "business_name": "Gestão de Serviços",
+      "folder": "EntregaServico"
+    },
+    {
+      "code": "VEN-AVN-001",
+      "jira_label": "VEN-AVN-001 — Planejamento de Demanda",
+      "cascading_path": "VEN — Vendas > VEN-AVN-001 — Planejamento de Demanda",
+      "module_prefix": "VEN",
+      "module_jira_label": "VEN — Vendas",
+      "business_name": "Planejamento de Demanda",
+      "folder": "AnaliseVendas"
+    },
+    {
+      "code": "VEN-GAR-001",
+      "jira_label": "VEN-GAR-001 — Garantias",
+      "cascading_path": "VEN — Vendas > VEN-GAR-001 — Garantias",
+      "module_prefix": "VEN",
+      "module_jira_label": "VEN — Vendas",
+      "business_name": "Garantias",
+      "folder": "Garantias"
+    },
+    {
+      "code": "VEN-FCI-001",
+      "jira_label": "VEN-FCI-001 — Faturamento Comercial Internacional",
+      "cascading_path": "VEN — Vendas > VEN-FCI-001 — Faturamento Comercial Internacional",
+      "module_prefix": "VEN",
+      "module_jira_label": "VEN — Vendas",
+      "business_name": "Faturamento Comercial Internacional",
+      "folder": "FaturamentoComercialInternacional"
+    },
+    {
+      "code": "EST-PRO-001",
+      "jira_label": "EST-PRO-001 — Produtos",
+      "cascading_path": "EST — Estoque > EST-PRO-001 — Produtos",
+      "module_prefix": "EST",
+      "module_jira_label": "EST — Estoque",
+      "business_name": "Produtos",
+      "folder": "Produtos"
+    },
+    {
+      "code": "EST-SC-001",
+      "jira_label": "EST-SC-001 — Sourcing e Compras",
+      "cascading_path": "EST — Estoque > EST-SC-001 — Sourcing e Compras",
+      "module_prefix": "EST",
+      "module_jira_label": "EST — Estoque",
+      "business_name": "Sourcing e Compras",
+      "folder": "SourcingCompras"
+    },
+    {
+      "code": "EST-GEW-001",
+      "jira_label": "EST-GEW-001 — Gestão de Armazém WMS",
+      "cascading_path": "EST — Estoque > EST-GEW-001 — Gestão de Armazém WMS",
+      "module_prefix": "EST",
+      "module_jira_label": "EST — Estoque",
+      "business_name": "Gestão de Armazém WMS",
+      "folder": "GestaoEstoque"
+    },
+    {
+      "code": "EST-MMA-001",
+      "jira_label": "EST-MMA-001 — Movimentação Manual e Ajustes",
+      "cascading_path": "EST — Estoque > EST-MMA-001 — Movimentação Manual e Ajustes",
+      "module_prefix": "EST",
+      "module_jira_label": "EST — Estoque",
+      "business_name": "Movimentação Manual e Ajustes",
+      "folder": "MovimentacaoAjustes"
+    },
+    {
+      "code": "EST-APE-001",
+      "jira_label": "EST-APE-001 — Análise e Planejamento de Estoque",
+      "cascading_path": "EST — Estoque > EST-APE-001 — Análise e Planejamento de Estoque",
+      "module_prefix": "EST",
+      "module_jira_label": "EST — Estoque",
+      "business_name": "Análise e Planejamento de Estoque",
+      "folder": "AnalisesPlanejamentoEstoque"
+    },
+    {
+      "code": "EST-IFC-001",
+      "jira_label": "EST-IFC-001 — Inventário Físico e Contagem Cíclica",
+      "cascading_path": "EST — Estoque > EST-IFC-001 — Inventário Físico e Contagem Cíclica",
+      "module_prefix": "EST",
+      "module_jira_label": "EST — Estoque",
+      "business_name": "Inventário Físico e Contagem Cíclica",
+      "folder": "InventarioContagemCiclica"
+    },
+    {
+      "code": "EST-RLS-001",
+      "jira_label": "EST-RLS-001 — Rastreabilidade de Lote e Serialização",
+      "cascading_path": "EST — Estoque > EST-RLS-001 — Rastreabilidade de Lote e Serialização",
+      "module_prefix": "EST",
+      "module_jira_label": "EST — Estoque",
+      "business_name": "Rastreabilidade de Lote e Serialização",
+      "folder": "RastreabilidadeLoteSerializacao"
+    },
+    {
+      "code": "EST-LEN-001",
+      "jira_label": "EST-LEN-001 — Logística de Entrada",
+      "cascading_path": "EST — Estoque > EST-LEN-001 — Logística de Entrada",
+      "module_prefix": "EST",
+      "module_jira_label": "EST — Estoque",
+      "business_name": "Logística de Entrada",
+      "folder": "LogisticaEntrada"
+    },
+    {
+      "code": "EST-TFT-001",
+      "jira_label": "EST-TFT-001 — Transporte e Frete TMS",
+      "cascading_path": "EST — Estoque > EST-TFT-001 — Transporte e Frete TMS",
+      "module_prefix": "EST",
+      "module_jira_label": "EST — Estoque",
+      "business_name": "Transporte e Frete TMS",
+      "folder": "TransporteFreteTms"
+    },
+    {
+      "code": "EST-CXE-001",
+      "jira_label": "EST-CXE-001 — Comércio Exterior",
+      "cascading_path": "EST — Estoque > EST-CXE-001 — Comércio Exterior",
+      "module_prefix": "EST",
+      "module_jira_label": "EST — Estoque",
+      "business_name": "Comércio Exterior",
+      "folder": "ComercioExterior"
+    },
+    {
+      "code": "EST-GCC-001",
+      "jira_label": "EST-GCC-001 — Gestão de Contratos de Compra",
+      "cascading_path": "EST — Estoque > EST-GCC-001 — Gestão de Contratos de Compra",
+      "module_prefix": "EST",
+      "module_jira_label": "EST — Estoque",
+      "business_name": "Gestão de Contratos de Compra",
+      "folder": "GestaoContratosCompra"
+    },
+    {
+      "code": "EST-PFO-001",
+      "jira_label": "EST-PFO-001 — Portal do Fornecedor",
+      "cascading_path": "EST — Estoque > EST-PFO-001 — Portal do Fornecedor",
+      "module_prefix": "EST",
+      "module_jira_label": "EST — Estoque",
+      "business_name": "Portal do Fornecedor",
+      "folder": "PortalFornecedor"
+    },
+    {
+      "code": "EST-SUB-001",
+      "jira_label": "EST-SUB-001 — Subcontratação",
+      "cascading_path": "EST — Estoque > EST-SUB-001 — Subcontratação",
+      "module_prefix": "EST",
+      "module_jira_label": "EST — Estoque",
+      "business_name": "Subcontratação",
+      "folder": "Subcontratacao"
+    },
+    {
+      "code": "COM-GCO-001",
+      "jira_label": "COM-GCO-001 — Gestão de Compras",
+      "cascading_path": "COM — Compras > COM-GCO-001 — Gestão de Compras",
+      "module_prefix": "COM",
+      "module_jira_label": "COM — Compras",
+      "business_name": "Gestão de Compras",
+      "folder": "GestaoCompras"
+    },
+    {
+      "code": "COM-FCI-001",
+      "jira_label": "COM-FCI-001 — Faturamento Compra Internacional",
+      "cascading_path": "COM — Compras > COM-FCI-001 — Faturamento Compra Internacional",
+      "module_prefix": "COM",
+      "module_jira_label": "COM — Compras",
+      "business_name": "Faturamento Compra Internacional",
+      "folder": "FaturamentoCompraInternacional"
+    },
+    {
+      "code": "PRD-PPR-001",
+      "jira_label": "PRD-PPR-001 — Planejamento de Produção",
+      "cascading_path": "PRD — Produção > PRD-PPR-001 — Planejamento de Produção",
+      "module_prefix": "PRD",
+      "module_jira_label": "PRD — Produção",
+      "business_name": "Planejamento de Produção",
+      "folder": "PlanejamentoProducao"
+    },
+    {
+      "code": "PRD-MRP-001",
+      "jira_label": "PRD-MRP-001 — MRP — Planejamento Integrado IBP",
+      "cascading_path": "PRD — Produção > PRD-MRP-001 — MRP — Planejamento Integrado IBP",
+      "module_prefix": "PRD",
+      "module_jira_label": "PRD — Produção",
+      "business_name": "MRP — Planejamento Integrado IBP",
+      "folder": "MrpPlanejamentoIntegrado"
+    },
+    {
+      "code": "PRD-EPB-001",
+      "jira_label": "PRD-EPB-001 — Estrutura de Produto BOM",
+      "cascading_path": "PRD — Produção > PRD-EPB-001 — Estrutura de Produto BOM",
+      "module_prefix": "PRD",
+      "module_jira_label": "PRD — Produção",
+      "business_name": "Estrutura de Produto BOM",
+      "folder": "EstruturaProdutoBom"
+    },
+    {
+      "code": "PRD-EMM-001",
+      "jira_label": "PRD-EMM-001 — Execução de Manufatura MES",
+      "cascading_path": "PRD — Produção > PRD-EMM-001 — Execução de Manufatura MES",
+      "module_prefix": "PRD",
+      "module_jira_label": "PRD — Produção",
+      "business_name": "Execução de Manufatura MES",
+      "folder": "ExecucaoManufaturaMes"
+    },
+    {
+      "code": "PRD-ESP-001",
+      "jira_label": "PRD-ESP-001 — Escalonamento e Programação",
+      "cascading_path": "PRD — Produção > PRD-ESP-001 — Escalonamento e Programação",
+      "module_prefix": "PRD",
+      "module_jira_label": "PRD — Produção",
+      "business_name": "Escalonamento e Programação",
+      "folder": "EscalonamentoProgramacao"
+    },
+    {
+      "code": "PRD-EST-001",
+      "jira_label": "PRD-EST-001 — Estimativa",
+      "cascading_path": "PRD — Produção > PRD-EST-001 — Estimativa",
+      "module_prefix": "PRD",
+      "module_jira_label": "PRD — Produção",
+      "business_name": "Estimativa",
+      "folder": "Estimativa"
+    },
+    {
+      "code": "PRD-GOS-001",
+      "jira_label": "PRD-GOS-001 — Gestão de Ordens de Serviço",
+      "cascading_path": "PRD — Produção > PRD-GOS-001 — Gestão de Ordens de Serviço",
+      "module_prefix": "PRD",
+      "module_jira_label": "PRD — Produção",
+      "business_name": "Gestão de Ordens de Serviço",
+      "folder": "GestaoOrdemServico"
+    },
+    {
+      "code": "PRD-CUP-001",
+      "jira_label": "PRD-CUP-001 — Custos de Produção",
+      "cascading_path": "PRD — Produção > PRD-CUP-001 — Custos de Produção",
+      "module_prefix": "PRD",
+      "module_jira_label": "PRD — Produção",
+      "business_name": "Custos de Produção",
+      "folder": "CustosProducao"
+    },
+    {
+      "code": "RH-FPB-001",
+      "jira_label": "RH-FPB-001 — Folha de Pagamento e Benefícios",
+      "cascading_path": "RH — Recursos Humanos > RH-FPB-001 — Folha de Pagamento e Benefícios",
+      "module_prefix": "RH",
+      "module_jira_label": "RH — Recursos Humanos",
+      "business_name": "Folha de Pagamento e Benefícios",
+      "folder": "FolhaPagamentoBeneficios"
+    },
+    {
+      "code": "RH-PJO-001",
+      "jira_label": "RH-PJO-001 — Ponto e Jornada",
+      "cascading_path": "RH — Recursos Humanos > RH-PJO-001 — Ponto e Jornada",
+      "module_prefix": "RH",
+      "module_jira_label": "RH — Recursos Humanos",
+      "business_name": "Ponto e Jornada",
+      "folder": "PontoJornada"
+    },
+    {
+      "code": "RH-GFT-001",
+      "jira_label": "RH-GFT-001 — Gestão da Força de Trabalho",
+      "cascading_path": "RH — Recursos Humanos > RH-GFT-001 — Gestão da Força de Trabalho",
+      "module_prefix": "RH",
+      "module_jira_label": "RH — Recursos Humanos",
+      "business_name": "Gestão da Força de Trabalho",
+      "folder": "GestaoForcaTrabalho"
+    },
+    {
+      "code": "RH-REC-001",
+      "jira_label": "RH-REC-001 — Recrutamento",
+      "cascading_path": "RH — Recursos Humanos > RH-REC-001 — Recrutamento",
+      "module_prefix": "RH",
+      "module_jira_label": "RH — Recursos Humanos",
+      "business_name": "Recrutamento",
+      "folder": "Recrutamento"
+    },
+    {
+      "code": "RH-DFU-001",
+      "jira_label": "RH-DFU-001 — Desenvolvimento de Funcionários",
+      "cascading_path": "RH — Recursos Humanos > RH-DFU-001 — Desenvolvimento de Funcionários",
+      "module_prefix": "RH",
+      "module_jira_label": "RH — Recursos Humanos",
+      "business_name": "Desenvolvimento de Funcionários",
+      "folder": "DesenvolvimentoFuncionarios"
+    },
+    {
+      "code": "RH-GTA-001",
+      "jira_label": "RH-GTA-001 — Gestão de Talentos",
+      "cascading_path": "RH — Recursos Humanos > RH-GTA-001 — Gestão de Talentos",
+      "module_prefix": "RH",
+      "module_jira_label": "RH — Recursos Humanos",
+      "business_name": "Gestão de Talentos",
+      "folder": "GestaoTalentos"
+    },
+    {
+      "code": "RH-TCL-001",
+      "jira_label": "RH-TCL-001 — Treinamento e Certificações LMS",
+      "cascading_path": "RH — Recursos Humanos > RH-TCL-001 — Treinamento e Certificações LMS",
+      "module_prefix": "RH",
+      "module_jira_label": "RH — Recursos Humanos",
+      "business_name": "Treinamento e Certificações LMS",
+      "folder": "TreinamentoCertificacoesLms"
+    },
+    {
+      "code": "RH-PRH-001",
+      "jira_label": "RH-PRH-001 — Planejamento de RH",
+      "cascading_path": "RH — Recursos Humanos > RH-PRH-001 — Planejamento de RH",
+      "module_prefix": "RH",
+      "module_jira_label": "RH — Recursos Humanos",
+      "business_name": "Planejamento de RH",
+      "folder": "PlanejamentoRh"
+    },
+    {
+      "code": "RH-SSO-001",
+      "jira_label": "RH-SSO-001 — Saúde e Segurança Ocupacional",
+      "cascading_path": "RH — Recursos Humanos > RH-SSO-001 — Saúde e Segurança Ocupacional",
+      "module_prefix": "RH",
+      "module_jira_label": "RH — Recursos Humanos",
+      "business_name": "Saúde e Segurança Ocupacional",
+      "folder": "SaudeSegurancaOcupacional"
+    },
+    {
+      "code": "MNT-MPR-001",
+      "jira_label": "MNT-MPR-001 — Manutenção Preventiva",
+      "cascading_path": "MNT — Manutenção > MNT-MPR-001 — Manutenção Preventiva",
+      "module_prefix": "MNT",
+      "module_jira_label": "MNT — Manutenção",
+      "business_name": "Manutenção Preventiva",
+      "folder": "ManutencaoPreventivaPreventiva"
+    },
+    {
+      "code": "MNT-MPD-001",
+      "jira_label": "MNT-MPD-001 — Manutenção Preditiva",
+      "cascading_path": "MNT — Manutenção > MNT-MPD-001 — Manutenção Preditiva",
+      "module_prefix": "MNT",
+      "module_jira_label": "MNT — Manutenção",
+      "business_name": "Manutenção Preditiva",
+      "folder": "ManutencaoPreditiva"
+    },
+    {
+      "code": "MNT-GTR-001",
+      "jira_label": "MNT-GTR-001 — Gestão de Trabalho",
+      "cascading_path": "MNT — Manutenção > MNT-GTR-001 — Gestão de Trabalho",
+      "module_prefix": "MNT",
+      "module_jira_label": "MNT — Manutenção",
+      "business_name": "Gestão de Trabalho",
+      "folder": "OrdemServico"
+    },
+    {
+      "code": "MNT-GPR-001",
+      "jira_label": "MNT-GPR-001 — Gestão de Peças de Reposição",
+      "cascading_path": "MNT — Manutenção > MNT-GPR-001 — Gestão de Peças de Reposição",
+      "module_prefix": "MNT",
+      "module_jira_label": "MNT — Manutenção",
+      "business_name": "Gestão de Peças de Reposição",
+      "folder": "PecasReposicao"
+    },
+    {
+      "code": "MNT-GPA-001",
+      "jira_label": "MNT-GPA-001 — Gestão de Paradas",
+      "cascading_path": "MNT — Manutenção > MNT-GPA-001 — Gestão de Paradas",
+      "module_prefix": "MNT",
+      "module_jira_label": "MNT — Manutenção",
+      "business_name": "Gestão de Paradas",
+      "folder": "ParadasProgramadas"
+    },
+    {
+      "code": "MNT-ICE-001",
+      "jira_label": "MNT-ICE-001 — Indução e Configuração de Equipamentos",
+      "cascading_path": "MNT — Manutenção > MNT-ICE-001 — Indução e Configuração de Equipamentos",
+      "module_prefix": "MNT",
+      "module_jira_label": "MNT — Manutenção",
+      "business_name": "Indução e Configuração de Equipamentos",
+      "folder": "GestaoAtivos"
+    },
+    {
+      "code": "MNT-CRV-001",
+      "jira_label": "MNT-CRV-001 — Confiabilidade e Revisão",
+      "cascading_path": "MNT — Manutenção > MNT-CRV-001 — Confiabilidade e Revisão",
+      "module_prefix": "MNT",
+      "module_jira_label": "MNT — Manutenção",
+      "business_name": "Confiabilidade e Revisão",
+      "folder": "ConfiabilidadeRevisao"
+    },
+    {
+      "code": "QA-PIA-001",
+      "jira_label": "QA-PIA-001 — Planos de Inspeção e Amostragem",
+      "cascading_path": "QA — Qualidade > QA-PIA-001 — Planos de Inspeção e Amostragem",
+      "module_prefix": "QA",
+      "module_jira_label": "QA — Qualidade",
+      "business_name": "Planos de Inspeção e Amostragem",
+      "folder": "ControleQualidade"
+    },
+    {
+      "code": "QA-AAR-001",
+      "jira_label": "QA-AAR-001 — Análise de Aceitação e Rejeição",
+      "cascading_path": "QA — Qualidade > QA-AAR-001 — Análise de Aceitação e Rejeição",
+      "module_prefix": "QA",
+      "module_jira_label": "QA — Qualidade",
+      "business_name": "Análise de Aceitação e Rejeição",
+      "folder": "AceitacaoRejeicao"
+    },
+    {
+      "code": "QA-NCR-001",
+      "jira_label": "QA-NCR-001 — Não Conformidades NCR",
+      "cascading_path": "QA — Qualidade > QA-NCR-001 — Não Conformidades NCR",
+      "module_prefix": "QA",
+      "module_jira_label": "QA — Qualidade",
+      "business_name": "Não Conformidades NCR",
+      "folder": "NaoConformidade"
+    },
+    {
+      "code": "QA-RRR-001",
+      "jira_label": "QA-RRR-001 — Rastreabilidade e Recall",
+      "cascading_path": "QA — Qualidade > QA-RRR-001 — Rastreabilidade e Recall",
+      "module_prefix": "QA",
+      "module_jira_label": "QA — Qualidade",
+      "business_name": "Rastreabilidade e Recall",
+      "folder": "RastreabilidadeRecall"
+    },
+    {
+      "code": "QA-QFO-001",
+      "jira_label": "QA-QFO-001 — Qualidade de Fornecedor",
+      "cascading_path": "QA — Qualidade > QA-QFO-001 — Qualidade de Fornecedor",
+      "module_prefix": "QA",
+      "module_jira_label": "QA — Qualidade",
+      "business_name": "Qualidade de Fornecedor",
+      "folder": "AuditoriaQualidade"
+    },
+    {
+      "code": "QA-GAT-001",
+      "jira_label": "QA-GAT-001 — Gestão de Atributos",
+      "cascading_path": "QA — Qualidade > QA-GAT-001 — Gestão de Atributos",
+      "module_prefix": "QA",
+      "module_jira_label": "QA — Qualidade",
+      "business_name": "Gestão de Atributos",
+      "folder": "GestaoAtributos"
+    },
+    {
+      "code": "QA-ADQ-001",
+      "jira_label": "QA-ADQ-001 — Administração da Qualidade",
+      "cascading_path": "QA — Qualidade > QA-ADQ-001 — Administração da Qualidade",
+      "module_prefix": "QA",
+      "module_jira_label": "QA — Qualidade",
+      "business_name": "Administração da Qualidade",
+      "folder": "DocumentacaoQualidade"
+    },
+    {
+      "code": "PRJ-DPR-001",
+      "jira_label": "PRJ-DPR-001 — Definição de Projeto",
+      "cascading_path": "PRJ — Projetos > PRJ-DPR-001 — Definição de Projeto",
+      "module_prefix": "PRJ",
+      "module_jira_label": "PRJ — Projetos",
+      "business_name": "Definição de Projeto",
+      "folder": "GestaoProjetosAgil"
+    },
+    {
+      "code": "PRJ-PTR-001",
+      "jira_label": "PRJ-PTR-001 — Planejamento e Rastreamento",
+      "cascading_path": "PRJ — Projetos > PRJ-PTR-001 — Planejamento e Rastreamento",
+      "module_prefix": "PRJ",
+      "module_jira_label": "PRJ — Projetos",
+      "business_name": "Planejamento e Rastreamento",
+      "folder": "PlanejamentoRastreamento"
+    },
+    {
+      "code": "PRJ-GRE-001",
+      "jira_label": "PRJ-GRE-001 — Gestão de Recursos",
+      "cascading_path": "PRJ — Projetos > PRJ-GRE-001 — Gestão de Recursos",
+      "module_prefix": "PRJ",
+      "module_jira_label": "PRJ — Projetos",
+      "business_name": "Gestão de Recursos",
+      "folder": "PlanejamentoRecursos"
+    },
+    {
+      "code": "PRJ-CUP-001",
+      "jira_label": "PRJ-CUP-001 — Planejamento e Orçamento",
+      "cascading_path": "PRJ — Projetos > PRJ-CUP-001 — Planejamento e Orçamento",
+      "module_prefix": "PRJ",
+      "module_jira_label": "PRJ — Projetos",
+      "business_name": "Planejamento e Orçamento",
+      "folder": "CustosProjeto"
+    },
+    {
+      "code": "PRJ-GRP-001",
+      "jira_label": "PRJ-GRP-001 — Gestão de Riscos de Projeto",
+      "cascading_path": "PRJ — Projetos > PRJ-GRP-001 — Gestão de Riscos de Projeto",
+      "module_prefix": "PRJ",
+      "module_jira_label": "PRJ — Projetos",
+      "business_name": "Gestão de Riscos de Projeto",
+      "folder": "GestaoRiscosProjeto"
+    },
+    {
+      "code": "PRJ-FPR-001",
+      "jira_label": "PRJ-FPR-001 — Faturamento de Projeto",
+      "cascading_path": "PRJ — Projetos > PRJ-FPR-001 — Faturamento de Projeto",
+      "module_prefix": "PRJ",
+      "module_jira_label": "PRJ — Projetos",
+      "business_name": "Faturamento de Projeto",
+      "folder": "FaturamentoProjeto"
+    },
+    {
+      "code": "PRJ-PPO-001",
+      "jira_label": "PRJ-PPO-001 — Portfólio e Priorização",
+      "cascading_path": "PRJ — Projetos > PRJ-PPO-001 — Portfólio e Priorização",
+      "module_prefix": "PRJ",
+      "module_jira_label": "PRJ — Projetos",
+      "business_name": "Portfólio e Priorização",
+      "folder": "PortfolioProjetos"
+    },
+    {
+      "code": "PRJ-EPR-001",
+      "jira_label": "PRJ-EPR-001 — Encerramento de Projeto",
+      "cascading_path": "PRJ — Projetos > PRJ-EPR-001 — Encerramento de Projeto",
+      "module_prefix": "PRJ",
+      "module_jira_label": "PRJ — Projetos",
+      "business_name": "Encerramento de Projeto",
+      "folder": "EncerramentoProjeto"
+    },
+    {
+      "code": "GOV-GRS-001",
+      "jira_label": "GOV-GRS-001 — Gestão de Riscos Corporativos",
+      "cascading_path": "GOV — Governança > GOV-GRS-001 — Gestão de Riscos Corporativos",
+      "module_prefix": "GOV",
+      "module_jira_label": "GOV — Governança",
+      "business_name": "Gestão de Riscos Corporativos",
+      "folder": "GestaoRiscos"
+    },
+    {
+      "code": "GOV-CIA-001",
+      "jira_label": "GOV-CIA-001 — Controles Internos e Auditoria",
+      "cascading_path": "GOV — Governança > GOV-CIA-001 — Controles Internos e Auditoria",
+      "module_prefix": "GOV",
+      "module_jira_label": "GOV — Governança",
+      "business_name": "Controles Internos e Auditoria",
+      "folder": "AuditoriaInterna"
+    },
+    {
+      "code": "GOV-SOD-001",
+      "jira_label": "GOV-SOD-001 — Segregação de Funções SoD",
+      "cascading_path": "GOV — Governança > GOV-SOD-001 — Segregação de Funções SoD",
+      "module_prefix": "GOV",
+      "module_jira_label": "GOV — Governança",
+      "business_name": "Segregação de Funções SoD",
+      "folder": "ControlesInternos"
+    },
+    {
+      "code": "GOV-CMP-001",
+      "jira_label": "GOV-CMP-001 — Compliance Regulatório",
+      "cascading_path": "GOV — Governança > GOV-CMP-001 — Compliance Regulatório",
+      "module_prefix": "GOV",
+      "module_jira_label": "GOV — Governança",
+      "business_name": "Compliance Regulatório",
+      "folder": "Compliance"
+    },
+    {
+      "code": "GOV-GPO-001",
+      "jira_label": "GOV-GPO-001 — Gestão de Políticas",
+      "cascading_path": "GOV — Governança > GOV-GPO-001 — Gestão de Políticas",
+      "module_prefix": "GOV",
+      "module_jira_label": "GOV — Governança",
+      "business_name": "Gestão de Políticas",
+      "folder": "GestaoPoliticas"
+    },
+    {
+      "code": "GOV-IDE-001",
+      "jira_label": "GOV-IDE-001 — Investigações e Denúncias",
+      "cascading_path": "GOV — Governança > GOV-IDE-001 — Investigações e Denúncias",
+      "module_prefix": "GOV",
+      "module_jira_label": "GOV — Governança",
+      "business_name": "Investigações e Denúncias",
+      "folder": "InvestigacoesDenuncias"
+    },
+    {
+      "code": "ESG-PCB-001",
+      "jira_label": "ESG-PCB-001 — Pegada de Carbono",
+      "cascading_path": "ESG — ESG > ESG-PCB-001 — Pegada de Carbono",
+      "module_prefix": "ESG",
+      "module_jira_label": "ESG — ESG",
+      "business_name": "Pegada de Carbono",
+      "folder": "IndicadoresAmbientais"
+    },
+    {
+      "code": "ESG-GAE-001",
+      "jira_label": "ESG-GAE-001 — Gestão Ambiental EHS",
+      "cascading_path": "ESG — ESG > ESG-GAE-001 — Gestão Ambiental EHS",
+      "module_prefix": "ESG",
+      "module_jira_label": "ESG — ESG",
+      "business_name": "Gestão Ambiental EHS",
+      "folder": "GestaoAmbientalEhs"
+    },
+    {
+      "code": "ESG-ECI-001",
+      "jira_label": "ESG-ECI-001 — Economia Circular",
+      "cascading_path": "ESG — ESG > ESG-ECI-001 — Economia Circular",
+      "module_prefix": "ESG",
+      "module_jira_label": "ESG — ESG",
+      "business_name": "Economia Circular",
+      "folder": "EconomiaCircular"
+    },
+    {
+      "code": "ESG-TRS-001",
+      "jira_label": "ESG-TRS-001 — Transporte Sustentável",
+      "cascading_path": "ESG — ESG > ESG-TRS-001 — Transporte Sustentável",
+      "module_prefix": "ESG",
+      "module_jira_label": "ESG — ESG",
+      "business_name": "Transporte Sustentável",
+      "folder": "TransporteSustentavel"
+    },
+    {
+      "code": "ESG-DRS-001",
+      "jira_label": "ESG-DRS-001 — Diversidade e Responsabilidade Social",
+      "cascading_path": "ESG — ESG > ESG-DRS-001 — Diversidade e Responsabilidade Social",
+      "module_prefix": "ESG",
+      "module_jira_label": "ESG — ESG",
+      "business_name": "Diversidade e Responsabilidade Social",
+      "folder": "ResponsabilidadeSocial"
+    },
+    {
+      "code": "ESG-RES-001",
+      "jira_label": "ESG-RES-001 — Relatórios ESG",
+      "cascading_path": "ESG — ESG > ESG-RES-001 — Relatórios ESG",
+      "module_prefix": "ESG",
+      "module_jira_label": "ESG — ESG",
+      "business_name": "Relatórios ESG",
+      "folder": "Governanca"
+    },
+    {
+      "code": "CON-VVE-001",
+      "jira_label": "CON-VVE-001 — Vendas",
+      "cascading_path": "CON — Concessionárias > CON-VVE-001 — Vendas",
+      "module_prefix": "CON",
+      "module_jira_label": "CON — Concessionárias",
+      "business_name": "Vendas",
+      "folder": "VendasVeiculos"
+    },
+    {
+      "code": "CON-CRM-001",
+      "jira_label": "CON-CRM-001 — CRM de Concessionária",
+      "cascading_path": "CON — Concessionárias > CON-CRM-001 — CRM de Concessionária",
+      "module_prefix": "CON",
+      "module_jira_label": "CON — Concessionárias",
+      "business_name": "CRM de Concessionária",
+      "folder": "CrmConcessionaria"
+    },
+    {
+      "code": "CON-GPR-001",
+      "jira_label": "CON-GPR-001 — Gestão de Peças de Reposição",
+      "cascading_path": "CON — Concessionárias > CON-GPR-001 — Gestão de Peças de Reposição",
+      "module_prefix": "CON",
+      "module_jira_label": "CON — Concessionárias",
+      "business_name": "Gestão de Peças de Reposição",
+      "folder": "PecasReposicao"
+    },
+    {
+      "code": "CON-GSV-001",
+      "jira_label": "CON-GSV-001 — Gestão de Serviços",
+      "cascading_path": "CON — Concessionárias > CON-GSV-001 — Gestão de Serviços",
+      "module_prefix": "CON",
+      "module_jira_label": "CON — Concessionárias",
+      "business_name": "Gestão de Serviços",
+      "folder": "GestaoServicos"
+    },
+    {
+      "code": "CON-GAR-001",
+      "jira_label": "CON-GAR-001 — Garantias",
+      "cascading_path": "CON — Concessionárias > CON-GAR-001 — Garantias",
+      "module_prefix": "CON",
+      "module_jira_label": "CON — Concessionárias",
+      "business_name": "Garantias",
+      "folder": "Garantias"
+    },
+    {
+      "code": "CON-MFR-001",
+      "jira_label": "CON-MFR-001 — Manutenção",
+      "cascading_path": "CON — Concessionárias > CON-MFR-001 — Manutenção",
+      "module_prefix": "CON",
+      "module_jira_label": "CON — Concessionárias",
+      "business_name": "Manutenção",
+      "folder": "ManutencaoFrota"
+    },
+    {
+      "code": "CON-FNC-001",
+      "jira_label": "CON-FNC-001 — Finanças",
+      "cascading_path": "CON — Concessionárias > CON-FNC-001 — Finanças",
+      "module_prefix": "CON",
+      "module_jira_label": "CON — Concessionárias",
+      "business_name": "Finanças",
+      "folder": "FinancasConcessionaria"
+    },
+    {
+      "code": "CON-DRC-001",
+      "jira_label": "CON-DRC-001 — Desenvolvimento de Concessionárias",
+      "cascading_path": "CON — Concessionárias > CON-DRC-001 — Desenvolvimento de Concessionárias",
+      "module_prefix": "CON",
+      "module_jira_label": "CON — Concessionárias",
+      "business_name": "Desenvolvimento de Concessionárias",
+      "folder": "DesenvolvimentoRede"
+    },
+    {
+      "code": "IMO-GIM-001",
+      "jira_label": "IMO-GIM-001 — Gestão Imobiliária",
+      "cascading_path": "IMO — Imobiliária > IMO-GIM-001 — Gestão Imobiliária",
+      "module_prefix": "IMO",
+      "module_jira_label": "IMO — Imobiliária",
+      "business_name": "Gestão Imobiliária",
+      "folder": "GestaoContratos"
+    },
+    {
+      "code": "REL-BIO-001",
+      "jira_label": "REL-BIO-001 — BI OneManager",
+      "cascading_path": "REL — Relatórios > REL-BIO-001 — BI OneManager",
+      "module_prefix": "REL",
+      "module_jira_label": "REL — Relatórios",
+      "business_name": "BI OneManager",
+      "folder": "Bi"
+    },
+    {
+      "code": "REL-RGO-001",
+      "jira_label": "REL-RGO-001 — Operacionais Openbook",
+      "cascading_path": "REL — Relatórios > REL-RGO-001 — Operacionais Openbook",
+      "module_prefix": "REL",
+      "module_jira_label": "REL — Relatórios",
+      "business_name": "Operacionais Openbook",
+      "folder": "RelatoriosGerenciais"
+    },
+    {
+      "code": "PLT-FFE-001",
+      "jira_label": "PLT-FFE-001 — Faturamento Fiscal Eletrônico",
+      "cascading_path": "PLT — Plataforma Compartilhada > PLT-FFE-001 — Faturamento Fiscal Eletrônico",
+      "module_prefix": "PLT",
+      "module_jira_label": "PLT — Plataforma Compartilhada",
+      "business_name": "Faturamento Fiscal Eletrônico",
+      "folder": "FaturamentoFiscalEletronico"
+    },
+    {
+      "code": "PLT-GED-001",
+      "jira_label": "PLT-GED-001 — Gestão Eletrônica de Documentos GED",
+      "cascading_path": "PLT — Plataforma Compartilhada > PLT-GED-001 — Gestão Eletrônica de Documentos GED",
+      "module_prefix": "PLT",
+      "module_jira_label": "PLT — Plataforma Compartilhada",
+      "business_name": "Gestão Eletrônica de Documentos GED",
+      "folder": "GestaoDocumentosGed"
+    },
+    {
+      "code": "PLT-AEL-001",
+      "jira_label": "PLT-AEL-001 — Assinatura Eletrônica",
+      "cascading_path": "PLT — Plataforma Compartilhada > PLT-AEL-001 — Assinatura Eletrônica",
+      "module_prefix": "PLT",
+      "module_jira_label": "PLT — Plataforma Compartilhada",
+      "business_name": "Assinatura Eletrônica",
+      "folder": "AssinaturaEletronica"
+    },
+    {
+      "code": "PLT-WFL-001",
+      "jira_label": "PLT-WFL-001 — Workflow",
+      "cascading_path": "PLT — Plataforma Compartilhada > PLT-WFL-001 — Workflow",
+      "module_prefix": "PLT",
+      "module_jira_label": "PLT — Plataforma Compartilhada",
+      "business_name": "Workflow",
+      "folder": "Workflow"
+    },
+    {
+      "code": "PLT-AGW-001",
+      "jira_label": "PLT-AGW-001 — API Gateway e OpenAPI",
+      "cascading_path": "PLT — Plataforma Compartilhada > PLT-AGW-001 — API Gateway e OpenAPI",
+      "module_prefix": "PLT",
+      "module_jira_label": "PLT — Plataforma Compartilhada",
+      "business_name": "API Gateway e OpenAPI",
+      "folder": "ApiGateway"
+    },
+    {
+      "code": "PLT-ANM-001",
+      "jira_label": "PLT-ANM-001 — Analytics e Mobilidade",
+      "cascading_path": "PLT — Plataforma Compartilhada > PLT-ANM-001 — Analytics e Mobilidade",
+      "module_prefix": "PLT",
+      "module_jira_label": "PLT — Plataforma Compartilhada",
+      "business_name": "Analytics e Mobilidade",
+      "folder": "AnalyticsMobilidade"
+    },
+    {
+      "code": "PLT-CLG-001",
+      "jira_label": "PLT-CLG-001 — Compliance LGPD SOX IFRS",
+      "cascading_path": "PLT — Plataforma Compartilhada > PLT-CLG-001 — Compliance LGPD SOX IFRS",
+      "module_prefix": "PLT",
+      "module_jira_label": "PLT — Plataforma Compartilhada",
+      "business_name": "Compliance LGPD SOX IFRS",
+      "folder": "ComplianceLgpd"
+    },
+    {
+      "code": "PLT-IML-001",
+      "jira_label": "PLT-IML-001 — IA / ML",
+      "cascading_path": "PLT — Plataforma Compartilhada > PLT-IML-001 — IA / ML",
+      "module_prefix": "PLT",
+      "module_jira_label": "PLT — Plataforma Compartilhada",
+      "business_name": "IA / ML",
+      "folder": "IaMl"
+    },
+    {
+      "code": "PLT-ICO-001",
+      "jira_label": "PLT-ICO-001 — Integrações e Conectores",
+      "cascading_path": "PLT — Plataforma Compartilhada > PLT-ICO-001 — Integrações e Conectores",
+      "module_prefix": "PLT",
+      "module_jira_label": "PLT — Plataforma Compartilhada",
+      "business_name": "Integrações e Conectores",
+      "folder": "IntegracoesConectores"
+    },
+    {
+      "code": "PLT-SOC-001",
+      "jira_label": "PLT-SOC-001 — SOA e Colaboração",
+      "cascading_path": "PLT — Plataforma Compartilhada > PLT-SOC-001 — SOA e Colaboração",
+      "module_prefix": "PLT",
+      "module_jira_label": "PLT — Plataforma Compartilhada",
+      "business_name": "SOA e Colaboração",
+      "folder": "SoaColaboracao"
+    },
+    {
+      "code": "PLT-SDK-001",
+      "jira_label": "PLT-SDK-001 — SDK e Extensões",
+      "cascading_path": "PLT — Plataforma Compartilhada > PLT-SDK-001 — SDK e Extensões",
+      "module_prefix": "PLT",
+      "module_jira_label": "PLT — Plataforma Compartilhada",
+      "business_name": "SDK e Extensões",
+      "folder": "SdkExtensoes"
+    },
+    {
+      "code": "PLT-UMD-001",
+      "jira_label": "PLT-UMD-001 — Upload e Migração de Dados",
+      "cascading_path": "PLT — Plataforma Compartilhada > PLT-UMD-001 — Upload e Migração de Dados",
+      "module_prefix": "PLT",
+      "module_jira_label": "PLT — Plataforma Compartilhada",
+      "business_name": "Upload e Migração de Dados",
+      "folder": "UploadMigracaoDados"
+    },
+    {
+      "code": "PLT-IAW-001",
+      "jira_label": "PLT-IAW-001 — Interface Assistida Wizards",
+      "cascading_path": "PLT — Plataforma Compartilhada > PLT-IAW-001 — Interface Assistida Wizards",
+      "module_prefix": "PLT",
+      "module_jira_label": "PLT — Plataforma Compartilhada",
+      "business_name": "Interface Assistida Wizards",
+      "folder": "InterfaceAssistidaWizards"
+    },
+    {
+      "code": "PLT-OFS-001",
+      "jira_label": "PLT-OFS-001 — Offline Shell",
+      "cascading_path": "PLT — Plataforma Compartilhada > PLT-OFS-001 — Offline Shell",
+      "module_prefix": "PLT",
+      "module_jira_label": "PLT — Plataforma Compartilhada",
+      "business_name": "Offline Shell",
+      "folder": "OfflineShell"
+    },
+    {
+      "code": "PLT-PIM-001",
+      "jira_label": "PLT-PIM-001 — Planejamento In-Memory",
+      "cascading_path": "PLT — Plataforma Compartilhada > PLT-PIM-001 — Planejamento In-Memory",
+      "module_prefix": "PLT",
+      "module_jira_label": "PLT — Plataforma Compartilhada",
+      "business_name": "Planejamento In-Memory",
+      "folder": "PlanejamentoInMemory"
+    },
+    {
+      "code": "PLT-IOT-001",
+      "jira_label": "PLT-IOT-001 — Integração IoT",
+      "cascading_path": "PLT — Plataforma Compartilhada > PLT-IOT-001 — Integração IoT",
+      "module_prefix": "PLT",
+      "module_jira_label": "PLT — Plataforma Compartilhada",
+      "business_name": "Integração IoT",
+      "folder": "IntegracaoIot"
+    },
+    {
+      "code": "PLT-ITP-001",
+      "jira_label": "PLT-ITP-001 — Impressão Térmica",
+      "cascading_path": "PLT — Plataforma Compartilhada > PLT-ITP-001 — Impressão Térmica",
+      "module_prefix": "PLT",
+      "module_jira_label": "PLT — Plataforma Compartilhada",
+      "business_name": "Impressão Térmica",
+      "folder": "ImpressaoTermica"
+    },
+    {
+      "code": "PLT-CFG-001",
+      "jira_label": "PLT-CFG-001 — Configuração",
+      "cascading_path": "PLT — Plataforma Compartilhada > PLT-CFG-001 — Configuração",
+      "module_prefix": "PLT",
+      "module_jira_label": "PLT — Plataforma Compartilhada",
+      "business_name": "Configuração",
+      "folder": "Configuracao"
+    }
+  ]
+}

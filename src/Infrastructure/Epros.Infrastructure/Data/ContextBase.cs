@@ -158,13 +158,13 @@ namespace Epros.Infrastructure.Data
             {
                 foreach (var entry in ChangeTracker.Entries<EntidadeSaaSBase>())
                 {
-                    if (entry.State == EntityState.Added || 
-                        entry.State == EntityState.Modified || 
+                    if (entry.State == EntityState.Added ||
+                        entry.State == EntityState.Modified ||
                         entry.State == EntityState.Deleted)
                     {
                         var entityType = entry.Entity.GetType();
-                        if (entityType.Name != "SessaoUsuario" && 
-                            entityType.Name != "SessaoImpersonacao" && 
+                        if (entityType.Name != "SessaoUsuario" &&
+                            entityType.Name != "SessaoImpersonacao" &&
                             entityType.Name != "HistoricoLogin")
                         {
                             throw new Epros.Shared.Domain.Exceptions.OperacaoBloqueadaModoDemoException();
@@ -215,7 +215,7 @@ namespace Epros.Infrastructure.Data
         {
             if (string.IsNullOrEmpty(input)) return input;
             var startUnderscore = input.StartsWith("_");
-            return (startUnderscore ? "_" : "") + 
+            return (startUnderscore ? "_" : "") +
                    string.Concat(input.Select((x, i) => i > 0 && char.IsUpper(x) ? "_" + x.ToString() : x.ToString()))
                          .ToLower();
         }

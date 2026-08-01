@@ -24,10 +24,10 @@ namespace Epros.API.Middlewares
             var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
 
             // Rotas liberadas para consulta e regularização de faturas
-            if (path.Contains("/api/v1/public") || 
+            if (path.Contains("/api/v1/public") ||
                 path.Contains("/api/v1/aplicativo/assinaturas/faturas") ||
                 path.Contains("/api/v1/aplicativo/usuarios/preferencias") ||
-                path.Contains("/auth") || 
+                path.Contains("/auth") ||
                 path.Contains("/login"))
             {
                 await _next(context);

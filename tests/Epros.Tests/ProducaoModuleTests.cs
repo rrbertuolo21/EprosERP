@@ -108,7 +108,7 @@ namespace Epros.Tests
             var abrirResult = await abrirHandler.Handle(new AbrirOrdemProducaoCommand("OP-2026-01", "PROD-ACABADO", 100m), CancellationToken.None);
             Assert.True(abrirResult.Sucesso);
 
-            var opId = (Guid)abrirResult.Dados.GetType().GetProperty("OrdemProducaoId")!.GetValue(abrirResult.Dados)!;
+            var opId = (Guid)abrirResult.Dados!.GetType().GetProperty("OrdemProducaoId")!.GetValue(abrirResult.Dados)!;
 
             var iniciarHandler = new IniciarProducaoCommandHandler(context, currentUser);
             var iniciarResult = await iniciarHandler.Handle(new IniciarProducaoCommand(opId), CancellationToken.None);

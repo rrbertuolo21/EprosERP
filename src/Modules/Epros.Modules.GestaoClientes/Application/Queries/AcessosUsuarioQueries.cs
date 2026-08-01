@@ -121,23 +121,38 @@ namespace Epros.Modules.GestaoClientes.Application.Queries
                         if (!request.IsAdmin && !n2Flags.r) continue;
                         itensN2.Add(new AcessoItemDto
                         {
-                            sub = n2.Descricao, icon = n2.Icon, to = n2.To, ordem = n2.Ordem,
-                            r = n2Flags.r, u = n2Flags.u, d = n2Flags.d
+                            sub = n2.Descricao,
+                            icon = n2.Icon,
+                            to = n2.To,
+                            ordem = n2.Ordem,
+                            r = n2Flags.r,
+                            u = n2Flags.u,
+                            d = n2Flags.d
                         });
                     }
 
                     if (!request.IsAdmin && !n1Flags.r && itensN2.Count == 0) continue;
                     itensN1.Add(new AcessoItemDto
                     {
-                        sub = n1.Descricao, icon = n1.Icon, to = n1.To, ordem = n1.Ordem,
-                        r = n1Flags.r, u = n1Flags.u, d = n1Flags.d, itens = itensN2
+                        sub = n1.Descricao,
+                        icon = n1.Icon,
+                        to = n1.To,
+                        ordem = n1.Ordem,
+                        r = n1Flags.r,
+                        u = n1Flags.u,
+                        d = n1Flags.d,
+                        itens = itensN2
                     });
                 }
 
                 if (!request.IsAdmin && !menuFlags.r && itensN1.Count == 0) continue;
                 arvore.Add(new AcessoDto
                 {
-                    menu = menu.Descricao, icon = menu.Icon, to = menu.To, ordem = menu.Ordem, itens = itensN1
+                    menu = menu.Descricao,
+                    icon = menu.Icon,
+                    to = menu.To,
+                    ordem = menu.Ordem,
+                    itens = itensN1
                 });
             }
 

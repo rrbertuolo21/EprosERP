@@ -70,7 +70,7 @@ Mobile: **React Native** (submódulo `Epros.Mobile`).
 ```bash
 cd EprosERP
 docker compose -f docker-compose.local.yml up -d --build   # se o BuildKit der DeadlineExceeded, use: DOCKER_BUILDKIT=0 docker compose -f docker-compose.local.yml build && docker compose -f docker-compose.local.yml up -d
-./seed-local.sh
+./scripts/seed-local.sh
 ```
 - **Front:** http://localhost:3000 · **API/Swagger:** http://localhost:8080/swagger
 - **Admin/Landlord:** `admin@epros.local` / `Admin@12345` → mesmo login, cai em `/plataforma/admin`

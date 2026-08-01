@@ -95,7 +95,7 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
             modelBuilder.Entity<UsuarioInterno>(entity =>
             {
                 entity.HasKey(u => u.Id);
-                
+
                 // Email único (REG-013)
                 entity.HasIndex(u => u.Email)
                       .IsUnique()

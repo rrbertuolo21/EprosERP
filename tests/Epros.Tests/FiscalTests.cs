@@ -113,7 +113,7 @@ namespace Epros.Tests
             // Assert
             Assert.True(doc.IsValid);
             Assert.Single(doc.Itens);
-            
+
             var item = doc.Itens.First();
             Assert.Equal("SKU-UNIT-01", item.Sku);
             Assert.Equal(100.00m, item.ValorTotal); // 2 * 50
@@ -364,7 +364,7 @@ namespace Epros.Tests
             var tenantProvider = new TestTenantProvider("tenant-123");
             var currentUser = new TestCurrentUser("user-1");
             var context = CreateInMemoryContext("db_emitir_rejeicao", "tenant-123", "user-1");
-            
+
             var fiscalService = new TestHerculesFiscalService
             {
                 Sucesso = false,

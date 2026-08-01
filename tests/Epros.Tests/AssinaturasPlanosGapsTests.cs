@@ -302,7 +302,8 @@ namespace Epros.Tests
             // Deve ter gerado 6 alertas (faturaFora é ignorada)
             Assert.Equal(6, alertas.Count);
 
-            var alertasTipos = alertas.Select(a => {
+            var alertasTipos = alertas.Select(a =>
+            {
                 using var doc = System.Text.Json.JsonDocument.Parse(a.Payload);
                 return doc.RootElement.GetProperty("TipoAlerta").GetString();
             }).ToList();
