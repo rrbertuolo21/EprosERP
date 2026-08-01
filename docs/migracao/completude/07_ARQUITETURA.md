@@ -1,7 +1,7 @@
 # 07 — Auditoria Arquitetural (Cética, READ-ONLY)
 
 > **Escopo:** verificar que, além de funcionalidade+visual portados do legado, TUDO está no **formato arquitetural novo** (monolito modular hexagonal, schema por módulo, CQRS/MediatR, `EntidadeSaaSBase`, `IGlobalEntity`, Outbox, soft-delete, Flunt).
-> **Regras canônicas:** `CONVENCAO_CODIGO.md` + [`PADRAO_PORTE_LEGADO.md`](../PADRAO_PORTE_LEGADO.md).
+> **Regras canônicas:** `CONVENCAO_CODIGO.md` + `PADRAO_PORTE_LEGADO.md`.
 > **Método:** varredura dos 14 módulos + sweep dos 90 controllers. Achados verificados em código (paths + linhas). Nenhum arquivo de código foi alterado.
 > **Data:** jul/2026. **Modo atual:** Porte→Consolidação (build verde, 370 testes).
 

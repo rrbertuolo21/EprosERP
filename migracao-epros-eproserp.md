@@ -1,6 +1,6 @@
 ---
 name: migracao-epros-eproserp
-description: EprosERP — narrativa histórica da migração Epros→novo. Estado atual: HISTORICO-DESENVOLVIMENTO-IA.md + CONSOLIDACAO-GAPS.md
+description: EprosERP — migração/equalização do ERP legado Epros→novo. ESTADO jul/2026 ~90%, build+367 testes verdes, schema reconciliado, hash/swagger ok. Próximo = Onda 5. AO REINICIAR LER EprosERP/MEMORIA_SESSAO_EQUALIZACAO.md
 metadata: 
   node_type: memory
   type: project

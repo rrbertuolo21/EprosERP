@@ -9,20 +9,15 @@
 | Peça (aqui no projeto) | Mecanismo do Cursor | Comportamento |
 |---|---|---|
 | `CLAUDE.md` (raiz) | lido automaticamente | as disciplinas do projeto, toda conversa |
-| `docs/fabrica/cursor/cursor-install/rules/00-context.mdc` | regra `alwaysApply: true` | contexto/regra-#0 sempre ativo |
-| `docs/fabrica/cursor/cursor-install/rules/S01…S30.mdc` | regras acionadas por contexto | o Cursor puxa a skill certa na hora (ou você chama `@S03-...`) |
-| `docs/fabrica/agentes/*.md` | prompts salvos / Custom Modes | você escolhe o worker por fase (Dev, QA, Arquiteto…) |
+| `_fabrica/cursor/cursor-install/rules/00-context.mdc` | regra `alwaysApply: true` | contexto/regra-#0 sempre ativo |
+| `_fabrica/cursor/cursor-install/rules/S01…S30.mdc` | regras acionadas por contexto | o Cursor puxa a skill certa na hora (ou você chama `@S03-...`) |
+| `_fabrica/agentes/*.md` | prompts salvos / Custom Modes | você escolhe o worker por fase (Dev, QA, Arquiteto…) |
 
 ## Passo 1 — Instalar as regras (copiar, pronto)
 Na **raiz do repositório** (`EprosERP/`), copie as regras já geradas para `.cursor/rules/`:
 ```bash
 mkdir -p .cursor/rules
-cp docs/fabrica/cursor/cursor-install/rules/*.mdc .cursor/rules/
-```
-No PowerShell:
-```powershell
-New-Item -ItemType Directory -Force -Path .cursor\rules | Out-Null
-Copy-Item docs\fabrica\cursor\cursor-install\rules\*.mdc .cursor\rules\
+cp _fabrica/cursor/cursor-install/rules/*.mdc .cursor/rules/
 ```
 Pronto. O Cursor carrega sozinho:
 - **`00-context.mdc`** (`alwaysApply: true`) — sempre ativo.
@@ -30,10 +25,10 @@ Pronto. O Cursor carrega sozinho:
   com `@S03-epros-multi-tenancy` no chat.
 
 > Alternativa legada: um único `.cursorrules` na raiz com o corpo de
-> `docs/fabrica/agentes/00-context-agent.md`. Funciona, mas `.cursor/rules/*.mdc` é melhor (acionamento por contexto).
+> `_fabrica/agentes/00-context-agent.md`. Funciona, mas `.cursor/rules/*.mdc` é melhor (acionamento por contexto).
 
 ## Passo 2 — Usar os agentes por fase (opcional, recomendado)
-Cada arquivo em `docs/fabrica/agentes/` é um **worker** (persona + missão + gate). Salve o corpo como um
+Cada arquivo em `_fabrica/agentes/` é um **worker** (persona + missão + gate). Salve o corpo como um
 prompt/Custom Mode no Cursor e ative por fase:
 - Construir → `07-dev-agent.md` · Revisar → `12-code-review-agent.md` · Testar → `08-qa-agent.md` ·
   Decisão técnica → `06-architect-agent.md` · Dados sensíveis/auth → `10-security-agent.md`.
@@ -48,8 +43,7 @@ prompt/Custom Mode no Cursor e ative por fase:
 Comece pelas de maior uso diário — **S01–S15** (contexto, convenções, multi-tenancy, fiscal, CQRS, EF,
 segurança). As de fase (S16–S24) e especialização (S25–S30) entram conforme o time formaliza cada etapa.
 
-## Manutenção
-As `.mdc` são **geradas** a partir das skills/agentes (`cursor-install/gen_cursor_rules.py`).
-Edite a skill/agente de origem e regenere o pacote; no dia a dia do projeto: use as regras prontas.
-
-Índice da fábrica: [../README.md](../README.md) · Pipeline: [../processo/PIPELINE.md](../processo/PIPELINE.md).
+## Manutenção (para quem tem a fábrica completa)
+As `.mdc` são **geradas** a partir das skills/agentes da fábrica (`cursor-install/gen_cursor_rules.py`,
+que roda do lado da fábrica, não aqui). O time do projeto **só usa** as regras prontas; quem quiser
+aprofundá-las edita a skill de origem na fábrica e regenera o pacote. Aqui no projeto: use e siga.
