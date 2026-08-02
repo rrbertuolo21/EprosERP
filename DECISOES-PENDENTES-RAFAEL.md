@@ -84,3 +84,25 @@ negócio. Nenhum inventa número legal — todos recebem o valor factual como pa
 - **Motores de Price/SAC/CET e variação cambial** são bibliotecas de domínio testadas, ainda **não
   consumidas** por handler/endpoint (dívida estruturada e reavaliação usam valores informados). Expor
   como endpoint de simulação é passo natural quando houver a demanda de produto.
+
+## 7. Segurança — resíduos da rodada de fixes P0/P1 (branch wt/fix-seguranca)
+
+- **Portais externos (Cliente/Fornecedor) — wiring de login externo (`// valida-ambiente`).** O
+  isolamento passou a derivar `clienteId`/`fornecedorId` das claims do principal autenticado
+  (`ICurrentUser.GetClaim/GetClienteId/GetFornecedorId/GetPortalUsuarioId`). Falta o **host emitir essas
+  claims** no token do portal externo (SSO/login do cliente/fornecedor). Enquanto não houver login
+  externo, os endpoints operam pelo caminho interno (ABAC), e o enforcement usuário↔cliente/fornecedor já
+  está pronto para quando o token trouxer as claims. Guards: `PortalClienteAcesso`, `PortalFornecedorAcesso`.
+- **GRC SoD — interceptor GLOBAL pré-gravação (RN-SOD-040) é resíduo.** O bloqueio SoD foi ligado no
+  **fluxo de concessão RBAC** (`AtribuirPapelUsuarioCommandHandler` → `ISoDAvaliadorConcessao`), que é o
+  ponto de maior alavancagem e menor risco à suíte. Um **interceptor global** que barre QUALQUER caminho de
+  concessão de permissão (grant direto de capacidade, seeds, imports) fica como próximo passo. Além disso,
+  o **seed ABAC dos novos recursos SoD** (`SegregacaoFuncoes:Avaliar/SolicitarExcecao/AprovarExcecao/
+  RegistrarBypass`) é o resíduo T-D — sem seed, os endpoints negam por padrão (fail-closed).
+- **Alçada de Compras (CD3/SRC-008) — referência da origem sob alçada.** O gate `AlcadaCompraGate` foi
+  ligado nos handlers de lançamento/faturamento de compra (`LancarCompra`, `LancarCompraFiscal`,
+  `EntradaPropria`, `EntradaFornecedor`): quando o comando informa `AprovacaoOrigemId`, a efetivação só
+  ocorre com o `ComprasPedidoAprovacao` **Aprovado** (pendente/reprovado → bloqueia). **Resíduo:** o
+  **front precisa enviar `AprovacaoOrigemId`** (id do pedido de compra/compra sob alçada) e a avaliação
+  automática por VALOR no momento do lançamento exigiria comprador/categoria/valor no próprio comando de
+  compra — decisão de produto (hoje a alçada é avaliada no fluxo de pedido de compra via `SolicitarAprovacao`).

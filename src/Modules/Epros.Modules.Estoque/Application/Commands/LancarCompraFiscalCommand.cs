@@ -25,7 +25,9 @@ namespace Epros.Modules.Estoque.Application.Commands
         ImpostoCompraInput? Imposto = null,
         TotalCompraInput? Total = null,
         TransporteCompraInput? Transporte = null,
-        List<PagamentoCompraInput>? Pagamentos = null
+        List<PagamentoCompraInput>? Pagamentos = null,
+        // CD3/SRC-008: origem sob alçada — efetiva só se aprovada. Opcional (ver AlcadaCompraGate).
+        Guid? AprovacaoOrigemId = null
     ) : ICommand;
 
     public record ItemCompraFiscalInput(
