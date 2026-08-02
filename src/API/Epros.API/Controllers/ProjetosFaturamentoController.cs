@@ -42,13 +42,33 @@ namespace Epros.API.Controllers
         {
             var result = await _mediator.Send(new AdicionarItemFaturamentoCommand(
                 id, request.Sequencia, request.Quantidade, request.Observacao, request.TipoItem,
-                request.ValorUnitario, request.ValorTotal, request.OrigemTipo, request.OrigemId));
+                request.ValorUnitario, request.ValorTotal, request.OrigemTipo, request.OrigemId, request.Reembolsavel));
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
 
         public record AdicionarItemRequest(
             int Sequencia, decimal? Quantidade, string? Observacao, ETipoItemFaturamento? TipoItem,
-            decimal? ValorUnitario, decimal? ValorTotal, string? OrigemTipo, Guid? OrigemId);
+            decimal? ValorUnitario, decimal? ValorTotal, string? OrigemTipo, Guid? OrigemId, bool Reembolsavel = false);
+
+        /// <summary>
+        /// DP-FAT-004/008 — aplica tributos/retenções fiscais (ISS/IRRF/INSS/PIS/COFINS/CSLL) ao faturamento.
+        /// // valida-contador: valores/alíquotas e incidência por serviço de projeto vêm do contador.
+        /// </summary>
+        [HttpPost("{id:guid}/tributacao")]
+        [AbacAuthorize("ProjetosFaturamento", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AplicarTributacao(Guid id, [FromBody] TributacaoRequest request)
+        {
+            var result = await _mediator.Send(new AplicarTributacaoFaturamentoCommand(
+                id, request.ValorIss, request.ValorIrrf, request.ValorInss,
+                request.ValorPis, request.ValorCofins, request.ValorCsll));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        public record TributacaoRequest(
+            decimal? ValorIss, decimal? ValorIrrf, decimal? ValorInss,
+            decimal? ValorPis, decimal? ValorCofins, decimal? ValorCsll);
 
         [HttpPost("{id:guid}/submeter")]
         [AbacAuthorize("ProjetosFaturamento", "Editar")]
