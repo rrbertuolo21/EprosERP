@@ -20,6 +20,8 @@ namespace Epros.Modules.Financeiro.Domain.Entities
         public Guid ContaEmissoraId { get; private set; }
         public int QuantidadeTitulos { get; private set; }
         public decimal ValorTotal { get; private set; }
+        /// <summary>Conteúdo do arquivo CNAB gerado (registros header/detalhe/trailer), para download/auditoria.</summary>
+        public string? Conteudo { get; private set; }
 
         private readonly List<RemessaBoleto> _boletos = new();
         public IReadOnlyCollection<RemessaBoleto> Boletos => _boletos;
@@ -44,6 +46,13 @@ namespace Epros.Modules.Financeiro.Domain.Entities
             _boletos.Add(new RemessaBoleto(Id, boletoId, faturaCobrancaId, TenantId, usuario));
             QuantidadeTitulos = _boletos.Count(b => b.DeletadoEm == null);
             ValorTotal += valor;
+        }
+
+        /// <summary>Registra o conteúdo CNAB gerado (após montar header/detalhes/trailer).</summary>
+        public void DefinirConteudo(string conteudo, string usuario)
+        {
+            Conteudo = conteudo;
+            MarcarAlterado(usuario);
         }
 
         public void Validar()

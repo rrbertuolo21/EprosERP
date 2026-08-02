@@ -51,6 +51,7 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
         public DbSet<Boleto> Boletos => Set<Boleto>();
         public DbSet<Remessa> Remessas => Set<Remessa>();
         public DbSet<RemessaBoleto> RemessaBoletos => Set<RemessaBoleto>();
+        public DbSet<RetornoBancario> RetornosBancarios => Set<RetornoBancario>();
         public DbSet<CobrancaEmail> CobrancasEmail => Set<CobrancaEmail>();
 
         // ----- FIN-CAM: Câmbio e Risco de Mercado -----
@@ -686,6 +687,15 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
             {
                 entity.HasKey(rb => rb.Id);
                 entity.HasIndex(rb => new { rb.RemessaId, rb.BoletoId }).IsUnique().HasDatabaseName("uq_remessa_boleto");
+            });
+
+            modelBuilder.Entity<RetornoBancario>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.NomeArquivo).HasMaxLength(200);
+                entity.Property(x => x.HashArquivo).HasMaxLength(64);
+                entity.Property(x => x.ValorTotalBaixado).HasPrecision(18, 2);
+                entity.HasIndex(x => new { x.TenantId, x.HashArquivo }).HasDatabaseName("ix_retorno_bancario_tenant_hash");
             });
 
             modelBuilder.Entity<CobrancaEmail>(entity =>

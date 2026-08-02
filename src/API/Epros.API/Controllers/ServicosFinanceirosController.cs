@@ -170,6 +170,23 @@ namespace Epros.API.Controllers
             return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
         }
 
+        // ----- CNAB: geração de arquivo de remessa e processamento de retorno -----
+        [HttpPost("remessas/arquivo-cnab")]
+        [AbacAuthorize("ServicosFinanceiros", "Criar")]
+        public async Task<ActionResult<CommandResult>> GerarArquivoRemessa([FromBody] GerarArquivoRemessaCommand command)
+        {
+            var r = await _mediator.Send(command);
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
+        [HttpPost("retornos/processar")]
+        [AbacAuthorize("ServicosFinanceiros", "Editar")]
+        public async Task<ActionResult<CommandResult>> ProcessarRetorno([FromBody] ProcessarRetornoBancarioCommand command)
+        {
+            var r = await _mediator.Send(command);
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
         // ----- Cobrança por e-mail -----
         [HttpGet("cobrancas-email")]
         [AbacAuthorize("ServicosFinanceiros", "Ler")]
