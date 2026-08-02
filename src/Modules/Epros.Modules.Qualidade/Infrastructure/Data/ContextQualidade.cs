@@ -65,6 +65,19 @@ namespace Epros.Modules.Qualidade.Infrastructure.Data
         public DbSet<AtrAnexo> AtrAnexos => Set<AtrAnexo>();
         public DbSet<AtrParametro> AtrParametros => Set<AtrParametro>();
 
+        // --- QLD-QPS (Qualidade de Fornecedor) ---
+        public DbSet<QpsRegistro> QpsRegistros => Set<QpsRegistro>();
+        public DbSet<QpsDocumento> QpsDocumentos => Set<QpsDocumento>();
+        public DbSet<QpsScorecard> QpsScorecards => Set<QpsScorecard>();
+        public DbSet<QpsIndicador> QpsIndicadores => Set<QpsIndicador>();
+        public DbSet<QpsBloqueio> QpsBloqueios => Set<QpsBloqueio>();
+        public DbSet<QpsPlano8d> QpsPlanos8d => Set<QpsPlano8d>();
+        public DbSet<QpsAcao8d> QpsAcoes8d => Set<QpsAcao8d>();
+        public DbSet<QpsAnexo> QpsAnexos => Set<QpsAnexo>();
+        public DbSet<QpsHistorico> QpsHistoricos => Set<QpsHistorico>();
+        public DbSet<QpsParametro> QpsParametros => Set<QpsParametro>();
+        public DbSet<QpsEvento> QpsEventos => Set<QpsEvento>();
+
         public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
         public ContextQualidade(
@@ -504,6 +517,98 @@ namespace Epros.Modules.Qualidade.Infrastructure.Data
                 e.ToTable("qld_atr_parametro");
                 e.Property(x => x.Chave).HasMaxLength(150);
                 e.HasIndex(x => new { x.TenantId, x.Chave }).IsUnique();
+            });
+
+            // ===== QLD-QPS =====
+            modelBuilder.Entity<QpsRegistro>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_registro");
+                e.Property(x => x.Codigo).HasMaxLength(30);
+                e.Property(x => x.NomeParceiro).HasMaxLength(255);
+                e.Property(x => x.MotivoBloqueio).HasMaxLength(1000);
+                e.Property(x => x.ScoreAtual).HasPrecision(9, 2);
+                e.HasIndex(x => new { x.TenantId, x.Codigo }).IsUnique();
+                e.HasIndex(x => new { x.TenantId, x.ParceiroId });
+                e.HasIndex(x => new { x.TenantId, x.StatusHomologacao });
+            });
+            modelBuilder.Entity<QpsDocumento>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_documento");
+                e.Property(x => x.Titulo).HasMaxLength(255);
+                e.Property(x => x.Numero).HasMaxLength(100);
+                e.HasIndex(x => new { x.TenantId, x.RegistroId });
+            });
+            modelBuilder.Entity<QpsScorecard>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_scorecard");
+                e.Property(x => x.Periodo).HasMaxLength(50);
+                e.Property(x => x.Score).HasPrecision(9, 2);
+                e.Property(x => x.Observacao).HasMaxLength(2000);
+                e.HasIndex(x => new { x.TenantId, x.RegistroId, x.Periodo });
+            });
+            modelBuilder.Entity<QpsIndicador>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_indicador");
+                e.Property(x => x.Codigo).HasMaxLength(50);
+                e.Property(x => x.Valor).HasPrecision(18, 4);
+                e.Property(x => x.Peso).HasPrecision(9, 4);
+                e.Property(x => x.Fonte).HasMaxLength(255);
+                e.HasIndex(x => new { x.TenantId, x.ScorecardId });
+            });
+            modelBuilder.Entity<QpsBloqueio>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_bloqueio");
+                e.Property(x => x.Motivo).HasMaxLength(1000);
+                e.HasIndex(x => new { x.TenantId, x.RegistroId, x.Ativo });
+            });
+            modelBuilder.Entity<QpsPlano8d>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_plano_8d");
+                e.Property(x => x.Titulo).HasMaxLength(255);
+                e.Property(x => x.Conclusao).HasMaxLength(4000);
+                e.HasIndex(x => new { x.TenantId, x.RegistroId });
+            });
+            modelBuilder.Entity<QpsAcao8d>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_acao_8d");
+                e.Property(x => x.Descricao).HasMaxLength(2000);
+                e.HasIndex(x => new { x.TenantId, x.PlanoId });
+            });
+            modelBuilder.Entity<QpsAnexo>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_anexo");
+                e.Property(x => x.TipoAnexo).HasMaxLength(50);
+                e.HasIndex(x => new { x.TenantId, x.RegistroId });
+            });
+            modelBuilder.Entity<QpsHistorico>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_historico");
+                e.Property(x => x.Entidade).HasMaxLength(100);
+                e.Property(x => x.Motivo).HasMaxLength(1000);
+                e.HasIndex(x => new { x.TenantId, x.RegistroId });
+            });
+            modelBuilder.Entity<QpsParametro>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_parametro");
+                e.Property(x => x.Chave).HasMaxLength(150);
+                e.HasIndex(x => new { x.TenantId, x.Chave }).IsUnique();
+            });
+            modelBuilder.Entity<QpsEvento>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_evento");
+                e.Property(x => x.TipoEvento).HasMaxLength(150);
+                e.HasIndex(x => new { x.TenantId, x.RegistroId });
             });
 
             modelBuilder.Entity<OutboxMessage>(entity =>

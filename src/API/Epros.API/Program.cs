@@ -294,6 +294,7 @@ try
     // Motores de dominio do modulo Qualidade (sem estado; QLD-INS amostragem AQL / comutacao).
     builder.Services.AddSingleton<Epros.Modules.Qualidade.Domain.Services.Aql.MotorAql>();
     builder.Services.AddSingleton<Epros.Modules.Qualidade.Domain.Services.Aql.MotorComutacao>();
+    builder.Services.AddSingleton<Epros.Modules.Qualidade.Domain.Services.Qps.MotorScoreFornecedor>();
 
     builder.Services.AddMediatR(cfg =>
     {
