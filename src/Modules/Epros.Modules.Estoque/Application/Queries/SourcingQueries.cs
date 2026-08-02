@@ -172,4 +172,85 @@ namespace Epros.Modules.Estoque.Application.Queries
             });
         }
     }
+
+    // ============ MAPA COMPARATIVO (CD2) ============
+
+    /// <summary>CD2 — mapa comparativo da cotação: propostas por fornecedor lado a lado, por produto.</summary>
+    public record MapaComparativoCotacaoQuery(Guid CotacaoId) : IQuery<CommandResult>;
+
+    /// <summary>
+    /// CD2 — monta o mapa comparativo (preço/prazo/condição) de uma cotação multi-fornecedor. Agrupa as
+    /// linhas por produto e, para cada, lista a proposta de cada fornecedor (valor unitário/total + prazo e
+    /// condições do fornecedor), marcando a de MENOR preço unitário. Traz também o total por fornecedor e
+    /// o vencedor escolhido (quando já decidida). É a base da escolha (SRC-020).
+    /// </summary>
+    public class MapaComparativoCotacaoQueryHandler : IRequestHandler<MapaComparativoCotacaoQuery, CommandResult>
+    {
+        private readonly ContextEstoque _context;
+        public MapaComparativoCotacaoQueryHandler(ContextEstoque context) => _context = context;
+
+        public async Task<CommandResult> Handle(MapaComparativoCotacaoQuery request, CancellationToken cancellationToken)
+        {
+            var cotacao = await _context.ScCotacoes.AsNoTracking()
+                .Include(c => c.Fornecedores)
+                .Include(c => c.Itens)
+                .FirstOrDefaultAsync(c => c.Id == request.CotacaoId && c.DeletadoEm == null, cancellationToken);
+            if (cotacao == null)
+                return CommandResult.Falha("Cotação não encontrada.");
+
+            var fornecedores = cotacao.Fornecedores.Where(f => f.DeletadoEm == null).ToList();
+            var itens = cotacao.Itens.Where(i => i.DeletadoEm == null).ToList();
+
+            // Uma linha por produto; colunas = propostas de cada fornecedor (linha por fornecedor).
+            var linhas = itens
+                .GroupBy(i => i.ProdutoId)
+                .Select(g =>
+                {
+                    var propostas = g.Select(i =>
+                    {
+                        var forn = fornecedores.FirstOrDefault(f => f.Id == i.CotacaoFornecedorId);
+                        return new
+                        {
+                            CotacaoFornecedorId = i.CotacaoFornecedorId,
+                            FornecedorId = forn?.FornecedorId,
+                            PrazoEntrega = forn?.PrazoEntrega,
+                            CondicoesPagamento = forn?.CondicoesPagamento,
+                            i.Quantidade,
+                            i.ValorUnitario,
+                            i.ValorTotal
+                        };
+                    }).ToList();
+
+                    var melhor = propostas
+                        .Where(p => p.ValorUnitario.HasValue)
+                        .OrderBy(p => p.ValorUnitario!.Value)
+                        .FirstOrDefault();
+
+                    return new
+                    {
+                        ProdutoId = g.Key,
+                        MelhorPrecoFornecedorId = melhor?.FornecedorId,
+                        MelhorValorUnitario = melhor?.ValorUnitario,
+                        Propostas = propostas.Select(p => new
+                        {
+                            p.CotacaoFornecedorId, p.FornecedorId, p.PrazoEntrega, p.CondicoesPagamento,
+                            p.Quantidade, p.ValorUnitario, p.ValorTotal,
+                            MelhorPreco = melhor != null && p.CotacaoFornecedorId == melhor.CotacaoFornecedorId
+                        })
+                    };
+                })
+                .ToList();
+
+            return CommandResult.Ok("OK", new
+            {
+                cotacao.Id,
+                cotacao.Descricao,
+                cotacao.Situacao,
+                cotacao.FornecedorVencedorId,
+                cotacao.DecididaEm,
+                Fornecedores = fornecedores.Select(f => new { f.Id, f.FornecedorId, f.PrazoEntrega, f.CondicoesPagamento, f.Subtotal, f.Desconto, f.Total }),
+                Linhas = linhas
+            });
+        }
+    }
 }

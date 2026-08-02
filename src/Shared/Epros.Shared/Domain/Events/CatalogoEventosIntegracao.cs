@@ -101,6 +101,8 @@ namespace Epros.Shared.Domain.Events
             /// <summary>Mercadoria fisicamente recebida/conferida (LDE). Consumidores: Qualidade (inspecao) e Financeiro (contas a pagar).</summary>
             public const string MercadoriaRecebida = "est.lde.mercadoria_recebida";
             public const string ScPedidoCompraCriado = "est.sc.pedido_compra_criado";
+            /// <summary>Cotação decidida (CD2): vencedor escolhido após o mapa comparativo; apta a originar pedido.</summary>
+            public const string ScCotacaoDecidida = "est.sc.cotacao_decidida";
             public const string TmsAlterado = "est.tms.001.alterado";
             public const string WmsArmazemCriado = "estoque.wms.armazem_criado";
             public const string WmsArmazemAlterado = "estoque.wms.armazem_alterado";
@@ -164,7 +166,7 @@ namespace Epros.Shared.Domain.Events
             Estoque.LdeEntradaCriada, Estoque.LdeEntradaConfirmada, Estoque.LdeEntradaCancelada,
             Estoque.LdeEntradaEstornada, Estoque.LdeDocumentoVinculado, Estoque.LdeLocalEntregaAlterado,
             Estoque.MercadoriaRecebida,
-            Estoque.ScPedidoCompraCriado, Estoque.TmsAlterado,
+            Estoque.ScPedidoCompraCriado, Estoque.ScCotacaoDecidida, Estoque.TmsAlterado,
             Estoque.WmsArmazemCriado, Estoque.WmsArmazemAlterado, Estoque.WmsArmazemExclusaoSolicitada,
             Estoque.GccContratoCriado, Estoque.GccContratoEnviadoAprovacao, Estoque.GccContratoAprovado,
             Estoque.GccConsumoRegistrado, Estoque.SubEnvioRegistrado, Estoque.SubRetornoRegistrado,
