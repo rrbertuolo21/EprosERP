@@ -171,16 +171,16 @@ espera `src/` **na raiz** do contexto e o `build.context` é `.`.
    `context`/`dockerfile` junto com o `git mv`, no mesmo commit.
 3. Valide com um build limpo após qualquer reorganização de pastas.
 
-### R8 — Pasta terminando em `.app` (ex.: `Epros.App`) tratada como aplicativo pelo macOS
+### R8 — Pasta terminando em `.app` (ex.: `EprosApp`) tratada como aplicativo pelo macOS
 
-**Sintoma:** no Finder do macOS, a pasta `Epros.App` aparece como um aplicativo (ícone de app) e,
+**Sintoma:** no Finder do macOS, a pasta `EprosApp` aparece como um aplicativo (ícone de app) e,
 ao clicar, dá "aplicativo corrompido / não pode ser aberto". Parece que o diretório sumiu.
 
 **Causa:** o Finder trata qualquer diretório com sufixo `.app` como *bundle* de aplicativo, não
 como pasta comum.
 
 **Receita:** o conteúdo está intacto — acesse por fora do duplo-clique:
-- Abra pelo **editor/IDE** ou pelo **terminal** (`cd Epros.App && ls`), onde é uma pasta normal.
+- Abra pelo **editor/IDE** ou pelo **terminal** (`cd EprosApp && ls`), onde é uma pasta normal.
 - No Finder: botão direito → **"Mostrar Conteúdo do Pacote"**.
 - Não é corrupção; nada a "consertar" no arquivo.
 

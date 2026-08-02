@@ -369,7 +369,7 @@ dotnet ef migrations add <NomeDescritivo> --project src/Modules/Epros.Modules.<M
 
 ### 7.3 P1 — Composables e componentes (dia 3–7)
 
-**Portar do legado** (`epros_erp_front-main/app/composables/`) **para** `Epros.App/composables/`:
+**Portar do legado** (`epros_erp_front-main/app/composables/`) **para** `EprosApp/composables/`:
 
 | Domínio | Composables / componentes legado |
 |---------|----------------------------------|
@@ -382,7 +382,7 @@ dotnet ef migrations add <NomeDescritivo> --project src/Modules/Epros.Modules.<M
 
 | Legado | Destino |
 |--------|---------|
-| `app/components/nfe/ImpostosTabsDialog.vue` | `Epros.App/components/vendas-nfe/` |
+| `app/components/nfe/ImpostosTabsDialog.vue` | `EprosApp/components/vendas-nfe/` |
 
 **Componentes NFe P1 faltando:** `EditarCamposFiscaisDialog`, `Exportacao`, `Volumes`, `Reboque`, `ObservacoesNfeDialog`.
 
@@ -602,8 +602,8 @@ Validação cruzada código ↔ plano. Cada item referencia arquivo e linha veri
 | `dotnet test` | **367/367** | `Epros.Tests.dll` |
 | Controllers API | **79** | `src/API/**/*Controller.cs` |
 | Handlers MediatR | **~157** arquivos | `*CommandHandler.cs` / `*QueryHandler.cs` |
-| Páginas ERP | **64** | `Epros.App/pages/erp/**/*.vue` |
-| Composables | **14** | `Epros.App/composables/*.ts` |
+| Páginas ERP | **64** | `EprosApp/pages/erp/**/*.vue` |
+| Composables | **14** | `EprosApp/composables/*.ts` |
 
 ### 17.2 Entregas que o plano v1.1 ainda marcava como pendentes
 

@@ -108,7 +108,7 @@ Credenciais criadas:
 Em **outro** terminal:
 
 ```bash
-cd Epros.App
+cd EprosApp
 cp .env.example .env
 ```
 
@@ -136,7 +136,7 @@ Front: http://127.0.0.1:3000 (o script usa `--host 127.0.0.1`).
 1. Garantir Postgres: `docker compose -f docker-compose.local.yml up -d postgres`
 2. Garantir que containers `api`/`web` **não** estão ocupando 8080/3000 (`stop api web` se preciso)
 3. Terminal 1 → `dotnet watch run ...` (com as env vars do passo 2)
-4. Terminal 2 → `cd Epros.App && npm run dev`
+4. Terminal 2 → `cd EprosApp && npm run dev`
 5. Abrir http://127.0.0.1:3000 e logar
 
 Parar o banco (mantém dados):
@@ -171,8 +171,8 @@ docker compose -f docker-compose.local.yml down -v
 | Porta 8080 ou 3000 em uso | `docker compose -f docker-compose.local.yml stop api web` (ou mate o processo local) |
 | API não conecta no Postgres | Confira `Port=55432` e senha `epros_dev`; `docker ps` → `epros-novo-db` healthy |
 | `appsettings.json` “não pega” | O default do arquivo usa outra senha/porta; **obrigatório** exportar `ConnectionStrings__DefaultConnection` como acima |
-| Front chama API errada | `.env` em `Epros.App` com `NUXT_PUBLIC_API_BASE_URL=http://localhost:8080`; reinicie `npm run dev` |
-| Front tela branca / rota quebrada | Pare o Nuxt, apague `Epros.App/.nuxt`, suba de novo (`npm run dev`) |
+| Front chama API errada | `.env` em `EprosApp` com `NUXT_PUBLIC_API_BASE_URL=http://localhost:8080`; reinicie `npm run dev` |
+| Front tela branca / rota quebrada | Pare o Nuxt, apague `EprosApp/.nuxt`, suba de novo (`npm run dev`) |
 | Seed “API não respondeu” | Swagger em `:8080` precisa estar no ar antes do `seed-local` |
 | Quer validar o stack “empacotado” | Use [QUICKSTART-LOCAL.md](../QUICKSTART-LOCAL.md) (rebuild Docker; sem HMR) |
 

@@ -116,7 +116,7 @@ namespace Epros.API.Seed
         }
 
         /// <summary>
-        /// Árvore de navegação (espelho de <c>Epros.App/components/menu.ts</c>). Cada folha declara o RECURSO do
+        /// Árvore de navegação (espelho de <c>EprosApp/components/menu.ts</c>). Cada folha declara o RECURSO do
         /// seu módulo; a AÇÃO de leitura é resolvida em runtime contra o catálogo descoberto. Recurso null =
         /// tela de plataforma/legada sem capacidade própria ainda (documentado, fica sem gate próprio no menu).
         /// </summary>

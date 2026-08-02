@@ -27,7 +27,7 @@ last_updated: "2026-07-13"
 
 ## Pré-requisitos
 
-* **Repositório:** abra o **EprosERP** no Cursor; para revisão, foque em `src/` ou `Epros.App/` conforme o PR.
+* **Repositório:** abra o **EprosERP** no Cursor; para revisão, foque em `src/` ou `EprosApp/` conforme o PR.
 * **Context Agent:** ativo automaticamente.
 * **Artefatos:** US aprovadas com DoR ok (05); US + contexto técnico (06); diff do PR (gate).
 

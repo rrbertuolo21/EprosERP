@@ -98,7 +98,7 @@ EprosERP/
 │       ├── Epros.Modules.Fiscal/
 │       └── ... (Qualidade, Producao, RH, Projetos, Manutencao, GRC, ESG, DMS)
 ├── tests/Epros.Tests/
-├── Epros.App/                      ← Frontend Nuxt (plataforma/admin)
+├── EprosApp/                      ← Frontend Nuxt (plataforma/admin)
 └── docs/migracao/PADRAO_PORTE_LEGADO.md
 ```
 
@@ -447,7 +447,7 @@ dotnet test EprosERP/tests/Epros.Tests/Epros.Tests.csproj
 
 ---
 
-## 11. Frontend (Epros.App / Nuxt 3)
+## 11. Frontend (EprosApp / Nuxt 3)
 
 | Regra | Detalhe |
 |-------|---------|
@@ -522,7 +522,7 @@ Cada agente escreve **somente dentro do seu módulo**. Referência cross-module 
 |--------|-------------------|
 | Operacional | GestaoClientes, Estoque, Vendas, Financeiro |
 | Fiscal | Fiscal (+ adaptadores DFe em Infrastructure) |
-| Plataforma/Front/ETL | Aplicativo, Epros.App, tests, scripts |
+| Plataforma/Front/ETL | Aplicativo, EprosApp, tests, scripts |
 
 > No porte automatizado atual, cada **módulo** tem 1 agente dono do seu `Context*.cs`, evitando conflito de arquivo.
 

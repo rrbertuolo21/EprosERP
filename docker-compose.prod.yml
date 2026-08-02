@@ -127,7 +127,7 @@ services:
 
   frontend:
     build:
-      context: ./Epros.App
+      context: ./EprosApp
       dockerfile: Dockerfile
       args:
         NUXT_PUBLIC_API_BASE_URL: ${NUXT_PUBLIC_API_BASE_URL}

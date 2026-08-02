@@ -18,7 +18,7 @@ namespace Epros.Infrastructure.Services
     /// Implementação de ISegredoCofreService integrada ao Vault Transit Engine,
     /// com mecanismo de fallback local resiliente com AES-256-GCM.
     /// </summary>
-    public class VaultEncryptionService : ISegredoCofreService
+    public class VaultEncryptionService : ISegredoCofreService, ISegredoRotacaoService
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<VaultEncryptionService> _logger;
@@ -239,6 +239,66 @@ namespace Epros.Infrastructure.Services
                 _logger.LogError(ex, "Erro crítico ao descriptografar segredo com Vault: {Ciphertext}", ciphertext);
                 throw;
             }
+        }
+
+        /// <summary>
+        /// TRANSVERSAL T5 — rotação (rewrap) de um ciphertext para a versão de chave corrente.
+        /// Vault: usa /transit/rewrap (o texto plano nunca sai do cofre). Fallback local: re-encripta
+        /// com nonce novo. Não altera o texto plano — só a proteção sob a chave mais recente.
+        /// </summary>
+        public async Task<string> RotacionarAsync(string ciphertext)
+        {
+            if (string.IsNullOrEmpty(ciphertext)) return ciphertext;
+
+            // Segredos locais: re-encripta localmente (nonce novo).
+            if (ciphertext.StartsWith("local:v1:"))
+            {
+                var planoLocal = DescriptografarLocal(ciphertext);
+                return CriptografarLocal(planoLocal);
+            }
+
+            if (!_inicializado)
+            {
+                await InicializarCofreAsync();
+            }
+
+            if (_usarCofreLocal)
+            {
+                // Sem Vault disponível: decifra (localmente, se for local) e re-encripta local.
+                var plano = await DescriptografarAsync(ciphertext);
+                return CriptografarLocal(plano);
+            }
+
+            try
+            {
+                var payload = new { ciphertext = ciphertext };
+                var response = await _httpClient.PostAsJsonAsync($"v1/transit/rewrap/{_chaveNome}", payload);
+                if (response.IsSuccessStatusCode)
+                {
+                    var resultJson = await response.Content.ReadFromJsonAsync<JsonElement>();
+                    var novo = resultJson.GetProperty("data").GetProperty("ciphertext").GetString();
+                    if (!string.IsNullOrEmpty(novo))
+                    {
+                        return novo;
+                    }
+                }
+
+                _logger.LogWarning("Rewrap no Vault não retornou ciphertext. Rotação re-encriptando via encrypt.");
+                var plano = await DescriptografarAsync(ciphertext);
+                return await CriptografarAsync(plano);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Falha ao rotacionar segredo no Vault: {Ciphertext}", ciphertext);
+                throw;
+            }
+        }
+
+        /// <summary>Política auxiliar: true se passou <paramref name="idadeMaximaDias"/> desde a última rotação.</summary>
+        public bool PrecisaRotacionar(DateTime rotacionadoEm, int idadeMaximaDias)
+        {
+            if (idadeMaximaDias <= 0) return false;
+            return (DateTime.UtcNow - rotacionadoEm).TotalDays >= idadeMaximaDias;
         }
 
         private string CriptografarLocal(string valor)

@@ -37,7 +37,7 @@ Três superfícies no **mesmo repositório** `EprosERP`:
 | Pasta / projeto | Responsabilidade |
 | --- | --- |
 | `src/` (`Epros.API` + `Modules`) | Backend — monólito modular, CQRS, DDD, PostgreSQL |
-| `Epros.App/` | Frontend — Nuxt 3 (web; Electron no mesmo app) |
+| `EprosApp/` | Frontend — Nuxt 3 (web; Electron no mesmo app) |
 | `Epros.Mobile/` | Mobile — React Native (submódulo git) |
 
 

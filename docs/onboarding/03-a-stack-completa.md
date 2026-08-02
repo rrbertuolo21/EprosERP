@@ -19,7 +19,7 @@ Toda decisão de tecnologia no Epros segue um critério único: **cloud-agnostic
 | Nome antigo | Nome atual | Conteúdo |
 | --- | --- | --- |
 | `epros-back` / `epros_erp` | `src/` | API, módulos, Shared, testes |
-| `epros-front` | `Epros.App/` | Nuxt 3 — `pages/`, `components/` |
+| `epros-front` | `EprosApp/` | Nuxt 3 — `pages/`, `components/` |
 | `epros-api` (YARP) | `src/API/Epros.API` | Host HTTP (sem YARP no compose atual) |
 
 ---
@@ -93,7 +93,7 @@ PostgreSQL concentra: `financas.*`, `estoque.*`, `vendas.*`, `plataforma.*` e de
 
 | Tecnologia | Superfície | Status |
 | --- | --- | --- |
-| Nuxt 3 | Web SaaS (`Epros.App`) | Ativo |
+| Nuxt 3 | Web SaaS (`EprosApp`) | Ativo |
 | Electron + Nuxt 3 | Desktop (mesmo app) | Em uso / evolução |
 | React Native | Mobile (`Epros.Mobile`) | Submódulo |
 
@@ -127,7 +127,7 @@ Aprofundamento por componente:
 | Repositório | Quem trabalha | Principais pastas |
 | --- | --- | --- |
 | `src/` | Backend, QA | `Modules/`, `API/`, `tests/` |
-| `Epros.App/` | Frontend | `pages/erp/`, `components/` |
+| `EprosApp/` | Frontend | `pages/erp/`, `components/` |
 | `docs/fabrica/` | Todos (processo) | `agentes/`, `skills/`, `cursor/rules` |
 
 ---

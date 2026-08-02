@@ -1,4 +1,4 @@
-# MAPA MESTRE — Reconstrução do Frontend EprosERP (Epros.App)
+# MAPA MESTRE — Reconstrução do Frontend EprosERP (EprosApp)
 
 > Objetivo deste documento: permitir soltar ~20 agentes de tela em paralelo **sem colisão de arquivos**.
 > Ele NÃO contém telas prontas — contém o mapa de rotas, o scaffolding compartilhado (gargalo serial) e a partição em fatias disjuntas.
@@ -7,7 +7,7 @@
 
 | | Legado (fonte de UX) | Novo (destino) |
 |---|---|---|
-| Caminho | `Epros/epros_erp_front-main/app` | `EprosERP/Epros.App` |
+| Caminho | `Epros/epros_erp_front-main/app` | `EprosERP/EprosApp` |
 | Stack | Nuxt 4 SPA · Vue 3 · **Vuetify 3** · Pinia · `useApiFetch` (OpenAPI types) · SignalR | Nuxt 3 SPA (Electron) · Vue 3 · **CSS custom (dark/glass)** · sem framework de UI · sem Pinia |
 | API client | `useApiFetch` → `useRuntimeConfig().public.BASE_URL` | `plugins/api.ts` (override do `$fetch` com token+tenant) — **mas páginas hardcodam `http://localhost:5000`** |
 | Design | Vuetify default | Tokens em `assets/css/main.css` (`--bg-color`, `--primary`, `.glass-panel`, `.btn`, `.badge`, tabela `.admin-table`) |
@@ -37,11 +37,11 @@ Prefixo global: `api/v1`. Bases relevantes por módulo:
 
 Legenda de prioridade: **P0** = crítico primeiro (emissão/DANFE/PDV + cadastros core: produto, parceiro, empresa). **P1** = fiscal/financeiro/estoque de suporte à emissão. **P2** = config/relatórios/área do cliente/auxiliares.
 
-Todas as rotas novas assumem raiz do ERP em `pages/erp/...` (ver seção 2, decisão de roteamento). Caminhos de página são relativos a `Epros.App/pages/`.
+Todas as rotas novas assumem raiz do ERP em `pages/erp/...` (ver seção 2, decisão de roteamento). Caminhos de página são relativos a `EprosApp/pages/`.
 
 ### Módulo: Autenticação / Onboarding
 
-| Rota legada | Página nova (Epros.App/pages/...) | Endpoints api/v1 | Prio |
+| Rota legada | Página nova (EprosApp/pages/...) | Endpoints api/v1 | Prio |
 |---|---|---|---|
 | `login.vue` | `index.vue` (já existe login) / `login.vue` | `login`, `me` (AuthController) | P0 |
 | `register.vue` | `cadastro.vue` (já existe) | `AccountController`, `OnboardingController` | P2 |
@@ -204,7 +204,7 @@ Estes são os **recursos exclusivos**: UM agente/integrador cria todos eles prim
 
 ### 2.6 Componentes compartilhados reutilizáveis (substituem os `<v-*>` do legado)
 
-Todos em `Epros.App/components/shared/`. São **recursos exclusivos** — agentes de tela consomem, nunca editam.
+Todos em `EprosApp/components/shared/`. São **recursos exclusivos** — agentes de tela consomem, nunca editam.
 
 | Componente | Arquivo-alvo | Substitui no legado | Uso |
 |---|---|---|---|

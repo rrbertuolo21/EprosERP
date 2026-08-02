@@ -39,6 +39,12 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
         // Dono único = GestaoClientes (PerfilAcesso + PerfilAcessoMenu + Menu, schema plataforma). Ver CONVENCAO_CODIGO.md §1.2.
         public DbSet<Epros.Shared.Domain.Events.OutboxMessage> OutboxMessages => Set<Epros.Shared.Domain.Events.OutboxMessage>();
 
+        // ===== TRANSVERSAIS COMPARTILHADAS (kernel) — casa de implementação na plataforma =====
+        // T9 numeração central · T8 auditoria imutável central · T10 GED canônico (documento central).
+        public DbSet<Epros.Shared.Domain.Entities.SequenciaNumeracao> SequenciasNumeracao => Set<Epros.Shared.Domain.Entities.SequenciaNumeracao>();
+        public DbSet<Epros.Shared.Domain.Entities.RegistroAuditoria> RegistrosAuditoria => Set<Epros.Shared.Domain.Entities.RegistroAuditoria>();
+        public DbSet<Epros.Shared.Domain.Entities.DocumentoGed> DocumentosGed => Set<Epros.Shared.Domain.Entities.DocumentoGed>();
+
         // Governança de upgrade/versão (Super Admin — APP-TEN-010)
         public DbSet<SolicitacaoUpgradeVersao> SolicitacoesUpgradeVersao => Set<SolicitacaoUpgradeVersao>();
 
@@ -298,6 +304,58 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
             {
                 entity.ToTable("outbox_messages", "aplicativo");
                 entity.HasKey(o => o.Id);
+            });
+
+            // ===== TRANSVERSAIS COMPARTILHADAS (kernel) =====
+
+            // T9 — numeração central: uma linha por (tenant, tipo). O índice único é o alvo do
+            // UPSERT atômico (ON CONFLICT) do NumeracaoService — sem ele não há garantia de gapless.
+            modelBuilder.Entity<Epros.Shared.Domain.Entities.SequenciaNumeracao>(entity =>
+            {
+                entity.ToTable("sequencias_numeracao", "aplicativo");
+                entity.HasKey(s => s.Id);
+                entity.Property(s => s.TipoDocumento).HasMaxLength(100);
+                entity.HasIndex(s => new { s.TenantId, s.TipoDocumento })
+                      .IsUnique()
+                      .HasDatabaseName("ix_sequencias_numeracao_tenant_tipo");
+            });
+
+            // T8 — auditoria imutável central (append-only). POCO (não EntidadeSaaSBase): sem
+            // soft-delete/xmin; a imutabilidade vem da entidade (sem mutadores). RLS por tenant é
+            // aplicada automaticamente pelo gerador de SQL (coluna tenant_id).
+            modelBuilder.Entity<Epros.Shared.Domain.Entities.RegistroAuditoria>(entity =>
+            {
+                entity.ToTable("registros_auditoria", "aplicativo");
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.TenantId).IsRequired();
+                entity.Property(r => r.Entidade).HasMaxLength(150);
+                entity.Property(r => r.EntidadeId).HasMaxLength(100);
+                entity.Property(r => r.Acao).HasMaxLength(100);
+                entity.Property(r => r.Usuario).HasMaxLength(150);
+                entity.Property(r => r.IpOrigem).HasMaxLength(64);
+                entity.HasIndex(r => new { r.TenantId, r.Entidade, r.EntidadeId })
+                      .HasDatabaseName("ix_registros_auditoria_tenant_entidade");
+                entity.HasIndex(r => r.OcorridoEm)
+                      .HasDatabaseName("ix_registros_auditoria_ocorrido_em");
+            });
+
+            // T10 — documento do GED canônico único (metadados + versão + estado de assinatura).
+            modelBuilder.Entity<Epros.Shared.Domain.Entities.DocumentoGed>(entity =>
+            {
+                entity.ToTable("documentos_ged", "aplicativo");
+                entity.HasKey(d => d.Id);
+                entity.Property(d => d.Nome).HasMaxLength(400);
+                entity.Property(d => d.TipoDocumento).HasMaxLength(100);
+                entity.Property(d => d.Hash).HasMaxLength(128);
+                entity.Property(d => d.MimeType).HasMaxLength(150);
+                entity.Property(d => d.StorageRef).HasMaxLength(1000);
+                entity.Property(d => d.ModuloOrigem).HasMaxLength(100);
+                entity.Property(d => d.EntidadeOrigemTipo).HasMaxLength(150);
+                entity.Property(d => d.EntidadeOrigemId).HasMaxLength(100);
+                entity.HasIndex(d => new { d.TenantId, d.Hash })
+                      .HasDatabaseName("ix_documentos_ged_tenant_hash");
+                entity.HasIndex(d => new { d.EntidadeOrigemTipo, d.EntidadeOrigemId })
+                      .HasDatabaseName("ix_documentos_ged_origem");
             });
 
             modelBuilder.Entity<InstalacaoState>(entity =>

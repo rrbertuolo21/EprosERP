@@ -24,7 +24,7 @@ last_updated: "2026-07-13"
 
 ## Pré-requisitos
 
-* **Repositório:** abra o **EprosERP** no Cursor (`src/` para API/módulos; `Epros.App/` se testar UI).
+* **Repositório:** abra o **EprosERP** no Cursor (`src/` para API/módulos; `EprosApp/` se testar UI).
 * **Context Agent:** ativo automaticamente.
 * **Artefatos:** critérios de aceite da US; build/release notes; cenários fiscais se aplicável.
 

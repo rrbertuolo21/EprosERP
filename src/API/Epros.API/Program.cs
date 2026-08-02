@@ -114,6 +114,16 @@ try
 
     // Registra o Cofre de Segredos (Vault)
     builder.Services.AddHttpClient<ISegredoCofreService, Epros.Infrastructure.Services.VaultEncryptionService>();
+    // T5 — rotação de segredos: mesma instância concreta do cofre (VaultEncryptionService) exposta
+    // também como ISegredoRotacaoService (resolve o registro tipado acima; não recria HttpClient).
+    builder.Services.AddScoped<Epros.Shared.Application.Contracts.ISegredoRotacaoService>(sp =>
+        (Epros.Infrastructure.Services.VaultEncryptionService)sp.GetRequiredService<ISegredoCofreService>());
+
+    // ===== TRANSVERSAIS COMPARTILHADAS (kernel) — serviços centrais =====
+    // T9 numeração central · T8 auditoria imutável · T10 assinatura ICP (default fail-safe).
+    builder.Services.AddScoped<Epros.Shared.Application.Contracts.INumeracaoService, Epros.Modules.Aplicativo.Infrastructure.Services.NumeracaoService>();
+    builder.Services.AddScoped<Epros.Shared.Application.Contracts.IRegistroAuditoriaService, Epros.Modules.Aplicativo.Infrastructure.Services.RegistroAuditoriaService>();
+    builder.Services.AddScoped<Epros.Shared.Application.Contracts.IAssinaturaDigitalService, Epros.Modules.Aplicativo.Infrastructure.Services.AssinaturaDigitalPendenteService>();
 
     // Gateway de pagamento (outbound) — Mercado Pago. HttpClient nomeado + implementação.
     builder.Services.AddHttpClient(Epros.Modules.GestaoClientes.Infrastructure.Gateways.MercadoPagoGateway.HttpClientName, client =>

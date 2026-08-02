@@ -23,7 +23,7 @@ O Epros é um **monólito modular** em .NET 8 seguindo **Clean Architecture por 
   mesmas capacidades (fonte única) — não há tela sem gate correspondente.
 - **EF Core + PostgreSQL.** Persistência via EF Core (provider Npgsql), schemas físicos por módulo, snake_case,
   soft-delete e concurrency token (`xmin` do Postgres) configurados no `ContextBase`.
-- **Front Nuxt 3 + TypeScript** (`Epros.App/`). IO só via `useApi`/`useApiList`. Mobile em React Native (submódulo).
+- **Front Nuxt 3 + TypeScript** (`EprosApp/`). IO só via `useApi`/`useApiList`. Mobile em React Native (submódulo).
 
 ## Convenções
 

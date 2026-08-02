@@ -10,10 +10,10 @@ ERP SaaS multi-tenant, **monólito modular** em **.NET 8**, Clean Architecture (
 Infrastructure/Migrations por módulo), **CQRS com MediatR**, **PostgreSQL + EF Core**, isolamento
 multi-tenant por **RLS** (`TenantRlsInterceptor` + `current_setting`), padrão **Outbox**, autorização
 **ABAC** (`[AbacAuthorize(recurso, acao)]`), validação **Flunt**. Front **Nuxt 3 + TypeScript** (SPA,
-`Epros.App`), IO 100% via `useApi`/`useApiList` (base do `runtimeConfig`, token/tenant automáticos).
+`EprosApp`), IO 100% via `useApi`/`useApiList` (base do `runtimeConfig`, token/tenant automáticos).
 Mobile: **React Native** (submódulo `Epros.Mobile`).
 
-**Estrutura do repo (achatada, deploy-ready):** `src/` (backend), `Epros.App/` (front), `scripts/`,
+**Estrutura do repo (achatada, deploy-ready):** `src/` (backend), `EprosApp/` (front), `scripts/`,
 `infra/`, `docker-compose.prod.yml`, `tests/`, `Epros.sln` na raiz.
 
 ## 2. Números atuais (verificados no banco/git vivos)

@@ -24,7 +24,7 @@ last_updated: "2026-07-13"
 
 ## Pré-requisitos
 
-* **Repositório:** abra o **EprosERP** no Cursor (pasta `Epros.App/` para telas).
+* **Repositório:** abra o **EprosERP** no Cursor (pasta `EprosApp/` para telas).
 * **Context Agent:** ativo automaticamente.
 * **Artefatos:** US com critérios; spec do submódulo; tech design se houver.
 

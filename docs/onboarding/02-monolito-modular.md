@@ -29,7 +29,7 @@ A decisão foi registrada em ADR e avaliada em 6 critérios:
 flowchart TB
     subgraph C1["Camada 1 - Apresentação"]
         direction LR
-        Nuxt["Nuxt 3 — Epros.App"] --- Electron["Electron Desktop"] --- Capacitor["Capacitor Mobile"]
+        Nuxt["Nuxt 3 — EprosApp"] --- Electron["Electron Desktop"] --- Capacitor["Capacitor Mobile"]
     end
 
     subgraph C2["Camada 2 - API Host"]
@@ -151,7 +151,7 @@ A ordem é **obrigatória**. Alterar a sequência quebra segurança ou auditoria
 | Repositório   | Conteúdo                                                   |
 | ------------- | ---------------------------------------------------------- |
 | `src/` | Monólito modular — API, Modules, Shared, Infrastructure |
-| `Epros.App/` | Nuxt 3 — `pages/erp|plataforma|area-cliente` |
+| `EprosApp/` | Nuxt 3 — `pages/erp|plataforma|area-cliente` |
 | `Epros.Mobile/` | React Native (submódulo) |
 | `docs/fabrica/` | Agentes, processo, skills, rules Cursor |
 

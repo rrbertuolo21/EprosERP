@@ -10,7 +10,7 @@ O ambiente da fábrica não tem `node` no PATH (o build do esbuild trava lá), e
 ## Passo a passo
 
 ```bash
-cd /Users/rafaelrbertuolo/Desktop/Projetos/Epros/EprosERP/Epros.App
+cd /Users/rafaelrbertuolo/Desktop/Projetos/Epros/EprosERP/EprosApp
 
 # 1) dependências (se ainda não instalou nesta máquina)
 npm install

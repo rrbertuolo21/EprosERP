@@ -51,7 +51,7 @@ Referência rápida de prompts e agentes: [índice de tutoriais](indice-tutoriai
 
 | # | Artigo | Tipo |
 | --- | --- | --- |
-| 1 | [Estrutura de pastas do Epros.App](estrutura-pastas-front.md) | Conceito — **ler primeiro** (layout atual) |
+| 1 | [Estrutura de pastas do EprosApp](estrutura-pastas-front.md) | Conceito — **ler primeiro** (layout atual) |
 | 2 | [Trilha Frontend — Nuxt (três superfícies)](trilha-frontend-nuxt.md) | Conceito (material original pode citar Nuxt 4; runtime = Nuxt 3) |
 | 3 | [Tutorial — Dev Frontend](frontend/tutorial-dev-frontend.md) | Prática — UX · Dev · Code Review |
 
