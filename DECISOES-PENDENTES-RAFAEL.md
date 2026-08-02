@@ -53,3 +53,34 @@ NÃO é calculado pelo sistema** — vem do contador (`Negocio-acumulado/fiscal`
 DEVOLUCAO_DE_COMPRA (CD4) · COMERCIO_EXTERIOR (CD1) · SOURCING mapa comparativo + vencedor (CD2) ·
 CONTRATOS_GCC aditivo + performance (CD5) · SUBCONTRATACAO serviço + doc fiscal · TMS frete rateado (NF-04) ·
 COM-GC relatórios (CD7). Suíte 1127 verdes, build 0 erros. Detalhe no `HISTORICO-DESENVOLVIMENTO-IA.md`.
+
+---
+
+# Decisões pendentes — módulo FINANCEIRO (motores de cálculo)
+
+Os 10 submódulos do Financeiro (FIN-CGL/SF/AFX/CMG/PO/TS/CAM/CON/GCF/SBF) já estavam construídos
+(domínio + CQRS + controllers + testes) em rodadas anteriores. Esta rodada adicionou os **motores de
+cálculo contábil/financeiro universais** que ainda faltavam, cada um com testes e citando a skill de
+negócio. Nenhum inventa número legal — todos recebem o valor factual como parâmetro (valida-contador).
+
+## 5. Fiscais/contábeis — valida-contador (motores prontos; valor factual é do contador)
+
+| Item | Onde | Como ficou |
+|---|---|---|
+| Taxa/vida útil de depreciação (RFB IN 1.700/2017 Anexo III) | FIN-AFX `CalculoDepreciacao` | Motor aplica linear/saldos decrescentes/soma dos dígitos; **taxa/vida útil chega informada** no ativo. |
+| Alíquotas de IOF de crédito (Decreto 6.306/2007; majoração 2025) | FIN-GCF `CalculoAmortizacao.IofCredito` | Estrutura diário(teto 365)+adicional; **alíquotas são parâmetro** por vigência/PF-PJ, nunca hardcode. |
+| Metodologia/divulgação do CET (Res. CMN 3.517/2007) | FIN-GCF `CalculoAmortizacao.CetAnual` | TIR do fluxo por bisseção; componentes (tarifas/seguros) entram como parâmetro; divulgação PF a homologar. |
+| Cotação de câmbio (PTAX/fechamento) | FIN-CAM `CalculoVariacaoCambial` | Mark-to-market aplica a cotação; **cotação é fato de mercado por data**, informada. |
+| Mapeamento evento→conta do plano (qual débito × qual crédito) | FIN-CGL `MotorContabilizacao` | Motor garante a partida dobrada; **as contas vêm na `RegraContabilizacao`** (config do contador). |
+
+## 6. Wiring pendente (anotado, NÃO feito overnight para não arriscar a suíte)
+
+- **Contabilização automática evento→ledger:** hoje os handlers de integração
+  (`CompraLancadaEventHandler`, `VendaFaturadaEventHandler`, folha, projeto) geram **título financeiro**
+  (ContasAPagar/Receber), mas **não** geram lançamento no ledger. O `MotorContabilizacao` está pronto e
+  testado; ligá-lo aos eventos exige uma **tabela de mapeamento evento→conta** (config por cliente/contador)
+  + migration. Isso depende de definição contábil (quais contas do plano) → **valida-contador**; não criado
+  overnight para não inventar contas-padrão. Decisão do Rafael/contador: definir o de-para e habilitar.
+- **Motores de Price/SAC/CET e variação cambial** são bibliotecas de domínio testadas, ainda **não
+  consumidas** por handler/endpoint (dívida estruturada e reavaliação usam valores informados). Expor
+  como endpoint de simulação é passo natural quando houver a demanda de produto.
