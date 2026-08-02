@@ -51,6 +51,12 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public virtual PessoaMotorista? PessoaMotorista { get; private set; }
         public virtual PessoaTransportadora? PessoaTransportadora { get; private set; }
         public virtual PessoaPrestadorServico? PessoaPrestadorServico { get; private set; }
+        // E-05 (DECISOES_IMPLANTACAO_V1 · P-02=A): navegação 1:1 dos papéis que faltavam no root.
+        // Pessoa é a fonte única — os demais módulos apenas leem estes perfis.
+        public virtual PessoaFornecedor? PessoaFornecedor { get; private set; }
+        public virtual PessoaVendedor? PessoaVendedor { get; private set; }
+        public virtual PessoaComprador? PessoaComprador { get; private set; }
+        public virtual PessoaContador? PessoaContador { get; private set; }
 
         // Collections (1:N)
         public virtual ICollection<Endereco> Enderecos { get; private set; } = new List<Endereco>();
@@ -136,6 +142,28 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public void DefinirFornecedor(bool ehFornecedor)
         {
             EhFornecedor = ehFornecedor;
+        }
+
+        // E-05: métodos de vínculo dos papéis navegados no root (Pessoa como fonte única).
+        public void VincularFornecedor(PessoaFornecedor? fornecedor)
+        {
+            PessoaFornecedor = fornecedor;
+            EhFornecedor = fornecedor != null;
+        }
+
+        public void VincularVendedor(PessoaVendedor? vendedor)
+        {
+            PessoaVendedor = vendedor;
+        }
+
+        public void VincularComprador(PessoaComprador? comprador)
+        {
+            PessoaComprador = comprador;
+        }
+
+        public void VincularContador(PessoaContador? contador)
+        {
+            PessoaContador = contador;
         }
 
         public void DefinirProdutorRural(bool ehProdutorRural)

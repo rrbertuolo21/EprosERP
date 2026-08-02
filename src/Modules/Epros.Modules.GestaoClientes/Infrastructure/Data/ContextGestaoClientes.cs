@@ -610,11 +610,16 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 {
                     cnpj.Property(c => c.Valor).HasColumnName("cnpj");
                 });
+                // E-01 (DECISOES_IMPLANTACAO_V1): razão social/fantasia unificadas em 250 (era 60).
+                // Enforcement no domínio (PessoaJuridica.Validar). Coluna permanece `text` (sem cap de
+                // varchar) para evitar migration text->varchar com risco de truncamento — ver
+                // especificacoes/CADASTROS_BASE/DECISOES-PENDENTES-RAFAEL.md.
             });
 
             modelBuilder.Entity<PessoaEstrangeiro>(entity =>
             {
                 entity.HasKey(pe => pe.PessoaId);
+                // E-03: identificação de estrangeiro 20 -> 30. Enforcement no domínio; coluna permanece `text`.
             });
 
             modelBuilder.Entity<PessoaCliente>(entity =>
@@ -664,6 +669,8 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
             modelBuilder.Entity<PessoaContato>(entity =>
             {
                 entity.HasKey(c => c.Id);
+                // E-02: fecha o gap de validação — e-mail de contato limitado a 150 no domínio
+                // (PessoaContato ctor), alinhando EmpresaContato/Vendedor. Coluna permanece `text`.
             });
 
             modelBuilder.Entity<PessoaVeiculo>(entity =>
@@ -1070,7 +1077,7 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 entity.Property(pf => pf.ChequeNominalA).HasMaxLength(150);
                 entity.Property(pf => pf.Observacao).HasMaxLength(300);
                 entity.Property(pf => pf.ContaRemetente).HasMaxLength(50);
-                entity.HasOne<Pessoa>().WithOne().HasForeignKey<PessoaFornecedor>(pf => pf.PessoaId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne<Pessoa>().WithOne(p => p.PessoaFornecedor).HasForeignKey<PessoaFornecedor>(pf => pf.PessoaId).OnDelete(DeleteBehavior.Cascade);
                 entity.HasIndex(pf => pf.GrupoFornecedorId).HasDatabaseName("ix_pessoas_fornecedores_grupo");
                 entity.HasIndex(pf => pf.CompradorId).HasDatabaseName("ix_pessoas_fornecedores_comprador");
             });
@@ -1078,14 +1085,14 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
             modelBuilder.Entity<PessoaComprador>(entity =>
             {
                 entity.HasKey(pc => pc.PessoaId);
-                entity.HasOne<Pessoa>().WithOne().HasForeignKey<PessoaComprador>(pc => pc.PessoaId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne<Pessoa>().WithOne(p => p.PessoaComprador).HasForeignKey<PessoaComprador>(pc => pc.PessoaId).OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<PessoaContador>(entity =>
             {
                 entity.HasKey(pc => pc.PessoaId);
                 entity.Property(pc => pc.Crc).HasMaxLength(15);
-                entity.HasOne<Pessoa>().WithOne().HasForeignKey<PessoaContador>(pc => pc.PessoaId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne<Pessoa>().WithOne(p => p.PessoaContador).HasForeignKey<PessoaContador>(pc => pc.PessoaId).OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<PessoaVendedor>(entity =>
@@ -1096,7 +1103,7 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 entity.Property(pv => pv.FormaDesconto).HasMaxLength(50);
                 entity.Property(pv => pv.TipoDesconto).HasMaxLength(50);
                 entity.Property(pv => pv.Meta).HasPrecision(18, 2);
-                entity.HasOne<Pessoa>().WithOne().HasForeignKey<PessoaVendedor>(pv => pv.PessoaId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne<Pessoa>().WithOne(p => p.PessoaVendedor).HasForeignKey<PessoaVendedor>(pv => pv.PessoaId).OnDelete(DeleteBehavior.Cascade);
             });
 
             // ===================== CAD-PEM: governança =====================
