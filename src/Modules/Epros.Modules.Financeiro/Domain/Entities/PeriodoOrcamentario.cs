@@ -86,6 +86,27 @@ namespace Epros.Modules.Financeiro.Domain.Entities
             Status = EStatusOrcamento.Aprovado; MarcarAlterado(usuario);
         }
 
+        /// <summary>Ativa o budget (EF FIN-PO §6.5): só de Aprovado para Ativo.</summary>
+        public void Ativar(string usuario)
+        {
+            if (Status != EStatusOrcamento.Aprovado) { AddNotification(nameof(Status), "Somente budget aprovado pode ser ativado."); return; }
+            Status = EStatusOrcamento.Ativo; MarcarAlterado(usuario);
+        }
+
+        /// <summary>Encerra o budget (EF FIN-PO §6.5): só de Ativo para Encerrado. Usado também na cascata do período (§6.4).</summary>
+        public void Encerrar(string usuario)
+        {
+            if (Status != EStatusOrcamento.Ativo) { AddNotification(nameof(Status), "Somente budget ativo pode ser encerrado."); return; }
+            Status = EStatusOrcamento.Encerrado; MarcarAlterado(usuario);
+        }
+
+        /// <summary>Exclusão lógica do budget (EF FIN-PO §6.5): só permitida em Rascunho.</summary>
+        public void Excluir(string usuario)
+        {
+            if (Status != EStatusOrcamento.Rascunho) { AddNotification(nameof(Status), "Somente budget em rascunho pode ser excluído."); return; }
+            Deletar(usuario);
+        }
+
         public void Validar()
         {
             Clear();
