@@ -55,5 +55,17 @@ namespace Epros.API.Controllers
         [HttpGet("solicitacoes")]
         [AbacAuthorize("ConcessionariasGarantias", "Consultar")]
         public async Task<IActionResult> ListarSolicitacoes() => Ok(await _mediator.Send(new ObterSolicitacoesGarantiaQuery()));
+
+        // ----- Julgamento de solicitação (D-02: expõe Aprovar/Rejeitar; segregação decisor = NF-10) -----
+
+        [HttpPost("solicitacoes/{id}/julgar")]
+        [AbacAuthorize("ConcessionariasGarantias", "Julgar")]
+        public async Task<ActionResult<CommandResult>> JulgarSolicitacao(System.Guid id, [FromBody] JulgarSolicitacaoBody body)
+        {
+            var result = await _mediator.Send(new JulgarSolicitacaoGarantiaCommand(id, body.Aprovar));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        public record JulgarSolicitacaoBody(bool Aprovar);
     }
 }

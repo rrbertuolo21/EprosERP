@@ -55,5 +55,35 @@ namespace Epros.API.Controllers
         [HttpGet("test-drives")]
         [AbacAuthorize("ConcessionariasCrm", "Consultar")]
         public async Task<IActionResult> ListarTestDrives() => Ok(await _mediator.Send(new ObterTestDrivesQuery()));
+
+        // ----- Transições de Oportunidade (D-02: expõe métodos de domínio antes órfãos) -----
+
+        [HttpPost("oportunidades/{id}/avancar-etapa")]
+        [AbacAuthorize("ConcessionariasCrm", "Editar")]
+        public async Task<ActionResult<CommandResult>> AvancarEtapa(System.Guid id, [FromBody] AvancarEtapaOportunidadeCommandBody body)
+        {
+            var result = await _mediator.Send(new AvancarEtapaOportunidadeCommand(id, body.NovaEtapa));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("oportunidades/{id}/converter")]
+        [AbacAuthorize("ConcessionariasCrm", "Editar")]
+        public async Task<ActionResult<CommandResult>> Converter(System.Guid id, [FromBody] ConverterOportunidadeCommandBody body)
+        {
+            var result = await _mediator.Send(new ConverterOportunidadeCommand(id, body.VendaId));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("oportunidades/{id}/registrar-perda")]
+        [AbacAuthorize("ConcessionariasCrm", "Editar")]
+        public async Task<ActionResult<CommandResult>> RegistrarPerda(System.Guid id, [FromBody] RegistrarPerdaOportunidadeCommandBody body)
+        {
+            var result = await _mediator.Send(new RegistrarPerdaOportunidadeCommand(id, body.MotivoPerdaId));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        public record AvancarEtapaOportunidadeCommandBody(string NovaEtapa);
+        public record ConverterOportunidadeCommandBody(System.Guid VendaId);
+        public record RegistrarPerdaOportunidadeCommandBody(System.Guid MotivoPerdaId);
     }
 }
