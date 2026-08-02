@@ -55,6 +55,15 @@ namespace Epros.Modules.ESG.Infrastructure.Data
         public DbSet<DivAcao> AcoesDiv => Set<DivAcao>();
         public DbSet<DivParametro> ParametrosDiv => Set<DivParametro>();
 
+        // ESG-TSU (Transporte Sustentavel)
+        public DbSet<TsuRegistro> RegistrosTsu => Set<TsuRegistro>();
+        public DbSet<TsuOperacao> OperacoesTsu => Set<TsuOperacao>();
+        public DbSet<TsuTrecho> TrechosTsu => Set<TsuTrecho>();
+        public DbSet<TsuCalculo> CalculosTsu => Set<TsuCalculo>();
+        public DbSet<TsuMetaModal> MetasModalTsu => Set<TsuMetaModal>();
+        public DbSet<TsuMedicao> MedicoesModalTsu => Set<TsuMedicao>();
+        public DbSet<TsuParametro> ParametrosTsu => Set<TsuParametro>();
+
         public ContextESG(
             DbContextOptions<ContextESG> options,
             ITenantProvider tenantProvider,
@@ -484,6 +493,75 @@ namespace Epros.Modules.ESG.Infrastructure.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.ToTable("div_parametro");
+                entity.Property(e => e.Chave).HasMaxLength(100);
+                entity.Property(e => e.ValorJson).HasMaxLength(2000);
+                entity.HasIndex(e => new { e.TenantId, e.Chave }).IsUnique();
+            });
+
+            // ================= ESG-TSU =================
+            modelBuilder.Entity<TsuRegistro>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("tsu_registro");
+                entity.Property(e => e.Codigo).HasMaxLength(30);
+                entity.Property(e => e.Descricao).HasMaxLength(500);
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.HasIndex(e => new { e.TenantId, e.Codigo }).IsUnique();
+            });
+
+            modelBuilder.Entity<TsuOperacao>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("tsu_operacao");
+                entity.Property(e => e.Referencia).HasMaxLength(60);
+                entity.Property(e => e.Modal).HasMaxLength(30);
+                entity.HasIndex(e => new { e.TenantId, e.RegistroTsuId });
+            });
+
+            modelBuilder.Entity<TsuTrecho>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("tsu_trecho");
+                entity.Property(e => e.Modal).HasMaxLength(30);
+                entity.Property(e => e.UnidadeDistancia).HasMaxLength(10);
+                entity.Property(e => e.UnidadeMassa).HasMaxLength(10);
+                entity.Property(e => e.UnidadeEnergia).HasMaxLength(20);
+                entity.HasIndex(e => new { e.TenantId, e.OperacaoId });
+            });
+
+            modelBuilder.Entity<TsuCalculo>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("tsu_calculo");
+                entity.Property(e => e.FormulaVersao).HasMaxLength(30);
+                entity.Property(e => e.FatorCodigo).HasMaxLength(30);
+                entity.Property(e => e.FatorVersao).HasMaxLength(30);
+                entity.Property(e => e.FatorFonte).HasMaxLength(200);
+                entity.Property(e => e.MemoriaCalculo).HasMaxLength(2000);
+                entity.HasIndex(e => new { e.TenantId, e.TrechoId });
+                entity.HasIndex(e => new { e.TenantId, e.FatorPendente });
+            });
+
+            modelBuilder.Entity<TsuMetaModal>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("tsu_meta_modal");
+                entity.Property(e => e.Modal).HasMaxLength(30);
+                entity.HasIndex(e => new { e.TenantId, e.RegistroTsuId });
+            });
+
+            modelBuilder.Entity<TsuMedicao>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("tsu_medicao");
+                entity.Property(e => e.Periodo).HasMaxLength(20);
+                entity.HasIndex(e => new { e.TenantId, e.MetaModalId });
+            });
+
+            modelBuilder.Entity<TsuParametro>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("tsu_parametro");
                 entity.Property(e => e.Chave).HasMaxLength(100);
                 entity.Property(e => e.ValorJson).HasMaxLength(2000);
                 entity.HasIndex(e => new { e.TenantId, e.Chave }).IsUnique();

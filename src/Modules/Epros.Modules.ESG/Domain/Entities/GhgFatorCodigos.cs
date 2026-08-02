@@ -18,5 +18,12 @@ namespace Epros.Modules.ESG.Domain.Entities
 
         /// <summary>Escopo 3 · cat. 1 — Bens e servicos adquiridos, por peca adquirida (compra).</summary>
         public const string BensAdquiridosPorPeca = "S3_BENS_ADQUIRIDOS_PC";
+
+        /// <summary>
+        /// Escopo 3 · cat. 4/9 — Transporte, por tonelada-quilometro (tkm). Fator COMPARTILHADO com o
+        /// GHG (NF-07): o TSU le do mesmo catalogo versionado esg.ghg_fator_emissao, evitando dupla
+        /// contagem (NF-04). Valor por modal/combustivel vem da base oficial homologada — // valida-humano.
+        /// </summary>
+        public const string TransportePorTkm = "S3_TRANSPORTE_TKM";
     }
 }
