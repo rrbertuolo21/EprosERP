@@ -87,7 +87,10 @@ export const erpMenu: MenuGroup[] = [
   {
     label: 'PDV',
     icon: 'pos',
-    itens: [{ label: 'Caixa', to: '/erp/pdv' }]
+    itens: [
+      { label: 'Caixa', to: '/erp/pdv' },
+      { label: 'Gestão de Caixa', to: '/erp/pdv/caixa' }
+    ]
   },
   {
     label: 'Compras',
