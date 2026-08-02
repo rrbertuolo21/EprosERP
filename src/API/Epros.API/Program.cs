@@ -24,7 +24,6 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Epros.Modules.Financeiro.Infrastructure.Jobs;
 using Epros.Modules.Vendas.Infrastructure.Jobs;
 using Epros.Modules.Qualidade.Infrastructure.Data;
-using Epros.Modules.Qualidade.Infrastructure.Jobs;
 using Epros.Modules.Aplicativo.Infrastructure.Jobs;
 using Epros.Modules.Producao.Infrastructure.Data;
 using Epros.Modules.Producao.Infrastructure.Jobs;
@@ -110,6 +109,16 @@ try
     builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxFallbackConsumer, Epros.Infrastructure.Outbox.PendingRuleFallbackConsumer>();
     // Consumidor REAL: imo.aluguel.cobranca_gerada -> título em Contas a Receber (Financeiro).
     builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Financeiro.Application.EventHandlers.AluguelCobrancaGeradaConsumer>();
+    // Consumidores REAIS dos Outboxes de QUALIDADE e MANUTENÇÃO (roteados pelos dispatchers por schema):
+    //  - InspecaoReprovada / OrdemManutencaoConcluida -> baixa no Estoque pelo motor único;
+    //  - qld.acr.lote_bloqueado/quarentena e qld.rst.bloqueio_solicitado -> contenção do lote no Estoque;
+    //  - qld.acr.lote_liberado -> desbloqueio do lote. Todos idempotentes e tenant-explícitos.
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.InspecaoReprovadaEstoqueConsumer>();
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.OrdemManutencaoConcluidaEstoqueConsumer>();
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.QualidadeLoteBloqueadoConsumer>();
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.QualidadeLoteQuarentenaConsumer>();
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.QualidadeRstBloqueioSolicitadoConsumer>();
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.QualidadeLoteLiberadoConsumer>();
 
     // Registra o serviço de hashing de senhas (PBKDF2 / HMAC-SHA256). Sem estado -> Singleton.
     builder.Services.AddSingleton<IPasswordHasher, Epros.Infrastructure.Services.Pbkdf2PasswordHasher>();
@@ -429,12 +438,18 @@ try
             .WithIdentity("GestaoClientesOutboxProcessorJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
 
-        var qualidadeOutboxJobKey = new JobKey("QualidadeOutboxProcessorJob");
-        q.AddJob<QualidadeOutboxProcessorJob>(opts => opts.WithIdentity(qualidadeOutboxJobKey));
+        // TRANSVERSAL T1 — Outbox de QUALIDADE migrado do job por-módulo (que só tratava
+        // "InspecaoReprovada" e deixava qld.acr.lote_bloqueado/quarentena/liberado e
+        // qld.rst.bloqueio_solicitado "morrerem") para o DISPATCHER CENTRAL, que roteia por EventType
+        // para os consumidores REAIS (baixa/contenção de lote no Estoque) e cai no fallback (pendência
+        // de regra) para os demais eventos conhecidos. Um único leitor por schema (sem duplicar).
+        var qualidadeOutboxJobKey = new JobKey("QualidadeOutboxDispatcherJob");
+        q.AddJob<Epros.Infrastructure.Outbox.OutboxDispatcherJob<Epros.Modules.Qualidade.Infrastructure.Data.ContextQualidade>>(
+            opts => opts.WithIdentity(qualidadeOutboxJobKey));
 
         q.AddTrigger(opts => opts
             .ForJob(qualidadeOutboxJobKey)
-            .WithIdentity("QualidadeOutboxProcessorJob-trigger")
+            .WithIdentity("QualidadeOutboxDispatcherJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
 
         var producaoOutboxJobKey = new JobKey("ProducaoOutboxProcessorJob");
@@ -461,12 +476,15 @@ try
             .WithIdentity("ProjetosOutboxProcessorJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
 
-        var manutencaoOutboxJobKey = new JobKey("ManutencaoOutboxProcessorJob");
-        q.AddJob<ManutencaoOutboxProcessorJob>(opts => opts.WithIdentity(manutencaoOutboxJobKey));
+        // TRANSVERSAL T1 — Outbox de MANUTENÇÃO migrado do job por-módulo ("OrdemManutencaoConcluida")
+        // para o DISPATCHER CENTRAL: o consumidor real baixa as peças no Estoque pelo motor único.
+        var manutencaoOutboxJobKey = new JobKey("ManutencaoOutboxDispatcherJob");
+        q.AddJob<Epros.Infrastructure.Outbox.OutboxDispatcherJob<Epros.Modules.Manutencao.Infrastructure.Data.ContextManutencao>>(
+            opts => opts.WithIdentity(manutencaoOutboxJobKey));
 
         q.AddTrigger(opts => opts
             .ForJob(manutencaoOutboxJobKey)
-            .WithIdentity("ManutencaoOutboxProcessorJob-trigger")
+            .WithIdentity("ManutencaoOutboxDispatcherJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
 
         // MAN-PRV D7 — scheduler de vencimento da preventiva (calendario/contador).

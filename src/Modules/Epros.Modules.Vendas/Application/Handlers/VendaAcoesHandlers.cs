@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Epros.Modules.Vendas.Application.Commands;
 using Epros.Modules.Vendas.Application.Models;
+using Epros.Modules.Vendas.Application.Services;
 using Epros.Modules.Vendas.Domain.Entities;
 using Epros.Modules.Vendas.Domain.Enums;
 using Epros.Modules.Vendas.Infrastructure.Data;
@@ -233,7 +234,11 @@ namespace Epros.Modules.Vendas.Application.Handlers
             var tenantId = _tenant.GetTenantId();
             var userId = _user.GetUserId() ?? "system";
 
-            var venda = await _context.Vendas.Include(v => v.Nfe).FirstOrDefaultAsync(v => v.Id == r.VendaId && v.DeletadoEm == null, ct);
+            var venda = await _context.Vendas
+                .Include(v => v.Nfe)
+                .Include(v => v.Itens)
+                .Include(v => v.Pagamentos)
+                .FirstOrDefaultAsync(v => v.Id == r.VendaId && v.DeletadoEm == null, ct);
             if (venda == null) return CommandResult.Falha($"Venda não localizada: {r.VendaId}");
 
             // Porte fiel de nfe-simplificado-transmitir: inclui a NF-e (série/número) e marca Transmitido.
@@ -242,6 +247,10 @@ namespace Epros.Modules.Vendas.Application.Handlers
             {
                 var nfe = new VendaNfe(venda.Id, r.Numero, r.Serie, r.DataHoraSaida, tenantId, userId);
                 venda.DefinirNfe(nfe);
+                // A NF-e é uma entidade NOVA de um agregado JÁ persistido: como a PK (GUID) é
+                // client-generated (ValueGeneratedNever), a fixação por navegação a marca como Modified
+                // (UPDATE em linha inexistente → DbUpdateConcurrencyException). Força o estado Added.
+                _context.Entry(nfe).State = Microsoft.EntityFrameworkCore.EntityState.Added;
             }
             else
             {
@@ -251,6 +260,12 @@ namespace Epros.Modules.Vendas.Application.Handlers
             venda.AtualizarStatus(EVendaStatus.Transmitido, userId);
             venda.AtualizarDataUltimoProcessamento();
             if (!venda.IsValid) return CommandResult.Falha(venda.Notifications.Select(n => n.Message));
+
+            // T3 — LIGA OS EFEITOS REAIS do faturamento no PDV (antes esta transmissão fiscal-interativa
+            // não creditava caixa, nem gerava financeiro, nem baixava estoque): credita CaixaMovimento por
+            // forma de pagamento e enfileira VendaFaturada no Outbox (→ Financeiro + Estoque pelo motor único).
+            // Idempotente e transacional (mesmo SaveChanges da venda).
+            await new EfeitosFaturamentoPdvService(_context).AplicarAsync(venda, tenantId, userId, ct);
 
             await _context.SaveChangesAsync(ct);
             return CommandResult.Ok("NF-e simplificada marcada para transmissão com sucesso.", new { venda.Id });
