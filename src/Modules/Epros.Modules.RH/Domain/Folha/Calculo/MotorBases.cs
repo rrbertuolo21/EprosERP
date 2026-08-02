@@ -68,7 +68,8 @@ namespace Epros.Modules.RH.Domain.Folha.Calculo
             int numDependentes,
             TabelaIrrf tabela,
             decimal pensaoAlimenticia = 0m,
-            decimal outrasDeducoes = 0m)
+            decimal outrasDeducoes = 0m,
+            bool aplicarRedutor2026 = true)
         {
             if (tabela == null) throw new ArgumentNullException(nameof(tabela));
             if (rendimentoTributavel <= 0)
@@ -92,8 +93,9 @@ namespace Epros.Modules.RH.Domain.Folha.Calculo
             var impostoTabela = usouSimplificado ? impSimpl : impLegal;
             var aliquota = usouSimplificado ? aliqSimpl : aliqLegal;
 
-            // Redutor 2026 sobre o rendimento bruto.
-            var redutor = CalcularRedutor(impostoTabela, rendimentoTributavel, tabela);
+            // Redutor 2026 sobre o rendimento bruto. Não se aplica ao 13º (tributação exclusiva na fonte)
+            // // valida-contador — a Lei 15.270/2025 fala em rendimento MENSAL; 13º apurado à parte.
+            var redutor = aplicarRedutor2026 ? CalcularRedutor(impostoTabela, rendimentoTributavel, tabela) : 0m;
             var impostoFinal = Arredondamento.Reais(Math.Max(0m, impostoTabela - redutor));
 
             return new ResultadoIrrf(
