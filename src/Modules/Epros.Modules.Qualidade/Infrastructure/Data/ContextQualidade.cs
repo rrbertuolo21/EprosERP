@@ -31,6 +31,7 @@ namespace Epros.Modules.Qualidade.Infrastructure.Data
         public DbSet<AmostraInspecionada> AmostrasInspecionadas => Set<AmostraInspecionada>();
         public DbSet<Medicao> Medicoes => Set<Medicao>();
         public DbSet<ResultadoInspecao> ResultadosInspecao => Set<ResultadoInspecao>();
+        public DbSet<EstadoComutacaoInspecao> EstadosComutacaoInspecao => Set<EstadoComutacaoInspecao>();
 
         // --- QLD-ACR (Analise de Aceitacao e Rejeicao) ---
         public DbSet<AcrAnalise> AcrAnalises => Set<AcrAnalise>();
@@ -273,6 +274,15 @@ namespace Epros.Modules.Qualidade.Infrastructure.Data
                 e.Property(x => x.CriterioAceiteAplicado).HasMaxLength(2000);
                 e.Property(x => x.Conclusao).HasMaxLength(4000);
                 e.HasIndex(x => new { x.TenantId, x.ExecucaoId }).IsUnique();
+            });
+            modelBuilder.Entity<EstadoComutacaoInspecao>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_ins_comutacao_estado");
+                e.Property(x => x.Aql).HasMaxLength(20);
+                e.Property(x => x.JanelaNormalRejeicoes).HasMaxLength(50);
+                // Um estado por (fornecedor x produto x AQL) por tenant — chave da persistencia entre lotes.
+                e.HasIndex(x => new { x.TenantId, x.FornecedorId, x.ProdutoId, x.Aql }).IsUnique();
             });
 
             // ===== QLD-ACR =====

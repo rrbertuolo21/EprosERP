@@ -1,5 +1,6 @@
 using System;
 using Epros.Modules.Qualidade.Domain.Enums;
+using Epros.Modules.Qualidade.Domain.Services.Aql;
 using Epros.Shared.Application.Contracts;
 using FluentValidation;
 
@@ -149,6 +150,34 @@ namespace Epros.Modules.Qualidade.Application.Commands.Ins
         {
             RuleFor(c => c.ExecucaoId).NotEmpty();
             RuleFor(c => c.ConcluidoPor).NotEmpty();
+        }
+    }
+
+    /// <summary>
+    /// Registra a decisao de UM lote no regime de comutacao de severidade (NBR 5427) e PERSISTE o estado
+    /// por (fornecedor x produto x AQL), de modo que a severidade do proximo lote seja recuperada do banco.
+    /// A severidade retornada e a que vigora para o PROXIMO recebimento.
+    /// Tabelas/limites da norma = // valida (PDF ABNT NBR 5426/5427).
+    /// </summary>
+    public record RegistrarLoteComutacaoCommand(
+        Guid FornecedorId,
+        Guid ProdutoId,
+        string Aql,
+        EDecisaoLote Decisao,
+        int Defeituosos,
+        bool AtenuadaHabilitada,
+        bool ProducaoEstavel,
+        int? LimiteDefeituososAtenuada
+    ) : ICommand;
+
+    public class RegistrarLoteComutacaoCommandValidator : AbstractValidator<RegistrarLoteComutacaoCommand>
+    {
+        public RegistrarLoteComutacaoCommandValidator()
+        {
+            RuleFor(c => c.FornecedorId).NotEmpty();
+            RuleFor(c => c.ProdutoId).NotEmpty();
+            RuleFor(c => c.Aql).NotEmpty();
+            RuleFor(c => c.Defeituosos).GreaterThanOrEqualTo(0);
         }
     }
 }

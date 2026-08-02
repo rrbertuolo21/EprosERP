@@ -233,6 +233,17 @@ namespace Epros.API.Controllers
             var result = await _mediator.Send(command);
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
+
+        // Comutacao de severidade PERSISTIDA por fornecedor x produto x AQL (NBR 5427).
+        [HttpPost("comutacao/lote")]
+        [AbacAuthorize("QualidadePlanosInspecao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> RegistrarLoteComutacao([FromBody] RegistrarLoteComutacaoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
     }
 
     // ============================================================

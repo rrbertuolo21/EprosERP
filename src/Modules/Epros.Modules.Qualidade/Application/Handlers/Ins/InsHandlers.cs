@@ -363,4 +363,76 @@ namespace Epros.Modules.Qualidade.Application.Handlers.Ins
             });
         }
     }
+
+    // ============ Comando: comutacao de severidade PERSISTIDA (NBR 5427, RN-01..RN-06) ============
+    public class RegistrarLoteComutacaoCommandHandler : ICommandHandler<RegistrarLoteComutacaoCommand>
+    {
+        private readonly ContextQualidade _context;
+        private readonly ITenantProvider _tenant;
+        private readonly ICurrentUser _user;
+        private readonly MotorComutacao _motor;
+        public RegistrarLoteComutacaoCommandHandler(ContextQualidade context, ITenantProvider tenant, ICurrentUser user, MotorComutacao motor)
+        { _context = context; _tenant = tenant; _user = user; _motor = motor; }
+
+        public async Task<CommandResult> Handle(RegistrarLoteComutacaoCommand request, CancellationToken ct)
+        {
+            var (estado, jaSuspensa) = await ServicoComutacaoInspecao.RegistrarLoteAsync(
+                _context, _tenant.GetTenantId(), _user.GetUserId() ?? "system", _motor,
+                request.FornecedorId, request.ProdutoId, request.Aql, request.Decisao, request.Defeituosos,
+                new OpcoesComutacao
+                {
+                    AtenuadaHabilitada = request.AtenuadaHabilitada,
+                    ProducaoEstavel = request.ProducaoEstavel,
+                    LimiteDefeituososAtenuada = request.LimiteDefeituososAtenuada ?? int.MaxValue
+                }, ct);
+            if (!estado.IsValid) return CommandResult.Falha(estado.Notifications.Select(n => n.Message));
+
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok(
+                jaSuspensa
+                    ? "Regime suspenso (RN-06): fornecedor deve corrigir o processo antes de retomar."
+                    : "Lote registrado; estado de comutacao persistido.",
+                new
+                {
+                    estado.Id,
+                    SeveridadeProximoLote = estado.Severidade.ToString(),
+                    estado.Suspensa,
+                    estado.ConsecutivosAceitosNormal,
+                    estado.ConsecutivosAceitosSevera,
+                    estado.RejeitadosAcumuladosSevera,
+                    estado.LotesProcessados
+                });
+        }
+    }
+
+    /// <summary>
+    /// Servico de aplicacao da comutacao de severidade: recupera o estado persistido por
+    /// (fornecedor x produto x AQL), aciona o <see cref="MotorComutacao"/> (puro) e grava de volta.
+    /// Ponto unico de "acionar na inspeccao" — chamado pelo comando dedicado e reutilizavel pelo
+    /// fluxo de recebimento/ACR ao decidir aceitar/rejeitar um lote.
+    /// </summary>
+    internal static class ServicoComutacaoInspecao
+    {
+        public static async Task<(EstadoComutacaoInspecao estado, bool suspensaAntes)> RegistrarLoteAsync(
+            ContextQualidade context, string tenantId, string usuario, MotorComutacao motor,
+            Guid fornecedorId, Guid produtoId, string aql, EDecisaoLote decisao, int defeituosos,
+            OpcoesComutacao opcoes, CancellationToken ct)
+        {
+            var entidade = await context.EstadosComutacaoInspecao
+                .FirstOrDefaultAsync(e => e.FornecedorId == fornecedorId && e.ProdutoId == produtoId && e.Aql == aql, ct);
+
+            if (entidade is null)
+            {
+                entidade = new EstadoComutacaoInspecao(fornecedorId, produtoId, aql, tenantId, usuario);
+                if (!entidade.IsValid) return (entidade, false);
+                context.EstadosComutacaoInspecao.Add(entidade);
+            }
+
+            var suspensaAntes = entidade.Suspensa;
+            var estadoMotor = entidade.ParaEstadoMotor();
+            motor.Registrar(estadoMotor, decisao, defeituosos, opcoes);
+            entidade.AplicarEstadoMotor(estadoMotor, usuario);
+            return (entidade, suspensaAntes);
+        }
+    }
 }

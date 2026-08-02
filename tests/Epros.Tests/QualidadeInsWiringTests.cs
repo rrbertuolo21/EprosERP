@@ -6,6 +6,7 @@ using Epros.Modules.Qualidade.Application.Commands.Ins;
 using Epros.Modules.Qualidade.Application.Handlers;
 using Epros.Modules.Qualidade.Application.Handlers.Ins;
 using Epros.Modules.Qualidade.Application.Queries.Ins;
+using Epros.Modules.Qualidade.Domain.Entities;
 using Epros.Modules.Qualidade.Domain.Enums;
 using Epros.Modules.Qualidade.Domain.Services.Aql;
 using Epros.Modules.Qualidade.Infrastructure.Data;
@@ -211,6 +212,67 @@ namespace Epros.Tests
             var r = await new ConcluirInspecaoCommandHandler(ctx, Tenant, User).Handle(
                 new ConcluirInspecaoCommand(Guid.NewGuid(), Guid.NewGuid(), null, null, null), CancellationToken.None);
             Assert.False(r.Sucesso);
+        }
+
+        [Fact]
+        public async Task Comutacao_Persiste_Estado_Entre_Lotes_E_Vai_Para_Severa()
+        {
+            const string db = nameof(Comutacao_Persiste_Estado_Entre_Lotes_E_Vai_Para_Severa);
+            var fornecedor = Guid.NewGuid();
+            var produto = Guid.NewGuid();
+            const string aql = "1.0";
+
+            async Task Lote(EDecisaoLote decisao, int defeituosos)
+            {
+                using var ctx = Novo(db); // contexto novo por lote = requests separadas.
+                var r = await new RegistrarLoteComutacaoCommandHandler(ctx, Tenant, User, new MotorComutacao()).Handle(
+                    new RegistrarLoteComutacaoCommand(fornecedor, produto, aql, decisao, defeituosos, false, true, null),
+                    CancellationToken.None);
+                Assert.True(r.Sucesso);
+            }
+
+            // RN-02: 2 rejeicoes dentro de 5 lotes em normal -> severa (estado tem que sobreviver entre contextos).
+            await Lote(EDecisaoLote.Rejeita, 3);
+            await Lote(EDecisaoLote.Aceita, 0);
+            await Lote(EDecisaoLote.Rejeita, 4);
+
+            using (var ctx = Novo(db))
+            {
+                var estado = await ctx.EstadosComutacaoInspecao.FirstAsync(e => e.FornecedorId == fornecedor && e.ProdutoId == produto && e.Aql == aql);
+                Assert.Equal(ESeveridadeAql.Severa, estado.Severidade);
+                Assert.Equal(3, estado.LotesProcessados);
+            }
+        }
+
+        [Fact]
+        public async Task Comutacao_Severa_Volta_A_Normal_Apos_5_Aceitos_Persistido()
+        {
+            const string db = nameof(Comutacao_Severa_Volta_A_Normal_Apos_5_Aceitos_Persistido);
+            var fornecedor = Guid.NewGuid();
+            var produto = Guid.NewGuid();
+            const string aql = "2.5";
+
+            // Semeia estado ja em Severa.
+            using (var ctx = Novo(db))
+            {
+                var seed = EstadoComutacaoAql.Restaurar(ESeveridadeAql.Severa);
+                var ent = new EstadoComutacaoInspecao(fornecedor, produto, aql, "tenant-1", "user-1");
+                ent.AplicarEstadoMotor(seed, "user-1");
+                ctx.EstadosComutacaoInspecao.Add(ent);
+                await ctx.SaveChangesAsync();
+            }
+
+            for (int i = 0; i < 5; i++)
+                using (var ctx = Novo(db))
+                    await new RegistrarLoteComutacaoCommandHandler(ctx, Tenant, User, new MotorComutacao()).Handle(
+                        new RegistrarLoteComutacaoCommand(fornecedor, produto, aql, EDecisaoLote.Aceita, 0, false, true, null),
+                        CancellationToken.None);
+
+            using (var ctx = Novo(db))
+            {
+                var estado = await ctx.EstadosComutacaoInspecao.FirstAsync(e => e.FornecedorId == fornecedor);
+                Assert.Equal(ESeveridadeAql.Normal, estado.Severidade); // RN-03: 5 aceitos em severa -> normal.
+            }
         }
 
         [Fact]
