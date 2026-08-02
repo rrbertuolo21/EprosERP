@@ -97,10 +97,10 @@ namespace Epros.Tests
             return (plano.Id, per.Id);
         }
 
-        [Fact(DisplayName = "MAN-PRV | Vencimento gera execucao elegivel")]
-        public async Task Prv_Vencimento_GeraElegivel()
+        [Fact(DisplayName = "MAN-PRV | Vencimento cria a OT canonica e marca OrdemGerada (T5)")]
+        public async Task Prv_Vencimento_GeraOrdemCanonica()
         {
-            var db = nameof(Prv_Vencimento_GeraElegivel);
+            var db = nameof(Prv_Vencimento_GeraOrdemCanonica);
             var baseData = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
             var (planoId, perId) = SeedPlanoAtivo(db, baseData, 30);
 
@@ -111,7 +111,14 @@ namespace Epros.Tests
 
             var execs = await ctx.PlanoPreventivoExecucoes.Where(e => e.PeriodicidadeId == perId).ToListAsync();
             Assert.Single(execs);
-            Assert.Equal(EStatusExecucaoPreventiva.Elegivel, execs[0].Status);
+            // T5 — a execucao vencida agora produz a OS canonica e transiciona para OrdemGerada.
+            Assert.Equal(EStatusExecucaoPreventiva.OrdemGerada, execs[0].Status);
+            Assert.NotNull(execs[0].OrdemTrabalhoId);
+
+            var os = await ctx.OrdensServico.SingleAsync(o => o.Id == execs[0].OrdemTrabalhoId);
+            Assert.Equal(EOrigemOrdemServico.Preventiva, os.OrigemTipo);
+            Assert.Equal(execs[0].Id, os.OrigemId);
+            Assert.Null(os.PessoaId); // ordem interna nao tem cliente
         }
 
         [Fact(DisplayName = "MAN-PRV | Segunda avaliacao na mesma janela nao duplica (D8)")]
