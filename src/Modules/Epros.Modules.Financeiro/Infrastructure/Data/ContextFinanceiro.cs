@@ -41,6 +41,7 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
         public DbSet<LancamentoContabil> LancamentosContabeis => Set<LancamentoContabil>();
         public DbSet<LancamentoContabilLinha> LancamentoContabilLinhas => Set<LancamentoContabilLinha>();
         public DbSet<SaldoAbertura> SaldosAbertura => Set<SaldoAbertura>();
+        public DbSet<RegraContabilizacao> RegrasContabilizacao => Set<RegraContabilizacao>();
 
         // ----- FIN-SF: Serviços Financeiros (cobrança/boleto/remessa) -----
         public DbSet<ConfiguracaoCedente> ConfiguracoesCedente => Set<ConfiguracaoCedente>();
@@ -551,10 +552,19 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
                 entity.HasIndex(p => new { p.TenantId, p.AnoFiscal }).HasDatabaseName("ix_periodo_contabil_tenant_ano");
             });
 
+            // DE-PARA evento→conta (motor de contabilização automática — TEC-8/FD-NF3)
+            modelBuilder.Entity<RegraContabilizacao>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.TipoEvento).HasMaxLength(80);
+                entity.Property(r => r.Historico).HasMaxLength(255);
+                entity.HasIndex(r => new { r.TenantId, r.TipoEvento }).HasDatabaseName("ix_regra_contabilizacao_tenant_evento");
+            });
+
             modelBuilder.Entity<LancamentoContabil>(entity =>
             {
                 entity.HasKey(l => l.Id);
-                entity.Property(l => l.NumeroLancamento).HasMaxLength(50);
+                entity.Property(l => l.NumeroLancamento).HasMaxLength(80);
                 entity.Ignore(l => l.TotalDebitos);
                 entity.Ignore(l => l.TotalCreditos);
                 entity.Ignore(l => l.Balanceado);

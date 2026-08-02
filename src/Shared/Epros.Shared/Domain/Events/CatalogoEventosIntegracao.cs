@@ -173,6 +173,20 @@ namespace Epros.Shared.Domain.Events
             public const string RstBloqueioSolicitado = "qld.rst.bloqueio_solicitado";
         }
 
+        // ===== PONTO DE MERGE (wt/financeiro) — adição mínima do catálogo do Financeiro =====
+        // Sinalizado para o merge: eventos fin.* emitidos pelo módulo Financeiro (motor de
+        // contabilização automática — TEC-8, e conciliação de retorno bancário CNAB — FD2/FD-NF11).
+        /// <summary>Eventos do módulo Financeiro (FIN-*).</summary>
+        public static class Financeiro
+        {
+            /// <summary>Lançamento contábil automático gerado a partir de um fato de integração (motor evento→ledger, TEC-8).</summary>
+            public const string LancamentoContabilGerado = "fin.contabilizacao.lancamento_gerado";
+            /// <summary>Retorno bancário CNAB processado (baixas de faturas por nosso número — RSF-007).</summary>
+            public const string RetornoBancarioProcessado = "fin.cobranca.retorno_processado";
+            /// <summary>Arquivo de remessa CNAB gerado (faturas remetidas — RSF-014).</summary>
+            public const string RemessaCnabGerada = "fin.cobranca.remessa_gerada";
+        }
+
         /// <summary>Operações (produção/manutenção/qualidade/RH/GRC).</summary>
         public static class Operacoes
         {
@@ -218,7 +232,8 @@ namespace Epros.Shared.Domain.Events
             Qualidade.AcrLoteBloqueado, Qualidade.AcrLoteLiberado, Qualidade.AcrLoteQuarentena,
             Qualidade.AcrNcrSolicitada, Qualidade.AcrDevolucaoSolicitada, Qualidade.InsInspecaoConcluida,
             Qualidade.NcrAberta, Qualidade.NcrEncerrada,
-            Qualidade.RstRecallAberto, Qualidade.RstRecallEncerrado, Qualidade.RstBloqueioSolicitado
+            Qualidade.RstRecallAberto, Qualidade.RstRecallEncerrado, Qualidade.RstBloqueioSolicitado,
+            Financeiro.LancamentoContabilGerado, Financeiro.RetornoBancarioProcessado, Financeiro.RemessaCnabGerada
         }, System.StringComparer.Ordinal);
 
         /// <summary>Todos os tipos de evento homologados no catálogo.</summary>

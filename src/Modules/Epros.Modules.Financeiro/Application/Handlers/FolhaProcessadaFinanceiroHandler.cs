@@ -60,6 +60,14 @@ namespace Epros.Modules.Financeiro.Application.Handlers
             if (conta.IsValid)
             {
                 _context.ContasAPagarAgregado.Add(conta);
+
+                // Wiring evento→ledger (TEC-8): lançamento contábil automático da folha (partida dobrada).
+                await Epros.Modules.Financeiro.Application.Services.ContabilizacaoEventoService.GerarLancamentoAsync(
+                    _context, notification.TenantId, "system_payroll",
+                    Epros.Shared.Domain.Events.CatalogoEventosIntegracao.Operacoes.FolhaProcessada,
+                    notification.FolhaPagamentoId, notification.SalarioLiquido,
+                    $"Folha {notification.MesCompetencia:D2}/{notification.AnoCompetencia}", cancellationToken);
+
                 await _context.SaveChangesAsync(cancellationToken);
             }
         }

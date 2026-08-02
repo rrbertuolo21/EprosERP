@@ -60,6 +60,14 @@ namespace Epros.Modules.Financeiro.Application.Handlers
             if (conta.IsValid)
             {
                 _context.ContasAReceberAgregado.Add(conta);
+
+                // Wiring evento→ledger (TEC-8): lançamento contábil automático do faturamento do marco.
+                await Epros.Modules.Financeiro.Application.Services.ContabilizacaoEventoService.GerarLancamentoAsync(
+                    _context, notification.TenantId, "system_billing",
+                    Epros.Shared.Domain.Events.CatalogoEventosIntegracao.Vendas.ProjetoFaturado,
+                    notification.ProjetoId, notification.ValorFaturamento,
+                    $"Projeto {notification.NomeProjeto} marco {notification.Milestone}%", cancellationToken);
+
                 await _context.SaveChangesAsync(cancellationToken);
             }
         }
