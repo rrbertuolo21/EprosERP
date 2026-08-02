@@ -451,6 +451,102 @@ namespace Epros.Tests
 
         #endregion
 
+        #region D2 — Saldo por Local + Lote/Série (grão fino) e FEFO (D10)
+
+        private const string TenantD2 = "tenant-d2";
+
+        private static async Task EntradaGrainAsync(ContextEstoque ctx, Guid produtoId, decimal qtd, decimal valorUnit, Guid? localId, string? lote, DateTime? validade)
+        {
+            var motor = new MotorMovimentacaoEstoque(ctx, TenantD2, "user-1");
+            var fato = new FatoGeradorEstoque(null, null, null, EOrigemFatoGeradorEstoque.MovimentoManual, TenantD2, "user-1");
+            ctx.FatosGeradoresEstoque.Add(fato);
+            var r = await motor.AplicarEntradaAsync(MotorMovimentacaoEstoque.EmpresaPadrao, produtoId, ETipoEstoque.Geral, qtd, valorUnit, fato.Id, localId, lote, validade, ETipoCusteioEstoque.CustoMedio, CancellationToken.None);
+            Assert.True(r.Sucesso, r.Erro);
+            await ctx.SaveChangesAsync();
+        }
+
+        private static async Task SaidaGrainAsync(ContextEstoque ctx, Guid produtoId, decimal qtd, Guid? localId)
+        {
+            var motor = new MotorMovimentacaoEstoque(ctx, TenantD2, "user-1");
+            var fato = new FatoGeradorEstoque(null, null, null, EOrigemFatoGeradorEstoque.MovimentoManual, TenantD2, "user-1");
+            ctx.FatosGeradoresEstoque.Add(fato);
+            var r = await motor.AplicarSaidaAsync(MotorMovimentacaoEstoque.EmpresaPadrao, produtoId, qtd, fato.Id, localId, CancellationToken.None);
+            Assert.True(r.Sucesso, r.Erro);
+            await ctx.SaveChangesAsync();
+        }
+
+        [Fact]
+        public async Task D2_Grao_Fino_Reconcilia_Com_Agregado_Na_Entrada_E_Saida()
+        {
+            var ctx = CreateInMemoryContext("d2_reconcilia", TenantD2, "user-1");
+            var p = new Produto("SKU-D2", "Produto D2", 10m, TenantD2, "user-1");
+            ctx.Produtos.Add(p);
+            await ctx.SaveChangesAsync();
+
+            var localA = Guid.NewGuid();
+            var localB = Guid.NewGuid();
+            await EntradaGrainAsync(ctx, p.Id, 10m, 100m, localA, "L1", null);
+            await EntradaGrainAsync(ctx, p.Id, 6m, 100m, localB, "L2", null);
+            await SaidaGrainAsync(ctx, p.Id, 4m, localA); // baixa 4 do local A
+
+            var agregado = await ctx.EstoqueProdutos.FirstAsync(e => e.ProdutoId == p.Id);
+            var somaGrao = await ctx.EstoqueSaldosLocais.Where(s => s.ProdutoId == p.Id).SumAsync(s => s.QuantidadeSaldo);
+
+            // Invariante D2: soma do grão fino == saldo do agregado (a verdade da suíte).
+            Assert.Equal(12m, agregado.QuantidadeSaldoEstoque);
+            Assert.Equal(agregado.QuantidadeSaldoEstoque, somaGrao);
+
+            var posA = await ctx.EstoqueSaldosLocais.FirstAsync(s => s.ProdutoId == p.Id && s.LocalId == localA);
+            var posB = await ctx.EstoqueSaldosLocais.FirstAsync(s => s.ProdutoId == p.Id && s.LocalId == localB);
+            Assert.Equal(6m, posA.QuantidadeSaldo); // 10 - 4
+            Assert.Equal(6m, posB.QuantidadeSaldo); // intacto
+        }
+
+        [Fact]
+        public async Task D2_Entrada_Cria_Linha_Distinta_Por_Local_E_Lote()
+        {
+            var ctx = CreateInMemoryContext("d2_grao_linhas", TenantD2, "user-1");
+            var p = new Produto("SKU-D2B", "Produto D2B", 10m, TenantD2, "user-1");
+            ctx.Produtos.Add(p);
+            await ctx.SaveChangesAsync();
+
+            var local = Guid.NewGuid();
+            await EntradaGrainAsync(ctx, p.Id, 5m, 100m, local, "LOTE-A", null);
+            await EntradaGrainAsync(ctx, p.Id, 3m, 100m, local, "LOTE-B", null);
+            await EntradaGrainAsync(ctx, p.Id, 2m, 100m, local, "LOTE-A", null); // mesma chave → acumula na linha existente
+
+            var linhas = await ctx.EstoqueSaldosLocais.Where(s => s.ProdutoId == p.Id).ToListAsync();
+            Assert.Equal(2, linhas.Count); // LOTE-A e LOTE-B
+            Assert.Equal(7m, linhas.First(l => l.CodigoLote == "LOTE-A").QuantidadeSaldo); // 5 + 2
+            Assert.Equal(3m, linhas.First(l => l.CodigoLote == "LOTE-B").QuantidadeSaldo);
+        }
+
+        [Fact]
+        public async Task D10_Saida_FEFO_Consome_Menor_Validade_Primeiro()
+        {
+            var ctx = CreateInMemoryContext("d2_fefo", TenantD2, "user-1");
+            var p = new Produto("SKU-FEFO", "Produto FEFO", 10m, TenantD2, "user-1");
+            p.DefinirControleRastreabilidade(controlaLote: true, exigeSerializacao: false, "user-1");
+            ctx.Produtos.Add(p);
+            await ctx.SaveChangesAsync();
+
+            var local = Guid.NewGuid();
+            // LOTE-VELHO entra PRIMEIRO mas vence DEPOIS; LOTE-NOVO entra depois mas vence ANTES.
+            await EntradaGrainAsync(ctx, p.Id, 5m, 100m, local, "LOTE-VELHO", new DateTime(2027, 12, 1, 0, 0, 0, DateTimeKind.Utc));
+            await EntradaGrainAsync(ctx, p.Id, 5m, 100m, local, "LOTE-NOVO", new DateTime(2027, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+
+            await SaidaGrainAsync(ctx, p.Id, 4m, local);
+
+            var loteNovo = await ctx.EstoqueSaldosLocais.FirstAsync(s => s.ProdutoId == p.Id && s.CodigoLote == "LOTE-NOVO");
+            var loteVelho = await ctx.EstoqueSaldosLocais.FirstAsync(s => s.ProdutoId == p.Id && s.CodigoLote == "LOTE-VELHO");
+
+            // FEFO: consome o de MENOR validade (LOTE-NOVO) primeiro, não o mais antigo (PEPS baixaria LOTE-VELHO).
+            Assert.Equal(1m, loteNovo.QuantidadeSaldo);  // 5 - 4
+            Assert.Equal(5m, loteVelho.QuantidadeSaldo);  // intacto
+        }
+
+        #endregion
+
         #region Helpers e Doubles de Teste
 
         private ContextEstoque CreateInMemoryContext(string databaseName, string tenantId, string userId)

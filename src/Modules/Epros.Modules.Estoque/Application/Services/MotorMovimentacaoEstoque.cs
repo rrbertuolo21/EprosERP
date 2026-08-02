@@ -102,14 +102,19 @@ namespace Epros.Modules.Estoque.Application.Services
         /// do local, podendo ficar negativa — condição transitória documentada até o backfill completo.
         /// </summary>
         private async Task EspelharSaidaGrainAsync(
-            Guid empresaId, Guid produtoId, Guid? localId, decimal quantidade, decimal custoMedioSnapshot, CancellationToken ct)
+            Guid empresaId, Guid produtoId, Guid? localId, decimal quantidade, decimal custoMedioSnapshot, bool fefo, CancellationToken ct)
         {
             var localBucket = localId ?? Guid.Empty;
 
-            var linhas = await _context.EstoqueSaldosLocais
-                .Where(s => s.EmpresaId == empresaId && s.ProdutoId == produtoId && s.LocalId == localBucket && s.QuantidadeSaldo > 0m)
-                .OrderBy(s => s.CriadoEm).ThenBy(s => s.SyncVersion)
-                .ToListAsync(ct);
+            var query = _context.EstoqueSaldosLocais
+                .Where(s => s.EmpresaId == empresaId && s.ProdutoId == produtoId && s.LocalId == localBucket && s.QuantidadeSaldo > 0m);
+
+            // D10/FEFO: produto que controla lote consome a MENOR validade primeiro (posições sem validade por
+            // último); demais produtos seguem PEPS por posição (mais antiga primeiro). A quantidade reconcilia
+            // com o agregado em qualquer ordenação — a ordem só decide DE QUAL posição física baixar.
+            var linhas = fefo
+                ? await query.OrderBy(s => s.DataValidade.HasValue ? 0 : 1).ThenBy(s => s.DataValidade).ThenBy(s => s.CriadoEm).ToListAsync(ct)
+                : await query.OrderBy(s => s.CriadoEm).ThenBy(s => s.SyncVersion).ToListAsync(ct);
 
             var restante = quantidade;
             foreach (var linha in linhas)
@@ -255,8 +260,9 @@ namespace Epros.Modules.Estoque.Application.Services
             if (saldo.QuantidadeSaldoEstoque <= 0m) saldo.AtualizarValorSaldo(0m); // saldo zerado/negativo → valor zero (custo médio preservado por D13)
             saldo.AtualizarValorCustoMedio();
 
-            // D2: espelha a saída no grão fino (consome posições do local), na mesma transação. Aditivo.
-            await EspelharSaidaGrainAsync(empresaId, produtoId, localId, quantidade, custoMedioSnapshot, ct);
+            // D2/D10: espelha a saída no grão fino (consome posições do local), na mesma transação. Aditivo.
+            // FEFO quando o produto controla lote (menor validade primeiro); senão PEPS por posição.
+            await EspelharSaidaGrainAsync(empresaId, produtoId, localId, quantidade, custoMedioSnapshot, produto?.ControlaLote ?? false, ct);
 
             await SincronizarEspelhoProdutoAsync(saldo, ct);
 

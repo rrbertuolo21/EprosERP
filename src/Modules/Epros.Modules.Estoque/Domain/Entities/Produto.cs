@@ -24,6 +24,13 @@ namespace Epros.Modules.Estoque.Domain.Entities
         // O motor de estoque (kardex) consulta esta flag antes de rejeitar/permitir a saída.
         public bool PermiteEstoqueNegativo { get; private set; }
 
+        // D10 (ESTOQUE): controle de lote/serialização configurável POR PRODUTO. Default false (produto comum).
+        // Quando ControlaLote é true, movimentações do produto exigem código de lote (RLT-003) e o grão fino
+        // (EstoqueSaldoLocal) rastreia por lote com FEFO na saída (menor validade primeiro). Quando
+        // ExigeSerializacao é true, cada unidade é identificada por número de série.
+        public bool ControlaLote { get; private set; }
+        public bool ExigeSerializacao { get; private set; }
+
         // Campos do Legado
         public Guid? ProdutoGrupoId { get; private set; }
         public Guid? CategoriaId { get; private set; }
@@ -252,6 +259,14 @@ namespace Epros.Modules.Estoque.Domain.Entities
         public void DefinirPermiteEstoqueNegativo(bool permite, string usuario)
         {
             PermiteEstoqueNegativo = permite;
+            MarcarAlterado(usuario);
+        }
+
+        /// <summary>D10 — define se o produto controla lote e/ou exige serialização (rastreabilidade + FEFO).</summary>
+        public void DefinirControleRastreabilidade(bool controlaLote, bool exigeSerializacao, string usuario)
+        {
+            ControlaLote = controlaLote;
+            ExigeSerializacao = exigeSerializacao;
             MarcarAlterado(usuario);
         }
 
