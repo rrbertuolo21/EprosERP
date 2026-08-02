@@ -3,6 +3,7 @@ using System;
 using Epros.Modules.GRC.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Epros.Modules.GRC.Migrations
 {
     [DbContext(typeof(ContextGRC))]
-    partial class ContextGRCModelSnapshot : ModelSnapshot
+    [Migration("20260802115944_AddGRCParametrosPorTenant")]
+    partial class AddGRCParametrosPorTenant
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -37,14 +40,6 @@ namespace Epros.Modules.GRC.Migrations
                     b.Property<string>("AlteradoPor")
                         .HasColumnType("text")
                         .HasColumnName("alterado_por");
-
-                    b.Property<bool>("Aprovado")
-                        .HasColumnType("boolean")
-                        .HasColumnName("aprovado");
-
-                    b.Property<Guid?>("AprovadorId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("aprovador_id");
 
                     b.Property<DateTime>("CriadoEm")
                         .HasColumnType("timestamp with time zone")
@@ -123,97 +118,6 @@ namespace Epros.Modules.GRC.Migrations
                         .HasDatabaseName("i_x_grc_cia_achado_severidade_status");
 
                     b.ToTable("grc_cia_achado", "grc");
-                });
-
-            modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.AmostraAuditoria", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime?>("AlteradoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("alterado_em");
-
-                    b.Property<string>("AlteradoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("alterado_por");
-
-                    b.Property<DateTime>("CriadoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("criado_em");
-
-                    b.Property<string>("CriadoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("criado_por");
-
-                    b.Property<string>("Criterio")
-                        .HasColumnType("text")
-                        .HasColumnName("criterio");
-
-                    b.Property<DateTime?>("DeletadoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deletado_em");
-
-                    b.Property<string>("Justificativa")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("justificativa");
-
-                    b.Property<string>("Metodo")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("metodo");
-
-                    b.Property<Guid?>("PlanoAuditoriaId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("plano_auditoria_id");
-
-                    b.Property<Guid>("SyncId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("sync_id");
-
-                    b.Property<int>("SyncVersion")
-                        .HasColumnType("integer")
-                        .HasColumnName("sync_version");
-
-                    b.Property<int>("Tamanho")
-                        .HasColumnType("integer")
-                        .HasColumnName("tamanho");
-
-                    b.Property<string>("TenantId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<Guid?>("TesteControleId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("teste_controle_id");
-
-                    b.Property<uint>("xmin")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
-                    b.HasKey("Id")
-                        .HasName("p_k_grc_cia_amostra");
-
-                    b.HasIndex("PlanoAuditoriaId")
-                        .HasDatabaseName("i_x_grc_cia_amostra_plano_auditoria_id");
-
-                    b.HasIndex("SyncId")
-                        .IsUnique()
-                        .HasDatabaseName("ix__amostra_auditoria_sync_id");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix__amostra_auditoria_tenant_id");
-
-                    b.HasIndex("TesteControleId")
-                        .HasDatabaseName("i_x_grc_cia_amostra_teste_controle_id");
-
-                    b.ToTable("grc_cia_amostra", "grc");
                 });
 
             modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.AvaliacaoRisco", b =>
@@ -302,100 +206,6 @@ namespace Epros.Modules.GRC.Migrations
                     b.ToTable("grc_ris_avaliacao", "grc");
                 });
 
-            modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.BypassSoD", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime?>("AlteradoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("alterado_em");
-
-                    b.Property<string>("AlteradoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("alterado_por");
-
-                    b.Property<bool>("AtorEhAdmin")
-                        .HasColumnType("boolean")
-                        .HasColumnName("ator_eh_admin");
-
-                    b.Property<Guid>("AtorId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("ator_id");
-
-                    b.Property<string>("ControleCompensatorio")
-                        .HasColumnType("text")
-                        .HasColumnName("controle_compensatorio");
-
-                    b.Property<Guid?>("ControleCompensatorioId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("controle_compensatorio_id");
-
-                    b.Property<DateTime>("CriadoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("criado_em");
-
-                    b.Property<string>("CriadoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("criado_por");
-
-                    b.Property<DateTime?>("DeletadoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deletado_em");
-
-                    b.Property<string>("Motivo")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("motivo");
-
-                    b.Property<DateTime>("OcorridoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("ocorrido_em");
-
-                    b.Property<Guid>("RegraId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("regra_id");
-
-                    b.Property<Guid>("SyncId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("sync_id");
-
-                    b.Property<int>("SyncVersion")
-                        .HasColumnType("integer")
-                        .HasColumnName("sync_version");
-
-                    b.Property<string>("TenantId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<uint>("xmin")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
-                    b.HasKey("Id")
-                        .HasName("p_k_grc_sod_bypass_admin");
-
-                    b.HasIndex("AtorId")
-                        .HasDatabaseName("i_x_grc_sod_bypass_admin_ator_id");
-
-                    b.HasIndex("SyncId")
-                        .IsUnique()
-                        .HasDatabaseName("ix__bypass_so_d_sync_id");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix__bypass_so_d_tenant_id");
-
-                    b.HasIndex("TenantId", "RegraId")
-                        .HasDatabaseName("i_x_grc_sod_bypass_admin_tenant_id_regra_id");
-
-                    b.ToTable("grc_sod_bypass_admin", "grc");
-                });
-
             modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.CalendarioRegulatorio", b =>
                 {
                     b.Property<Guid>("Id")
@@ -436,18 +246,9 @@ namespace Epros.Modules.GRC.Migrations
                         .HasColumnType("text")
                         .HasColumnName("descricao");
 
-                    b.Property<string>("DiasAlerta")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("dias_alerta");
-
                     b.Property<Guid?>("RegistroId")
                         .HasColumnType("uuid")
                         .HasColumnName("registro_id");
-
-                    b.Property<Guid?>("ResponsavelId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("responsavel_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -466,10 +267,6 @@ namespace Epros.Modules.GRC.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("tenant_id");
-
-                    b.Property<string>("Tratamento")
-                        .HasColumnType("text")
-                        .HasColumnName("tratamento");
 
                     b.Property<uint>("xmin")
                         .IsConcurrencyToken()
@@ -508,10 +305,6 @@ namespace Epros.Modules.GRC.Migrations
                         .HasColumnType("text")
                         .HasColumnName("alterado_por");
 
-                    b.Property<string>("CaminhoReferenciaSegura")
-                        .HasColumnType("text")
-                        .HasColumnName("caminho_referencia_segura");
-
                     b.Property<string>("Cnpj")
                         .IsRequired()
                         .HasColumnType("text")
@@ -541,22 +334,10 @@ namespace Epros.Modules.GRC.Migrations
                         .HasColumnType("text")
                         .HasColumnName("motivo_revogacao");
 
-                    b.Property<string>("Nome")
-                        .HasColumnType("text")
-                        .HasColumnName("nome");
-
                     b.Property<string>("Origem")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("origem");
-
-                    b.Property<string>("ResumoCertificado")
-                        .HasColumnType("text")
-                        .HasColumnName("resumo_certificado");
-
-                    b.Property<string>("SenhaReferenciaSegura")
-                        .HasColumnType("text")
-                        .HasColumnName("senha_referencia_segura");
 
                     b.Property<string>("Serial")
                         .IsRequired()
@@ -585,14 +366,6 @@ namespace Epros.Modules.GRC.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("tipo");
-
-                    b.Property<DateTime?>("ValidadeFim")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("validade_fim");
-
-                    b.Property<DateTime?>("ValidadeInicio")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("validade_inicio");
 
                     b.Property<uint>("xmin")
                         .IsConcurrencyToken()
@@ -756,10 +529,6 @@ namespace Epros.Modules.GRC.Migrations
                     b.Property<int>("SyncVersion")
                         .HasColumnType("integer")
                         .HasColumnName("sync_version");
-
-                    b.Property<Guid?>("TaxonomiaNormativaId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("taxonomia_normativa_id");
 
                     b.Property<string>("TenantId")
                         .IsRequired()
@@ -1667,87 +1436,6 @@ namespace Epros.Modules.GRC.Migrations
                     b.ToTable("grc_den_resposta", "grc");
                 });
 
-            modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.EvidenciaAuditoria", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid?>("AchadoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("achado_id");
-
-                    b.Property<DateTime?>("AlteradoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("alterado_em");
-
-                    b.Property<string>("AlteradoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("alterado_por");
-
-                    b.Property<Guid>("ArquivoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("arquivo_id");
-
-                    b.Property<DateTime>("CriadoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("criado_em");
-
-                    b.Property<string>("CriadoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("criado_por");
-
-                    b.Property<DateTime?>("DeletadoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deletado_em");
-
-                    b.Property<string>("Descricao")
-                        .HasColumnType("text")
-                        .HasColumnName("descricao");
-
-                    b.Property<Guid>("SyncId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("sync_id");
-
-                    b.Property<int>("SyncVersion")
-                        .HasColumnType("integer")
-                        .HasColumnName("sync_version");
-
-                    b.Property<string>("TenantId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<Guid?>("TesteControleId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("teste_controle_id");
-
-                    b.Property<uint>("xmin")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
-                    b.HasKey("Id")
-                        .HasName("p_k_grc_cia_evidencia");
-
-                    b.HasIndex("AchadoId")
-                        .HasDatabaseName("i_x_grc_cia_evidencia_achado_id");
-
-                    b.HasIndex("SyncId")
-                        .IsUnique()
-                        .HasDatabaseName("ix__evidencia_auditoria_sync_id");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix__evidencia_auditoria_tenant_id");
-
-                    b.HasIndex("TesteControleId")
-                        .HasDatabaseName("i_x_grc_cia_evidencia_teste_controle_id");
-
-                    b.ToTable("grc_cia_evidencia", "grc");
-                });
-
             modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.ExcecaoSoD", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1770,10 +1458,6 @@ namespace Epros.Modules.GRC.Migrations
                     b.Property<string>("ControleCompensatorio")
                         .HasColumnType("text")
                         .HasColumnName("controle_compensatorio");
-
-                    b.Property<Guid?>("ControleCompensatorioId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("controle_compensatorio_id");
 
                     b.Property<DateTime>("CriadoEm")
                         .HasColumnType("timestamp with time zone")
@@ -1799,14 +1483,6 @@ namespace Epros.Modules.GRC.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("justificativa");
-
-                    b.Property<int>("Renovacoes")
-                        .HasColumnType("integer")
-                        .HasColumnName("renovacoes");
-
-                    b.Property<Guid?>("SolicitanteId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("solicitante_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -2533,10 +2209,6 @@ namespace Epros.Modules.GRC.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("sync_version");
 
-                    b.Property<Guid?>("TaxonomiaNormativaId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("taxonomia_normativa_id");
-
                     b.Property<string>("TenantId")
                         .IsRequired()
                         .HasColumnType("text")
@@ -2968,14 +2640,6 @@ namespace Epros.Modules.GRC.Migrations
                         .HasColumnType("text")
                         .HasColumnName("criado_por");
 
-                    b.Property<DateTime?>("DataInicio")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("data_inicio");
-
-                    b.Property<DateTime?>("DataVencimento")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("data_vencimento");
-
                     b.Property<DateTime?>("DeletadoEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deletado_em");
@@ -2985,17 +2649,9 @@ namespace Epros.Modules.GRC.Migrations
                         .HasColumnType("text")
                         .HasColumnName("descricao");
 
-                    b.Property<string>("Framework")
-                        .HasColumnType("text")
-                        .HasColumnName("framework");
-
                     b.Property<string>("MotivoUltimaTransicao")
                         .HasColumnType("text")
                         .HasColumnName("motivo_ultima_transicao");
-
-                    b.Property<string>("Nome")
-                        .HasColumnType("text")
-                        .HasColumnName("nome");
 
                     b.Property<string>("Norma")
                         .HasColumnType("text")
@@ -3017,10 +2673,6 @@ namespace Epros.Modules.GRC.Migrations
                     b.Property<int>("SyncVersion")
                         .HasColumnType("integer")
                         .HasColumnName("sync_version");
-
-                    b.Property<Guid?>("TaxonomiaNormativaId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("taxonomia_normativa_id");
 
                     b.Property<string>("TenantId")
                         .IsRequired()
@@ -3093,11 +2745,6 @@ namespace Epros.Modules.GRC.Migrations
                     b.Property<Guid>("FuncaoBId")
                         .HasColumnType("uuid")
                         .HasColumnName("funcao_b_id");
-
-                    b.Property<string>("ModoTratamento")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("modo_tratamento");
 
                     b.Property<string>("MotivoUltimaTransicao")
                         .HasColumnType("text")
@@ -3218,10 +2865,6 @@ namespace Epros.Modules.GRC.Migrations
                     b.Property<int>("SyncVersion")
                         .HasColumnType("integer")
                         .HasColumnName("sync_version");
-
-                    b.Property<Guid?>("TaxonomiaNormativaId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("taxonomia_normativa_id");
 
                     b.Property<string>("TenantId")
                         .IsRequired()
@@ -3498,187 +3141,6 @@ namespace Epros.Modules.GRC.Migrations
                     b.ToTable("grc_sod_simulacao", "grc");
                 });
 
-            modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.TaxonomiaNormativa", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime?>("AlteradoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("alterado_em");
-
-                    b.Property<string>("AlteradoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("alterado_por");
-
-                    b.Property<Guid?>("CatalogoPaiId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("catalogo_pai_id");
-
-                    b.Property<string>("Codigo")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("codigo");
-
-                    b.Property<DateTime>("CriadoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("criado_em");
-
-                    b.Property<string>("CriadoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("criado_por");
-
-                    b.Property<DateTime?>("DeletadoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deletado_em");
-
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("nome");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("status");
-
-                    b.Property<Guid>("SyncId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("sync_id");
-
-                    b.Property<int>("SyncVersion")
-                        .HasColumnType("integer")
-                        .HasColumnName("sync_version");
-
-                    b.Property<string>("TenantId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<string>("Tipo")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("tipo");
-
-                    b.Property<uint>("xmin")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
-                    b.HasKey("Id")
-                        .HasName("p_k_grc_taxonomia_normativa");
-
-                    b.HasIndex("CatalogoPaiId")
-                        .HasDatabaseName("i_x_grc_taxonomia_normativa_catalogo_pai_id");
-
-                    b.HasIndex("SyncId")
-                        .IsUnique()
-                        .HasDatabaseName("ix__taxonomia_normativa_sync_id");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix__taxonomia_normativa_tenant_id");
-
-                    b.HasIndex("TenantId", "Codigo")
-                        .IsUnique()
-                        .HasDatabaseName("i_x_grc_taxonomia_normativa_tenant_id_codigo");
-
-                    b.HasIndex("TenantId", "Tipo")
-                        .HasDatabaseName("i_x_grc_taxonomia_normativa_tenant_id_tipo");
-
-                    b.ToTable("grc_taxonomia_normativa", "grc");
-                });
-
-            modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.TaxonomiaVinculo", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime?>("AlteradoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("alterado_em");
-
-                    b.Property<string>("AlteradoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("alterado_por");
-
-                    b.Property<DateTime>("CriadoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("criado_em");
-
-                    b.Property<string>("CriadoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("criado_por");
-
-                    b.Property<DateTime?>("DeletadoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deletado_em");
-
-                    b.Property<Guid>("DestinoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("destino_id");
-
-                    b.Property<string>("DestinoTipo")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("destino_tipo");
-
-                    b.Property<string>("Natureza")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("natureza");
-
-                    b.Property<Guid>("OrigemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("origem_id");
-
-                    b.Property<string>("OrigemTipo")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("origem_tipo");
-
-                    b.Property<Guid>("SyncId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("sync_id");
-
-                    b.Property<int>("SyncVersion")
-                        .HasColumnType("integer")
-                        .HasColumnName("sync_version");
-
-                    b.Property<string>("TenantId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<uint>("xmin")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
-                    b.HasKey("Id")
-                        .HasName("p_k_grc_taxonomia_vinculo");
-
-                    b.HasIndex("SyncId")
-                        .IsUnique()
-                        .HasDatabaseName("ix__taxonomia_vinculo_sync_id");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix__taxonomia_vinculo_tenant_id");
-
-                    b.HasIndex("DestinoTipo", "DestinoId")
-                        .HasDatabaseName("i_x_grc_taxonomia_vinculo_destino_tipo_destino_id");
-
-                    b.HasIndex("OrigemTipo", "OrigemId")
-                        .HasDatabaseName("i_x_grc_taxonomia_vinculo_origem_tipo_origem_id");
-
-                    b.ToTable("grc_taxonomia_vinculo", "grc");
-                });
-
             modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.TesteControle", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3769,101 +3231,6 @@ namespace Epros.Modules.GRC.Migrations
                         .HasDatabaseName("ix__teste_controle_tenant_id");
 
                     b.ToTable("grc_cia_teste_controle", "grc");
-                });
-
-            modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.TokenAcessoAuditoria", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime?>("AlteradoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("alterado_em");
-
-                    b.Property<string>("AlteradoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("alterado_por");
-
-                    b.Property<Guid?>("AuditorId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("auditor_id");
-
-                    b.Property<DateTime>("CriadoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("criado_em");
-
-                    b.Property<string>("CriadoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("criado_por");
-
-                    b.Property<DateTime?>("DeletadoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deletado_em");
-
-                    b.Property<string>("Escopo")
-                        .HasColumnType("text")
-                        .HasColumnName("escopo");
-
-                    b.Property<DateTime>("ExpiraEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expira_em");
-
-                    b.Property<Guid>("PlanoAuditoriaId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("plano_auditoria_id");
-
-                    b.Property<bool>("Revogado")
-                        .HasColumnType("boolean")
-                        .HasColumnName("revogado");
-
-                    b.Property<Guid>("SyncId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("sync_id");
-
-                    b.Property<int>("SyncVersion")
-                        .HasColumnType("integer")
-                        .HasColumnName("sync_version");
-
-                    b.Property<string>("TenantId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<string>("TokenHash")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("token_hash");
-
-                    b.Property<DateTime?>("UltimoAcessoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("ultimo_acesso_em");
-
-                    b.Property<uint>("xmin")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
-                    b.HasKey("Id")
-                        .HasName("p_k_grc_cia_token_acesso");
-
-                    b.HasIndex("PlanoAuditoriaId")
-                        .HasDatabaseName("i_x_grc_cia_token_acesso_plano_auditoria_id");
-
-                    b.HasIndex("SyncId")
-                        .IsUnique()
-                        .HasDatabaseName("ix__token_acesso_auditoria_sync_id");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix__token_acesso_auditoria_tenant_id");
-
-                    b.HasIndex("TenantId", "TokenHash")
-                        .IsUnique()
-                        .HasDatabaseName("i_x_grc_cia_token_acesso_tenant_id_token_hash");
-
-                    b.ToTable("grc_cia_token_acesso", "grc");
                 });
 
             modelBuilder.Entity("Epros.Modules.GRC.Domain.Entities.ValidacaoCertificado", b =>

@@ -11,8 +11,17 @@ namespace Epros.Modules.GRC.Domain.Entities
         public string Descricao { get; private set; } = string.Empty;
         public string Frequencia { get; private set; } = "Mensal"; // Diaria, Semanal, Mensal, Anual
         public string Status { get; private set; } = "Ativo"; // Ativo, Inativo
+        // D-TEC-05 — FK opcional para o catálogo normativo único (nunca duplicar catálogo).
+        public Guid? TaxonomiaNormativaId { get; private set; }
 
         protected ControleInterno() { } // EF Core
+
+        /// <summary>D-TEC-05 — classifica o controle num nó da taxonomia normativa única.</summary>
+        public void Classificar(Guid taxonomiaNormativaId, string usuario)
+        {
+            TaxonomiaNormativaId = taxonomiaNormativaId;
+            MarcarAlterado(usuario);
+        }
 
         public ControleInterno(
             string codigo,
