@@ -437,6 +437,15 @@ try
             .WithIdentity("ManutencaoOutboxProcessorJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
 
+        // MAN-PRV D7 — scheduler de vencimento da preventiva (calendario/contador).
+        var preventivaSchedulerJobKey = new JobKey("PreventivaSchedulerJob");
+        q.AddJob<PreventivaSchedulerJob>(opts => opts.WithIdentity(preventivaSchedulerJobKey));
+
+        q.AddTrigger(opts => opts
+            .ForJob(preventivaSchedulerJobKey)
+            .WithIdentity("PreventivaSchedulerJob-trigger")
+            .WithSimpleSchedule(x => x.WithIntervalInMinutes(30).RepeatForever()));
+
         var grcOutboxJobKey = new JobKey("GRCOutboxProcessorJob");
         q.AddJob<GRCOutboxProcessorJob>(opts => opts.WithIdentity(grcOutboxJobKey));
 

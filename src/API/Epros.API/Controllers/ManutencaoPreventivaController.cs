@@ -84,5 +84,17 @@ namespace Epros.API.Controllers
             var result = await _mediator.Send(new AtivarPlanoPreventivoCommand(id), ct);
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
+
+        // MAN-PRV D7 — motor de vencimento sob demanda (o mesmo que o job Quartz aciona).
+        // Body opcional: { planoId?, dataReferencia?, contadorAtual? }.
+        [HttpPost("vencimento/avaliar")]
+        [AbacAuthorize("ManutencaoPreventiva", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> AvaliarVencimento([FromBody] AvaliarVencimentoPreventivaCommand? command, CancellationToken ct)
+        {
+            var result = await _mediator.Send(command ?? new AvaliarVencimentoPreventivaCommand(null, null, null), ct);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
     }
 }
