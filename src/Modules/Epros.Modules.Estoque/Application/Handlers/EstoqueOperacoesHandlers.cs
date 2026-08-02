@@ -58,8 +58,12 @@ namespace Epros.Modules.Estoque.Application.Handlers
     }
 
     /// <summary>
-    /// Cria transferência entre locais (MVM-020/021). Valida origem≠destino e saldo disponível.
-    /// A baixa/incremento por LOCAL depende do módulo WMS (saldo por local) — registrado como dependência.
+    /// Cria transferência entre locais (MVM-020/021). Valida origem≠destino e saldo disponível e MOVE O
+    /// KARDEX pelo motor único: SAÍDA na origem + ENTRADA no destino, dentro de UMA transação (MVM-029).
+    /// D1: a chave de saldo é (EmpresaId+ProdutoId); a transferência é intra-empresa, então o saldo AGREGADO
+    /// e o custo médio ficam invariantes (entra o mesmo custo médio que saiu — sem drift de valorização), e
+    /// as fichas de saída/entrada carregam o LocalOrigemId/LocalDestinoId para rastreio. A granularidade real
+    /// de SALDO por local+lote/série é a fatia D2 (fora deste gap). Idempotente por FatoGerador.ReferenciaExterna.
     /// </summary>
     public class CriarTransferenciaEstoqueCommandHandler : ICommandHandler<CriarTransferenciaEstoqueCommand>
     {
@@ -87,19 +91,50 @@ namespace Epros.Modules.Estoque.Application.Handlers
             if (!transferencia.IsValid)
                 return CommandResult.Falha(transferencia.Notifications.Select(n => n.Message), "Dados da transferência são inválidos.");
 
-            // MVM-021: valida saldo disponível na origem (nível agregado empresa/produto).
+            // MVM-021: valida saldo disponível na origem (nível agregado empresa/produto) e captura o custo
+            // médio vigente de cada item ANTES de mover, para reentrar no destino pelo mesmo custo (invariância).
+            var custoMedioPorProduto = new System.Collections.Generic.Dictionary<Guid, decimal>();
             foreach (var input in request.Itens)
             {
                 var saldo = await _context.EstoqueProdutos
                     .FirstOrDefaultAsync(e => e.EmpresaId == request.EmpresaId && e.ProdutoId == input.ProdutoId, cancellationToken);
                 if (saldo == null || saldo.QuantidadeSaldoEstoque < input.Quantidade)
                     return CommandResult.Falha("Saldo insuficiente na origem para a transferência (MVM-021).");
+                custoMedioPorProduto[input.ProdutoId] = saldo.ValorCustoMedio;
             }
 
             _context.TransferenciasEstoque.Add(transferencia);
             foreach (var input in request.Itens)
             {
                 _context.TransferenciasEstoqueItens.Add(new TransferenciaEstoqueItem(transferencia.Id, input.ProdutoId, input.Quantidade, input.ValorUnitario, input.Lote, input.DataValidade, tenantId, usuario));
+            }
+
+            // MVM-020/021 + MVM-029: move o kardex pelo MOTOR ÚNICO (saída origem + entrada destino) numa única
+            // transação. Idempotente: se já existe FatoGerador desta transferência, não move de novo (anti-dupla).
+            var referenciaFato = $"Transferencia {transferencia.Id}";
+            var jaMovido = await _context.FatosGeradoresEstoque
+                .IgnoreQueryFilters()
+                .AnyAsync(f => f.TenantId == tenantId && f.ReferenciaExterna == referenciaFato, cancellationToken);
+            if (!jaMovido)
+            {
+                var motor = new MotorMovimentacaoEstoque(_context, tenantId, usuario);
+                var fato = new FatoGeradorEstoque(null, null, null, EOrigemFatoGeradorEstoque.Transferencia, tenantId, usuario, referenciaExterna: referenciaFato);
+                _context.FatosGeradoresEstoque.Add(fato);
+
+                foreach (var input in request.Itens)
+                {
+                    var custoMedio = custoMedioPorProduto[input.ProdutoId];
+
+                    // SAÍDA na origem (tag LocalOrigemId na ficha de saída).
+                    var saida = await motor.AplicarSaidaAsync(request.EmpresaId, input.ProdutoId, input.Quantidade, fato.Id, request.LocalOrigemId, cancellationToken);
+                    if (!saida.Sucesso)
+                        return CommandResult.Falha(saida.Erro ?? "Falha ao baixar o estoque na origem da transferência.");
+
+                    // ENTRADA no destino pelo MESMO custo médio (tag LocalDestinoId + lote/validade na ficha de entrada).
+                    var entrada = await motor.AplicarEntradaAsync(request.EmpresaId, input.ProdutoId, ETipoEstoque.Geral, input.Quantidade, custoMedio, fato.Id, request.LocalDestinoId, input.Lote, input.DataValidade, ETipoCusteioEstoque.CustoMedio, cancellationToken);
+                    if (!entrada.Sucesso)
+                        return CommandResult.Falha(entrada.Erro ?? "Falha ao dar entrada no destino da transferência.");
+                }
             }
 
             transferencia.Confirmar(usuario);
