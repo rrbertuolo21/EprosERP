@@ -45,8 +45,43 @@ export const erpMenu: MenuGroup[] = [
       { label: 'NF-e', to: '/erp/vendas/emissao/nfe' },
       { label: 'NF-e Simplificada', to: '/erp/vendas/emissao/nfe-simplificada' },
       { label: 'NFC-e', to: '/erp/vendas/emissao/nfce' },
+      { label: 'NF-e Devolução/Retorno', to: '/erp/vendas/emissao/devolucao-retorno/nfe' },
       { label: 'Transmissões', to: '/erp/vendas/transmissoes' },
       { label: 'Inutilização', to: '/erp/vendas/inutilizacao-numeracao' }
+    ]
+  },
+  {
+    label: 'Vendas / Comercial',
+    icon: 'file-invoice',
+    itens: [
+      { label: 'Comercial (hub)', to: '/erp/vendas/comercial' },
+      { label: 'Contratos de Venda', to: '/erp/vendas/contratos' },
+      { label: 'Planejamento de Demanda', to: '/erp/vendas/demanda' },
+      { label: 'Logística de Saída', to: '/erp/vendas/logistica-saida' },
+      { label: 'E-commerce', to: '/erp/vendas/ecommerce' },
+      { label: 'Serviços — Catálogo', to: '/erp/vendas/servicos/catalogo' },
+      { label: 'Serviços — Faturas', to: '/erp/vendas/servicos/faturas' },
+      { label: 'Garantias — Coberturas', to: '/erp/vendas/garantias/coberturas' },
+      { label: 'Garantias — Políticas', to: '/erp/vendas/garantias/politicas' },
+      { label: 'FCI — Documentos', to: '/erp/vendas/faturamento-internacional/documentos' },
+      { label: 'FCI — Impostos', to: '/erp/vendas/faturamento-internacional/impostos' },
+      { label: 'Portal — Solicitações', to: '/erp/vendas/portal/solicitacoes' },
+      { label: 'Portal — Usuários', to: '/erp/vendas/portal/usuarios' }
+    ]
+  },
+  {
+    label: 'Vendas / CRM',
+    icon: 'users',
+    itens: [
+      { label: 'CRM (hub)', to: '/erp/vendas/crm' },
+      { label: 'Leads', to: '/erp/vendas/crm/leads' },
+      { label: 'Oportunidades', to: '/erp/vendas/crm/oportunidades' },
+      { label: 'Atividades / Agenda', to: '/erp/vendas/crm/atividades' },
+      { label: 'Campanhas', to: '/erp/vendas/crm/campanhas' },
+      { label: 'Fidelização', to: '/erp/vendas/crm/fidelizacao' },
+      { label: 'Tickets', to: '/erp/vendas/crm/tickets' },
+      { label: 'Webforms', to: '/erp/vendas/crm/webforms' },
+      { label: 'Pix Relacional', to: '/erp/vendas/crm/pix' }
     ]
   },
   {
