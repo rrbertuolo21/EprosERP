@@ -119,6 +119,9 @@ try
     builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.QualidadeLoteQuarentenaConsumer>();
     builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.QualidadeRstBloqueioSolicitadoConsumer>();
     builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.QualidadeLoteLiberadoConsumer>();
+    // T5 — prd.ordem.concluida (MES) -> baixa de insumos + entrada do acabado no Estoque pelo motor único.
+    // Roteado pelo ProducaoOutboxProcessorJob (mesma fila do evento legado OrdemProducaoEncerrada). Idempotente.
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.MesOrdemConcluidaEstoqueConsumer>();
 
     // Registra o serviço de hashing de senhas (PBKDF2 / HMAC-SHA256). Sem estado -> Singleton.
     builder.Services.AddSingleton<IPasswordHasher, Epros.Infrastructure.Services.Pbkdf2PasswordHasher>();

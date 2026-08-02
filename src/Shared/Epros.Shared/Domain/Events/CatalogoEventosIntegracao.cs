@@ -227,6 +227,19 @@ namespace Epros.Shared.Domain.Events
             public const string RemessaCnabGerada = "fin.cobranca.remessa_gerada";
         }
 
+        /// <summary>
+        /// Produção MES/GOS (PRD-*) — T5. Ordem de produção canônica move estoque pelo MOTOR ÚNICO
+        /// via evento Outbox pós-commit (consumo de insumos + entrada do acabado). O evento legado
+        /// <see cref="Operacoes.OrdemProducaoEncerrada"/> permanece para o fluxo antigo (OrdemProducao),
+        /// que segue como leitura na convergência incremental.
+        /// </summary>
+        public static class Producao
+        {
+            /// <summary>Ordem de produção MES concluída/finalizada: baixa os insumos e dá entrada do acabado
+            /// no Estoque pelo motor único (kardex D1). Consumidor idempotente por ordem, anti-dupla-contagem.</summary>
+            public const string OrdemConcluida = "prd.ordem.concluida";
+        }
+
         /// <summary>Operações (produção/manutenção/qualidade/RH/GRC).</summary>
         public static class Operacoes
         {
@@ -363,6 +376,7 @@ namespace Epros.Shared.Domain.Events
             Estoque.AnaliseParametrosAlterados, Estoque.AnaliseAlertaReposicao, Estoque.AnaliseExcessoMaximo,
             Estoque.PfoConviteEnviado, Estoque.PfoAcessoAtivado, Estoque.PfoCotacaoRespondida,
             Estoque.PfoPreAvisoEnviado, Estoque.PfoDocumentoEnviado,
+            Producao.OrdemConcluida,
             Operacoes.OrdemProducaoEncerrada, Operacoes.OrdemManutencaoConcluida, Operacoes.InspecaoReprovada,
             Operacoes.FolhaProcessada, Operacoes.DenunciaProcedente,
             Projetos.ItemPortfolioAprovado, Projetos.OrcamentoBaselineCongelada,
