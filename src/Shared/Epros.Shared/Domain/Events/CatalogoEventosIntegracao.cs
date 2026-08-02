@@ -183,6 +183,30 @@ namespace Epros.Shared.Domain.Events
             public const string DenunciaProcedente = "DenunciaProcedente";
         }
 
+        /// <summary>
+        /// GRC (Governança, Risco e Compliance) — contratos GRC-EVT-* emitidos via Outbox (D-TEC-02).
+        /// [MÍNIMO — adicionado pelo agente do módulo GRC; sinalizado no relatório para homologação
+        /// central junto com os demais eventos de integração.]
+        /// </summary>
+        public static class Grc
+        {
+            // SoD — segregação de funções
+            public const string SodConcessaoAvaliada = "grc.sod.concessao_avaliada";
+            public const string SodConcessaoBloqueada = "grc.sod.concessao_bloqueada";
+            public const string SodBypassAdmin = "grc.sod.bypass_admin";
+            public const string SodExcecaoAprovada = "grc.sod.excecao_aprovada";
+            public const string SodViolacaoDetectada = "grc.sod.violacao_detectada";
+            // REG — compliance regulatório
+            public const string RegCertificadoAlertaVencimento = "grc.reg.certificado_alerta_vencimento";
+            public const string RegCertificadoRevogado = "grc.reg.certificado_revogado";
+            // POL — políticas
+            public const string PolPoliticaPublicada = "grc.pol.politica_publicada";
+            // RIS — riscos
+            public const string RisKriExcedido = "grc.ris.kri_excedido";
+            // CIA — controles/auditoria
+            public const string CiaAchadoCritico = "grc.cia.achado_critico";
+        }
+
         private static readonly HashSet<string> _todos = new(new[]
         {
             Assinatura.AssinaturaCancelada, Assinatura.AssinaturaReativada, Assinatura.PlanoAlterado,
@@ -218,7 +242,11 @@ namespace Epros.Shared.Domain.Events
             Qualidade.AcrLoteBloqueado, Qualidade.AcrLoteLiberado, Qualidade.AcrLoteQuarentena,
             Qualidade.AcrNcrSolicitada, Qualidade.AcrDevolucaoSolicitada, Qualidade.InsInspecaoConcluida,
             Qualidade.NcrAberta, Qualidade.NcrEncerrada,
-            Qualidade.RstRecallAberto, Qualidade.RstRecallEncerrado, Qualidade.RstBloqueioSolicitado
+            Qualidade.RstRecallAberto, Qualidade.RstRecallEncerrado, Qualidade.RstBloqueioSolicitado,
+            Grc.SodConcessaoAvaliada, Grc.SodConcessaoBloqueada, Grc.SodBypassAdmin,
+            Grc.SodExcecaoAprovada, Grc.SodViolacaoDetectada,
+            Grc.RegCertificadoAlertaVencimento, Grc.RegCertificadoRevogado,
+            Grc.PolPoliticaPublicada, Grc.RisKriExcedido, Grc.CiaAchadoCritico
         }, System.StringComparer.Ordinal);
 
         /// <summary>Todos os tipos de evento homologados no catálogo.</summary>

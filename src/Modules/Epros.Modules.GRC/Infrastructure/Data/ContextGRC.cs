@@ -54,6 +54,7 @@ namespace Epros.Modules.GRC.Infrastructure.Data
         public DbSet<SimulacaoSoD> SimulacoesSoD => Set<SimulacaoSoD>();
         public DbSet<ViolacaoSoD> ViolacoesSoD => Set<ViolacaoSoD>();
         public DbSet<ExcecaoSoD> ExcecoesSoD => Set<ExcecaoSoD>();
+        public DbSet<BypassSoD> BypassesSoD => Set<BypassSoD>();
 
         // GRC — Parametrizacao por tenant (D-TEC-04): os 5 grc_*_parametro que faltavam
         public DbSet<PoliticaParametro> PoliticaParametros => Set<PoliticaParametro>();
@@ -311,6 +312,14 @@ namespace Epros.Modules.GRC.Infrastructure.Data
                 entity.HasKey(e => e.Id);
                 entity.ToTable("grc_sod_excecao");
                 entity.HasIndex(e => e.ViolacaoId);
+            });
+
+            modelBuilder.Entity<BypassSoD>(entity =>
+            {
+                entity.HasKey(b => b.Id);
+                entity.ToTable("grc_sod_bypass_admin");
+                entity.HasIndex(b => new { b.TenantId, b.RegraId });
+                entity.HasIndex(b => b.AtorId);
             });
 
             // ===================== GRC — Parametros por tenant (D-TEC-04) =====================

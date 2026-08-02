@@ -16,6 +16,8 @@ namespace Epros.Modules.GRC.Domain.Entities
         public Guid FuncaoBId { get; private set; }
         // Baixa, Media, Alta, Critica
         public string Criticidade { get; private set; } = "Alta";
+        // D-SOD-02 — modo de tratamento do conflito por regra: Bloqueia (default) x PermiteExcecao.
+        public string ModoTratamento { get; private set; } = "Bloqueia";
         public DateTime VigenciaInicio { get; private set; }
         public DateTime? VigenciaFim { get; private set; }
         // Rascunho, EmAnalise, Ativo, Suspenso, Encerrado, Inativo
@@ -50,10 +52,28 @@ namespace Epros.Modules.GRC.Domain.Entities
             FuncaoAId = funcaoAId;
             FuncaoBId = funcaoBId;
             Criticidade = criticidade;
+            ModoTratamento = "Bloqueia";
             VigenciaInicio = vigenciaInicio;
             VigenciaFim = vigenciaFim;
             Status = "Rascunho";
         }
+
+        /// <summary>
+        /// D-SOD-02 — define o modo de tratamento do conflito: "Bloqueia" (impede a concessão) ou
+        /// "PermiteExcecao" (concede mediante exceção aprovada com controle compensatório).
+        /// </summary>
+        public void DefinirModoTratamento(string modo, string usuario)
+        {
+            if (modo != "Bloqueia" && modo != "PermiteExcecao")
+            {
+                AddNotification(nameof(ModoTratamento), "O modo de tratamento deve ser 'Bloqueia' ou 'PermiteExcecao'.");
+                return;
+            }
+            ModoTratamento = modo;
+            MarcarAlterado(usuario);
+        }
+
+        public bool BloqueiaConcessao() => ModoTratamento == "Bloqueia";
 
         public void Submeter(string usuario)
         {
