@@ -47,6 +47,14 @@ namespace Epros.Modules.ESG.Infrastructure.Data
         public DbSet<MetaCircular> MetasCirculares => Set<MetaCircular>();
         public DbSet<MedicaoCircular> MedicoesCirculares => Set<MedicaoCircular>();
 
+        // ESG-DIV (Diversidade e Responsabilidade Social)
+        public DbSet<DivPrograma> ProgramasDiv => Set<DivPrograma>();
+        public DbSet<DivIndicador> IndicadoresDiv => Set<DivIndicador>();
+        public DbSet<DivMedicao> MedicoesDiv => Set<DivMedicao>();
+        public DbSet<DivMeta> MetasDiv => Set<DivMeta>();
+        public DbSet<DivAcao> AcoesDiv => Set<DivAcao>();
+        public DbSet<DivParametro> ParametrosDiv => Set<DivParametro>();
+
         public ContextESG(
             DbContextOptions<ContextESG> options,
             ITenantProvider tenantProvider,
@@ -418,6 +426,67 @@ namespace Epros.Modules.ESG.Infrastructure.Data
                 entity.Property(e => e.Unidade).HasMaxLength(30);
                 entity.Property(e => e.Fonte).HasMaxLength(100);
                 entity.HasIndex(e => new { e.TenantId, e.FluxoId });
+            });
+
+            // ================= ESG-DIV =================
+            modelBuilder.Entity<DivPrograma>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("div_programa");
+                entity.Property(e => e.Codigo).HasMaxLength(30);
+                entity.Property(e => e.Descricao).HasMaxLength(500);
+                entity.Property(e => e.Observacao).HasMaxLength(1000);
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.HasIndex(e => new { e.TenantId, e.Codigo }).IsUnique();
+            });
+
+            modelBuilder.Entity<DivIndicador>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("div_indicador");
+                entity.Property(e => e.Codigo).HasMaxLength(50);
+                entity.Property(e => e.Descricao).HasMaxLength(500);
+                entity.Property(e => e.Unidade).HasMaxLength(30);
+                entity.Property(e => e.Fonte).HasMaxLength(200);
+                entity.Property(e => e.Formula).HasMaxLength(500);
+                entity.HasIndex(e => new { e.TenantId, e.Codigo, e.Versao }).IsUnique();
+            });
+
+            modelBuilder.Entity<DivMedicao>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("div_medicao");
+                entity.Property(e => e.Dimensao).HasMaxLength(100);
+                entity.Property(e => e.DimensoesHash).HasMaxLength(64);
+                entity.Property(e => e.Origem).HasMaxLength(100);
+                entity.HasIndex(e => new { e.TenantId, e.IndicadorId, e.DimensoesHash }).IsUnique();
+            });
+
+            modelBuilder.Entity<DivMeta>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("div_meta");
+                entity.Property(e => e.Unidade).HasMaxLength(30);
+                entity.HasIndex(e => new { e.TenantId, e.IndicadorId });
+            });
+
+            modelBuilder.Entity<DivAcao>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("div_acao");
+                entity.Property(e => e.Descricao).HasMaxLength(1000);
+                entity.Property(e => e.Status).HasMaxLength(20);
+                entity.Property(e => e.Resultado).HasMaxLength(1000);
+                entity.HasIndex(e => new { e.TenantId, e.ProgramaId });
+            });
+
+            modelBuilder.Entity<DivParametro>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("div_parametro");
+                entity.Property(e => e.Chave).HasMaxLength(100);
+                entity.Property(e => e.ValorJson).HasMaxLength(2000);
+                entity.HasIndex(e => new { e.TenantId, e.Chave }).IsUnique();
             });
 
             base.OnModelCreating(modelBuilder);
