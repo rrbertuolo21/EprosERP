@@ -59,7 +59,17 @@ export const erpMenu: MenuGroup[] = [
     icon: 'shopping-cart',
     itens: [
       { label: 'Lista de Compras', to: '/erp/compras' },
+      { label: 'Gestão de Compras', to: '/erp/compras/gestao' },
+      { label: 'Aprovações & Alçadas', to: '/erp/compras/aprovacoes' },
+      { label: 'Sourcing — Cotações', to: '/erp/compras/sourcing' },
+      { label: 'Contratos GCC', to: '/erp/compras/contratos-gcc' },
       { label: 'Entrada de Mercadorias', to: '/erp/compras/entrada-mercadorias' },
+      { label: 'NF-e de Entrada', to: '/erp/compras/emissao/nfe-entrada' },
+      { label: 'NF-e Entrada — Devolução/Retorno', to: '/erp/compras/emissao/devolucao-retorno/nfe-entrada' },
+      { label: 'Devolução de Compra', to: '/erp/compras/devolucao' },
+      { label: 'Subcontratação', to: '/erp/compras/subcontratacao' },
+      { label: 'TMS — Frete', to: '/erp/compras/tms' },
+      { label: 'Comércio Exterior', to: '/erp/compras/comercio-exterior' },
       { label: 'Importar XML', to: '/erp/integracao/importar-xml' }
     ]
   },
