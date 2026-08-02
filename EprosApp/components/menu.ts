@@ -358,7 +358,9 @@ export const erpMenu: MenuGroup[] = [
     label: 'Imobiliária',
     icon: 'building',
     itens: [
+      { label: 'Gestão Imobiliária', to: '/erp/imobiliaria' },
       { label: 'Imóveis', to: '/erp/imobiliaria/imoveis' },
+      { label: 'Propostas', to: '/erp/imobiliaria/propostas' },
       { label: 'Locações', to: '/erp/imobiliaria/locacoes' },
       { label: 'Contratos de Serviço', to: '/erp/imobiliaria/contratos-servico' }
     ]
