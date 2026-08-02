@@ -7,6 +7,9 @@ namespace Epros.Modules.Projetos.Application.Queries
     // PRJ-ORC
     public record ObterOrcamentosPorProjetoQuery(Guid ProjetoId) : IQuery<CommandResult>;
     public record ObterOrcamentoPorIdQuery(Guid Id) : IQuery<CommandResult>;
+    public record ObterBaselinesOrcamentoQuery(Guid OrcamentoProjetoId) : IQuery<CommandResult>;
+    /// <summary>DP-ORC-004/005: EVM do orçamento. BAC = baseline (ou budget); EV/PV por %; AC informado. // valida-contador (método EV).</summary>
+    public record ObterEvmOrcamentoQuery(Guid OrcamentoProjetoId, decimal ActualCost, decimal? PercentualPlanejado, decimal? PercentualConcluido) : IQuery<CommandResult>;
 
     // PRJ-REC
     public record ObterApontamentosQuery(Guid? ProjetoId, Guid? UsuarioId) : IQuery<CommandResult>;

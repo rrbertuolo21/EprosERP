@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Epros.Modules.Projetos.Application.Commands;
@@ -6,6 +7,7 @@ using Epros.Modules.Projetos.Domain.Entities.Orcamento;
 using Epros.Modules.Projetos.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
+using Epros.Shared.Domain.Events;
 using Microsoft.EntityFrameworkCore;
 
 namespace Epros.Modules.Projetos.Application.Handlers
@@ -163,6 +165,64 @@ namespace Epros.Modules.Projetos.Application.Handlers
 
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Orcamento aprovado com sucesso!", new { orcamento.Id });
+        }
+    }
+
+    /// <summary>DP-ORC-002: congela baseline imutável do orçamento aprovado e publica evento no Outbox.</summary>
+    public class CongelarBaselineOrcamentoCommandHandler : ICommandHandler<CongelarBaselineOrcamentoCommand>
+    {
+        private readonly ContextProjetos _context;
+        private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
+
+        public CongelarBaselineOrcamentoCommandHandler(ContextProjetos context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        {
+            _context = context;
+            _tenantProvider = tenantProvider;
+            _currentUser = currentUser;
+        }
+
+        public async Task<CommandResult> Handle(CongelarBaselineOrcamentoCommand request, CancellationToken cancellationToken)
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var usuario = _currentUser.GetUserId() ?? "system";
+
+            var orcamento = await _context.Orcamentos
+                .Include(o => o.Marcos)
+                .FirstOrDefaultAsync(o => o.Id == request.OrcamentoProjetoId, cancellationToken);
+
+            if (orcamento == null)
+                return CommandResult.Falha("Orcamento nao encontrado.");
+
+            var marcosSnapshot = orcamento.Marcos
+                .Select(m => new { m.Id, m.Titulo, m.Custo, m.DataInicio, m.DataFim, m.Progresso, Status = m.Status.ToString() })
+                .ToList();
+            var marcosJson = JsonSerializer.Serialize(marcosSnapshot);
+
+            var baseline = orcamento.CongelarBaseline(marcosJson, request.Motivo, usuario);
+            if (!orcamento.IsValid || baseline == null)
+                return CommandResult.Falha(orcamento.Notifications.Select(n => n.Message));
+
+            _context.BaselinesOrcamento.Add(baseline);
+
+            var payload = JsonSerializer.Serialize(new
+            {
+                baseline.OrcamentoProjetoId,
+                baseline.ProjetoId,
+                baseline.NumeroBaseline,
+                baseline.BudgetSnapshot,
+                baseline.CustoMarcosTotal
+            });
+            _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Projetos.OrcamentoBaselineCongelada, payload));
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Baseline congelada com sucesso!", new
+            {
+                BaselineId = baseline.Id,
+                baseline.NumeroBaseline,
+                baseline.BudgetSnapshot,
+                baseline.CustoMarcosTotal
+            });
         }
     }
 }

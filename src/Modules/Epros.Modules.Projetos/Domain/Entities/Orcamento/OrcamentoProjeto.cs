@@ -21,6 +21,8 @@ namespace Epros.Modules.Projetos.Domain.Entities.Orcamento
         public decimal? CostsEstimate { get; private set; }
         public EProjetoWorkflowStatus Status { get; private set; } = EProjetoWorkflowStatus.Rascunho;
         public int Versao { get; private set; }
+        /// <summary>DP-ORC-002: número da última baseline congelada (0 = nenhuma).</summary>
+        public int BaselineAtual { get; private set; }
 
         public List<MarcoOrcamentario> Marcos { get; private set; } = new();
 
@@ -105,6 +107,38 @@ namespace Epros.Modules.Projetos.Domain.Entities.Orcamento
             }
             Status = EProjetoWorkflowStatus.Ativo;
             MarcarAlterado(usuario);
+        }
+
+        /// <summary>
+        /// DP-ORC-002 — Congela uma baseline imutável (budget + marcos) do orçamento. Só é permitido a
+        /// partir de um orçamento aprovado (Ativo): a baseline é a referência (PV/BAC) para EVM/curva-S.
+        /// Retorna o snapshot; o handler persiste. Reconciliação com a soma dos marcos é apenas alerta
+        /// (DP-ORC-001, baseline manda), não bloqueio.
+        /// </summary>
+        public BaselineOrcamento? CongelarBaseline(string marcosSnapshotJson, string? motivo, string usuario)
+        {
+            if (Status != EProjetoWorkflowStatus.Ativo)
+            {
+                AddNotification(nameof(Status), "So e possivel congelar baseline de um orcamento aprovado (Ativo). [Origem: OrcamentoProjeto / DP-ORC-002]");
+                return null;
+            }
+
+            var custoMarcos = Marcos.Sum(m => m.Custo);
+            BaselineAtual++;
+            var baseline = new BaselineOrcamento(
+                Id,
+                ProjetoId,
+                BaselineAtual,
+                Budget,
+                custoMarcos,
+                Marcos.Count,
+                marcosSnapshotJson ?? "[]",
+                motivo,
+                TenantId,
+                usuario);
+
+            MarcarAlterado(usuario);
+            return baseline;
         }
     }
 }
