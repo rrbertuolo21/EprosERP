@@ -14,6 +14,11 @@ namespace Epros.Modules.GRC.Domain.Entities
         public string Descricao { get; private set; } = string.Empty;
         public string? Norma { get; private set; }
         public Guid ResponsavelId { get; private set; }
+        // D-REG-05 — obrigação com nome, framework de origem e prazo próprio (EF×código #10).
+        public string? Nome { get; private set; }
+        public string? Framework { get; private set; } // LGPD, SOX, SPED, eSocial, PCI, ISO27001...
+        public DateTime? DataInicio { get; private set; }
+        public DateTime? DataVencimento { get; private set; }
         // Rascunho, EmAnalise, Ativo, Suspenso, Encerrado, Inativo
         public string Status { get; private set; } = "Rascunho";
         public string? MotivoUltimaTransicao { get; private set; }
@@ -41,6 +46,25 @@ namespace Epros.Modules.GRC.Domain.Entities
             Norma = norma;
             ResponsavelId = responsavelId;
             Status = "Rascunho";
+        }
+
+        /// <summary>
+        /// D-REG-05 — define os dados da obrigação (nome, framework de origem e o prazo próprio).
+        /// O catálogo obrigação→prazo→evidência por framework depende de validação (PEDIDO-GRC-02);
+        /// aqui só se persiste o que o operador informou. // valida-jurídico (aplicabilidade do framework).
+        /// </summary>
+        public void DefinirObrigacao(string? nome, string? framework, DateTime? dataInicio, DateTime? dataVencimento, string usuario)
+        {
+            if (dataInicio != null && dataVencimento != null && dataVencimento < dataInicio)
+            {
+                AddNotification(nameof(DataVencimento), "O vencimento da obrigacao nao pode ser anterior ao inicio.");
+                return;
+            }
+            Nome = nome;
+            Framework = framework;
+            DataInicio = dataInicio;
+            DataVencimento = dataVencimento;
+            MarcarAlterado(usuario);
         }
 
         public void Submeter(string usuario)
