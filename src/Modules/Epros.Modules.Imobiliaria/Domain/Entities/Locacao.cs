@@ -114,6 +114,85 @@ namespace Epros.Modules.Imobiliaria.Domain.Entities
             MarcarAlterado(usuario);
         }
 
+        /// <summary>
+        /// Edicao da locacao (ID3/PRD-03). Enquanto EmElaboracao a edicao e livre;
+        /// Vigente so por aditivo/nova versao (reajuste/renovacao com trilha propria).
+        /// </summary>
+        public void AtualizarDados(
+            Guid? imovelId,
+            DateTime periodoInicial,
+            DateTime periodoFinal,
+            decimal valor,
+            int vencimento,
+            string usuario)
+        {
+            if (Status != EStatusLocacao.EmElaboracao)
+            {
+                AddNotification(nameof(Status),
+                    "Locacao vigente/encerrada nao pode ser editada livremente; use reajuste, renovacao ou aditivo. (RN-011)");
+                return;
+            }
+            ImovelId = imovelId;
+            PeriodoInicial = periodoInicial.Date;
+            PeriodoFinal = periodoFinal.Date;
+            Valor = valor;
+            Vencimento = vencimento;
+            Validar();
+            if (!IsValid) return;
+            MarcarAlterado(usuario);
+        }
+
+        /// <summary>
+        /// Aplica um novo valor de aluguel resultante de reajuste (ID7/NF-02). Somente Vigente.
+        /// O calculo do novo valor e responsabilidade do reajuste (valida-contador); aqui so
+        /// refletimos o valor ratificado no contrato, com trilha por LocacaoReajuste.
+        /// </summary>
+        public void AplicarNovoValor(decimal novoValor, string usuario)
+        {
+            if (Status != EStatusLocacao.Vigente)
+            {
+                AddNotification(nameof(Status), "Apenas locacoes vigentes podem ser reajustadas.");
+                return;
+            }
+            if (novoValor <= 0)
+            {
+                AddNotification(nameof(Valor), "O valor reajustado deve ser positivo. (RN-012)");
+                return;
+            }
+            Valor = novoValor;
+            MarcarAlterado(usuario);
+        }
+
+        /// <summary>
+        /// Renovacao (ID7): estende o periodo de uma locacao vigente (aditivo). Mantem Vigente.
+        /// </summary>
+        public void Renovar(DateTime novoPeriodoFinal, string usuario)
+        {
+            if (Status != EStatusLocacao.Vigente)
+            {
+                AddNotification(nameof(Status), "Apenas locacoes vigentes podem ser renovadas.");
+                return;
+            }
+            if (novoPeriodoFinal.Date <= PeriodoFinal)
+            {
+                AddNotification(nameof(PeriodoFinal),
+                    "O novo fim de vigencia deve ser posterior ao fim atual. (RN-012)");
+                return;
+            }
+            PeriodoFinal = novoPeriodoFinal.Date;
+            MarcarAlterado(usuario);
+        }
+
+        /// <summary>Mapa do ciclo proprio ao status canonico da plataforma (T3).</summary>
+        public Epros.Shared.Domain.Enums.ESituacaoCanonica SituacaoCanonica => Status switch
+        {
+            EStatusLocacao.EmElaboracao => Epros.Shared.Domain.Enums.ESituacaoCanonica.Rascunho,
+            EStatusLocacao.Vigente => Epros.Shared.Domain.Enums.ESituacaoCanonica.Ativo,
+            EStatusLocacao.Encerrada => Epros.Shared.Domain.Enums.ESituacaoCanonica.Encerrado,
+            EStatusLocacao.Cancelada => Epros.Shared.Domain.Enums.ESituacaoCanonica.Cancelado,
+            _ => Epros.Shared.Domain.Enums.ESituacaoCanonica.Rascunho
+        };
+
         public void Validar()
         {
             Clear();

@@ -173,6 +173,31 @@ namespace Epros.Shared.Domain.Events
             public const string RstBloqueioSolicitado = "qld.rst.bloqueio_solicitado";
         }
 
+        /// <summary>
+        /// Imobiliaria (IMO-*). ⚠️ ADIÇÃO MÍNIMA pelo módulo IMOBILIARIA (worktree wt/imobiliaria) —
+        /// homologar nomes/consumidores na revisão do catálogo. Baixa de aluguel integra o
+        /// CONTAS_RECEBER por evento (não recria o recebível): a IMOBILIARIA publica a cobrança
+        /// gerada e reflete a baixa/estorno vinda do FINANCEIRO.
+        /// </summary>
+        public static class Imobiliaria
+        {
+            public const string ImovelDisponibilizado = "imo.imovel.disponibilizado";
+            public const string ImovelInativado = "imo.imovel.inativado";
+            public const string LocacaoFormalizada = "imo.locacao.formalizada";
+            public const string LocacaoEncerrada = "imo.locacao.encerrada";
+            public const string LocacaoCancelada = "imo.locacao.cancelada";
+            public const string LocacaoReajustada = "imo.locacao.reajustada";
+            public const string LocacaoRescindida = "imo.locacao.rescindida";
+            /// <summary>Cobrança recorrente por competência — CONSUMIDA pelo CONTAS_RECEBER (origina o título).</summary>
+            public const string AluguelCobrancaGerada = "imo.aluguel.cobranca_gerada";
+            /// <summary>Baixa refletida do FINANCEIRO (não governa juros/multa/desconto — NF-01).</summary>
+            public const string AluguelBaixaRefletida = "imo.aluguel.baixa_refletida";
+            public const string AluguelBaixaEstornada = "imo.aluguel.baixa_estornada";
+            public const string ReciboEmitido = "imo.recibo.emitido";
+            public const string PropostaConvertida = "imo.proposta.convertida";
+            public const string GarantiaRegistrada = "imo.garantia.registrada";
+        }
+
         /// <summary>Operações (produção/manutenção/qualidade/RH/GRC).</summary>
         public static class Operacoes
         {
@@ -218,7 +243,12 @@ namespace Epros.Shared.Domain.Events
             Qualidade.AcrLoteBloqueado, Qualidade.AcrLoteLiberado, Qualidade.AcrLoteQuarentena,
             Qualidade.AcrNcrSolicitada, Qualidade.AcrDevolucaoSolicitada, Qualidade.InsInspecaoConcluida,
             Qualidade.NcrAberta, Qualidade.NcrEncerrada,
-            Qualidade.RstRecallAberto, Qualidade.RstRecallEncerrado, Qualidade.RstBloqueioSolicitado
+            Qualidade.RstRecallAberto, Qualidade.RstRecallEncerrado, Qualidade.RstBloqueioSolicitado,
+            Imobiliaria.ImovelDisponibilizado, Imobiliaria.ImovelInativado,
+            Imobiliaria.LocacaoFormalizada, Imobiliaria.LocacaoEncerrada, Imobiliaria.LocacaoCancelada,
+            Imobiliaria.LocacaoReajustada, Imobiliaria.LocacaoRescindida,
+            Imobiliaria.AluguelCobrancaGerada, Imobiliaria.AluguelBaixaRefletida, Imobiliaria.AluguelBaixaEstornada,
+            Imobiliaria.ReciboEmitido, Imobiliaria.PropostaConvertida, Imobiliaria.GarantiaRegistrada
         }, System.StringComparer.Ordinal);
 
         /// <summary>Todos os tipos de evento homologados no catálogo.</summary>

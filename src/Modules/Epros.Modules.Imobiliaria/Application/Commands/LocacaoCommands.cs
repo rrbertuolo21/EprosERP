@@ -42,4 +42,44 @@ namespace Epros.Modules.Imobiliaria.Application.Commands
             RuleFor(c => c.LocacaoId).NotEmpty().WithMessage("Identificador da locacao invalido.");
         }
     }
+
+    /// <summary>Edita uma locacao ainda Em Elaboracao (ID3/PRD-03).</summary>
+    public record AlterarLocacaoCommand(
+        Guid LocacaoId,
+        Guid? ImovelId,
+        DateTime PeriodoInicial,
+        DateTime PeriodoFinal,
+        decimal Valor,
+        int Vencimento
+    ) : ICommand;
+
+    public class AlterarLocacaoCommandValidator : AbstractValidator<AlterarLocacaoCommand>
+    {
+        public AlterarLocacaoCommandValidator()
+        {
+            RuleFor(c => c.LocacaoId).NotEmpty();
+            RuleFor(c => c.Valor).GreaterThan(0);
+            RuleFor(c => c.Vencimento).InclusiveBetween(1, 31);
+        }
+    }
+
+    /// <summary>Formaliza a locacao (EmElaboracao → Vigente) e loca o imovel (ID1/PRD-01).</summary>
+    public record FormalizarLocacaoCommand(Guid LocacaoId) : ICommand;
+
+    /// <summary>Encerra a locacao vigente e libera o imovel (ID1/PRD-01).</summary>
+    public record EncerrarLocacaoCommand(Guid LocacaoId) : ICommand;
+
+    /// <summary>Cancela a locacao e libera o imovel (ID1/PRD-01).</summary>
+    public record CancelarLocacaoCommand(Guid LocacaoId) : ICommand;
+
+    /// <summary>Renova (aditivo) a locacao vigente estendendo a vigencia (ID7).</summary>
+    public record RenovarLocacaoCommand(Guid LocacaoId, DateTime NovoPeriodoFinal) : ICommand;
+
+    public class RenovarLocacaoCommandValidator : AbstractValidator<RenovarLocacaoCommand>
+    {
+        public RenovarLocacaoCommandValidator()
+        {
+            RuleFor(c => c.LocacaoId).NotEmpty();
+        }
+    }
 }
