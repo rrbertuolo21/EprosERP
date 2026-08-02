@@ -84,3 +84,31 @@ negócio. Nenhum inventa número legal — todos recebem o valor factual como pa
 - **Motores de Price/SAC/CET e variação cambial** são bibliotecas de domínio testadas, ainda **não
   consumidas** por handler/endpoint (dívida estruturada e reavaliação usam valores informados). Expor
   como endpoint de simulação é passo natural quando houver a demanda de produto.
+
+## 7. Outbox — dispatcher central (T1) e consumidores pendentes
+
+Fechada a causa-raiz "Outbox publica mas não despacha/consome": há agora um **dispatcher central**
+(`Epros.Infrastructure/Outbox/OutboxDispatcher` + `OutboxDispatcherJob<TContext>`) que roteia mensagens
+não-processadas por `EventType` do catálogo para `IOutboxConsumer` registrados, idempotente e com retry.
+
+**Ligado agora (consumidor REAL):**
+- `imo.aluguel.cobranca_gerada` → título em **Contas a Receber** (Financeiro, modelo FIEL).
+
+**Roteado ao FALLBACK (logado como pendência, NÃO inventa efeito) — precisa de consumidor real + regra:**
+- `con.*` (Concessionárias/DMS): venda de veículo faturada, contrato F&I, OS de oficina, reserva de peças
+  → efeitos financeiros/estoque dependem de regra de negócio/fiscal a definir.
+- `imo.*` restantes (LocacaoFormalizada, Reajustada, Rescindida, ReciboEmitido, PropostaConvertida, etc.)
+  → sem efeito cross-módulo claro hoje.
+
+**Órfãos ainda NÃO cobertos pelo dispatcher (schema já tem job legado — evitar colisão no flag de
+processado da mesma tabela física):** `qld.*` (Qualidade), `prd.*` (Produção), `man.*` (Manutenção),
+`prj.*` (Projetos), `PlanoAlterado`/`AssinaturaCancelada`/`Reativada`/`ComissaoApurada` (plataforma/
+GestãoClientes), `PedidoEcommerceParaVenda`/`ExpedicaoConfirmada`/`DemandaPlanejadaPublicada` (Vendas),
+`LdeEntradaConfirmada`/`MercadoriaRecebida` (Estoque), `DocumentoFiscalAutorizado/Cancelado` (Fiscal).
+**Migração recomendada:** trocar cada job por-módulo por um `OutboxDispatcherJob<Context>` + consumidores
+por evento, um schema de cada vez, com teste. Só então registrar o dispatcher nesses schemas (senão dois
+leitores competem pelo mesmo `outbox_messages`).
+
+**⚠️ Anti-dupla-contagem de estoque:** `LdeEntradaConfirmada`/`MercadoriaRecebida` **NÃO** ganharam
+consumidor que credite estoque — `LancarCompra` já credita (motor único D1). Um futuro consumidor desses
+eventos deve tratar só inspeção/financeiro, nunca re-creditar saldo.
