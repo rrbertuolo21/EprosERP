@@ -62,7 +62,11 @@ namespace Epros.Modules.ESG.Infrastructure.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.ToTable("emissoes_carbono");
+                entity.Property(e => e.FatorCodigo).HasMaxLength(30);
+                entity.Property(e => e.FatorVersao).HasMaxLength(30);
+                entity.Property(e => e.FatorFonte).HasMaxLength(200);
                 entity.HasIndex(e => new { e.TenantId, e.DataTransacao });
+                entity.HasIndex(e => new { e.TenantId, e.FatorPendente });
             });
 
             modelBuilder.Entity<RelatorioESG>(entity =>
