@@ -77,6 +77,7 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
         public DbSet<ContratoFinanceiro> ContratosFinanceiros => Set<ContratoFinanceiro>();
         public DbSet<FaturaRecorrente> FaturasRecorrentes => Set<FaturaRecorrente>();
         public DbSet<ReajusteContrato> ReajustesContrato => Set<ReajusteContrato>();
+        public DbSet<ContratoArrendamento> ContratosArrendamento => Set<ContratoArrendamento>();
 
         // ----- FIN-SBF: Subsídios e Fundos -----
         public DbSet<ProgramaSubsidio> ProgramasSubsidio => Set<ProgramaSubsidio>();
@@ -866,6 +867,21 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
                 e.Property(x => x.Motivo).HasMaxLength(500);
                 e.HasOne<ContratoFinanceiro>().WithMany().HasForeignKey(x => x.ContratoId).HasConstraintName("fk_reajuste_contrato").OnDelete(DeleteBehavior.Cascade);
                 e.HasIndex(x => x.ContratoId).HasDatabaseName("ix_reajuste_contrato");
+            });
+
+            // FIN-GCF extensão — Arrendamento mercantil (IFRS-16 / CPC 06 R2)
+            modelBuilder.Entity<ContratoArrendamento>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Descricao).HasMaxLength(255);
+                e.Property(x => x.ValorContraprestacao).HasPrecision(18, 2);
+                e.Property(x => x.TaxaIncrementalPeriodo).HasPrecision(18, 8);
+                e.Property(x => x.CustosDiretosIniciais).HasPrecision(18, 2);
+                e.Property(x => x.IncentivosRecebidos).HasPrecision(18, 2);
+                e.Property(x => x.PassivoArrendamentoInicial).HasPrecision(18, 2);
+                e.Property(x => x.DireitoDeUsoInicial).HasPrecision(18, 2);
+                e.Property(x => x.MotivoEncerramento).HasMaxLength(500);
+                e.HasIndex(x => new { x.TenantId, x.Status }).HasDatabaseName("ix_contrato_arrendamento_tenant_status");
             });
 
             // ===== FIN-SBF: Subsídios e Fundos =====
