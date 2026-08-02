@@ -7,9 +7,8 @@
  * Ações de lote (bloquear/desbloquear/recall/genealogia) vivem no detalhe [id].vue.
  */
 import { onMounted, reactive, ref, watch } from 'vue'
-import { useApiList } from '~/composables/useApiList'
+import { useApiList, obterMensagemErro } from '~/composables/useApiList'
 import { useApi } from '~/composables/useApi'
-import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useHelper } from '~/composables/useHelper'
 import { useEstoqueEnums, classeBadge } from '~/composables/useEstoqueEnums'
@@ -281,4 +280,9 @@ onMounted(() => void listaLotes.buscar())
 .tab { padding: 8px 16px; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); border-radius: 8px; cursor: pointer; font-size: 13px; }
 .tab.ativo { background: var(--primary); color: #fff; border-color: var(--primary); }
 .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 12px; }
+.badge-success { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.25); }
+.badge-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.25); }
+.badge-warning { background: rgba(245, 158, 11, 0.12); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.25); }
+.badge-info { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.25); }
+.badge-muted { background: rgba(120, 120, 130, 0.1); color: var(--text-muted); border: 1px solid var(--border-color); }
 </style>

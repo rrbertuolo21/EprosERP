@@ -8,7 +8,7 @@
  * Nota: endereços ricos de armazém e tarefas de separação (picking) ainda não têm endpoint próprio
  * neste controller; ficam pendentes de API (ver relatório).
  */
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useApiList, obterMensagemErro } from '~/composables/useApiList'
 import { useApi } from '~/composables/useApi'
 import { useToast } from '~/composables/useToast'
@@ -17,7 +17,6 @@ import DataTable, { type DataTableColumn } from '~/components/shared/DataTable.v
 import PageToolbar from '~/components/shared/PageToolbar.vue'
 import FilterBar, { type FilterField } from '~/components/shared/FilterBar.vue'
 import DeleteAlert from '~/components/shared/DeleteAlert.vue'
-import { ref } from 'vue'
 
 definePageMeta({ middleware: 'auth', layout: 'default' })
 
@@ -128,3 +127,8 @@ onMounted(() => void lista.buscar())
     <DeleteAlert v-model="excluirVisivel" :item-label="itemParaExcluir?.nome ?? ''" :loading="excluindo" @confirm="confirmarExclusao" />
   </div>
 </template>
+
+<style scoped>
+.badge-success { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.25); }
+.badge-muted { background: rgba(120, 120, 130, 0.1); color: var(--text-muted); border: 1px solid var(--border-color); }
+</style>
