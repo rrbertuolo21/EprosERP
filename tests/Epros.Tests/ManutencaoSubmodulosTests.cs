@@ -150,6 +150,35 @@ namespace Epros.Tests
             Assert.False(parada.IsValid);
         }
 
+        [Fact(DisplayName = "MAN-PAR | Gerar OS corretiva cria a OT canonica e vincula a parada (T5)")]
+        public async Task Par_GerarOsCorretiva_CriaOrdemCanonica()
+        {
+            using var ctx = NovoContexto(nameof(Par_GerarOsCorretiva_CriaOrdemCanonica));
+            var reg = new RegistrarParadaCommandHandler(ctx, new TP(TenantId), new CU(UserId));
+            var r = await reg.Handle(new RegistrarParadaCommand("PAR-COR", "Falha rolamento", Guid.NewGuid(), ETipoParada.NaoPlanejada, DateTime.UtcNow, Guid.NewGuid(), null, null, null, null, null), CancellationToken.None);
+            Assert.True(r.Sucesso);
+            var parada = await ctx.Paradas.FirstAsync();
+
+            var handler = new GerarOsCorretivaParadaCommandHandler(ctx, new TP(TenantId), new CU(UserId));
+            var result = await handler.Handle(new GerarOsCorretivaParadaCommand(parada.Id), CancellationToken.None);
+            Assert.True(result.Sucesso);
+
+            var os = await ctx.OrdensServico.SingleAsync();
+            Assert.Equal(EOrigemOrdemServico.Corretiva, os.OrigemTipo);
+            Assert.Equal(parada.Id, os.OrigemId);
+            Assert.Null(os.PessoaId);
+
+            var paradaAtual = await ctx.Paradas.Include(p => p.VinculosOs).FirstAsync();
+            Assert.Equal(os.Id, paradaAtual.OsGeradaId);
+            var vinc = Assert.Single(paradaAtual.VinculosOs);
+            Assert.Equal(EStatusVinculoOsParada.Gerada, vinc.StatusVinculo);
+            Assert.Equal(os.Id, vinc.OrdemServicoId);
+
+            // Idempotente: segunda chamada nao cria nova OS.
+            await handler.Handle(new GerarOsCorretivaParadaCommand(parada.Id), CancellationToken.None);
+            Assert.Equal(1, await ctx.OrdensServico.CountAsync());
+        }
+
         // ===================== MAN-IND =====================
         [Fact(DisplayName = "MAN-IND | Aprovar inducao em rascunho define aprovada e aceite")]
         public void Ind_AprovarInducao_DefineAprovada()
