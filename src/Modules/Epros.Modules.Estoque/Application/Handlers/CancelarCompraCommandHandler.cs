@@ -7,7 +7,9 @@ using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
 using Epros.Shared.Domain.Events;
 using Epros.Modules.Estoque.Application.Commands;
+using Epros.Modules.Estoque.Application.Services;
 using Epros.Modules.Estoque.Domain.Entities;
+using Epros.Modules.Estoque.Domain.Enums;
 using Epros.Modules.Estoque.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -62,7 +64,11 @@ namespace Epros.Modules.Estoque.Application.Handlers
 
             _context.Compras.Update(compra);
 
-            // 3. Estornar cada item no estoque físico
+            // 3. Estornar cada item no estoque físico via MOTOR ÚNICO (kardex, D1).
+            var motor = new MotorMovimentacaoEstoque(_context, tenantId, usuario);
+            var fato = new FatoGeradorEstoque(null, compra.Id, null, EOrigemFatoGeradorEstoque.SaidaFiscal, tenantId, usuario, referenciaExterna: $"Estorno de compra NF {compra.NumeroNota}");
+            _context.FatosGeradoresEstoque.Add(fato);
+
             foreach (var item in compra.Itens)
             {
                 var produto = await _context.Produtos.FirstOrDefaultAsync(p => p.Id == item.ProdutoId, cancellationToken);
@@ -71,14 +77,12 @@ namespace Epros.Modules.Estoque.Application.Handlers
                     return CommandResult.Falha($"Produto com ID {item.ProdutoId} não encontrado.");
                 }
 
-                // Debitar a quantidade comprada do saldo físico
-                produto.LancarSaidaEstoque(item.Quantidade, usuario);
-                if (!produto.IsValid)
+                // Debitar a quantidade comprada do saldo (kardex)
+                var resSaida = await motor.AplicarSaidaAsync(MotorMovimentacaoEstoque.EmpresaPadrao, produto.Id, item.Quantidade, fato.Id, null, cancellationToken);
+                if (!resSaida.Sucesso)
                 {
-                    return CommandResult.Falha(produto.Notifications.Select(n => n.Message), $"Erro ao estornar estoque para o produto {produto.Sku}. Saldo insuficiente.");
+                    return CommandResult.Falha($"Erro ao estornar estoque para o produto {produto.Sku}: {resSaida.Erro}");
                 }
-
-                _context.Produtos.Update(produto);
 
                 // Criar movimentação correspondente de Saída
                 var movimento = new MovimentoEstoque(

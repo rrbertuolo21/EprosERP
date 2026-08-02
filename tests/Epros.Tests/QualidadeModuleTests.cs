@@ -194,9 +194,9 @@ namespace Epros.Tests
             using var contextEstoque = new ContextEstoque(optionsEstoque, tenantProvider, currentUser);
 
             var produto = new Produto("PROD-001", "Produto Teste", 100.0m, "tenant-1", "user-1");
-            produto.LancarEntradaEstoque(50.0m, 50.0m, "user-1");
             contextEstoque.Produtos.Add(produto);
             await contextEstoque.SaveChangesAsync();
+            await EstoqueTestSeed.SemearSaldoAsync(contextEstoque, "tenant-1", "user-1", produto.Id, 50.0m, 50.0m);
 
             var handler = new InspecaoReprovadaEstoqueHandler(contextEstoque);
             var notification = new InspecaoReprovadaEventNotification(

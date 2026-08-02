@@ -167,9 +167,9 @@ namespace Epros.Tests
             // Seed a product in the estoque context with initial stock
             var produtoEstoque = new Produto("SKU-TEST-123", "Produto Integrado Teste", 45m, tenantId, userId);
             typeof(Epros.Shared.Domain.Entities.EntidadeSaaSBase).GetField("<Id>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.SetValue(produtoEstoque, prodId);
-            produtoEstoque.LancarEntradaEstoque(10, 15m, userId); // Saldo inicial = 10, CustoMedio = 15m
             estoqueContext.Produtos.Add(produtoEstoque);
             await estoqueContext.SaveChangesAsync();
+            await EstoqueTestSeed.SemearSaldoAsync(estoqueContext, tenantId, userId, produtoEstoque.Id, 10, 15m); // Saldo inicial = 10, CustoMedio = 15m
 
             // Sincronizar Venda Handler
             var sincronizarHandler = new SincronizarVendasCommandHandler(vendasContext, tenantProvider, currentUser);

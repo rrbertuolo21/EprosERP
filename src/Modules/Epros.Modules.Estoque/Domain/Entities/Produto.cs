@@ -20,6 +20,10 @@ namespace Epros.Modules.Estoque.Domain.Entities
         public decimal SaldoEstoque { get; private set; }
         public decimal CustoMedio { get; private set; }
 
+        // D8 (ESTOQUE EST01): permite saldo negativo. Default false = bloqueia saída acima do saldo.
+        // O motor de estoque (kardex) consulta esta flag antes de rejeitar/permitir a saída.
+        public bool PermiteEstoqueNegativo { get; private set; }
+
         // Campos do Legado
         public Guid? ProdutoGrupoId { get; private set; }
         public Guid? CategoriaId { get; private set; }
@@ -226,58 +230,28 @@ namespace Epros.Modules.Estoque.Domain.Entities
             Validar();
         }
 
-        public void LancarEntradaEstoque(decimal quantidade, decimal precoUnitario, string usuario)
+        // D1 (ESTOQUE EST01): o saldo/custo verdadeiro passou a viver no KARDEX (EstoqueProduto + fichas),
+        // movimentado por um único caminho: MotorMovimentacaoEstoque. Os antigos métodos denormalizados
+        // (LancarEntradaEstoque/LancarSaidaEstoque/RestaurarEstoque) foram removidos — todo movimento de
+        // compra, venda, produção, manutenção, qualidade, ajuste e transferência passa pelo motor.
+        // SaldoEstoque/CustoMedio permanecem apenas como ESPELHO denormalizado (read-model) para as
+        // consultas/relatórios/sync existentes, e são mantidos EXCLUSIVAMENTE pelo motor via este método.
+
+        /// <summary>
+        /// Sincroniza o espelho denormalizado (SaldoEstoque/CustoMedio) do produto a partir do saldo
+        /// verdadeiro do kardex. Chamado somente pelo MotorMovimentacaoEstoque após cada movimento.
+        /// </summary>
+        public void SincronizarSaldoDenormalizado(decimal saldoEstoque, decimal custoMedio, string usuario)
         {
-            if (quantidade <= 0)
-            {
-                AddNotification(nameof(SaldoEstoque), "A quantidade de entrada deve ser maior que zero.");
-                return;
-            }
-
-            if (precoUnitario <= 0)
-            {
-                AddNotification(nameof(CustoMedio), "O preço unitário de entrada deve ser maior que zero.");
-                return;
-            }
-
-            decimal novoSaldo = SaldoEstoque + quantidade;
-            decimal custoTotalAnterior = SaldoEstoque * CustoMedio;
-            decimal custoTotalNovoItem = quantidade * precoUnitario;
-            decimal novoCustoMedio = (custoTotalAnterior + custoTotalNovoItem) / novoSaldo;
-
-            SaldoEstoque = novoSaldo;
-            CustoMedio = novoCustoMedio;
-
+            SaldoEstoque = saldoEstoque;
+            CustoMedio = custoMedio;
             MarcarAlterado(usuario);
         }
 
-        public void LancarSaidaEstoque(decimal quantidade, string usuario)
+        /// <summary>Define a política de estoque negativo do produto (D8). Default false = bloqueia.</summary>
+        public void DefinirPermiteEstoqueNegativo(bool permite, string usuario)
         {
-            if (quantidade <= 0)
-            {
-                AddNotification(nameof(SaldoEstoque), "A quantidade de saída deve ser maior que zero.");
-                return;
-            }
-
-            if (SaldoEstoque < quantidade)
-            {
-                AddNotification(nameof(SaldoEstoque), "Saldo de estoque insuficiente para realizar a saída.");
-                return;
-            }
-
-            SaldoEstoque -= quantidade;
-            MarcarAlterado(usuario);
-        }
-
-        public void RestaurarEstoque(decimal quantidade, string usuario)
-        {
-            if (quantidade <= 0)
-            {
-                AddNotification(nameof(SaldoEstoque), "A quantidade a restaurar deve ser maior que zero.");
-                return;
-            }
-
-            SaldoEstoque += quantidade;
+            PermiteEstoqueNegativo = permite;
             MarcarAlterado(usuario);
         }
 

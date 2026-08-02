@@ -7,8 +7,10 @@ using Xunit;
 using Microsoft.EntityFrameworkCore;
 using Epros.Shared.Application.Contracts;
 using Epros.Modules.Estoque.Domain.Entities;
+using Epros.Modules.Estoque.Domain.Enums;
 using Epros.Modules.Estoque.Application.Commands;
 using Epros.Modules.Estoque.Application.Handlers;
+using Epros.Modules.Estoque.Application.Services;
 using Epros.Modules.Estoque.Infrastructure.Data;
 using Epros.Modules.Estoque.Application.Queries;
 
@@ -16,76 +18,125 @@ namespace Epros.Tests
 {
     public class EstoqueTests
     {
-        #region Testes de Domínio (Produto e Custo Médio Ponderado)
+        #region Testes de Domínio — Motor único (kardex): custo médio móvel (D4/D13) e estoque negativo (D8)
+
+        // Helpers do motor: todo movimento passa pelo MotorMovimentacaoEstoque (D1). O saldo/custo verdadeiro
+        // vive no kardex (EstoqueProduto); Produto.SaldoEstoque/CustoMedio são apenas espelho denormalizado.
+
+        private const string TenantDom = "tenant-dom";
+
+        private async Task<(ContextEstoque ctx, Guid produtoId)> NovoProdutoAsync(string db, bool permiteNegativo = false)
+        {
+            var ctx = CreateInMemoryContext(db, TenantDom, "user-1");
+            var p = new Produto("SKU-DOM", "Produto Dominio", 10m, TenantDom, "user-1");
+            if (permiteNegativo) p.DefinirPermiteEstoqueNegativo(true, "user-1");
+            ctx.Produtos.Add(p);
+            await ctx.SaveChangesAsync();
+            return (ctx, p.Id);
+        }
+
+        private static async Task<ResultadoMovimentacao> EntradaAsync(ContextEstoque ctx, Guid produtoId, decimal quantidade, decimal valorUnitario)
+        {
+            var motor = new MotorMovimentacaoEstoque(ctx, TenantDom, "user-1");
+            var fato = new FatoGeradorEstoque(null, null, null, EOrigemFatoGeradorEstoque.MovimentoManual, TenantDom, "user-1");
+            ctx.FatosGeradoresEstoque.Add(fato);
+            var r = await motor.AplicarEntradaAsync(MotorMovimentacaoEstoque.EmpresaPadrao, produtoId, ETipoEstoque.Geral, quantidade, valorUnitario, fato.Id, null, null, null, ETipoCusteioEstoque.CustoMedio, CancellationToken.None);
+            await ctx.SaveChangesAsync();
+            return r;
+        }
+
+        private static async Task<ResultadoMovimentacao> SaidaAsync(ContextEstoque ctx, Guid produtoId, decimal quantidade)
+        {
+            var motor = new MotorMovimentacaoEstoque(ctx, TenantDom, "user-1");
+            var fato = new FatoGeradorEstoque(null, null, null, EOrigemFatoGeradorEstoque.MovimentoManual, TenantDom, "user-1");
+            ctx.FatosGeradoresEstoque.Add(fato);
+            var r = await motor.AplicarSaidaAsync(MotorMovimentacaoEstoque.EmpresaPadrao, produtoId, quantidade, fato.Id, null, CancellationToken.None);
+            await ctx.SaveChangesAsync();
+            return r;
+        }
+
+        private static async Task<EstoqueProduto> SaldoAsync(ContextEstoque ctx, Guid produtoId) =>
+            await ctx.EstoqueProdutos.FirstAsync(e => e.EmpresaId == MotorMovimentacaoEstoque.EmpresaPadrao && e.ProdutoId == produtoId);
 
         [Fact]
-        public void Deve_Calcular_Custo_Medio_Ponderado_Corretamente_Em_Multiplas_Entradas()
+        public async Task D4_Custo_Medio_Movel_Recalcula_A_Cada_Entrada()
         {
-            // Arrange
-            var produto = new Produto("SKU-1", "Produto Teste", 200m, "tenant-a", "user-1");
+            var (ctx, produtoId) = await NovoProdutoAsync("dom_media_movel");
 
-            // Act - Primeira Entrada (Quantidade: 10, Preço: 100.00)
-            produto.LancarEntradaEstoque(10, 100.00m, "user-1");
+            Assert.True((await EntradaAsync(ctx, produtoId, 10m, 100.00m)).Sucesso);
+            var s1 = await SaldoAsync(ctx, produtoId);
+            Assert.Equal(10m, s1.QuantidadeSaldoEstoque);
+            Assert.Equal(100.00m, s1.ValorCustoMedio);
 
-            // Assert
-            Assert.Equal(10, produto.SaldoEstoque);
-            Assert.Equal(100.00m, produto.CustoMedio);
+            // ((10*100) + (5*130)) / 15 = 1650 / 15 = 110
+            Assert.True((await EntradaAsync(ctx, produtoId, 5m, 130.00m)).Sucesso);
+            var s2 = await SaldoAsync(ctx, produtoId);
+            Assert.Equal(15m, s2.QuantidadeSaldoEstoque);
+            Assert.Equal(110.00m, s2.ValorCustoMedio);
 
-            // Act - Segunda Entrada (Quantidade: 5, Preço: 130.00)
-            // Fórmula: ((10 * 100.00) + (5 * 130.00)) / 15 = (1000 + 650) / 15 = 1650 / 15 = 110.00
-            produto.LancarEntradaEstoque(5, 130.00m, "user-1");
-
-            // Assert
-            Assert.Equal(15, produto.SaldoEstoque);
+            // Espelho denormalizado do produto acompanha o kardex
+            var produto = await ctx.Produtos.FindAsync(produtoId);
+            Assert.Equal(15m, produto!.SaldoEstoque);
             Assert.Equal(110.00m, produto.CustoMedio);
         }
 
         [Fact]
-        public void Nao_Deve_Permitir_Entrada_De_Estoque_Com_Valores_Negativos_Ou_Zerados()
+        public async Task D13_Entrada_Sobre_Saldo_Zero_Assume_O_Custo_Da_Nova_Entrada()
         {
-            // Arrange
-            var produto = new Produto("SKU-1", "Produto Teste", 200m, "tenant-a", "user-1");
+            var (ctx, produtoId) = await NovoProdutoAsync("dom_qty_zero");
 
-            // Act
-            produto.LancarEntradaEstoque(0, 100.00m, "user-1");
-            produto.LancarEntradaEstoque(10, 0m, "user-1");
-            produto.LancarEntradaEstoque(-5, 100.00m, "user-1");
+            Assert.True((await EntradaAsync(ctx, produtoId, 10m, 100.00m)).Sucesso);
+            Assert.True((await SaidaAsync(ctx, produtoId, 10m)).Sucesso); // zera o saldo (nunca divide por zero)
 
-            // Assert
-            Assert.False(produto.IsValid);
-            Assert.Equal(0, produto.SaldoEstoque);
-            Assert.Equal(0, produto.CustoMedio);
+            var zerado = await SaldoAsync(ctx, produtoId);
+            Assert.Equal(0m, zerado.QuantidadeSaldoEstoque);
+
+            // Nova entrada sobre saldo zero assume o custo da entrada (D13)
+            Assert.True((await EntradaAsync(ctx, produtoId, 5m, 200.00m)).Sucesso);
+            var s = await SaldoAsync(ctx, produtoId);
+            Assert.Equal(5m, s.QuantidadeSaldoEstoque);
+            Assert.Equal(200.00m, s.ValorCustoMedio);
         }
 
         [Fact]
-        public void Deve_Debitar_Estoque_Corretamente()
+        public async Task D4_Saida_Sai_Pela_Media_Vigente_E_Nao_Altera_A_Media()
         {
-            // Arrange
-            var produto = new Produto("SKU-1", "Produto Teste", 200m, "tenant-a", "user-1");
-            produto.LancarEntradaEstoque(20, 100.00m, "user-1");
+            var (ctx, produtoId) = await NovoProdutoAsync("dom_saida_media");
+            await EntradaAsync(ctx, produtoId, 10m, 100.00m);
+            await EntradaAsync(ctx, produtoId, 5m, 130.00m); // média = 110
 
-            // Act
-            produto.LancarSaidaEstoque(8, "user-2");
+            Assert.True((await SaidaAsync(ctx, produtoId, 8m)).Sucesso);
 
-            // Assert
-            Assert.Equal(12, produto.SaldoEstoque);
-            Assert.Equal(100.00m, produto.CustoMedio); // Custo médio não se altera em saídas
+            var s = await SaldoAsync(ctx, produtoId);
+            Assert.Equal(7m, s.QuantidadeSaldoEstoque);
+            Assert.Equal(110.00m, s.ValorCustoMedio); // custo médio não muda na saída
         }
 
         [Fact]
-        public void Nao_Deve_Permitir_Saida_Se_Saldo_For_Insuficiente()
+        public async Task D8_Saida_Acima_Do_Saldo_Bloqueada_Por_Padrao()
         {
-            // Arrange
-            var produto = new Produto("SKU-1", "Produto Teste", 200m, "tenant-a", "user-1");
-            produto.LancarEntradaEstoque(5, 100.00m, "user-1");
+            var (ctx, produtoId) = await NovoProdutoAsync("dom_neg_bloqueia");
+            await EntradaAsync(ctx, produtoId, 5m, 100.00m);
 
-            // Act
-            produto.LancarSaidaEstoque(8, "user-2");
+            var r = await SaidaAsync(ctx, produtoId, 8m);
 
-            // Assert
-            Assert.False(produto.IsValid);
-            Assert.Equal(5, produto.SaldoEstoque);
-            Assert.Contains(produto.Notifications, n => n.Message.Contains("insuficiente"));
+            Assert.False(r.Sucesso);
+            Assert.Contains("insuficiente", r.Erro ?? string.Empty);
+            var s = await SaldoAsync(ctx, produtoId);
+            Assert.Equal(5m, s.QuantidadeSaldoEstoque); // saldo intacto
+        }
+
+        [Fact]
+        public async Task D8_Saida_Acima_Do_Saldo_Permitida_Quando_Produto_Permite_Negativo()
+        {
+            var (ctx, produtoId) = await NovoProdutoAsync("dom_neg_permite", permiteNegativo: true);
+            await EntradaAsync(ctx, produtoId, 5m, 100.00m);
+
+            var r = await SaidaAsync(ctx, produtoId, 8m);
+
+            Assert.True(r.Sucesso);
+            var s = await SaldoAsync(ctx, produtoId);
+            Assert.Equal(-3m, s.QuantidadeSaldoEstoque); // saldo negativo autorizado
         }
 
         #endregion

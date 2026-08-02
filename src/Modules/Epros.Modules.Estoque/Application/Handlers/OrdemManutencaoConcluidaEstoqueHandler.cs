@@ -2,7 +2,9 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Epros.Modules.Estoque.Application.Services;
 using Epros.Modules.Estoque.Domain.Entities;
+using Epros.Modules.Estoque.Domain.Enums;
 using Epros.Modules.Estoque.Infrastructure.Data;
 using Epros.Shared.Domain.Events;
 using MediatR;
@@ -39,9 +41,11 @@ namespace Epros.Modules.Estoque.Application.Handlers
                 return;
             }
 
-            // 2. Processar a saída de cada peça utilizada
+            // 2. Processar a saída de cada peça utilizada pelo MOTOR ÚNICO (kardex, D1).
             if (notification.Pecas != null)
             {
+                var motor = new MotorMovimentacaoEstoque(_context, notification.TenantId, "system_maintenance");
+
                 foreach (var peca in notification.Pecas)
                 {
                     var produto = await _context.Produtos
@@ -50,20 +54,20 @@ namespace Epros.Modules.Estoque.Application.Handlers
 
                     if (produto != null)
                     {
-                        produto.LancarSaidaEstoque(peca.Quantidade, "system_maintenance");
+                        var fato = new FatoGeradorEstoque(null, null, null, EOrigemFatoGeradorEstoque.SaidaConsumidor, notification.TenantId, "system_maintenance", referenciaExterna: historicoIdentificador);
+                        _context.FatosGeradoresEstoque.Add(fato);
+                        var resSaida = await motor.AplicarSaidaAsync(MotorMovimentacaoEstoque.EmpresaPadrao, peca.ProdutoId, peca.Quantidade, fato.Id, null, cancellationToken);
 
-                        var movimento = new MovimentoEstoque(
-                            produtoId: peca.ProdutoId,
-                            quantidade: peca.Quantidade,
-                            tipo: "Saida",
-                            historico: $"{historicoIdentificador} (Equipamento: {notification.EquipamentoId})",
-                            tenantId: notification.TenantId,
-                            criadoPor: "system_maintenance"
-                        );
-
-                        if (produto.IsValid)
+                        if (resSaida.Sucesso)
                         {
-                            _context.Produtos.Update(produto);
+                            var movimento = new MovimentoEstoque(
+                                produtoId: peca.ProdutoId,
+                                quantidade: peca.Quantidade,
+                                tipo: "Saida",
+                                historico: $"{historicoIdentificador} (Equipamento: {notification.EquipamentoId})",
+                                tenantId: notification.TenantId,
+                                criadoPor: "system_maintenance"
+                            );
                             _context.MovimentosEstoque.Add(movimento);
                         }
                     }

@@ -32,11 +32,31 @@ namespace Epros.Modules.Estoque.Application.Services
         private readonly string _tenantId;
         private readonly string _usuario;
 
+        /// <summary>
+        /// D1/D2 (ESTOQUE EST01): empresa "não segregada" — bucket default do tenant usado pelos fluxos que
+        /// ainda não carregam empresa (compra, venda, produção, manutenção, qualidade). A chave de saldo é
+        /// (EmpresaId+ProdutoId); a granularidade real por empresa+local+lote/série entra na fatia D2.
+        /// </summary>
+        public static readonly Guid EmpresaPadrao = Guid.Empty;
+
         public MotorMovimentacaoEstoque(ContextEstoque context, string tenantId, string usuario)
         {
             _context = context;
             _tenantId = tenantId;
             _usuario = usuario;
+        }
+
+        /// <summary>
+        /// Mantém o ESPELHO denormalizado do produto (Produto.SaldoEstoque/CustoMedio) alinhado ao saldo
+        /// verdadeiro do kardex. É o ÚNICO ponto que grava esses campos (D1). Usa IgnoreQueryFilters porque
+        /// ProdutoId é GUID único global — não há risco de vazamento entre tenants.
+        /// </summary>
+        private async Task SincronizarEspelhoProdutoAsync(EstoqueProduto saldo, CancellationToken ct)
+        {
+            // FindAsync resolve pelo identity map (inclui entidades Added ainda não salvas, ex.: produto
+            // recém-criado a partir da NF) antes de consultar o banco; chave é GUID único global.
+            var produto = await _context.Produtos.FindAsync(new object[] { saldo.ProdutoId }, ct);
+            produto?.SincronizarSaldoDenormalizado(saldo.QuantidadeSaldoEstoque, saldo.ValorCustoMedio, _usuario);
         }
 
         /// <summary>Localiza (ou cria) o saldo agregado do produto na empresa. MVM-010: unicidade.</summary>
@@ -70,9 +90,13 @@ namespace Epros.Modules.Estoque.Application.Services
             var ficha = new ProdutoFichaEstoqueEntrada(empresaId, produtoId, fatoGeradorId, tipoEstoque, quantidade, valorUnitario, _tenantId, _usuario, localId, lote, dataValidade);
             _context.ProdutoFichaEstoqueEntradas.Add(ficha);
 
+            // D4/D13: custo médio ponderado MÓVEL — cada entrada recalcula o custo médio; entrada sobre
+            // saldo zero assume o custo desta entrada (ValorSaldo/Quantidade). Nunca divide por zero.
             saldo.SomarQuantidadeSaldoEstoque(quantidade);
             saldo.AtualizarValorSaldo(saldo.ValorSaldo + (valorUnitario * quantidade));
             saldo.AtualizarValorCustoMedio();
+
+            await SincronizarEspelhoProdutoAsync(saldo, ct);
 
             return ResultadoMovimentacao.Ok();
         }
@@ -88,15 +112,25 @@ namespace Epros.Modules.Estoque.Application.Services
             if (quantidade <= 0)
                 return ResultadoMovimentacao.Falha("A quantidade de saída deve ser maior que zero.");
 
+            // D8: política de estoque negativo do produto (default false = bloqueia). FindAsync resolve pelo
+            // identity map (inclui Added) antes do banco; chave é GUID único global.
+            var produto = await _context.Produtos.FindAsync(new object[] { produtoId }, ct);
+            var permiteNegativo = produto?.PermiteEstoqueNegativo ?? false;
+
             var saldo = await _context.EstoqueProdutos
                 .FirstOrDefaultAsync(e => e.EmpresaId == empresaId && e.ProdutoId == produtoId, ct);
 
-            // MVM-012: produto sem saldo.
+            // MVM-012: produto sem saldo. D8: só é permitido "furar" para negativo se o produto autorizar.
             if (saldo == null)
-                return ResultadoMovimentacao.Falha("Produto sem cadastro de saldo de estoque (não localizado).");
+            {
+                if (!permiteNegativo)
+                    return ResultadoMovimentacao.Falha("Saldo insuficiente: produto sem saldo de estoque e sem permissão de estoque negativo.");
+                saldo = new EstoqueProduto(empresaId, produtoId, 0m, 0m, 0m, 0m, 0m, ETipoCusteioEstoque.CustoMedio, _tenantId, _usuario);
+                _context.EstoqueProdutos.Add(saldo);
+            }
 
-            // MVM-009 / VAL-MVM-008: saldo insuficiente.
-            if (saldo.QuantidadeSaldoEstoque < quantidade)
+            // MVM-009 / VAL-MVM-008 + D8: saldo insuficiente bloqueia por padrão; libera se permite_estoque_negativo.
+            if (saldo.QuantidadeSaldoEstoque < quantidade && !permiteNegativo)
                 return ResultadoMovimentacao.Falha("Saldo insuficiente para a saída solicitada.");
 
             // Fichas de entrada com saldo remanescente, ordenadas pelo custeio do produto.
@@ -111,7 +145,7 @@ namespace Epros.Modules.Estoque.Application.Services
 
             var restante = quantidade;
             var custoMedioSnapshot = saldo.ValorCustoMedio;
-            decimal valorBaixado = 0m;
+            decimal valorBaixadoFichas = 0m;
 
             foreach (var ficha in fichas)
             {
@@ -124,17 +158,31 @@ namespace Epros.Modules.Estoque.Application.Services
 
                 ficha.AtualizarQuantidadeSaldo(consumir);
 
-                valorBaixado += ficha.ValorUnitario * consumir;
+                valorBaixadoFichas += ficha.ValorUnitario * consumir;
                 restante -= consumir;
             }
 
-            if (restante > 0m)
+            // D8: quando o produto permite negativo e as fichas não cobrem tudo, a saída prossegue; o restante
+            // não coberto por camadas de entrada é valorizado pelo custo médio vigente (sem ficha órfã).
+            // TODO (D2/rastreabilidade): registrar a camada negativa quando houver granularidade local+lote/série.
+            if (restante > 0m && !permiteNegativo)
                 return ResultadoMovimentacao.Falha("Saldo em fichas insuficiente para a saída (kardex divergente do saldo agregado).");
+
+            // D4: custeio da SAÍDA.
+            // - Custo médio (default, valida-contador): baixa pelo custo médio vigente → a média não muda na saída.
+            // - PEPS/UEPS (ganchos p/ fatia futura): baixa pelo custo real das camadas consumidas.
+            // TODO (D15, valida-contador): contabilização do custo é DIFERIDA ao módulo Financeiro/Contábil;
+            //       o kardex apenas registra o custo factual (snapshot em ProdutoFichaEstoqueSaida.ValorCustoMedio).
+            decimal valorBaixado = saldo.TipoCusteioEstoque == ETipoCusteioEstoque.CustoMedio
+                ? quantidade * custoMedioSnapshot
+                : valorBaixadoFichas + (restante > 0m ? restante * custoMedioSnapshot : 0m);
 
             saldo.DiminuirQuantidadeSaldoEstoque(quantidade);
             saldo.AtualizarValorSaldo(saldo.ValorSaldo - valorBaixado);
-            if (saldo.ValorSaldo < 0m) saldo.AtualizarValorSaldo(0m);
+            if (saldo.QuantidadeSaldoEstoque <= 0m) saldo.AtualizarValorSaldo(0m); // saldo zerado/negativo → valor zero (custo médio preservado por D13)
             saldo.AtualizarValorCustoMedio();
+
+            await SincronizarEspelhoProdutoAsync(saldo, ct);
 
             return ResultadoMovimentacao.Ok();
         }

@@ -1,7 +1,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Epros.Modules.Estoque.Application.Services;
 using Epros.Modules.Estoque.Domain.Entities;
+using Epros.Modules.Estoque.Domain.Enums;
 using Epros.Modules.Estoque.Infrastructure.Data;
 using Epros.Shared.Domain.Events;
 using MediatR;
@@ -21,6 +23,9 @@ namespace Epros.Modules.Estoque.Application.Handlers
 
         public async Task Handle(VendaFaturadaEventNotification notification, CancellationToken cancellationToken)
         {
+            // Baixa de estoque pelo MOTOR ÚNICO (kardex, D1).
+            var motor = new MotorMovimentacaoEstoque(_context, notification.TenantId, notification.UserId);
+
             foreach (var item in notification.Itens)
             {
                 // 1. Validar idempotência
@@ -44,8 +49,11 @@ namespace Epros.Modules.Estoque.Application.Handlers
 
                 if (produto != null)
                 {
-                    // Efetua a saída do estoque
-                    produto.LancarSaidaEstoque(item.Quantidade, notification.UserId);
+                    // Efetua a saída do estoque pelo kardex (best-effort: preserva o registro físico mesmo
+                    // quando o saldo bloqueia a baixa, mantendo a semântica anterior deste handler).
+                    var fato = new FatoGeradorEstoque(notification.VendaId, null, null, EOrigemFatoGeradorEstoque.SaidaFiscal, notification.TenantId, notification.UserId, referenciaExterna: historicoIdentificador);
+                    _context.FatosGeradoresEstoque.Add(fato);
+                    await motor.AplicarSaidaAsync(MotorMovimentacaoEstoque.EmpresaPadrao, item.ProdutoId, item.Quantidade, fato.Id, null, cancellationToken);
 
                     // Cria o registro físico de movimentação de saída
                     var movimento = new MovimentoEstoque(

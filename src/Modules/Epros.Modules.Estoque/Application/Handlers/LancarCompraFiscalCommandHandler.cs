@@ -8,6 +8,7 @@ using Epros.Shared.Application.Models;
 using Epros.Shared.Domain.Enums;
 using Epros.Shared.Domain.Events;
 using Epros.Modules.Estoque.Application.Commands;
+using Epros.Modules.Estoque.Application.Services;
 using Epros.Modules.Estoque.Domain.Entities;
 using Epros.Modules.Estoque.Domain.Enums;
 using Epros.Modules.Estoque.Infrastructure.Data;
@@ -60,7 +61,11 @@ namespace Epros.Modules.Estoque.Application.Handlers
             if (!compra.IsValid)
                 return CommandResult.Falha(compra.Notifications.Select(n => n.Message), "Dados de cabeçalho da nota fiscal são inválidos.");
 
-            // 3. Itens (+ produto/estoque/movimentação).
+            // 3. Itens (+ produto/estoque/movimentação). Entrada de estoque via MOTOR ÚNICO (kardex, D1).
+            var motor = new MotorMovimentacaoEstoque(_context, tenantId, usuario);
+            var fato = new FatoGeradorEstoque(null, compra.Id, null, EOrigemFatoGeradorEstoque.EntradaFiscal, tenantId, usuario, referenciaExterna: $"Compra fiscal NF {request.NumeroNota}");
+            _context.FatosGeradoresEstoque.Add(fato);
+
             foreach (var itemInput in request.Itens)
             {
                 var produto = await _context.Produtos.FirstOrDefaultAsync(p => p.Sku == itemInput.Sku, cancellationToken);
@@ -72,9 +77,16 @@ namespace Epros.Modules.Estoque.Application.Handlers
                     _context.Produtos.Add(produto);
                 }
 
-                produto.LancarEntradaEstoque(itemInput.Quantidade, itemInput.PrecoUnitario, usuario);
-                if (!produto.IsValid)
-                    return CommandResult.Falha(produto.Notifications.Select(n => n.Message), $"Erro ao lançar entrada de estoque para o SKU {itemInput.Sku}.");
+                var custeioPadrao = await _context.EstoqueProdutos
+                    .Where(e => e.EmpresaId == MotorMovimentacaoEstoque.EmpresaPadrao && e.ProdutoId == produto.Id)
+                    .Select(e => (ETipoCusteioEstoque?)e.TipoCusteioEstoque)
+                    .FirstOrDefaultAsync(cancellationToken) ?? ETipoCusteioEstoque.CustoMedio;
+
+                var resEntrada = await motor.AplicarEntradaAsync(
+                    MotorMovimentacaoEstoque.EmpresaPadrao, produto.Id, ETipoEstoque.Geral, itemInput.Quantidade, itemInput.PrecoUnitario,
+                    fato.Id, null, null, null, custeioPadrao, cancellationToken);
+                if (!resEntrada.Sucesso)
+                    return CommandResult.Falha(resEntrada.Erro ?? $"Erro ao lançar entrada de estoque para o SKU {itemInput.Sku}.");
 
                 var movimento = new MovimentoEstoque(
                     produto.Id,

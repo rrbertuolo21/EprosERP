@@ -190,7 +190,6 @@ namespace Epros.Tests
 
             // Cadastrar insumo no estoque com saldo 50 e custo médio 10
             var insumo = new Produto("INSUMO-1", "Materia Prima 1", 0m, "tenant-1", "user-1");
-            insumo.LancarEntradaEstoque(50m, 10m, "user-1");
             contextEstoque.Produtos.Add(insumo);
 
             // Cadastrar produto acabado no estoque com saldo 0
@@ -198,6 +197,7 @@ namespace Epros.Tests
             contextEstoque.Produtos.Add(produtoAcabado);
 
             await contextEstoque.SaveChangesAsync();
+            await EstoqueTestSeed.SemearSaldoAsync(contextEstoque, "tenant-1", "user-1", insumo.Id, 50m, 10m);
 
             var handler = new OrdemProducaoEncerradaEstoqueHandler(contextEstoque);
 
