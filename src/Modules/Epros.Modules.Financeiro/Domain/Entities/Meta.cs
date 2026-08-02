@@ -65,8 +65,12 @@ namespace Epros.Modules.Financeiro.Domain.Entities
             Status = EStatusMeta.Ativa; MarcarAlterado(usuario);
         }
 
-        public void AdicionarMilestone(string? descricao, string tenantId, string criadoPor)
-            => _milestones.Add(new MetaMilestone(Id, descricao, tenantId, criadoPor));
+        public MetaMilestone AdicionarMilestone(string? descricao, string tenantId, string criadoPor)
+        {
+            var milestone = new MetaMilestone(Id, descricao, tenantId, criadoPor);
+            _milestones.Add(milestone);
+            return milestone;
+        }
 
         public void RegistrarContribuicao(decimal valor, string tipo, DateTime? data, string tenantId, string criadoPor)
             => _contribuicoes.Add(new MetaContribuicao(Id, valor, tipo, data, tenantId, criadoPor));
@@ -102,7 +106,12 @@ namespace Epros.Modules.Financeiro.Domain.Entities
             MetaId = metaId; Descricao = descricao; Status = EStatusMilestone.Pendente;
         }
 
-        public void Concluir(string usuario) { Status = EStatusMilestone.Concluido; MarcarAlterado(usuario); }
+        /// <summary>Conclui o milestone (EF FIN-PO §6.7): só de Pendente para Concluído.</summary>
+        public void Concluir(string usuario)
+        {
+            if (Status != EStatusMilestone.Pendente) { AddNotification(nameof(Status), "Somente milestone pendente pode ser concluído."); return; }
+            Status = EStatusMilestone.Concluido; MarcarAlterado(usuario);
+        }
     }
 
     /// <summary>Contribuição para uma meta (EF FIN-PO §12.12 po_meta_contribuicao).</summary>
