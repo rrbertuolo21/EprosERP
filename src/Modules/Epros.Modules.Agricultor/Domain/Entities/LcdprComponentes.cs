@@ -41,6 +41,13 @@ namespace Epros.Modules.Agricultor.Domain.Entities
         public string? CadItrCafir { get; private set; }
         public string? Caepf { get; private set; }
         public string NomeImovel { get; private set; } = string.Empty;
+        // AGR-D17 / leiaute 1.3 — bloco de endereço do 0040 (ENDERECO/NUM/COMPL/BAIRRO/CEP).
+        // Sem estes campos o 0040 saía com 14 colunas onde o leiaute exige 17 (registro rejeitado pelo validador).
+        public string? Endereco { get; private set; }
+        public string? Num { get; private set; }
+        public string? Compl { get; private set; }
+        public string? Bairro { get; private set; }
+        public string? Cep { get; private set; }
         public string? Uf { get; private set; }
         public string? CodMunicipio { get; private set; }
         public ETipoExploracao TipoExploracao { get; private set; }
@@ -53,17 +60,34 @@ namespace Epros.Modules.Agricultor.Domain.Entities
 
         public LcdprImovel(int codImovel, string nomeImovel, string? cadItrCafir, string? caepf,
             string? uf, string? codMunicipio, ETipoExploracao tipoExploracao, decimal participacao,
-            string tenantId, string criadoPor) : base(tenantId, criadoPor)
+            string tenantId, string criadoPor,
+            string? endereco = null, string? num = null, string? compl = null, string? bairro = null, string? cep = null)
+            : base(tenantId, criadoPor)
         {
             CodImovel = codImovel;
             NomeImovel = nomeImovel;
             CadItrCafir = cadItrCafir;
             Caepf = caepf;
+            Endereco = endereco;
+            Num = num;
+            Compl = compl;
+            Bairro = bairro;
+            Cep = cep;
             Uf = uf;
             CodMunicipio = codMunicipio;
             TipoExploracao = tipoExploracao;
             Participacao = participacao;
             Validar();
+        }
+
+        /// <summary>Define/atualiza o bloco de endereço do 0040 (ENDERECO/NUM/COMPL/BAIRRO/CEP).</summary>
+        public void DefinirEndereco(string? endereco, string? num, string? compl, string? bairro, string? cep)
+        {
+            Endereco = endereco;
+            Num = num;
+            Compl = compl;
+            Bairro = bairro;
+            Cep = cep;
         }
 
         public void Vincular(Guid escrituracaoId) => EscrituracaoId = escrituracaoId;

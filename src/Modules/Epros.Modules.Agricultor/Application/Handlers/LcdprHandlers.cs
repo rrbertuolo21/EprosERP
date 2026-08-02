@@ -73,7 +73,8 @@ namespace Epros.Modules.Agricultor.Application.Handlers
             if (esc is null) return CommandResult.Falha("Escrituração não encontrada.");
 
             var imovel = new LcdprImovel(r.CodImovel, r.NomeImovel, r.CadItrCafir, r.Caepf,
-                r.Uf, r.CodMunicipio, r.TipoExploracao, r.Participacao, Tenant, Usuario);
+                r.Uf, r.CodMunicipio, r.TipoExploracao, r.Participacao, Tenant, Usuario,
+                r.Endereco, r.Num, r.Compl, r.Bairro, r.Cep);
             foreach (var ti in r.Terceiros ?? Enumerable.Empty<TerceiroInput>())
                 imovel.AdicionarTerceiro(new LcdprTerceiro(ti.TipoContraparte, ti.IdContraparte, ti.NomeContraparte, ti.PercContraparte, Tenant, Usuario));
 

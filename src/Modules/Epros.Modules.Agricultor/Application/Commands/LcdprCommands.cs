@@ -34,7 +34,9 @@ namespace Epros.Modules.Agricultor.Application.Commands
     public record AdicionarImovelLcdprCommand(
         Guid EscrituracaoId, int CodImovel, string NomeImovel, string? CadItrCafir, string? Caepf,
         string? Uf, string? CodMunicipio, ETipoExploracao TipoExploracao, decimal Participacao,
-        List<TerceiroInput>? Terceiros) : ICommand;
+        List<TerceiroInput>? Terceiros,
+        // Bloco de endereço do 0040 (leiaute 1.3): ENDERECO/NUM/COMPL/BAIRRO/CEP.
+        string? Endereco = null, string? Num = null, string? Compl = null, string? Bairro = null, string? Cep = null) : ICommand;
 
     // ===================== 0050 =====================
 

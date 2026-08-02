@@ -336,6 +336,37 @@ namespace Epros.Tests
             Assert.Equal(EStatusEscrituracaoLcdpr.Exportada, esc.Status);
         }
 
+        [Fact(DisplayName = "Gerador | 0040 tem 17 colunas com bloco de endereço na ordem do leiaute 1.3 (AGR-D17)")]
+        public void Gerador_0040_TemEnderecoEDezessseteColunas()
+        {
+            var esc = new LcdprEscrituracao("12345678901", "Produtor", new DateTime(2026, 1, 1), new DateTime(2026, 12, 31),
+                0, 0, EFormaApuracao.LivroCaixa, Tenant, User);
+            esc.AdicionarImovel(new LcdprImovel(1, "Fazenda Boa Vista", "12345678", "12345678901",
+                "MT", "5107925", ETipoExploracao.Individual, 100m, Tenant, User,
+                "Rodovia BR-163 KM 50", "500", "Galpao 2", "Zona Rural", "78550000"));
+            esc.AdicionarConta(new LcdprConta(1, 1, 1234, "12345", Tenant, User));
+
+            var conteudo = new GeradorArquivoLcdprService().Gerar(esc).Conteudo;
+            var linha0040 = conteudo
+                .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries)
+                .First(l => l.StartsWith("0040|"));
+            var c = linha0040.Split('|');
+
+            // REG + 16 campos = 17 colunas.
+            Assert.Equal(17, c.Length);
+            // Ordem do leiaute 1.3: ...NOME_IMOVEL(7), ENDERECO(8), NUM(9), COMPL(10), BAIRRO(11),
+            // UF(12), COD_MUN(13), CEP(14), TIPO_EXPLORACAO(15), PARTICIPACAO(16).
+            Assert.Equal("Fazenda Boa Vista", c[7]);
+            Assert.Equal("Rodovia BR-163 KM 50", c[8]);
+            Assert.Equal("500", c[9]);
+            Assert.Equal("Galpao 2", c[10]);
+            Assert.Equal("Zona Rural", c[11]);
+            Assert.Equal("MT", c[12]);
+            Assert.Equal("5107925", c[13]);
+            Assert.Equal("78550000", c[14]);
+            Assert.Equal("1", c[15]); // ETipoExploracao.Individual
+        }
+
         // ======================= Helpers =======================
 
         private static LcdprEscrituracao EscrituracaoBase()

@@ -209,6 +209,12 @@ namespace Epros.Modules.Agricultor.Infrastructure.Data
                 e.Property(x => x.NomeImovel).HasMaxLength(200).IsRequired();
                 e.Property(x => x.CadItrCafir).HasMaxLength(8);
                 e.Property(x => x.Caepf).HasMaxLength(14);
+                // Bloco de endereço do 0040 (leiaute 1.3): ENDERECO C60, NUM C10, COMPL C30, BAIRRO C30, CEP C8.
+                e.Property(x => x.Endereco).HasMaxLength(60);
+                e.Property(x => x.Num).HasMaxLength(10);
+                e.Property(x => x.Compl).HasMaxLength(30);
+                e.Property(x => x.Bairro).HasMaxLength(30);
+                e.Property(x => x.Cep).HasMaxLength(8);
                 e.Property(x => x.Uf).HasMaxLength(2);
                 e.Property(x => x.CodMunicipio).HasMaxLength(7);
                 e.Property(x => x.TipoExploracao).HasConversion<string>().HasMaxLength(40);
