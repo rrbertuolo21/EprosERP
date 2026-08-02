@@ -45,6 +45,7 @@
     <ProjectReference Include="..\..\src\Modules\Epros.Modules.ESG\Epros.Modules.ESG.csproj" />
     <ProjectReference Include="..\..\src\Modules\Epros.Modules.DMS\Epros.Modules.DMS.csproj" />
     <ProjectReference Include="..\..\src\Modules\Epros.Modules.Imobiliaria\Epros.Modules.Imobiliaria.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Epros.Modules.Relatorios\Epros.Modules.Relatorios.csproj" />
   </ItemGroup>
 
 </Project>
