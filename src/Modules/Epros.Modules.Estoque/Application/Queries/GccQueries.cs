@@ -72,4 +72,63 @@ namespace Epros.Modules.Estoque.Application.Queries
             });
         }
     }
+
+    // ============ PERFORMANCE DO CONTRATO (CD5) ============
+
+    /// <summary>CD5 — desempenho do contrato: aderência (consumido/comprometido), saldo e vigência.</summary>
+    public record PerformanceGccContratoQuery(Guid Id) : IRequest<CommandResult>;
+
+    /// <summary>
+    /// CD5 — mede a performance do contrato: por item, quanto foi comprometido × consumido × saldo e o
+    /// percentual de aderência (consumido/comprometido); no cabeçalho, totais, aderência global e situação
+    /// de vigência (vigente/vencido em relação à data atual). Base para os relatórios de aderência (CD7).
+    /// </summary>
+    public class PerformanceGccContratoQueryHandler : IRequestHandler<PerformanceGccContratoQuery, CommandResult>
+    {
+        private readonly ContextEstoque _context;
+        public PerformanceGccContratoQueryHandler(ContextEstoque context) => _context = context;
+
+        public async Task<CommandResult> Handle(PerformanceGccContratoQuery request, CancellationToken cancellationToken)
+        {
+            var c = await _context.GccContratosCompra.AsNoTracking()
+                .Include(x => x.Itens)
+                .Include(x => x.Aditivos)
+                .FirstOrDefaultAsync(x => x.Id == request.Id && x.DeletadoEm == null, cancellationToken);
+            if (c == null)
+                return CommandResult.Falha("Contrato de compra não encontrado.");
+
+            var itens = c.Itens.Where(i => i.DeletadoEm == null).ToList();
+
+            decimal Aderencia(decimal comprometido, decimal consumido)
+                => comprometido <= 0m ? 0m : Math.Round(consumido / comprometido * 100m, 2, MidpointRounding.AwayFromZero);
+
+            var itensPerf = itens.Select(i => new
+            {
+                i.Id, i.ProdutoId, i.PrecoUnitario,
+                i.QuantidadeComprometida, i.QuantidadeConsumida, i.SaldoQuantidade,
+                ValorComprometido = Math.Round(i.PrecoUnitario * i.QuantidadeComprometida, 2, MidpointRounding.AwayFromZero),
+                i.ValorConsumido, i.SaldoValor,
+                AderenciaQuantidadePercent = Aderencia(i.QuantidadeComprometida, i.QuantidadeConsumida)
+            }).ToList();
+
+            var totalComprometido = itensPerf.Sum(i => i.ValorComprometido);
+            var totalConsumido = itensPerf.Sum(i => i.ValorConsumido);
+            var agora = DateTime.UtcNow;
+            var vencido = c.VigenciaFim.HasValue && c.VigenciaFim.Value.Date < agora.Date;
+
+            return CommandResult.Ok("OK", new
+            {
+                c.Id, c.FornecedorId, c.NumeroContrato, c.Situacao,
+                c.VigenciaInicio, c.VigenciaFim,
+                VigenciaVencida = vencido,
+                DiasParaVencer = c.VigenciaFim.HasValue ? (int?)(c.VigenciaFim.Value.Date - agora.Date).TotalDays : null,
+                TotalComprometido = totalComprometido,
+                TotalConsumido = totalConsumido,
+                SaldoTotal = Math.Round(totalComprometido - totalConsumido, 2, MidpointRounding.AwayFromZero),
+                AderenciaGlobalPercent = totalComprometido <= 0m ? 0m : Math.Round(totalConsumido / totalComprometido * 100m, 2, MidpointRounding.AwayFromZero),
+                QuantidadeAditivos = c.Aditivos.Count(a => a.DeletadoEm == null),
+                Itens = itensPerf
+            });
+        }
+    }
 }

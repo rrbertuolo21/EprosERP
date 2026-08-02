@@ -111,6 +111,8 @@ namespace Epros.Shared.Domain.Events
             public const string GccContratoEnviadoAprovacao = "estoque.gcc.contrato_enviado_aprovacao";
             public const string GccContratoAprovado = "estoque.gcc.contrato_aprovado";
             public const string GccConsumoRegistrado = "estoque.gcc.consumo_registrado";
+            /// <summary>Aditivo contratual aplicado (CD5): preço/quantidade/vigência/condições de contrato aprovado.</summary>
+            public const string GccAditivoRegistrado = "estoque.gcc.aditivo_registrado";
             public const string SubEnvioRegistrado = "estoque.sub.envio_registrado";
             public const string SubRetornoRegistrado = "estoque.sub.retorno_registrado";
             // Inventário Físico e Contagem Cíclica (EST-INV) — EF §13.
@@ -169,7 +171,7 @@ namespace Epros.Shared.Domain.Events
             Estoque.ScPedidoCompraCriado, Estoque.ScCotacaoDecidida, Estoque.TmsAlterado,
             Estoque.WmsArmazemCriado, Estoque.WmsArmazemAlterado, Estoque.WmsArmazemExclusaoSolicitada,
             Estoque.GccContratoCriado, Estoque.GccContratoEnviadoAprovacao, Estoque.GccContratoAprovado,
-            Estoque.GccConsumoRegistrado, Estoque.SubEnvioRegistrado, Estoque.SubRetornoRegistrado,
+            Estoque.GccConsumoRegistrado, Estoque.GccAditivoRegistrado, Estoque.SubEnvioRegistrado, Estoque.SubRetornoRegistrado,
             Estoque.InventarioCriado, Estoque.InventarioItemContado, Estoque.InventarioDivergenciaCalculada,
             Estoque.InventarioAprovado, Estoque.InventarioAjusteGerado,
             Estoque.LoteCriado, Estoque.LoteBloqueado, Estoque.LoteDesbloqueado,

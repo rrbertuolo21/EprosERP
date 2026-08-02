@@ -84,6 +84,44 @@ namespace Epros.Modules.Estoque.Domain.Entities
 
         public bool PodeConsumir() => Situacao == ESituacaoContratoCompra.Aprovado; // regra §18: apenas contrato aprovado e vigente
 
+        /// <summary>
+        /// Aditivo contratual (CD5): só se aplica a contrato APROVADO (contrato vigente é o que se adita).
+        /// Aplica o efeito conforme o tipo — Vigencia (nova data-fim), Valor (novo valor total), Condicoes
+        /// (observação). Aditivos de Preco/Quantidade aplicam-se por ITEM (ver GccContratoCompraItem).
+        /// Registra o <paramref name="aditivo"/> na coleção. Retorna false com notificação se não pode aditar.
+        /// </summary>
+        public bool AplicarAditivo(GccContratoCompraAditivo aditivo, DateTime? novaVigenciaFim, decimal? novoValorTotal, string? novaObservacao, string usuario)
+        {
+            if (Situacao != ESituacaoContratoCompra.Aprovado)
+            {
+                AddNotification("Situacao", "Só é possível aditar um contrato aprovado (vigente) [GCC-022] [Origem: GccContratoCompra]");
+                return false;
+            }
+            switch (aditivo.TipoAditivo)
+            {
+                case ETipoAditivoContrato.Vigencia:
+                    if (novaVigenciaFim.HasValue && VigenciaInicio.HasValue && novaVigenciaFim.Value < VigenciaInicio.Value)
+                    {
+                        AddNotification("VigenciaFim", "A nova vigência não pode ser anterior ao início [GCC-023] [Origem: GccContratoCompra]");
+                        return false;
+                    }
+                    if (novaVigenciaFim.HasValue) VigenciaFim = novaVigenciaFim.Value;
+                    break;
+                case ETipoAditivoContrato.Preco:
+                    if (novoValorTotal.HasValue) ValorTotal = novoValorTotal.Value;
+                    break;
+                case ETipoAditivoContrato.Quantidade:
+                    if (novoValorTotal.HasValue) ValorTotal = novoValorTotal.Value;
+                    break;
+                case ETipoAditivoContrato.Condicoes:
+                    if (!string.IsNullOrWhiteSpace(novaObservacao)) Observacao = novaObservacao.Trim();
+                    break;
+            }
+            Aditivos.Add(aditivo);
+            MarcarAlterado(usuario);
+            return true;
+        }
+
         public void Validar()
         {
             Clear();

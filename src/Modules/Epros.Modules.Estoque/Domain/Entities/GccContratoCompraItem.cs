@@ -46,6 +46,32 @@ namespace Epros.Modules.Estoque.Domain.Entities
             MarcarAlterado(usuario);
         }
 
+        /// <summary>Aditivo de PREÇO (CD5): ajusta o preço unitário contratado e recompõe o saldo em valor.</summary>
+        public void AjustarPreco(decimal novoPreco, string usuario)
+        {
+            if (novoPreco <= 0m)
+            {
+                AddNotification("PrecoUnitario", "O novo preço do aditivo deve ser maior que zero [GCC-020] [Origem: GccContratoCompraItem]");
+                return;
+            }
+            PrecoUnitario = novoPreco;
+            RecalcularSaldo();
+            MarcarAlterado(usuario);
+        }
+
+        /// <summary>Aditivo de QUANTIDADE (CD5): aumenta a quantidade comprometida e recompõe o saldo.</summary>
+        public void AumentarComprometido(decimal quantidadeAdicional, string usuario)
+        {
+            if (quantidadeAdicional <= 0m)
+            {
+                AddNotification("QuantidadeComprometida", "A quantidade adicional do aditivo deve ser maior que zero [GCC-021] [Origem: GccContratoCompraItem]");
+                return;
+            }
+            QuantidadeComprometida += quantidadeAdicional;
+            RecalcularSaldo();
+            MarcarAlterado(usuario);
+        }
+
         private void RecalcularSaldo()
         {
             SaldoQuantidade = QuantidadeComprometida - QuantidadeConsumida;
