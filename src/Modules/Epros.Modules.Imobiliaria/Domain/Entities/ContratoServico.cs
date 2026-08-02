@@ -39,6 +39,27 @@ namespace Epros.Modules.Imobiliaria.Domain.Entities
             Validar();
         }
 
+        /// <summary>
+        /// Atualiza o contrato de servico (ID3/PRD-03). A remuneracao da administradora e
+        /// configuravel; sem calculo automatico de repasse/retencao/impostos ate o contador
+        /// definir base e incidencia (NF-06) — nao inventar percentual.
+        /// </summary>
+        public void AtualizarDados(
+            string? descricao,
+            DateTime? vigenciaInicio,
+            DateTime? vigenciaFim,
+            decimal? remuneracao,
+            string usuario)
+        {
+            Descricao = descricao;
+            VigenciaInicio = vigenciaInicio?.Date;
+            VigenciaFim = vigenciaFim?.Date;
+            Remuneracao = remuneracao;
+            Validar();
+            if (!IsValid) return;
+            MarcarAlterado(usuario);
+        }
+
         public void Validar()
         {
             Clear();
