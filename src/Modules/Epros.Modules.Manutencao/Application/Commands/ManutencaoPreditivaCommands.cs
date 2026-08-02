@@ -327,7 +327,10 @@ namespace Epros.Modules.Manutencao.Application.Commands
     }
 
     // ===== Converter alarme em ordem de trabalho =====
-    public record ConverterAlarmeEmOrdemCommand(Guid AlarmeId, Guid OrdemTrabalhoId, string? StatusRetorno, string? PayloadRetorno) : ICommand;
+    // T5 — OrdemTrabalhoId agora e OPCIONAL: quando ausente, a conversao CRIA a OT canonica
+    // (man_trb_ordem_servico, origem=Preditiva) internamente e vincula essa OS ao alarme.
+    // Quando informado (integracao externa/legado), mantem o vinculo ao id externo.
+    public record ConverterAlarmeEmOrdemCommand(Guid AlarmeId, Guid? OrdemTrabalhoId = null, string? StatusRetorno = null, string? PayloadRetorno = null) : ICommand;
 
     public class ConverterAlarmeEmOrdemCommandHandler : ICommandHandler<ConverterAlarmeEmOrdemCommand>
     {
@@ -353,13 +356,33 @@ namespace Epros.Modules.Manutencao.Application.Commands
             if (alarme == null)
                 return CommandResult.Falha("Alarme preditivo nao encontrado.");
 
-            var vinculo = new VinculoOrdemTrabalhoPreditivo(alarme.Id, request.OrdemTrabalhoId, request.StatusRetorno, request.PayloadRetorno, tenantId, usuario);
+            // T5 — sem OT externa informada: cria a OT canonica interna (origem=Preditiva) a partir do alarme.
+            Guid ordemTrabalhoId;
+            Guid? ordemServicoCriadaId = null;
+            if (request.OrdemTrabalhoId.HasValue && request.OrdemTrabalhoId.Value != Guid.Empty)
+            {
+                ordemTrabalhoId = request.OrdemTrabalhoId.Value;
+            }
+            else
+            {
+                var os = OrdemServico.CriarInterna(
+                    EOrigemOrdemServico.Preditiva, alarme.Id, DateTime.UtcNow, tenantId, usuario,
+                    observacaoAbertura: $"OS preditiva gerada do alarme {alarme.Id} ({alarme.Severidade}).");
+                _context.OrdensServico.Add(os);
+                ordemTrabalhoId = os.Id;
+                ordemServicoCriadaId = os.Id;
+            }
+
+            var vinculo = new VinculoOrdemTrabalhoPreditivo(alarme.Id, ordemTrabalhoId, request.StatusRetorno, request.PayloadRetorno, tenantId, usuario);
             alarme.ConverterEmOrdem(vinculo, usuario);
             if (!alarme.IsValid)
                 return CommandResult.Falha(alarme.Notifications.Select(n => n.Message));
 
+            // Filho novo em agregado JA existente: Add explicito garante estado Added
+            // (senao o EF classifica como Modified e tenta UPDATE de linha inexistente).
+            _context.VinculosOrdemTrabalhoPreditivo.Add(vinculo);
             await _context.SaveChangesAsync(cancellationToken);
-            return CommandResult.Ok("Alarme convertido em ordem de trabalho.", new { AlarmeId = alarme.Id, VinculoId = vinculo.Id, Status = alarme.Status.ToString() });
+            return CommandResult.Ok("Alarme convertido em ordem de trabalho.", new { AlarmeId = alarme.Id, VinculoId = vinculo.Id, OrdemTrabalhoId = ordemTrabalhoId, OrdemServicoCriadaId = ordemServicoCriadaId, Status = alarme.Status.ToString() });
         }
     }
 
