@@ -45,6 +45,18 @@ namespace Epros.API.Controllers
         [AbacAuthorize("ConcessionariasFinancas", "Consultar")]
         public async Task<IActionResult> ListarSimulacoes() => Ok(await _mediator.Send(new ObterSimulacoesFinQuery()));
 
+        /// <summary>
+        /// NF-01 — Motor F&amp;I: simula o financiamento (Price/SAC + IOF + CET) e persiste o resultado.
+        /// Cálculo aterra a skill Negocio-acumulado/financeiro/credito. Idempotente por chave.
+        /// </summary>
+        [HttpPost("simulacoes/calcular")]
+        [AbacAuthorize("ConcessionariasFinancas", "Editar")]
+        public async Task<ActionResult<CommandResult>> CalcularSimulacao([FromBody] SimularFinanciamentoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
         [HttpPost("contratos")]
         [AbacAuthorize("ConcessionariasFinancas", "Editar")]
         public async Task<ActionResult<CommandResult>> CriarContrato([FromBody] CriarContratoFinCommand command)
