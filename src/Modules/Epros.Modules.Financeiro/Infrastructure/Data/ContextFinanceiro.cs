@@ -105,6 +105,8 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
         public DbSet<MetaMilestone> MetaMilestones => Set<MetaMilestone>();
         public DbSet<MetaContribuicao> MetaContribuicoes => Set<MetaContribuicao>();
         public DbSet<MetaTracking> MetaTrackings => Set<MetaTracking>();
+        public DbSet<OrcamentoComercial> OrcamentosComerciais => Set<OrcamentoComercial>();
+        public DbSet<OrcamentoComercialItem> OrcamentoComercialItens => Set<OrcamentoComercialItem>();
 
         // ----- FIN-TS: Tesouraria e Gestão de Liquidez -----
         public DbSet<ContaFinanceira> ContasFinanceiras => Set<ContaFinanceira>();
@@ -1074,6 +1076,38 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
                 e.Property(x => x.Percentual).HasPrecision(18, 4);
                 e.Property(x => x.StatusProgresso).HasMaxLength(50);
                 e.HasIndex(x => x.MetaId).HasDatabaseName("ix_meta_tracking_meta");
+            });
+
+            modelBuilder.Entity<OrcamentoComercial>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Tipo).HasMaxLength(50);
+                e.Property(x => x.Codigo).HasMaxLength(50);
+                e.Property(x => x.TipoFrete).HasMaxLength(50);
+                e.Property(x => x.StatusPedido).HasMaxLength(50);
+                e.Property(x => x.Observacao).HasMaxLength(1000);
+                e.Property(x => x.ValorSubtotal).HasPrecision(18, 2);
+                e.Property(x => x.ValorFrete).HasPrecision(18, 2);
+                e.Property(x => x.TaxaComissao).HasPrecision(18, 4);
+                e.Property(x => x.ValorComissao).HasPrecision(18, 2);
+                e.Property(x => x.TaxaDesconto).HasPrecision(18, 4);
+                e.Property(x => x.ValorDesconto).HasPrecision(18, 2);
+                e.Property(x => x.ValorTotal).HasPrecision(18, 2);
+                e.HasMany(x => x.Itens).WithOne(i => i.OrcamentoComercial).HasForeignKey(i => i.OrcamentoComercialId).OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => new { x.TenantId, x.Codigo }).HasDatabaseName("ix_orcamento_comercial_tenant_codigo");
+                e.HasIndex(x => new { x.TenantId, x.StatusPedido }).HasDatabaseName("ix_orcamento_comercial_tenant_status");
+            });
+
+            modelBuilder.Entity<OrcamentoComercialItem>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Quantidade).HasPrecision(18, 4);
+                e.Property(x => x.ValorUnitario).HasPrecision(18, 2);
+                e.Property(x => x.ValorSubtotal).HasPrecision(18, 2);
+                e.Property(x => x.TaxaDesconto).HasPrecision(18, 4);
+                e.Property(x => x.ValorDesconto).HasPrecision(18, 2);
+                e.Property(x => x.ValorTotal).HasPrecision(18, 2);
+                e.HasIndex(x => x.OrcamentoComercialId).HasDatabaseName("ix_orcamento_comercial_item_cabecalho");
             });
 
             // ===== FIN-TS: Tesouraria e Gestão de Liquidez =====
