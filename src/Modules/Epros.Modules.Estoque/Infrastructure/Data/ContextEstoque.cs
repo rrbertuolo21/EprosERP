@@ -59,6 +59,16 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
         // Análise e Planejamento de Estoque (EST-APE) — EF §16
         public DbSet<AlertaEstoque> AlertasEstoque => Set<AlertaEstoque>();
 
+        // Portal do Fornecedor (EST-PFO) — EF §15
+        public DbSet<PfoConviteFornecedor> PfoConvitesFornecedor => Set<PfoConviteFornecedor>();
+        public DbSet<PfoUsuarioFornecedor> PfoUsuariosFornecedor => Set<PfoUsuarioFornecedor>();
+        public DbSet<PfoCotacaoPublicada> PfoCotacoesPublicadas => Set<PfoCotacaoPublicada>();
+        public DbSet<PfoRespostaCotacao> PfoRespostasCotacao => Set<PfoRespostaCotacao>();
+        public DbSet<PfoRespostaCotacaoItem> PfoRespostaCotacaoItens => Set<PfoRespostaCotacaoItem>();
+        public DbSet<PfoPreAvisoEmbarque> PfoPreAvisosEmbarque => Set<PfoPreAvisoEmbarque>();
+        public DbSet<PfoPreAvisoItem> PfoPreAvisoItens => Set<PfoPreAvisoItem>();
+        public DbSet<PfoDocumentoFornecedor> PfoDocumentosFornecedor => Set<PfoDocumentoFornecedor>();
+
         // Compras
         public DbSet<Compra> Compras => Set<Compra>();
         public DbSet<CompraItem> CompraItens => Set<CompraItem>();
@@ -704,6 +714,81 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
                 entity.HasIndex(a => new { a.TenantId, a.StatusAlerta });
                 entity.HasIndex(a => new { a.TenantId, a.PosicaoEstoqueId, a.TipoAlerta });
                 entity.HasIndex(a => a.SyncId).IsUnique();
+            });
+
+            // ============ PORTAL DO FORNECEDOR (EST-PFO) — EF §15 ============
+
+            modelBuilder.Entity<PfoConviteFornecedor>(entity =>
+            {
+                entity.HasKey(c => c.Id);
+                entity.Property(c => c.EmailConvite).HasMaxLength(200);
+                entity.HasIndex(c => new { c.TenantId, c.FornecedorId });
+                entity.HasIndex(c => new { c.TenantId, c.Status });
+                entity.HasIndex(c => c.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<PfoUsuarioFornecedor>(entity =>
+            {
+                entity.HasKey(u => u.Id);
+                entity.HasIndex(u => new { u.TenantId, u.FornecedorId });
+                entity.HasIndex(u => new { u.TenantId, u.UsuarioId });
+                entity.HasIndex(u => u.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<PfoCotacaoPublicada>(entity =>
+            {
+                entity.HasKey(c => c.Id);
+                entity.HasIndex(c => new { c.TenantId, c.FornecedorId });
+                entity.HasIndex(c => new { c.TenantId, c.CotacaoOrigemId });
+                entity.HasIndex(c => c.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<PfoRespostaCotacao>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.ValorTotal).HasPrecision(18, 2);
+                entity.Property(r => r.Observacao).HasMaxLength(2000);
+                entity.HasMany(r => r.Itens).WithOne(i => i.Resposta).HasForeignKey(i => i.RespostaCotacaoId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(r => new { r.TenantId, r.FornecedorId });
+                entity.HasIndex(r => new { r.TenantId, r.CotacaoPublicadaId });
+                entity.HasIndex(r => r.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<PfoRespostaCotacaoItem>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.Quantidade).HasPrecision(18, 4);
+                entity.Property(i => i.ValorUnitario).HasPrecision(18, 4);
+                entity.HasIndex(i => new { i.TenantId, i.RespostaCotacaoId });
+                entity.HasIndex(i => i.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<PfoPreAvisoEmbarque>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.Property(p => p.Observacao).HasMaxLength(2000);
+                entity.HasMany(p => p.Itens).WithOne(i => i.PreAviso).HasForeignKey(i => i.PreAvisoId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(p => new { p.TenantId, p.FornecedorId });
+                entity.HasIndex(p => new { p.TenantId, p.PedidoCompraId });
+                entity.HasIndex(p => p.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<PfoPreAvisoItem>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.QuantidadePrevista).HasPrecision(18, 4);
+                entity.Property(i => i.Lote).HasMaxLength(60);
+                entity.HasIndex(i => new { i.TenantId, i.PreAvisoId });
+                entity.HasIndex(i => i.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<PfoDocumentoFornecedor>(entity =>
+            {
+                entity.HasKey(d => d.Id);
+                entity.Property(d => d.TipoDocumento).HasMaxLength(60);
+                entity.HasIndex(d => new { d.TenantId, d.FornecedorId });
+                entity.HasIndex(d => new { d.TenantId, d.ReferenciaTipo, d.ReferenciaId });
+                entity.HasIndex(d => d.SyncId).IsUnique();
             });
 
             // ============================ COMPRAS ============================

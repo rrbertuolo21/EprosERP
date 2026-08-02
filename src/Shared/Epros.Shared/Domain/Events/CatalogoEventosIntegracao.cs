@@ -114,6 +114,12 @@ namespace Epros.Shared.Domain.Events
             public const string AnaliseParametrosAlterados = "estoque.analise.parametros_alterados";
             public const string AnaliseAlertaReposicao = "estoque.analise.alerta_reposicao";
             public const string AnaliseExcessoMaximo = "estoque.analise.excesso_maximo";
+            // Portal do Fornecedor (EST-PFO) — EF §13.
+            public const string PfoConviteEnviado = "est.pfo.convite_enviado";
+            public const string PfoAcessoAtivado = "est.pfo.acesso_ativado";
+            public const string PfoCotacaoRespondida = "est.pfo.cotacao_respondida";
+            public const string PfoPreAvisoEnviado = "est.pfo.pre_aviso_enviado";
+            public const string PfoDocumentoEnviado = "est.pfo.documento_enviado";
         }
 
         /// <summary>Operações (produção/manutenção/qualidade/RH/GRC).</summary>
@@ -150,6 +156,8 @@ namespace Epros.Shared.Domain.Events
             Estoque.LoteCriado, Estoque.LoteBloqueado, Estoque.LoteDesbloqueado,
             Estoque.SerialRegistrado, Estoque.RecallAberto, Estoque.RecallEncerrado,
             Estoque.AnaliseParametrosAlterados, Estoque.AnaliseAlertaReposicao, Estoque.AnaliseExcessoMaximo,
+            Estoque.PfoConviteEnviado, Estoque.PfoAcessoAtivado, Estoque.PfoCotacaoRespondida,
+            Estoque.PfoPreAvisoEnviado, Estoque.PfoDocumentoEnviado,
             Operacoes.OrdemProducaoEncerrada, Operacoes.OrdemManutencaoConcluida, Operacoes.InspecaoReprovada,
             Operacoes.FolhaProcessada, Operacoes.DenunciaProcedente
         }, System.StringComparer.Ordinal);
