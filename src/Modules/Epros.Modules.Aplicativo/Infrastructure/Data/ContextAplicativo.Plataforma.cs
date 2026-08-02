@@ -1,5 +1,6 @@
 using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Analytics;
 using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Assinatura;
+using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Conectores;
 using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Ged;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,11 +34,16 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
         public DbSet<SnapshotMetrica> SnapshotsMetrica => Set<SnapshotMetrica>();
         public DbSet<ExportacaoAnalytics> ExportacoesAnalytics => Set<ExportacaoAnalytics>();
 
+        // ===== Conectores/Webhooks (submódulo 4) =====
+        public DbSet<EndpointWebhook> EndpointsWebhook => Set<EndpointWebhook>();
+        public DbSet<EntregaWebhook> EntregasWebhook => Set<EntregaWebhook>();
+
         partial void ConfigurarPlataforma(ModelBuilder modelBuilder)
         {
             ConfigurarGed(modelBuilder);
             ConfigurarAssinatura(modelBuilder);
             ConfigurarAnalytics(modelBuilder);
+            ConfigurarConectores(modelBuilder);
         }
 
         private static void ConfigurarGed(ModelBuilder modelBuilder)
@@ -199,6 +205,35 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
                 e.Property(x => x.Status).HasMaxLength(20);
                 e.Property(x => x.UrlRef).HasMaxLength(1000);
                 e.HasIndex(x => x.Status).HasDatabaseName("ix_plt_analytics_exportacoes_status");
+            });
+        }
+
+        private static void ConfigurarConectores(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<EndpointWebhook>(e =>
+            {
+                e.ToTable("plt_conector_endpoints", "aplicativo");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Nome).HasMaxLength(200);
+                e.Property(x => x.Url).HasMaxLength(2000);
+                e.Property(x => x.EventosInscritosJson).HasColumnType("text");
+                e.Property(x => x.SegredoCifrado).HasMaxLength(4000);
+                e.Property(x => x.HeadersJson).HasColumnType("text");
+                e.HasIndex(x => x.Ativo).HasDatabaseName("ix_plt_conector_endpoints_ativo");
+            });
+
+            modelBuilder.Entity<EntregaWebhook>(e =>
+            {
+                e.ToTable("plt_conector_entregas", "aplicativo");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.EventType).HasMaxLength(150);
+                e.Property(x => x.Payload).HasColumnType("text");
+                e.Property(x => x.AssinaturaHmac).HasMaxLength(128);
+                e.Property(x => x.Status).HasMaxLength(20);
+                e.Property(x => x.UltimoErro).HasMaxLength(2000);
+                e.HasIndex(x => new { x.Status, x.ProximaTentativaEm })
+                    .HasDatabaseName("ix_plt_conector_entregas_status_proxima");
+                e.HasIndex(x => x.EndpointId).HasDatabaseName("ix_plt_conector_entregas_endpoint");
             });
         }
     }

@@ -127,6 +127,9 @@ try
     // PLT · GED (T10) — storage documental atrás de abstração. Provider real (MinIO/S3/servidor de
     // storage) entra por ambiente; sem ele, usa a implementação "não configurada" (// valida-ambiente).
     builder.Services.AddScoped<Epros.Modules.Aplicativo.Application.Contracts.IArmazenamentoDocumentoService, Epros.Modules.Aplicativo.Infrastructure.Services.ArmazenamentoLocalNaoConfiguradoService>();
+    // PLT · CONECTORES (ED-08) — dispatcher de webhook atrás de abstração. HTTP real ao endpoint
+    // externo = ambiente; sem ele, a entrega fica pendente (// valida-ambiente).
+    builder.Services.AddScoped<Epros.Modules.Aplicativo.Application.Contracts.IWebhookDispatchService, Epros.Modules.Aplicativo.Infrastructure.Services.WebhookDispatchNaoConfiguradoService>();
 
     // Gateway de pagamento (outbound) — Mercado Pago. HttpClient nomeado + implementação.
     builder.Services.AddHttpClient(Epros.Modules.GestaoClientes.Infrastructure.Gateways.MercadoPagoGateway.HttpClientName, client =>
