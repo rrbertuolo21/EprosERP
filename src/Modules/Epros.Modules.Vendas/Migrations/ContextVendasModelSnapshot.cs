@@ -6179,6 +6179,18 @@ namespace Epros.Modules.Vendas.Migrations
                         .HasColumnType("text")
                         .HasColumnName("tenant_id");
 
+                    b.Property<int>("UnidadeUso")
+                        .HasColumnType("integer")
+                        .HasColumnName("unidade_uso");
+
+                    b.Property<decimal?>("UsoOrigem")
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("uso_origem");
+
+                    b.Property<decimal?>("UsoVencimento")
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("uso_vencimento");
+
                     b.Property<Guid?>("VendaId")
                         .HasColumnType("uuid")
                         .HasColumnName("venda_id");
@@ -6330,6 +6342,10 @@ namespace Epros.Modules.Vendas.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("duracao");
 
+                    b.Property<decimal?>("LimiteUso")
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("limite_uso");
+
                     b.Property<string>("Nome")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
@@ -6355,6 +6371,10 @@ namespace Epros.Modules.Vendas.Migrations
                     b.Property<int>("TipoDuracao")
                         .HasColumnType("integer")
                         .HasColumnName("tipo_duracao");
+
+                    b.Property<int>("UnidadeUso")
+                        .HasColumnType("integer")
+                        .HasColumnName("unidade_uso");
 
                     b.HasKey("Id")
                         .HasName("p_k_ven_garantia_politicas");

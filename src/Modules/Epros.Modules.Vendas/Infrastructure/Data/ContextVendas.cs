@@ -1212,6 +1212,8 @@ namespace Epros.Modules.Vendas.Infrastructure.Data
                 e.Property(x => x.Nome).HasMaxLength(200);
                 e.Property(x => x.Descricao).HasMaxLength(2000);
                 e.Property(x => x.TipoDuracao).HasConversion<int>();
+                e.Property(x => x.UnidadeUso).HasConversion<int>();
+                e.Property(x => x.LimiteUso).HasColumnType("numeric(18,4)");
                 e.HasIndex(x => x.TenantId).HasDatabaseName("ix_ven_garantia_politicas_tenant");
                 e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_garantia_politicas_sync_id");
                 e.HasQueryFilter(x => x.DeletadoEm == null);
@@ -1224,6 +1226,9 @@ namespace Epros.Modules.Vendas.Infrastructure.Data
                 e.Property(x => x.NumeroSerieLote).HasMaxLength(120);
                 e.Property(x => x.Observacao).HasMaxLength(2000);
                 e.Property(x => x.Situacao).HasConversion<int>();
+                e.Property(x => x.UnidadeUso).HasConversion<int>();
+                e.Property(x => x.UsoOrigem).HasColumnType("numeric(18,4)");
+                e.Property(x => x.UsoVencimento).HasColumnType("numeric(18,4)");
                 e.HasIndex(x => new { x.TenantId, x.GarantiaPoliticaId }).HasDatabaseName("ix_ven_garantia_coberturas_tenant_politica");
                 e.HasIndex(x => new { x.TenantId, x.VendaId }).HasDatabaseName("ix_ven_garantia_coberturas_tenant_venda");
                 e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_garantia_coberturas_sync_id");

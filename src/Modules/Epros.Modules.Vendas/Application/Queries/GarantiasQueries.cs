@@ -34,7 +34,7 @@ namespace Epros.Modules.Vendas.Application.Queries
                 .OrderBy(p => p.Nome)
                 .Skip((request.Pagina - 1) * request.TamanhoPagina)
                 .Take(request.TamanhoPagina)
-                .Select(p => new { p.Id, p.Nome, p.Descricao, p.Duracao, p.TipoDuracao, p.Ativo })
+                .Select(p => new { p.Id, p.Nome, p.Descricao, p.Duracao, p.TipoDuracao, p.LimiteUso, p.UnidadeUso, p.Ativo })
                 .ToListAsync(cancellationToken);
             return CommandResult.Ok("Políticas de garantia listadas.", new { total, request.Pagina, request.TamanhoPagina, itens });
         }
@@ -58,7 +58,7 @@ namespace Epros.Modules.Vendas.Application.Queries
             var politica = await _context.GarantiaPoliticas.AsNoTracking()
                 .FirstOrDefaultAsync(p => p.TenantId == tenantId && p.Id == request.Id, cancellationToken);
             if (politica == null) return CommandResult.Falha("Política de garantia não encontrada.");
-            return CommandResult.Ok("Política de garantia encontrada.", new { politica.Id, politica.Nome, politica.Descricao, politica.Duracao, politica.TipoDuracao, politica.Ativo });
+            return CommandResult.Ok("Política de garantia encontrada.", new { politica.Id, politica.Nome, politica.Descricao, politica.Duracao, politica.TipoDuracao, politica.LimiteUso, politica.UnidadeUso, politica.Ativo });
         }
     }
 
@@ -86,7 +86,7 @@ namespace Epros.Modules.Vendas.Application.Queries
 
             var itens = await query
                 .OrderByDescending(c => c.CriadoEm)
-                .Select(c => new { c.Id, c.GarantiaPoliticaId, c.VendaId, c.ProdutoId, c.ClienteId, c.NumeroSerieLote, c.DataOrigem, c.DataVencimento, Situacao = c.Situacao.ToString() })
+                .Select(c => new { c.Id, c.GarantiaPoliticaId, c.VendaId, c.ProdutoId, c.ClienteId, c.NumeroSerieLote, c.DataOrigem, c.DataVencimento, c.UsoOrigem, c.UsoVencimento, c.UnidadeUso, Situacao = c.Situacao.ToString() })
                 .ToListAsync(cancellationToken);
             return CommandResult.Ok("Coberturas consultadas.", new { itens });
         }
