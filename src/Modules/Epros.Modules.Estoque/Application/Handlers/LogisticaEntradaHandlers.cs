@@ -203,6 +203,14 @@ namespace Epros.Modules.Estoque.Application.Handlers
             _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Estoque.LdeEntradaConfirmada,
                 JsonSerializer.Serialize(new { entrada.Id, entrada.CompraId, documentoId = documento.Id, tenantId })));
 
+            // ANTI-DUPLA-CONTAGEM (Gap LDE): a confirmação do recebimento físico NÃO credita o kardex. O
+            // crédito de estoque da compra é responsabilidade EXCLUSIVA do lançamento fiscal (LancarCompra),
+            // que gera o FatoGeradorEstoque com CompraId. Aqui apenas consultamos se esse crédito já ocorreu,
+            // para (a) documentar/telemetria e (b) impedir que qualquer evolução futura recredite a mesma
+            // compra. Chave de idempotência do crédito = ORIGEM (CompraId).
+            var estoqueJaCreditado = await Epros.Modules.Estoque.Application.Services.EstoqueCreditoCompra
+                .JaCreditadaAsync(_context, entrada.CompraId, cancellationToken);
+
             // LDE (escopo máximo): a confirmação do recebimento físico publica MercadoriaRecebida no catálogo
             // central para os consumidores a jusante — Qualidade (dispara inspeção de recebimento) e
             // Financeiro (habilita a geração de contas a pagar a partir de fatura/duplicatas). Payload rico
@@ -230,6 +238,9 @@ namespace Epros.Modules.Estoque.Application.Handlers
                     documento.ValorTotal,
                     itens = itensRecebidos,
                     duplicatas = duplicatasReceber,
+                    // Sinaliza a jusante que o estoque desta compra JÁ foi creditado pelo lançamento fiscal
+                    // (a LDE não credita). Anti-dupla-contagem por origem (CompraId).
+                    estoqueJaCreditado,
                     recebidoPor = usuario,
                     recebidoEm = DateTime.UtcNow,
                     tenantId
