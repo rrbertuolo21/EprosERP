@@ -156,6 +156,11 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
         public DbSet<SubServicoCobranca> SubServicosCobranca => Set<SubServicoCobranca>();
         public DbSet<SubHistorico> SubHistoricos => Set<SubHistorico>();
 
+        // ============ ALÇADA DE APROVAÇÃO DE COMPRAS (CD3) ============
+        public DbSet<ComprasAlcadaRegra> ComprasAlcadaRegras => Set<ComprasAlcadaRegra>();
+        public DbSet<ComprasPedidoAprovacao> ComprasPedidosAprovacao => Set<ComprasPedidoAprovacao>();
+        public DbSet<ComprasPedidoAprovacaoNivel> ComprasPedidosAprovacaoNiveis => Set<ComprasPedidoAprovacaoNivel>();
+
         // Lookup somente leitura (dono: módulo Fiscal, schema plataforma).
         public DbSet<ServicoLookup> ServicosLookup => Set<ServicoLookup>();
 
@@ -1899,6 +1904,46 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
                 entity.Property(h => h.DadosNovos).HasMaxLength(4000);
                 entity.HasIndex(h => new { h.TenantId, h.OrdemId });
                 entity.HasIndex(h => h.SyncId).IsUnique();
+            });
+
+            // ============ ALÇADA DE APROVAÇÃO DE COMPRAS (CD3 / EF SOURCING §5.8) ============
+
+            modelBuilder.Entity<ComprasAlcadaRegra>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.ValorMinimo).HasPrecision(18, 2);
+                entity.Property(r => r.ValorMaximo).HasPrecision(18, 2);
+                entity.Property(r => r.CategoriaCompra).HasMaxLength(120);
+                entity.Property(r => r.PapelAprovador).HasMaxLength(120);
+                entity.HasIndex(r => new { r.TenantId, r.Nivel });
+                entity.HasIndex(r => new { r.TenantId, r.Ativo });
+                entity.HasIndex(r => r.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<ComprasPedidoAprovacao>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.Property(p => p.ValorTotal).HasPrecision(18, 2);
+                entity.Property(p => p.CategoriaCompra).HasMaxLength(120);
+                entity.HasMany(p => p.Niveis)
+                      .WithOne(n => n.Pedido)
+                      .HasForeignKey(n => n.PedidoAprovacaoId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(p => new { p.TenantId, p.Status });
+                entity.HasIndex(p => new { p.TenantId, p.OrigemTipo, p.OrigemId });
+                entity.HasIndex(p => p.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<ComprasPedidoAprovacaoNivel>(entity =>
+            {
+                entity.HasKey(n => n.Id);
+                entity.Property(n => n.ValorMinimo).HasPrecision(18, 2);
+                entity.Property(n => n.ValorMaximo).HasPrecision(18, 2);
+                entity.Property(n => n.PapelAprovador).HasMaxLength(120);
+                entity.Property(n => n.DecididoPor).HasMaxLength(120);
+                entity.Property(n => n.Justificativa).HasMaxLength(2000);
+                entity.HasIndex(n => new { n.TenantId, n.PedidoAprovacaoId });
+                entity.HasIndex(n => n.SyncId).IsUnique();
             });
 
             base.OnModelCreating(modelBuilder);
