@@ -59,6 +59,76 @@ namespace Epros.Modules.Estoque.Application.Services
             produto?.SincronizarSaldoDenormalizado(saldo.QuantidadeSaldoEstoque, saldo.ValorCustoMedio, _usuario);
         }
 
+        /// <summary>
+        /// D2 — localiza (ou cria) a linha de saldo no GRÃO FINO (Empresa+Produto+Local+Lote+Série). Dimensões
+        /// não informadas caem no bucket determinístico (Local = Guid.Empty, Lote/Série = "") para manter a
+        /// unicidade sob PostgreSQL. Vive em paralelo ao agregado — o agregado continua a verdade da suíte.
+        /// </summary>
+        private async Task<EstoqueSaldoLocal> ObterOuCriarGrainAsync(
+            Guid empresaId, Guid produtoId, Guid localBucket, string codigoLote, string numeroSerie,
+            DateTime? dataValidade, CancellationToken ct)
+        {
+            var grain = await _context.EstoqueSaldosLocais.FirstOrDefaultAsync(
+                s => s.EmpresaId == empresaId && s.ProdutoId == produtoId && s.LocalId == localBucket
+                     && s.CodigoLote == codigoLote && s.NumeroSerie == numeroSerie, ct);
+
+            if (grain == null)
+            {
+                grain = new EstoqueSaldoLocal(empresaId, produtoId, localBucket, codigoLote, numeroSerie, dataValidade, _tenantId, _usuario);
+                _context.EstoqueSaldosLocais.Add(grain);
+            }
+            return grain;
+        }
+
+        /// <summary>
+        /// D2 — espelha a ENTRADA no grão fino, na MESMA transação do agregado. Aditivo: nunca afeta o saldo
+        /// agregado que a suíte valida; apenas materializa a posição física por local/lote/série.
+        /// </summary>
+        private async Task EspelharEntradaGrainAsync(
+            Guid empresaId, Guid produtoId, Guid? localId, string? lote, string? numeroSerie,
+            decimal quantidade, decimal valorUnitario, DateTime? dataValidade, CancellationToken ct)
+        {
+            var grain = await ObterOuCriarGrainAsync(
+                empresaId, produtoId, localId ?? Guid.Empty,
+                EstoqueSaldoLocal.Normalizar(lote), EstoqueSaldoLocal.Normalizar(numeroSerie), dataValidade, ct);
+            grain.Creditar(quantidade, valorUnitario * quantidade, dataValidade, _usuario);
+        }
+
+        /// <summary>
+        /// D2 — espelha a SAÍDA no grão fino: consome as posições do local (as informadas, senão o bucket
+        /// padrão) do mais antigo para o mais novo (PEPS por posição; FEFO real por validade entra na fatia 3),
+        /// valorizando pelo custo médio vigente do agregado. A QUANTIDADE sempre reconcilia com o agregado
+        /// (baixa-se exatamente `quantidade`); eventual lacuna de backfill do grão é aplicada ao bucket base
+        /// do local, podendo ficar negativa — condição transitória documentada até o backfill completo.
+        /// </summary>
+        private async Task EspelharSaidaGrainAsync(
+            Guid empresaId, Guid produtoId, Guid? localId, decimal quantidade, decimal custoMedioSnapshot, CancellationToken ct)
+        {
+            var localBucket = localId ?? Guid.Empty;
+
+            var linhas = await _context.EstoqueSaldosLocais
+                .Where(s => s.EmpresaId == empresaId && s.ProdutoId == produtoId && s.LocalId == localBucket && s.QuantidadeSaldo > 0m)
+                .OrderBy(s => s.CriadoEm).ThenBy(s => s.SyncVersion)
+                .ToListAsync(ct);
+
+            var restante = quantidade;
+            foreach (var linha in linhas)
+            {
+                if (restante <= 0m) break;
+                var consumir = Math.Min(linha.QuantidadeSaldo, restante);
+                linha.Debitar(consumir, consumir * custoMedioSnapshot, _usuario);
+                restante -= consumir;
+            }
+
+            // Lacuna de backfill (grão ainda não materializado para esse produto/local): aplica o restante no
+            // bucket base do local para que a soma do grão continue reconciliando com o delta do agregado.
+            if (restante > 0m)
+            {
+                var baseLinha = await ObterOuCriarGrainAsync(empresaId, produtoId, localBucket, string.Empty, string.Empty, null, ct);
+                baseLinha.Debitar(restante, restante * custoMedioSnapshot, _usuario);
+            }
+        }
+
         /// <summary>Localiza (ou cria) o saldo agregado do produto na empresa. MVM-010: unicidade.</summary>
         private async Task<EstoqueProduto> ObterOuCriarSaldoAsync(Guid empresaId, Guid produtoId, ETipoCusteioEstoque custeioPadrao, CancellationToken ct)
         {
@@ -95,6 +165,9 @@ namespace Epros.Modules.Estoque.Application.Services
             saldo.SomarQuantidadeSaldoEstoque(quantidade);
             saldo.AtualizarValorSaldo(saldo.ValorSaldo + (valorUnitario * quantidade));
             saldo.AtualizarValorCustoMedio();
+
+            // D2: espelha a entrada no grão fino (Local+Lote/Série), na mesma transação. Aditivo.
+            await EspelharEntradaGrainAsync(empresaId, produtoId, localId, lote, null, quantidade, valorUnitario, dataValidade, ct);
 
             await SincronizarEspelhoProdutoAsync(saldo, ct);
 
@@ -181,6 +254,9 @@ namespace Epros.Modules.Estoque.Application.Services
             saldo.AtualizarValorSaldo(saldo.ValorSaldo - valorBaixado);
             if (saldo.QuantidadeSaldoEstoque <= 0m) saldo.AtualizarValorSaldo(0m); // saldo zerado/negativo → valor zero (custo médio preservado por D13)
             saldo.AtualizarValorCustoMedio();
+
+            // D2: espelha a saída no grão fino (consome posições do local), na mesma transação. Aditivo.
+            await EspelharSaidaGrainAsync(empresaId, produtoId, localId, quantidade, custoMedioSnapshot, ct);
 
             await SincronizarEspelhoProdutoAsync(saldo, ct);
 
