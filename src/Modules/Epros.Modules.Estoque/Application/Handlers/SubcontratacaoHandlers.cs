@@ -8,7 +8,9 @@ using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
 using Epros.Shared.Domain.Events;
 using Epros.Modules.Estoque.Application.Commands;
+using Epros.Modules.Estoque.Application.Services;
 using Epros.Modules.Estoque.Domain.Entities;
+using Epros.Modules.Estoque.Domain.Enums;
 using Epros.Modules.Estoque.Infrastructure.Data;
 
 namespace Epros.Modules.Estoque.Application.Handlers
@@ -88,6 +90,20 @@ namespace Epros.Modules.Estoque.Application.Handlers
 
             _context.SubEnvios.Add(envio);
 
+            // KARDEX (Gap SUB): a remessa é uma SAÍDA física do estoque próprio (a mercadoria vai para o
+            // terceiro). Passa pelo MOTOR ÚNICO (D1, bucket EmpresaPadrao — mesmo dos demais fluxos), numa
+            // única transação, idempotente por FatoGerador.ReferenciaExterna. CFOP/fiscal = valida-contador.
+            var motor = new MotorMovimentacaoEstoque(_context, tenantId, usuario);
+            var refFato = $"SubEnvio {envio.Id}";
+            var jaMovido = await _context.FatosGeradoresEstoque.IgnoreQueryFilters()
+                .AnyAsync(f => f.TenantId == tenantId && f.ReferenciaExterna == refFato, cancellationToken);
+            FatoGeradorEstoque? fato = null;
+            if (!jaMovido)
+            {
+                fato = new FatoGeradorEstoque(null, null, null, EOrigemFatoGeradorEstoque.Transferencia, tenantId, usuario, referenciaExterna: refFato);
+                _context.FatosGeradoresEstoque.Add(fato);
+            }
+
             if (request.Itens != null)
             {
                 foreach (var input in request.Itens)
@@ -97,8 +113,16 @@ namespace Epros.Modules.Estoque.Application.Handlers
                         return CommandResult.Falha(item.Notifications.Select(n => n.Message), "Item de remessa inválido.");
                     _context.SubEnvioItens.Add(item);
 
-                    // SUB-005/010: atualiza saldo em poder de terceiros (movimento físico de estoque é pendência).
+                    // SUB-005/010: atualiza saldo em poder de terceiros (controle de posse no terceiro).
                     await AtualizarSaldoEnvioAsync(ordem.FornecedorId, input.ProdutoId, ordem.Id, input.QuantidadeEnviada, tenantId, usuario, cancellationToken);
+
+                    // SAÍDA do kardex próprio pelo motor (respeita saldo/estoque negativo — D8).
+                    if (fato != null)
+                    {
+                        var saida = await motor.AplicarSaidaAsync(MotorMovimentacaoEstoque.EmpresaPadrao, input.ProdutoId, input.QuantidadeEnviada, fato.Id, input.LocalOrigemId, cancellationToken);
+                        if (!saida.Sucesso)
+                            return CommandResult.Falha(saida.Erro ?? "Falha ao baixar o estoque na remessa de subcontratação.");
+                    }
                 }
             }
 
@@ -153,6 +177,21 @@ namespace Epros.Modules.Estoque.Application.Handlers
 
             _context.SubRetornos.Add(retorno);
 
+            // KARDEX (Gap SUB): o retorno é uma ENTRADA física no estoque próprio (a mercadoria volta do
+            // terceiro). Passa pelo MOTOR ÚNICO (D1, bucket EmpresaPadrao), numa única transação, idempotente
+            // por FatoGerador.ReferenciaExterna. Reentra pelo custo médio vigente do produto (a valorização do
+            // beneficiamento/serviço é apropriada à parte — SUB-009). CFOP/fiscal = valida-contador.
+            var motor = new MotorMovimentacaoEstoque(_context, tenantId, usuario);
+            var refFato = $"SubRetorno {retorno.Id}";
+            var jaMovido = await _context.FatosGeradoresEstoque.IgnoreQueryFilters()
+                .AnyAsync(f => f.TenantId == tenantId && f.ReferenciaExterna == refFato, cancellationToken);
+            FatoGeradorEstoque? fato = null;
+            if (!jaMovido)
+            {
+                fato = new FatoGeradorEstoque(null, null, null, EOrigemFatoGeradorEstoque.Transferencia, tenantId, usuario, referenciaExterna: refFato);
+                _context.FatosGeradoresEstoque.Add(fato);
+            }
+
             if (request.Itens != null)
             {
                 foreach (var input in request.Itens)
@@ -169,6 +208,20 @@ namespace Epros.Modules.Estoque.Application.Handlers
 
                     _context.SubRetornoItens.Add(item);
                     saldo.RegistrarRetorno(input.QuantidadeRetorno, perda, usuario);
+
+                    // ENTRADA no kardex próprio, pela quantidade que RETORNA (perda/sucata não reentram),
+                    // valorizada pelo custo médio vigente do produto.
+                    if (fato != null && input.QuantidadeRetorno > 0m)
+                    {
+                        var custoMedio = await _context.EstoqueProdutos
+                            .Where(e => e.EmpresaId == MotorMovimentacaoEstoque.EmpresaPadrao && e.ProdutoId == input.ProdutoId)
+                            .Select(e => (decimal?)e.ValorCustoMedio)
+                            .FirstOrDefaultAsync(cancellationToken) ?? 0m;
+
+                        var entrada = await motor.AplicarEntradaAsync(MotorMovimentacaoEstoque.EmpresaPadrao, input.ProdutoId, ETipoEstoque.Geral, input.QuantidadeRetorno, custoMedio, fato.Id, null, null, null, ETipoCusteioEstoque.CustoMedio, cancellationToken);
+                        if (!entrada.Sucesso)
+                            return CommandResult.Falha(entrada.Erro ?? "Falha ao dar entrada do retorno de subcontratação no estoque.");
+                    }
                 }
             }
 
