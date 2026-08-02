@@ -61,6 +61,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Modules", "Modules", "{B221
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Epros.Modules.Imobiliaria", "src\Modules\Epros.Modules.Imobiliaria\Epros.Modules.Imobiliaria.csproj", "{2992AEC8-C679-47AE-B466-A1427B75A3BD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Epros.Modules.Agricultor", "src\Modules\Epros.Modules.Agricultor\Epros.Modules.Agricultor.csproj", "{D0936739-57AB-4BD7-BE47-38729E55AA55}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -323,6 +325,18 @@ Global
 		{2992AEC8-C679-47AE-B466-A1427B75A3BD}.Release|x64.Build.0 = Release|Any CPU
 		{2992AEC8-C679-47AE-B466-A1427B75A3BD}.Release|x86.ActiveCfg = Release|Any CPU
 		{2992AEC8-C679-47AE-B466-A1427B75A3BD}.Release|x86.Build.0 = Release|Any CPU
+		{D0936739-57AB-4BD7-BE47-38729E55AA55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0936739-57AB-4BD7-BE47-38729E55AA55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D0936739-57AB-4BD7-BE47-38729E55AA55}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D0936739-57AB-4BD7-BE47-38729E55AA55}.Debug|x64.Build.0 = Debug|Any CPU
+		{D0936739-57AB-4BD7-BE47-38729E55AA55}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D0936739-57AB-4BD7-BE47-38729E55AA55}.Debug|x86.Build.0 = Debug|Any CPU
+		{D0936739-57AB-4BD7-BE47-38729E55AA55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D0936739-57AB-4BD7-BE47-38729E55AA55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D0936739-57AB-4BD7-BE47-38729E55AA55}.Release|x64.ActiveCfg = Release|Any CPU
+		{D0936739-57AB-4BD7-BE47-38729E55AA55}.Release|x64.Build.0 = Release|Any CPU
+		{D0936739-57AB-4BD7-BE47-38729E55AA55}.Release|x86.ActiveCfg = Release|Any CPU
+		{D0936739-57AB-4BD7-BE47-38729E55AA55}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -354,5 +368,6 @@ Global
 		{7283BC3A-AF08-4B8C-AFAD-C1A5510CB8E6} = {67D19349-1BC5-4E59-BE2D-B99BBE9B9C4E}
 		{BDC09E05-A0CD-436A-9DD2-FC82162C8039} = {67D19349-1BC5-4E59-BE2D-B99BBE9B9C4E}
 		{2992AEC8-C679-47AE-B466-A1427B75A3BD} = {B2216FFB-6838-4369-BFF3-E50A0CCCEC9E}
+		{D0936739-57AB-4BD7-BE47-38729E55AA55} = {B2216FFB-6838-4369-BFF3-E50A0CCCEC9E}
 	EndGlobalSection
 EndGlobal
