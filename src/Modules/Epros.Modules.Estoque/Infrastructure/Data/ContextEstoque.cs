@@ -50,6 +50,12 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
         public DbSet<InventarioReajuste> InventarioReajustes => Set<InventarioReajuste>();
         public DbSet<InventarioReajusteItem> InventarioReajusteItens => Set<InventarioReajusteItem>();
 
+        // Rastreabilidade de Lote e Serialização (EST-RLT) — EF §7
+        public DbSet<LoteEstoque> LotesEstoque => Set<LoteEstoque>();
+        public DbSet<NumeroSerial> NumerosSeriais => Set<NumeroSerial>();
+        public DbSet<BloqueioLote> BloqueiosLote => Set<BloqueioLote>();
+        public DbSet<RecallLote> RecallsLote => Set<RecallLote>();
+
         // Compras
         public DbSet<Compra> Compras => Set<Compra>();
         public DbSet<CompraItem> CompraItens => Set<CompraItem>();
@@ -635,6 +641,53 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
                       .OnDelete(DeleteBehavior.Restrict);
                 entity.HasIndex(i => new { i.TenantId, i.ReajusteId });
                 entity.HasIndex(i => i.SyncId).IsUnique();
+            });
+
+            // ============ RASTREABILIDADE DE LOTE E SERIALIZAÇÃO (EST-RLT) — EF §7 ============
+
+            modelBuilder.Entity<LoteEstoque>(entity =>
+            {
+                entity.HasKey(l => l.Id);
+                entity.Property(l => l.CodigoLote).HasMaxLength(60);
+                entity.Property(l => l.Observacao).HasMaxLength(1000);
+                entity.Property(l => l.QuantidadeRecebida).HasPrecision(18, 4);
+                entity.Property(l => l.QuantidadeDisponivel).HasPrecision(18, 4);
+                entity.Property(l => l.QuantidadeBloqueada).HasPrecision(18, 4);
+                entity.Property(l => l.QuantidadeConsumida).HasPrecision(18, 4);
+                entity.HasOne<Produto>().WithMany().HasForeignKey(l => l.ProdutoId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(l => new { l.TenantId, l.ProdutoId, l.CodigoLote });
+                entity.HasIndex(l => new { l.TenantId, l.Status });
+                entity.HasIndex(l => l.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<NumeroSerial>(entity =>
+            {
+                entity.HasKey(s => s.Id);
+                entity.Property(s => s.Numero).HasMaxLength(120);
+                entity.HasOne<Produto>().WithMany().HasForeignKey(s => s.ProdutoId).OnDelete(DeleteBehavior.Restrict);
+                // RLT-005: unicidade do serial no escopo produto/tenant.
+                entity.HasIndex(s => new { s.TenantId, s.ProdutoId, s.Numero }).IsUnique();
+                entity.HasIndex(s => new { s.TenantId, s.Status });
+                entity.HasIndex(s => s.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<BloqueioLote>(entity =>
+            {
+                entity.HasKey(b => b.Id);
+                entity.Property(b => b.Motivo).HasMaxLength(1000);
+                entity.Property(b => b.MotivoDesbloqueio).HasMaxLength(1000);
+                entity.HasIndex(b => new { b.TenantId, b.LoteId });
+                entity.HasIndex(b => b.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<RecallLote>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.CodigoRecall).HasMaxLength(60);
+                entity.Property(r => r.Motivo).HasMaxLength(1000);
+                entity.HasIndex(r => new { r.TenantId, r.LoteId });
+                entity.HasIndex(r => new { r.TenantId, r.Status });
+                entity.HasIndex(r => r.SyncId).IsUnique();
             });
 
             // ============================ COMPRAS ============================

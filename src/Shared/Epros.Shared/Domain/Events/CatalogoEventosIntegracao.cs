@@ -103,6 +103,13 @@ namespace Epros.Shared.Domain.Events
             public const string InventarioDivergenciaCalculada = "estoque.inv.divergencia_calculada";
             public const string InventarioAprovado = "estoque.inv.inventario_aprovado";
             public const string InventarioAjusteGerado = "estoque.inv.ajuste_gerado";
+            // Rastreabilidade de Lote e Serialização (EST-RLT).
+            public const string LoteCriado = "estoque.rlt.lote_criado";
+            public const string LoteBloqueado = "estoque.rlt.lote_bloqueado";
+            public const string LoteDesbloqueado = "estoque.rlt.lote_desbloqueado";
+            public const string SerialRegistrado = "estoque.rlt.serial_registrado";
+            public const string RecallAberto = "estoque.rlt.recall_aberto";
+            public const string RecallEncerrado = "estoque.rlt.recall_encerrado";
         }
 
         /// <summary>Operações (produção/manutenção/qualidade/RH/GRC).</summary>
@@ -136,6 +143,8 @@ namespace Epros.Shared.Domain.Events
             Estoque.GccConsumoRegistrado, Estoque.SubEnvioRegistrado, Estoque.SubRetornoRegistrado,
             Estoque.InventarioCriado, Estoque.InventarioItemContado, Estoque.InventarioDivergenciaCalculada,
             Estoque.InventarioAprovado, Estoque.InventarioAjusteGerado,
+            Estoque.LoteCriado, Estoque.LoteBloqueado, Estoque.LoteDesbloqueado,
+            Estoque.SerialRegistrado, Estoque.RecallAberto, Estoque.RecallEncerrado,
             Operacoes.OrdemProducaoEncerrada, Operacoes.OrdemManutencaoConcluida, Operacoes.InspecaoReprovada,
             Operacoes.FolhaProcessada, Operacoes.DenunciaProcedente
         }, System.StringComparer.Ordinal);
