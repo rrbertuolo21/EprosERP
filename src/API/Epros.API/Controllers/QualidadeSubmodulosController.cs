@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using Epros.API.Security;
 using Epros.Modules.Qualidade.Application.Commands;
+using Epros.Modules.Qualidade.Application.Commands.Acr;
 using Epros.Modules.Qualidade.Application.Commands.Ins;
 using Epros.Modules.Qualidade.Application.Queries;
 using Epros.Modules.Qualidade.Application.Queries.Ins;
@@ -158,6 +159,48 @@ namespace Epros.API.Controllers
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<CommandResult>> Criar([FromBody] CriarAnaliseAcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("itens")]
+        [AbacAuthorize("QualidadeAceitacaoRejeicao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AdicionarItem([FromBody] AdicionarItemAcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("submeter")]
+        [AbacAuthorize("QualidadeAceitacaoRejeicao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Submeter([FromBody] SubmeterAcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        // Decisao de disposicao (aceite/rejeicao/quarentena) — emite intencao ao Estoque/NCR via Outbox.
+        [HttpPost("decidir")]
+        [AbacAuthorize("QualidadeAceitacaoRejeicao", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Decidir([FromBody] DecidirAnaliseAcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        // Decisao automatica por amostragem AQL (motor decide aceitar/rejeitar).
+        [HttpPost("avaliar-amostragem")]
+        [AbacAuthorize("QualidadeAceitacaoRejeicao", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AvaliarAmostragem([FromBody] AvaliarAcrPorAmostragemCommand command)
         {
             var result = await _mediator.Send(command);
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);

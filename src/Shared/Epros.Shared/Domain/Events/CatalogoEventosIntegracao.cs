@@ -146,6 +146,27 @@ namespace Epros.Shared.Domain.Events
             public const string PfoDocumentoEnviado = "est.pfo.documento_enviado";
         }
 
+        /// <summary>Qualidade (QLD-*): INS, ACR, NCR. Decide e SOLICITA o efeito ao dono (Estoque/NCR) — nunca movimenta saldo.</summary>
+        public static class Qualidade
+        {
+            /// <summary>ACR decidiu rejeitar: solicita bloqueio do lote ao Estoque.</summary>
+            public const string AcrLoteBloqueado = "qld.acr.lote_bloqueado";
+            /// <summary>ACR aceitou: solicita liberação do lote ao Estoque.</summary>
+            public const string AcrLoteLiberado = "qld.acr.lote_liberado";
+            /// <summary>ACR colocou em quarentena: solicita quarentena do lote ao Estoque.</summary>
+            public const string AcrLoteQuarentena = "qld.acr.lote_quarentena";
+            /// <summary>ACR sugere abertura de NCR por gatilho (severidade/recorrência) — D13, default seguro (sugere, não cria à revelia).</summary>
+            public const string AcrNcrSolicitada = "qld.acr.ncr_solicitada";
+            /// <summary>ACR sinaliza intenção de devolução fiscal ao módulo Fiscal — ⚠️ valida-contador (D15).</summary>
+            public const string AcrDevolucaoSolicitada = "qld.acr.devolucao_solicitada";
+            /// <summary>INS concluiu execução com resultado técnico (alimenta ACR).</summary>
+            public const string InsInspecaoConcluida = "qld.ins.inspecao_concluida";
+            /// <summary>NCR aberta.</summary>
+            public const string NcrAberta = "qld.ncr.aberta";
+            /// <summary>NCR encerrada.</summary>
+            public const string NcrEncerrada = "qld.ncr.encerrada";
+        }
+
         /// <summary>Operações (produção/manutenção/qualidade/RH/GRC).</summary>
         public static class Operacoes
         {
@@ -187,7 +208,10 @@ namespace Epros.Shared.Domain.Events
             Estoque.PfoConviteEnviado, Estoque.PfoAcessoAtivado, Estoque.PfoCotacaoRespondida,
             Estoque.PfoPreAvisoEnviado, Estoque.PfoDocumentoEnviado,
             Operacoes.OrdemProducaoEncerrada, Operacoes.OrdemManutencaoConcluida, Operacoes.InspecaoReprovada,
-            Operacoes.FolhaProcessada, Operacoes.DenunciaProcedente
+            Operacoes.FolhaProcessada, Operacoes.DenunciaProcedente,
+            Qualidade.AcrLoteBloqueado, Qualidade.AcrLoteLiberado, Qualidade.AcrLoteQuarentena,
+            Qualidade.AcrNcrSolicitada, Qualidade.AcrDevolucaoSolicitada, Qualidade.InsInspecaoConcluida,
+            Qualidade.NcrAberta, Qualidade.NcrEncerrada
         }, System.StringComparer.Ordinal);
 
         /// <summary>Todos os tipos de evento homologados no catálogo.</summary>
