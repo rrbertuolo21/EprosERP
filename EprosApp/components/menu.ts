@@ -68,7 +68,15 @@ export const erpMenu: MenuGroup[] = [
     icon: 'package',
     itens: [
       { label: 'Produtos', to: '/erp/estoque/produtos' },
-      { label: 'Movimento Manual', to: '/erp/estoque/movimento-manual' }
+      { label: 'Saldo', to: '/erp/estoque/saldo' },
+      { label: 'Movimento Manual', to: '/erp/estoque/movimento-manual' },
+      { label: 'Transferências', to: '/erp/estoque/transferencias' },
+      { label: 'Ajustes e Avarias', to: '/erp/estoque/ajustes' },
+      { label: 'Inventários', to: '/erp/estoque/inventarios' },
+      { label: 'Rastreabilidade', to: '/erp/estoque/rastreabilidade' },
+      { label: 'WMS — Armazéns', to: '/erp/estoque/wms' },
+      { label: 'Análise & Planejamento', to: '/erp/estoque/analise' },
+      { label: 'Portal do Fornecedor', to: '/erp/estoque/portal-fornecedor' }
     ]
   },
   {
