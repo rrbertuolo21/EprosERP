@@ -121,3 +121,29 @@ ABAC por plano; validação fiscal humana; CI com serviço PostgreSQL. Detalhe e
 - **Mercado Pago:** cadastrar o access token (sandbox/produção) em **Operação → Integrações / Gateways**,
   testar conexão e então "Gerar Pix" na fatura emite QR real.
 - **Deploy:** `.env.production` com `POSTGRES_PASSWORD`, `COFRE_KEK_LOCAL`, `MINIO_*`, `DOMAIN_*`.
+
+## 8. Módulo COMPRAS — construção (2026-08)
+
+Construído/aprofundado sobre os clusters reais do módulo Estoque (schema `estoque`, código-é-verdade),
+honrando COMPRAS logicamente (rotas/namespaces `compras-*`). Base: `especificacoes/COMPRAS/` (CD1–CD7).
+Sequência de commits (branch `pente-fino/aplicativo`):
+
+| Submódulo | Decisão | Entregue | Commit |
+|---|---|---|---|
+| Alçada + aprovação multinível | CD3 | (rodada anterior) escalonamento cumulativo | `6e363d3` |
+| DEVOLUCAO_DE_COMPRA | CD4 | submódulo próprio; saída via evento (motor D1) + estorno idempotente; CFOP parametrizado | `b2aa2ff` |
+| COMERCIO_EXTERIOR | CD1 | incoterm/moeda/câmbio na Compra; rateio landed parametrizável (default off); nacionalização | `d48fa77` |
+| SOURCING | CD2 | mapa comparativo multi-fornecedor + escolha do vencedor | `5524b30` |
+| CONTRATOS_GCC | CD5 | aditivo (preço/qtd/vigência/condições) + performance/aderência | `e392d83` |
+| SUBCONTRATACAO | — | cobrança de serviço (gera compra) + doc fiscal CFOP parametrizado | `2a8045d` |
+| TMS_TRANSPORTE | NF-04 | frete de entrada rateado no custo (motor D1) | `a125e92` |
+| COM-GC relatórios | CD7 | curva ABC fornecedor, savings cotação, lead time, aderência de alçada | `04238bf` |
+
+**Padrões seguidos:** DDD (invariantes na entidade), CQRS/MediatR, ABAC (`[AbacAuthorize]`, nega por
+padrão), efeitos por **Outbox** idempotente (eventos `com.*`/`est.*` no `CatalogoEventosIntegracao`),
+tenant+soft-delete pelo filtro global do `ContextBase`. Migrations: `AddComprasAlcadaAprovacao`,
+`AddDevolucaoCompra`, `AddComercioExteriorImportacao`, `AddCotacaoVencedorSourcing` (GCC/Sub/TMS/CD7 sem
+schema novo). **Suíte: 1127 testes verdes, build 0 erros.**
+
+**Fora de escopo por decisão:** COM-FCI (superado por COMEX+DEVOLUCAO — ver `DECISOES-PENDENTES-RAFAEL.md`).
+**Fiscais valida-contador** e **refactor TEC-05 (extrair `Epros.Modules.Compras`)**: ver `DECISOES-PENDENTES-RAFAEL.md`.
