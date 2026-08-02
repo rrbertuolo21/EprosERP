@@ -56,6 +56,9 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
         public DbSet<BloqueioLote> BloqueiosLote => Set<BloqueioLote>();
         public DbSet<RecallLote> RecallsLote => Set<RecallLote>();
 
+        // Análise e Planejamento de Estoque (EST-APE) — EF §16
+        public DbSet<AlertaEstoque> AlertasEstoque => Set<AlertaEstoque>();
+
         // Compras
         public DbSet<Compra> Compras => Set<Compra>();
         public DbSet<CompraItem> CompraItens => Set<CompraItem>();
@@ -688,6 +691,19 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
                 entity.HasIndex(r => new { r.TenantId, r.LoteId });
                 entity.HasIndex(r => new { r.TenantId, r.Status });
                 entity.HasIndex(r => r.SyncId).IsUnique();
+            });
+
+            // ============ ANÁLISE E PLANEJAMENTO DE ESTOQUE (EST-APE) — EF §16 ============
+
+            modelBuilder.Entity<AlertaEstoque>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                entity.Property(a => a.QuantidadeReferencia).HasPrecision(18, 4);
+                entity.Property(a => a.QuantidadeAtual).HasPrecision(18, 4);
+                entity.Property(a => a.ResolvidoPor).HasMaxLength(200);
+                entity.HasIndex(a => new { a.TenantId, a.StatusAlerta });
+                entity.HasIndex(a => new { a.TenantId, a.PosicaoEstoqueId, a.TipoAlerta });
+                entity.HasIndex(a => a.SyncId).IsUnique();
             });
 
             // ============================ COMPRAS ============================

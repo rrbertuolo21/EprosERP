@@ -110,6 +110,10 @@ namespace Epros.Shared.Domain.Events
             public const string SerialRegistrado = "estoque.rlt.serial_registrado";
             public const string RecallAberto = "estoque.rlt.recall_aberto";
             public const string RecallEncerrado = "estoque.rlt.recall_encerrado";
+            // Análise e Planejamento de Estoque (EST-APE).
+            public const string AnaliseParametrosAlterados = "estoque.analise.parametros_alterados";
+            public const string AnaliseAlertaReposicao = "estoque.analise.alerta_reposicao";
+            public const string AnaliseExcessoMaximo = "estoque.analise.excesso_maximo";
         }
 
         /// <summary>Operações (produção/manutenção/qualidade/RH/GRC).</summary>
@@ -145,6 +149,7 @@ namespace Epros.Shared.Domain.Events
             Estoque.InventarioAprovado, Estoque.InventarioAjusteGerado,
             Estoque.LoteCriado, Estoque.LoteBloqueado, Estoque.LoteDesbloqueado,
             Estoque.SerialRegistrado, Estoque.RecallAberto, Estoque.RecallEncerrado,
+            Estoque.AnaliseParametrosAlterados, Estoque.AnaliseAlertaReposicao, Estoque.AnaliseExcessoMaximo,
             Operacoes.OrdemProducaoEncerrada, Operacoes.OrdemManutencaoConcluida, Operacoes.InspecaoReprovada,
             Operacoes.FolhaProcessada, Operacoes.DenunciaProcedente
         }, System.StringComparer.Ordinal);
