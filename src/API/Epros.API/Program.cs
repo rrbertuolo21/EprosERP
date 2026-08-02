@@ -93,6 +93,11 @@ try
     });
     builder.Services.AddHttpContextAccessor();
 
+    // Host-guard do Landlord (1.04): hostnames do painel Siser vs cliente. Seção "Hosts".
+    // Vazio => guard inativo (fail-safe dev/test). Em produção Hosts:Landlord DEVE ser configurado.
+    builder.Services.Configure<Epros.API.Middlewares.HostGuardOptions>(
+        builder.Configuration.GetSection(Epros.API.Middlewares.HostGuardOptions.SecaoConfig));
+
     // Registra os provedores de contexto de Tenant e Usuário
     builder.Services.AddScoped<ITenantProvider, TenantProvider>();
     builder.Services.AddScoped<ICurrentUser, CurrentUser>();
@@ -708,13 +713,17 @@ try
     }
 
     // ORDEM OBRIGATÓRIA DO PIPELINE HTTP:
-    // UseAuthentication -> ExcecaoGlobalMiddleware -> InquilinoSaaSMiddleware -> ModuloTenantMiddleware -> DataMaskingMiddleware -> AuditMiddleware -> Controllers
+    // UseAuthentication -> ExcecaoGlobalMiddleware -> HostGuardMiddleware -> InquilinoSaaSMiddleware -> ModuloTenantMiddleware -> DataMaskingMiddleware -> AuditMiddleware -> Controllers
 
     app.UseCors(app.Environment.IsDevelopment() ? "DevCorsPolicy" : "ProdCorsPolicy");
     app.UseAuthentication();
     app.UseAuthorization();
 
     app.UseMiddleware<ExcecaoGlobalMiddleware>();
+    // Host-guard do Landlord (defesa em profundidade sobre o gate 1.11): rotas do painel Siser só
+    // respondem no host do Landlord; num host de cliente devolvem 404. Fail-safe se Hosts:Landlord
+    // não estiver configurado (dev/test). DEPOIS do roteamento, ANTES dos controllers.
+    app.UseMiddleware<HostGuardMiddleware>();
     app.UseMiddleware<ApiKeyMiddleware>();
     app.UseMiddleware<InquilinoSaaSMiddleware>();
     app.UseMiddleware<BloqueioInadimplenciaMiddleware>();

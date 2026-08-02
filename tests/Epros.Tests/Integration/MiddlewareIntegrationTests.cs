@@ -24,6 +24,9 @@ using Xunit;
 
 namespace Epros.Tests.Integration
 {
+    // Serializada com os demais testes de WebApplicationFactory<Program> (ver IntegrationWebAppCollection):
+    // construir factories de Program em paralelo dispara ObjectDisposedException no HostFactoryResolver.
+    [Collection(IntegrationWebAppCollection.Nome)]
     public class MiddlewareIntegrationTests
     {
         [Fact]
