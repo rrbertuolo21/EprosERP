@@ -38,6 +38,7 @@ using Epros.Modules.GRC.Infrastructure.Data;
 using Epros.Modules.GRC.Infrastructure.Jobs;
 using Epros.Modules.ESG.Infrastructure.Data;
 using Epros.Modules.Imobiliaria.Infrastructure.Data;
+using Epros.Modules.Agricultor.Infrastructure.Data;
 using Epros.Modules.DMS.Infrastructure.Data;
 
 // Inicializa o logger Serilog antes do bootstrap da aplicação
@@ -255,6 +256,16 @@ try
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
                .AddInterceptors(serviceProvider.GetRequiredService<TenantRlsInterceptor>())
                .ReplaceService<IMigrationsSqlGenerator, EprosMigrationsSqlGenerator>());
+
+    // Registra o DbContext do módulo Agricultor (Painel do Produtor + LCDPR; PostgreSQL e RLS)
+    builder.Services.AddDbContext<ContextAgricultor>((serviceProvider, options) =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+               .AddInterceptors(serviceProvider.GetRequiredService<TenantRlsInterceptor>())
+               .ReplaceService<IMigrationsSqlGenerator, EprosMigrationsSqlGenerator>());
+
+    // Serviços de domínio do LCDPR (gerador do arquivo + validador próprio; sem estado — AGR-D13/D20).
+    builder.Services.AddSingleton<Epros.Modules.Agricultor.Domain.Services.GeradorArquivoLcdprService>();
+    builder.Services.AddSingleton<Epros.Modules.Agricultor.Domain.Services.ValidadorLcdprService>();
 
     // Registra serviços do módulo Fiscal
     // Motor de CÁLCULO fiscal (envelopa Epros.ERP.DfeCalculos)
@@ -576,6 +587,7 @@ try
             sp.GetRequiredService<ContextESG>(),
             sp.GetRequiredService<ContextDMS>(),
             sp.GetRequiredService<ContextImobiliaria>(),
+            sp.GetRequiredService<ContextAgricultor>(),
         };
         Epros.Infrastructure.Data.GuardaEntidadeOrfa.ValidarModelos(contextosParaValidar);
     }
@@ -657,6 +669,10 @@ try
                 Log.Information("Aplicando migrations pendentes para ContextImobiliaria...");
                 var dbImobiliaria = services.GetRequiredService<ContextImobiliaria>();
                 dbImobiliaria.Database.Migrate();
+
+                Log.Information("Aplicando migrations pendentes para ContextAgricultor...");
+                var dbAgricultor = services.GetRequiredService<ContextAgricultor>();
+                dbAgricultor.Database.Migrate();
 
                 Log.Information("Todas as migrations de módulos foram aplicadas com sucesso no PostgreSQL!");
 
