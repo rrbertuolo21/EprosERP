@@ -198,6 +198,23 @@ namespace Epros.Shared.Domain.Events
             public const string GarantiaRegistrada = "imo.garantia.registrada";
         }
 
+        /// <summary>
+        /// Projetos (PRJ-*) — catálogo PRJ-EVT-* (DECISOES_IMPLANTACAO_V1 · seção 3, DP-*-eventos).
+        /// Portfólio→Definição, Rastreamento/Recursos→Faturamento, Faturamento→Financeiro, Encerramento→Portfólio.
+        /// O evento financeiro legado (<see cref="Vendas.ProjetoFaturado"/>) permanece para compat. do consumidor Financeiro.
+        /// </summary>
+        public static class Projetos
+        {
+            /// <summary>Portfólio aprovou um item candidato: vira projeto (Portfólio→Definição).</summary>
+            public const string ItemPortfolioAprovado = "prj.portfolio.item_aprovado";
+            /// <summary>Baseline de orçamento congelada (snapshot imutável, DP-ORC-002).</summary>
+            public const string OrcamentoBaselineCongelada = "prj.orcamento.baseline_congelada";
+            /// <summary>Faturamento de projeto aprovado (evento faturável → Financeiro/Contas a Receber, DP-FAT-007).</summary>
+            public const string FaturamentoAprovado = "prj.faturamento.aprovado";
+            /// <summary>Encerramento de projeto aprovado (Encerramento→Portfólio: baixa do item).</summary>
+            public const string ProjetoEncerrado = "prj.encerramento.aprovado";
+        }
+
         /// <summary>Operações (produção/manutenção/qualidade/RH/GRC).</summary>
         public static class Operacoes
         {
@@ -240,6 +257,8 @@ namespace Epros.Shared.Domain.Events
             Estoque.PfoPreAvisoEnviado, Estoque.PfoDocumentoEnviado,
             Operacoes.OrdemProducaoEncerrada, Operacoes.OrdemManutencaoConcluida, Operacoes.InspecaoReprovada,
             Operacoes.FolhaProcessada, Operacoes.DenunciaProcedente,
+            Projetos.ItemPortfolioAprovado, Projetos.OrcamentoBaselineCongelada,
+            Projetos.FaturamentoAprovado, Projetos.ProjetoEncerrado,
             Qualidade.AcrLoteBloqueado, Qualidade.AcrLoteLiberado, Qualidade.AcrLoteQuarentena,
             Qualidade.AcrNcrSolicitada, Qualidade.AcrDevolucaoSolicitada, Qualidade.InsInspecaoConcluida,
             Qualidade.NcrAberta, Qualidade.NcrEncerrada,

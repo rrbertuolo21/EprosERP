@@ -75,6 +75,39 @@ namespace Epros.API.Controllers
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
 
+        /// <summary>DP-ORC-002: congela uma baseline imutável (budget + marcos) do orçamento aprovado.</summary>
+        [HttpPost("{id:guid}/baseline")]
+        [AbacAuthorize("ProjetosOrcamento", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> CongelarBaseline(Guid id, [FromBody] CongelarBaselineRequest? request)
+        {
+            var result = await _mediator.Send(new CongelarBaselineOrcamentoCommand(id, request?.Motivo));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        public record CongelarBaselineRequest(string? Motivo);
+
+        [HttpGet("{id:guid}/baselines")]
+        [AbacAuthorize("ProjetosOrcamento", "Ler")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ListarBaselines(Guid id)
+        {
+            var result = await _mediator.Send(new ObterBaselinesOrcamentoQuery(id));
+            return Ok(result);
+        }
+
+        /// <summary>DP-ORC-004/005: EVM do orçamento (PV/EV/AC → CPI/SPI/EAC...). // valida-contador (método de EV).</summary>
+        [HttpGet("{id:guid}/evm")]
+        [AbacAuthorize("ProjetosOrcamento", "Ler")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<CommandResult>> ObterEvm(Guid id, [FromQuery] decimal actualCost, [FromQuery] decimal? percentualPlanejado, [FromQuery] decimal? percentualConcluido)
+        {
+            var result = await _mediator.Send(new ObterEvmOrcamentoQuery(id, actualCost, percentualPlanejado, percentualConcluido));
+            return result.Sucesso ? Ok(result) : NotFound(result);
+        }
+
         [HttpGet("projeto/{projetoId:guid}")]
         [AbacAuthorize("ProjetosOrcamento", "Ler")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]

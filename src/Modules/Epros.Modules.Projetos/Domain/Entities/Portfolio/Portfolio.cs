@@ -224,6 +224,23 @@ namespace Epros.Modules.Projetos.Domain.Entities.Portfolio
             MarcarAlterado(usuario);
         }
 
+        /// <summary>
+        /// DP-PRT-score — recalcula o Score de cada item ativo por média ponderada e consolida o
+        /// ScoreTotal do portfólio (soma dos scores dos itens ativos). Base objetiva do ranking, que
+        /// pode ser sobreposto manualmente (DP-PRT-010 / PriorizarManual). Pesos parametrizáveis.
+        /// </summary>
+        public void RecalcularScores(PesosPortfolio pesos, string usuario)
+        {
+            decimal total = 0m;
+            foreach (var item in Itens)
+            {
+                if (!item.Ativo) continue;
+                total += item.CalcularScore(pesos);
+            }
+            ScoreTotal = System.Math.Round(total, 4);
+            MarcarAlterado(usuario);
+        }
+
         /// <summary>PRJ-PRT-RN-016: ranking manual exige justificativa. Consolida score do portfolio.</summary>
         public void PriorizarManual(decimal? scoreTotal, string justificativa, Guid usuarioId, string usuario)
         {

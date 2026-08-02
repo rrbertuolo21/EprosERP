@@ -3,6 +3,7 @@ using System;
 using Epros.Modules.Projetos.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Epros.Modules.Projetos.Migrations
 {
     [DbContext(typeof(ContextProjetos))]
-    partial class ContextProjetosModelSnapshot : ModelSnapshot
+    [Migration("20260802121203_AddProjetosPpmGapsBackend")]
+    partial class AddProjetosPpmGapsBackend
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

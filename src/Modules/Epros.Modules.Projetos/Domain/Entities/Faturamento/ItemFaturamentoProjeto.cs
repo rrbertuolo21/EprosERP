@@ -20,6 +20,9 @@ namespace Epros.Modules.Projetos.Domain.Entities.Faturamento
         public decimal? ValorTotal { get; private set; }
         public string? OrigemTipo { get; private set; }
         public Guid? OrigemId { get; private set; }
+        /// <summary>DP-FAT-006: despesa reembolsável é um tipo de item próprio (OrigemTipo=despesa) com evidência/aprovação.
+        /// // valida-contador: markup e incidência fiscal sobre reembolso são decididos pelo contador.</summary>
+        public bool Reembolsavel { get; private set; }
 
         protected ItemFaturamentoProjeto() { } // EF Core
 
@@ -34,7 +37,8 @@ namespace Epros.Modules.Projetos.Domain.Entities.Faturamento
             string? origemTipo,
             Guid? origemId,
             string tenantId,
-            string criadoPor)
+            string criadoPor,
+            bool reembolsavel = false)
             : base(tenantId, criadoPor)
         {
             AddNotifications(new Contract<ItemFaturamentoProjeto>()
@@ -52,6 +56,7 @@ namespace Epros.Modules.Projetos.Domain.Entities.Faturamento
             ValorTotal = valorTotal ?? (quantidade.HasValue && valorUnitario.HasValue ? quantidade * valorUnitario : valorTotal);
             OrigemTipo = origemTipo;
             OrigemId = origemId;
+            Reembolsavel = reembolsavel;
         }
     }
 }
