@@ -161,6 +161,8 @@ namespace Epros.Shared.Domain.Events
             public const string AcrDevolucaoSolicitada = "qld.acr.devolucao_solicitada";
             /// <summary>INS concluiu execução com resultado técnico (alimenta ACR).</summary>
             public const string InsInspecaoConcluida = "qld.ins.inspecao_concluida";
+            /// <summary>INS reprovou a execução: sugere abertura de NCR por desvio (default seguro — sugere, não cria à revelia).</summary>
+            public const string InsNcrSolicitada = "qld.ins.ncr_solicitada";
             /// <summary>NCR aberta.</summary>
             public const string NcrAberta = "qld.ncr.aberta";
             /// <summary>NCR encerrada.</summary>
@@ -386,7 +388,7 @@ namespace Epros.Shared.Domain.Events
             Projetos.FaturamentoAprovado, Projetos.ProjetoEncerrado,
             Qualidade.AcrLoteBloqueado, Qualidade.AcrLoteLiberado, Qualidade.AcrLoteQuarentena,
             Qualidade.AcrNcrSolicitada, Qualidade.AcrDevolucaoSolicitada, Qualidade.InsInspecaoConcluida,
-            Qualidade.NcrAberta, Qualidade.NcrEncerrada,
+            Qualidade.InsNcrSolicitada, Qualidade.NcrAberta, Qualidade.NcrEncerrada,
             Qualidade.RstRecallAberto, Qualidade.RstRecallEncerrado, Qualidade.RstBloqueioSolicitado,
             Imobiliaria.ImovelDisponibilizado, Imobiliaria.ImovelInativado,
             Imobiliaria.LocacaoFormalizada, Imobiliaria.LocacaoEncerrada, Imobiliaria.LocacaoCancelada,

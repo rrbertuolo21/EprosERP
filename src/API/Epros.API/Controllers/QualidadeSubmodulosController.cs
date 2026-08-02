@@ -211,6 +211,28 @@ namespace Epros.API.Controllers
             var result = await _mediator.Send(command);
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
+
+        // Registra a medicao de uma caracteristica na execucao (secao 11.6).
+        [HttpPost("medicoes")]
+        [AbacAuthorize("QualidadePlanosInspecao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> RegistrarMedicao([FromBody] RegistrarMedicaoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        // Conclui a execucao: consolida o resultado e dispara ACR/NCR (secao 11.7).
+        [HttpPost("concluir")]
+        [AbacAuthorize("QualidadePlanosInspecao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Concluir([FromBody] ConcluirInspecaoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
     }
 
     // ============================================================

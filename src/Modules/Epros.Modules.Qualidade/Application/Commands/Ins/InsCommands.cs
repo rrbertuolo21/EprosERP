@@ -101,4 +101,54 @@ namespace Epros.Modules.Qualidade.Application.Commands.Ins
             RuleFor(c => c.QuantidadeLote).GreaterThan(0);
         }
     }
+
+    /// <summary>
+    /// Registra o valor observado (medicao) de uma caracteristica em uma execucao aberta/em coleta
+    /// (secao 11.6). Uma medicao NaoConforme conta como desvio na consolidacao da inspecao.
+    /// </summary>
+    public record RegistrarMedicaoCommand(
+        Guid ExecucaoId,
+        Guid CaracteristicaId,
+        EResultadoMedicao Resultado,
+        Guid MedidoPor,
+        Guid? AmostraId,
+        decimal? ValorDecimal,
+        string? ValorTexto,
+        bool? ValorBooleano,
+        string? Desvio,
+        string? Observacao
+    ) : ICommand;
+
+    public class RegistrarMedicaoCommandValidator : AbstractValidator<RegistrarMedicaoCommand>
+    {
+        public RegistrarMedicaoCommandValidator()
+        {
+            RuleFor(c => c.ExecucaoId).NotEmpty();
+            RuleFor(c => c.CaracteristicaId).NotEmpty();
+            RuleFor(c => c.MedidoPor).NotEmpty();
+        }
+    }
+
+    /// <summary>
+    /// Conclui a execucao (secao 11.7): consolida o resultado tecnico (Aprovado/Reprovado/…) a partir
+    /// das medicoes registradas e, conforme o resultado, dispara ACR (feed) e/ou NCR (rejeicao) via Outbox.
+    /// O criterio Ac/Re do plano de amostragem e norma (// valida (PDF ABNT NBR 5426)); a decisao final
+    /// pode ser informada explicitamente pelo inspetor ou derivada do total de desvios.
+    /// </summary>
+    public record ConcluirInspecaoCommand(
+        Guid ExecucaoId,
+        Guid ConcluidoPor,
+        EResultadoInspecaoConsolidado? Resultado,
+        string? CriterioAceiteAplicado,
+        string? Conclusao
+    ) : ICommand;
+
+    public class ConcluirInspecaoCommandValidator : AbstractValidator<ConcluirInspecaoCommand>
+    {
+        public ConcluirInspecaoCommandValidator()
+        {
+            RuleFor(c => c.ExecucaoId).NotEmpty();
+            RuleFor(c => c.ConcluidoPor).NotEmpty();
+        }
+    }
 }

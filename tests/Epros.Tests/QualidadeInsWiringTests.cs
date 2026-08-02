@@ -119,6 +119,100 @@ namespace Epros.Tests
             Assert.False(r.Sucesso);
         }
 
+        // Abre um plano ativo + execucao e devolve (planoId, caracteristicaId, execucaoId).
+        private static async Task<(Guid plano, Guid carac, Guid exec)> AbrirExecucao(string db, string codigo)
+        {
+            var planoId = await CriarPlano(db, codigo);
+            await AddCaracteristica(db, planoId);
+            using (var ctx = Novo(db))
+                await new AtivarPlanoInspecaoCommandHandler(ctx, User).Handle(
+                    new AtivarPlanoInspecaoCommand(planoId), CancellationToken.None);
+
+            Guid execId;
+            using (var ctx = Novo(db))
+            {
+                await new ExecutarInspecaoCommandHandler(ctx, Tenant, User, new MotorAql()).Handle(
+                    new ExecutarInspecaoCommand(planoId, EReferenciaExecucao.Recebimento, "NF-1", 100m, Guid.NewGuid(),
+                        "II", 1.0m, "Normal"), CancellationToken.None);
+                execId = (await ctx.ExecucoesInspecao.FirstAsync()).Id;
+            }
+            Guid caracId;
+            using (var ctx = Novo(db))
+                caracId = (await ctx.CaracteristicasPlano.FirstAsync(c => c.PlanoId == planoId)).Id;
+            return (planoId, caracId, execId);
+        }
+
+        [Fact]
+        public async Task Concluir_Com_Desvio_Reprova_E_Solicita_Ncr()
+        {
+            const string db = nameof(Concluir_Com_Desvio_Reprova_E_Solicita_Ncr);
+            var (_, carac, exec) = await AbrirExecucao(db, "PL-INS-4");
+
+            using (var ctx = Novo(db))
+            {
+                var m = await new RegistrarMedicaoCommandHandler(ctx, Tenant, User).Handle(
+                    new RegistrarMedicaoCommand(exec, carac, EResultadoMedicao.NaoConforme, Guid.NewGuid(),
+                        null, null, "trinca", null, "fora da spec", null), CancellationToken.None);
+                Assert.True(m.Sucesso);
+            }
+
+            using (var ctx = Novo(db))
+            {
+                var r = await new ConcluirInspecaoCommandHandler(ctx, Tenant, User).Handle(
+                    new ConcluirInspecaoCommand(exec, Guid.NewGuid(), null, null, "Reprovado por trinca"), CancellationToken.None);
+                Assert.True(r.Sucesso);
+            }
+
+            using (var ctx = Novo(db))
+            {
+                var res = await ctx.ResultadosInspecao.FirstAsync(r => r.ExecucaoId == exec);
+                Assert.Equal(EResultadoInspecaoConsolidado.Reprovado, res.Resultado);
+                Assert.Equal(1, res.TotalDesvios);
+                Assert.True(res.GerarNcr);
+                var e = await ctx.ExecucoesInspecao.FirstAsync(x => x.Id == exec);
+                Assert.Equal(EStatusExecucaoInspecao.Concluida, e.Status);
+                Assert.Contains(ctx.OutboxMessages, o => o.EventType == "qld.ins.ncr_solicitada");
+                Assert.Contains(ctx.OutboxMessages, o => o.EventType == "qld.ins.inspecao_concluida");
+            }
+        }
+
+        [Fact]
+        public async Task Concluir_Sem_Desvio_Aprova_Sem_Ncr()
+        {
+            const string db = nameof(Concluir_Sem_Desvio_Aprova_Sem_Ncr);
+            var (_, carac, exec) = await AbrirExecucao(db, "PL-INS-5");
+
+            using (var ctx = Novo(db))
+                await new RegistrarMedicaoCommandHandler(ctx, Tenant, User).Handle(
+                    new RegistrarMedicaoCommand(exec, carac, EResultadoMedicao.Conforme, Guid.NewGuid(),
+                        null, null, "ok", null, null, null), CancellationToken.None);
+
+            using (var ctx = Novo(db))
+            {
+                var r = await new ConcluirInspecaoCommandHandler(ctx, Tenant, User).Handle(
+                    new ConcluirInspecaoCommand(exec, Guid.NewGuid(), null, null, null), CancellationToken.None);
+                Assert.True(r.Sucesso);
+            }
+
+            using (var ctx = Novo(db))
+            {
+                var res = await ctx.ResultadosInspecao.FirstAsync(r => r.ExecucaoId == exec);
+                Assert.Equal(EResultadoInspecaoConsolidado.Aprovado, res.Resultado);
+                Assert.False(res.GerarNcr);
+                Assert.DoesNotContain(ctx.OutboxMessages, o => o.EventType == "qld.ins.ncr_solicitada");
+            }
+        }
+
+        [Fact]
+        public async Task Concluir_Execucao_Inexistente_Falha()
+        {
+            const string db = nameof(Concluir_Execucao_Inexistente_Falha);
+            using var ctx = Novo(db);
+            var r = await new ConcluirInspecaoCommandHandler(ctx, Tenant, User).Handle(
+                new ConcluirInspecaoCommand(Guid.NewGuid(), Guid.NewGuid(), null, null, null), CancellationToken.None);
+            Assert.False(r.Sucesso);
+        }
+
         [Fact]
         public async Task CalcularPlanoAmostragem_Query_Retorna_Sucesso()
         {
