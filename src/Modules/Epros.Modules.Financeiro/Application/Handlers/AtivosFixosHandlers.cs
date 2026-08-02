@@ -2,10 +2,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Epros.Modules.Financeiro.Application.Commands;
+using Epros.Modules.Financeiro.Application.Services;
 using Epros.Modules.Financeiro.Domain.Entities;
 using Epros.Modules.Financeiro.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
+using Epros.Shared.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -108,6 +110,13 @@ namespace Epros.Modules.Financeiro.Application.Handlers
             var mov = new MovimentacaoAtivo(ativo.Id, Domain.Enums.ETipoMovimentacaoAtivo.Baixa, request.DataBaixa,
                 request.ValorBaixa, request.Observacao, null, _tenant.GetTenantId(), userId);
             _context.MovimentacoesAtivo.Add(mov);
+
+            // Wiring evento→ledger (TEC-8): baixa de ativo gera lançamento automático (de-para = valida-contador).
+            await ContabilizacaoEventoService.GerarLancamentoAsync(
+                _context, _tenant.GetTenantId(), userId,
+                CatalogoEventosIntegracao.Financeiro.AtivoBaixado, ativo.Id, request.ValorBaixa ?? 0m,
+                $"Baixa do ativo fixo {ativo.Id}", ct);
+
             await _context.SaveChangesAsync(ct);
             return CommandResult.Ok("Ativo fixo baixado.", new { ativo.Id });
         }
@@ -140,6 +149,14 @@ namespace Epros.Modules.Financeiro.Application.Handlers
             ativo.AplicarDepreciacao(valor, System.DateTime.UtcNow, userId);
             if (!ativo.IsValid) return CommandResult.Falha(ativo.Notifications.Select(n => n.Message));
             _context.DepreciacoesMensais.Add(dep);
+
+            // Wiring evento→ledger (TEC-8): despesa de depreciação × depreciação acumulada
+            // (de-para = valida-contador). Idempotente por (evento + id da depreciação da competência).
+            await ContabilizacaoEventoService.GerarLancamentoAsync(
+                _context, tenantId, userId,
+                CatalogoEventosIntegracao.Financeiro.DepreciacaoRegistrada, dep.Id, valor,
+                $"Depreciação {request.Competencia} do ativo {request.AtivoId}", ct);
+
             await _context.SaveChangesAsync(ct);
             return CommandResult.Ok("Depreciação mensal registrada.", new { dep.Id, ativo.ValorAtualizado, ativo.Status });
         }

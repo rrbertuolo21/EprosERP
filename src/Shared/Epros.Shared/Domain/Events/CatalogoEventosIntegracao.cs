@@ -229,6 +229,20 @@ namespace Epros.Shared.Domain.Events
             public const string RemessaCnabGerada = "fin.cobranca.remessa_gerada";
             /// <summary>Webhook de pagamento processado (baixa de fatura por nosso número via gateway — assinatura + idempotência).</summary>
             public const string WebhookPagamentoProcessado = "fin.cobranca.webhook_processado";
+
+            // ----- Chaves de TIPO DE EVENTO do de-para RegraContabilizacao (motor evento→ledger, TEC-8) -----
+            // A conta débito×crédito de cada uma é parametrização do contador (// valida-contador); sem
+            // de-para configurado o motor cai na conta transitória em Rascunho.
+            /// <summary>Depreciação mensal registrada de um ativo (contabilização automática).</summary>
+            public const string DepreciacaoRegistrada = "fin.ativos.depreciacao";
+            /// <summary>Baixa de ativo fixo (contabilização automática — resíduo/resultado na baixa).</summary>
+            public const string AtivoBaixado = "fin.ativos.baixa";
+            /// <summary>Variação cambial reconhecida numa reavaliação de títulos (contabilização automática).</summary>
+            public const string VariacaoCambialContabilizada = "fin.cambio.variacao";
+            /// <summary>Estorno contábil do cancelamento de uma compra.</summary>
+            public const string CompraCanceladaEstorno = "fin.contabilizacao.compra_cancelada_estorno";
+            /// <summary>Estorno contábil do cancelamento de uma venda.</summary>
+            public const string VendaCanceladaEstorno = "fin.contabilizacao.venda_cancelada_estorno";
         }
 
         /// <summary>
