@@ -84,6 +84,57 @@ namespace Epros.Tests
         }
 
         [Fact]
+        public async Task Deve_Desligar_E_Apurar_Rescisao_Pelo_Motor()
+        {
+            var options = new DbContextOptionsBuilder<ContextRH>()
+                .UseInMemoryDatabase("db_rh_rescisao_motor")
+                .Options;
+
+            var tenantProvider = new TestTenantProvider("tenant-1");
+            var currentUser = new TestCurrentUser("user-1");
+            using var context = new ContextRH(options, tenantProvider, currentUser);
+
+            var admissao = new DateTime(2024, 1, 10);
+            var colaborador = new Colaborador("Ana Souza", "22233344455", "ana@epros.com.br", "Analista", "TI", 3000m, admissao, "tenant-1", "user-1");
+            context.Colaboradores.Add(colaborador);
+            await context.SaveChangesAsync();
+
+            var handler = new DesligarColaboradorCommandHandler(context, currentUser);
+            var demissao = new DateTime(2026, 6, 20);
+            var command = new DesligarColaboradorCommand(
+                colaborador.Id,
+                demissao,
+                TipoDesligamento: Epros.Modules.RH.Domain.Folha.Calculo.TipoDesligamento.SemJustaCausaEmpregador,
+                SaldoFgtsDepositado: 5000m,
+                TemFeriasVencidas: false);
+
+            var result = await handler.Handle(command, CancellationToken.None);
+
+            Assert.True(result.Sucesso);
+
+            // Colaborador desligado.
+            var atualizado = await context.Colaboradores.FindAsync(colaborador.Id);
+            Assert.Equal("Desligado", atualizado!.Status);
+
+            // Rescisão persistida pelo motor (multa 40% do FGTS = 2000; aviso proporcional > 30 dias).
+            var rescisoes = await context.FolRescisaos.ToListAsync();
+            Assert.Single(rescisoes);
+            Assert.Equal(colaborador.Id, rescisoes[0].ColaboradorId);
+            Assert.Equal(2000m, rescisoes[0].FgtsValorRescisao);
+            Assert.True(rescisoes[0].DiasAvisoPrevio >= 30);
+
+            // Confere contra o motor diretamente (verbas por tipo).
+            var esperado = Epros.Modules.RH.Domain.Folha.Calculo.MotorRescisao.Calcular(
+                new Epros.Modules.RH.Domain.Folha.Calculo.EntradaRescisao(
+                    Epros.Modules.RH.Domain.Folha.Calculo.TipoDesligamento.SemJustaCausaEmpregador,
+                    3000m, admissao, demissao, demissao.Day, SaldoFgtsDepositado: 5000m),
+                Epros.Modules.RH.Domain.Folha.Calculo.TabelasFolha.Vigente(2026));
+            Assert.Equal(esperado.DiasAvisoPrevio, rescisoes[0].DiasAvisoPrevio);
+            Assert.Equal(esperado.MultaFgts, rescisoes[0].FgtsValorRescisao);
+            Assert.True(esperado.TemDireitoSeguroDesemprego);
+        }
+
+        [Fact]
         public async Task Deve_Registrar_Timesheet_E_Falhar_Se_Desligado()
         {
             // Organizar
