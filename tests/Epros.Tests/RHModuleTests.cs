@@ -154,14 +154,35 @@ namespace Epros.Tests
             Assert.Single(folhas);
             Assert.Equal(6, folhas[0].MesCompetencia);
             Assert.Equal(2026, folhas[0].AnoCompetencia);
-            // Líquido = 5000 (base) + 500 (bônus) - 200 (VR) = 5300
-            Assert.Equal(5300m, folhas[0].SalarioLiquido);
-            Assert.Equal(2, folhas[0].Verbas.Count);
+
+            // O líquido agora vem do MOTOR LEGAL (INSS/IRRF descontados), não mais de bruto − verbas.
+            // Bruto = 5000 (base) + 500 (bônus) = 5500; descontos = INSS + IRRF + VR (200).
+            var esperado = Epros.Modules.RH.Domain.Folha.Calculo.MotorFolhaMensal.Calcular(
+                new Epros.Modules.RH.Domain.Folha.Calculo.EntradaFolhaMensal(
+                    5000m,
+                    ProventosAdicionais: new List<Epros.Modules.RH.Domain.Folha.Calculo.ItemProvento>
+                    {
+                        new("P001", "Bônus", 500m)
+                    },
+                    DescontosDiversos: new List<Epros.Modules.RH.Domain.Folha.Calculo.ItemDesconto>
+                    {
+                        new("D001", "Vale Refeição", 200m)
+                    }),
+                Epros.Modules.RH.Domain.Folha.Calculo.TabelasFolha.Vigente(2026));
+
+            Assert.Equal(5500m, folhas[0].SalarioBruto);
+            Assert.Equal(esperado.Liquido, folhas[0].SalarioLiquido);
+            Assert.True(folhas[0].SalarioLiquido < 5300m, "O líquido do motor deve refletir INSS/IRRF, ficando abaixo do bruto − verbas manuais.");
+            // Rubricas persistidas: bônus, INSS, VR e o encargo FGTS (salário-base é o seed do bruto).
+            Assert.Contains(folhas[0].Verbas, v => v.Descricao == "Bônus" && v.Tipo == "Provento");
+            Assert.Contains(folhas[0].Verbas, v => v.Descricao == "INSS" && v.Tipo == "Desconto");
+            Assert.Contains(folhas[0].Verbas, v => v.Descricao == "Vale Refeição" && v.Tipo == "Desconto");
+            Assert.Contains(folhas[0].Verbas, v => v.Tipo == "Encargo");
 
             var outboxMsg = await context.OutboxMessages.FirstOrDefaultAsync();
             Assert.NotNull(outboxMsg);
             Assert.Equal("FolhaProcessada", outboxMsg!.EventType);
-            Assert.Contains("5300", outboxMsg.Payload);
+            Assert.Contains(esperado.Liquido.ToString(System.Globalization.CultureInfo.InvariantCulture), outboxMsg.Payload);
         }
 
         [Fact]

@@ -71,6 +71,8 @@ namespace Epros.Modules.RH.Domain.Entities
             {
                 Descontos += valor;
             }
+            // "Encargo" (ex.: FGTS do empregador) é registrado como rubrica mas NÃO entra no
+            // bruto nem nos descontos do empregado — não afeta o líquido.
 
             SalarioLiquido = SalarioBruto - Descontos;
         }
