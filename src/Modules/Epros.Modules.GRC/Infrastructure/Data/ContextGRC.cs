@@ -56,6 +56,10 @@ namespace Epros.Modules.GRC.Infrastructure.Data
         public DbSet<ExcecaoSoD> ExcecoesSoD => Set<ExcecaoSoD>();
         public DbSet<BypassSoD> BypassesSoD => Set<BypassSoD>();
 
+        // GRC — Taxonomia normativa unica (D-TEC-05)
+        public DbSet<TaxonomiaNormativa> TaxonomiasNormativas => Set<TaxonomiaNormativa>();
+        public DbSet<TaxonomiaVinculo> TaxonomiaVinculos => Set<TaxonomiaVinculo>();
+
         // GRC — Parametrizacao por tenant (D-TEC-04): os 5 grc_*_parametro que faltavam
         public DbSet<PoliticaParametro> PoliticaParametros => Set<PoliticaParametro>();
         public DbSet<ComplianceParametro> ComplianceParametros => Set<ComplianceParametro>();
@@ -320,6 +324,24 @@ namespace Epros.Modules.GRC.Infrastructure.Data
                 entity.ToTable("grc_sod_bypass_admin");
                 entity.HasIndex(b => new { b.TenantId, b.RegraId });
                 entity.HasIndex(b => b.AtorId);
+            });
+
+            // ===================== GRC — Taxonomia normativa unica (D-TEC-05) =====================
+            modelBuilder.Entity<TaxonomiaNormativa>(entity =>
+            {
+                entity.HasKey(t => t.Id);
+                entity.ToTable("grc_taxonomia_normativa");
+                entity.HasIndex(t => new { t.TenantId, t.Codigo }).IsUnique();
+                entity.HasIndex(t => new { t.TenantId, t.Tipo });
+                entity.HasIndex(t => t.CatalogoPaiId);
+            });
+
+            modelBuilder.Entity<TaxonomiaVinculo>(entity =>
+            {
+                entity.HasKey(v => v.Id);
+                entity.ToTable("grc_taxonomia_vinculo");
+                entity.HasIndex(v => new { v.OrigemTipo, v.OrigemId });
+                entity.HasIndex(v => new { v.DestinoTipo, v.DestinoId });
             });
 
             // ===================== GRC — Parametros por tenant (D-TEC-04) =====================

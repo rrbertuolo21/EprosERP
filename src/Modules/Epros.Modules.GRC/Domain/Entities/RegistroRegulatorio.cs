@@ -22,8 +22,17 @@ namespace Epros.Modules.GRC.Domain.Entities
         // Rascunho, EmAnalise, Ativo, Suspenso, Encerrado, Inativo
         public string Status { get; private set; } = "Rascunho";
         public string? MotivoUltimaTransicao { get; private set; }
+        // D-TEC-05 — FK opcional para o catálogo normativo único (nunca duplicar catálogo).
+        public Guid? TaxonomiaNormativaId { get; private set; }
 
         protected RegistroRegulatorio() { } // EF Core
+
+        /// <summary>D-TEC-05 — classifica a obrigação num nó da taxonomia normativa única.</summary>
+        public void Classificar(Guid taxonomiaNormativaId, string usuario)
+        {
+            TaxonomiaNormativaId = taxonomiaNormativaId;
+            MarcarAlterado(usuario);
+        }
 
         public RegistroRegulatorio(
             string codigo,
