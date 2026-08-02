@@ -144,21 +144,34 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
     /// <summary>Atualiza Configuracao Email.</summary>
     public class AtualizarConfiguracaoEmailCommandHandler : ICommandHandler<AtualizarConfiguracaoEmailCommand>
     {
+        // Máscara devolvida pela consulta (REG-069); ao recebê-la de volta, a senha NÃO mudou.
+        private const string MascaraSenha = "••••••••";
+
         private readonly ContextGestaoClientes _context;
         private readonly ITenantProvider _tenantProvider;
         private readonly ICurrentUser _currentUser;
+        private readonly ISegredoCofreService _cofreService;
 
-        public AtualizarConfiguracaoEmailCommandHandler(ContextGestaoClientes context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        public AtualizarConfiguracaoEmailCommandHandler(ContextGestaoClientes context, ITenantProvider tenantProvider, ICurrentUser currentUser, ISegredoCofreService cofreService)
         {
             _context = context;
             _tenantProvider = tenantProvider;
             _currentUser = currentUser;
+            _cofreService = cofreService;
         }
 
         public async Task<CommandResult> Handle(AtualizarConfiguracaoEmailCommand request, CancellationToken cancellationToken)
         {
             var tenantId = _tenantProvider.GetTenantId();
             var usuarioId = _currentUser.GetUserId() ?? "system";
+
+            // T-01 (hardening de segredos, P0): a senha SMTP nunca é persistida em claro. Se veio um valor
+            // novo (não vazio e diferente da máscara), cifra via cofre; senão passa null para o domínio
+            // preservar a senha atual (ConfiguracaoEmail.Atualizar) ou não gravar nada (criação).
+            var senhaAlterada = !string.IsNullOrEmpty(request.Password) && request.Password != MascaraSenha;
+            var senhaParaPersistir = senhaAlterada
+                ? await _cofreService.CriptografarAsync(request.Password!)
+                : null;
 
             var email = await _context.ConfiguracoesEmail.FirstOrDefaultAsync(e => e.TenantId == tenantId, cancellationToken);
             if (email == null)
@@ -167,7 +180,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                     request.Host,
                     request.Port,
                     request.Username,
-                    request.Password,
+                    senhaParaPersistir,
                     request.FromEmail,
                     tenantId,
                     usuarioId
@@ -187,7 +200,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 request.Host,
                 request.Port,
                 request.Username,
-                request.Password,
+                senhaParaPersistir,
                 request.FromEmail,
                 usuarioId
             );
