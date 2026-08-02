@@ -66,6 +66,14 @@ namespace Epros.Shared.Domain.Events
             public const string CompraFiscalLancada = "CompraFiscalLancada";
             public const string CompraEntradaPropriaLancada = "CompraEntradaPropriaLancada";
             public const string CompraEntradaFornecedorLancada = "CompraEntradaFornecedorLancada";
+            // Devolução de Compra (CD4 / EF DEVOLUCAO_DE_COMPRA). Confirmação publica saída de estoque
+            // (motor único D1) + estorno financeiro idempotente por compra (DEV-006). Cancelamento compensa.
+            public const string DevolucaoCompraConfirmada = "com.devolucao.confirmada";
+            /// <summary>Saída de estoque da devolução — consumida pelo motor único de saldo (D1). Sentido/CFOP = valida-contador (NF-06).</summary>
+            public const string DevolucaoCompraSaidaEstoque = "com.devolucao.saida_estoque";
+            /// <summary>Estorno/redução do passivo — fato gerador financeiro único, idempotente por devolução/compra (DEV-006).</summary>
+            public const string DevolucaoCompraEstornoFinanceiro = "com.devolucao.estorno_financeiro";
+            public const string DevolucaoCompraCancelada = "com.devolucao.cancelada";
         }
 
         /// <summary>Fiscal (documento eletrônico).</summary>
@@ -143,6 +151,8 @@ namespace Epros.Shared.Domain.Events
             Vendas.DemandaPlanejadaPublicada, Vendas.ProjetoFaturado,
             Compras.CompraLancada, Compras.CompraCancelada, Compras.CompraFiscalLancada,
             Compras.CompraEntradaPropriaLancada, Compras.CompraEntradaFornecedorLancada,
+            Compras.DevolucaoCompraConfirmada, Compras.DevolucaoCompraSaidaEstoque,
+            Compras.DevolucaoCompraEstornoFinanceiro, Compras.DevolucaoCompraCancelada,
             Fiscal.DocumentoFiscalAutorizado, Fiscal.DocumentoFiscalCancelado,
             Estoque.LdeEntradaCriada, Estoque.LdeEntradaConfirmada, Estoque.LdeEntradaCancelada,
             Estoque.LdeEntradaEstornada, Estoque.LdeDocumentoVinculado, Estoque.LdeLocalEntregaAlterado,

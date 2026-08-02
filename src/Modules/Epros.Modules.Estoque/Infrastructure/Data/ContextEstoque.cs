@@ -161,6 +161,10 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
         public DbSet<ComprasPedidoAprovacao> ComprasPedidosAprovacao => Set<ComprasPedidoAprovacao>();
         public DbSet<ComprasPedidoAprovacaoNivel> ComprasPedidosAprovacaoNiveis => Set<ComprasPedidoAprovacaoNivel>();
 
+        // Devolução de Compra (CD4 / EF DEVOLUCAO_DE_COMPRA — submódulo próprio de COMPRAS).
+        public DbSet<DevolucaoCompra> DevolucoesCompra => Set<DevolucaoCompra>();
+        public DbSet<DevolucaoCompraItem> DevolucaoCompraItens => Set<DevolucaoCompraItem>();
+
         // Lookup somente leitura (dono: módulo Fiscal, schema plataforma).
         public DbSet<ServicoLookup> ServicosLookup => Set<ServicoLookup>();
 
@@ -1944,6 +1948,38 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
                 entity.Property(n => n.Justificativa).HasMaxLength(2000);
                 entity.HasIndex(n => new { n.TenantId, n.PedidoAprovacaoId });
                 entity.HasIndex(n => n.SyncId).IsUnique();
+            });
+
+            // ============ DEVOLUÇÃO DE COMPRA (CD4 / EF DEVOLUCAO_DE_COMPRA §6) ============
+
+            modelBuilder.Entity<DevolucaoCompra>(entity =>
+            {
+                entity.ToTable("com_devolucao_compra");
+                entity.HasKey(d => d.Id);
+                entity.Property(d => d.Numero).HasMaxLength(60).IsRequired();
+                entity.Property(d => d.Motivo).HasMaxLength(1000);
+                entity.Property(d => d.Cfop).HasMaxLength(10);
+                entity.Property(d => d.Total).HasPrecision(18, 2);
+                entity.HasMany(d => d.Itens)
+                      .WithOne(i => i.Devolucao)
+                      .HasForeignKey(i => i.DevolucaoId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(d => new { d.TenantId, d.Status });
+                entity.HasIndex(d => new { d.TenantId, d.CompraOrigemId });
+                entity.HasIndex(d => new { d.TenantId, d.Numero }).IsUnique();
+                entity.HasIndex(d => d.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<DevolucaoCompraItem>(entity =>
+            {
+                entity.ToTable("com_devolucao_compra_item");
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.Quantidade).HasPrecision(18, 4);
+                entity.Property(i => i.ValorUnitario).HasPrecision(18, 4);
+                entity.Property(i => i.ValorTotal).HasPrecision(18, 2);
+                entity.HasIndex(i => new { i.TenantId, i.DevolucaoId });
+                entity.HasIndex(i => i.CompraItemOrigemId);
+                entity.HasIndex(i => i.SyncId).IsUnique();
             });
 
             base.OnModelCreating(modelBuilder);
