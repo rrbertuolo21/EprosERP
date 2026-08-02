@@ -3,6 +3,7 @@ using System;
 using Epros.Modules.Estoque.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Epros.Modules.Estoque.Migrations
 {
     [DbContext(typeof(ContextEstoque))]
-    partial class ContextEstoqueModelSnapshot : ModelSnapshot
+    [Migration("20260802221200_AddEstoqueSaldoLocalD2")]
+    partial class AddEstoqueSaldoLocalD2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -8936,10 +8939,6 @@ namespace Epros.Modules.Estoque.Migrations
                         .HasColumnType("character varying(13)")
                         .HasColumnName("codigo_produto_balanca");
 
-                    b.Property<bool>("ControlaLote")
-                        .HasColumnType("boolean")
-                        .HasColumnName("controla_lote");
-
                     b.Property<DateTime>("CriadoEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("criado_em");
@@ -8968,10 +8967,6 @@ namespace Epros.Modules.Estoque.Migrations
                         .HasMaxLength(14)
                         .HasColumnType("character varying(14)")
                         .HasColumnName("ean");
-
-                    b.Property<bool>("ExigeSerializacao")
-                        .HasColumnType("boolean")
-                        .HasColumnName("exige_serializacao");
 
                     b.Property<string>("Imagem")
                         .IsRequired()
@@ -12507,11 +12502,6 @@ namespace Epros.Modules.Estoque.Migrations
                         .HasColumnType("character varying(60)")
                         .HasColumnName("caixa");
 
-                    b.Property<decimal?>("CapacidadeMaxima")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("capacidade_maxima");
-
                     b.Property<DateTime>("CriadoEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("criado_em");
@@ -12528,16 +12518,6 @@ namespace Epros.Modules.Estoque.Migrations
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
                         .HasColumnName("estante");
-
-                    b.Property<string>("Nivel")
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("nivel");
-
-                    b.Property<string>("Posicao")
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("posicao");
 
                     b.Property<string>("Rua")
                         .HasMaxLength(120)
@@ -12556,11 +12536,6 @@ namespace Epros.Modules.Estoque.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("tenant_id");
-
-                    b.Property<string>("Zona")
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("zona");
 
                     b.Property<uint>("xmin")
                         .IsConcurrencyToken()
@@ -12585,122 +12560,6 @@ namespace Epros.Modules.Estoque.Migrations
                         .HasDatabaseName("i_x_wms_enderecos_operacionais_tenant_id_armazem_id");
 
                     b.ToTable("wms_enderecos_operacionais", "estoque");
-                });
-
-            modelBuilder.Entity("Epros.Modules.Estoque.Domain.Entities.WmsTarefaSeparacao", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime?>("AlteradoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("alterado_em");
-
-                    b.Property<string>("AlteradoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("alterado_por");
-
-                    b.Property<Guid>("ArmazemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("armazem_id");
-
-                    b.Property<string>("CodigoLote")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("codigo_lote");
-
-                    b.Property<DateTime>("CriadoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("criado_em");
-
-                    b.Property<string>("CriadoPor")
-                        .HasColumnType("text")
-                        .HasColumnName("criado_por");
-
-                    b.Property<DateTime?>("DeletadoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deletado_em");
-
-                    b.Property<Guid>("EmpresaId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("empresa_id");
-
-                    b.Property<Guid?>("LocalDestinoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("local_destino_id");
-
-                    b.Property<Guid>("LocalOrigemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("local_origem_id");
-
-                    b.Property<string>("NumeroSerie")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)")
-                        .HasColumnName("numero_serie");
-
-                    b.Property<string>("Observacao")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("observacao");
-
-                    b.Property<Guid>("ProdutoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("produto_id");
-
-                    b.Property<decimal>("QuantidadeConferida")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("quantidade_conferida");
-
-                    b.Property<decimal>("QuantidadeSolicitada")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("quantidade_solicitada");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer")
-                        .HasColumnName("status");
-
-                    b.Property<Guid>("SyncId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("sync_id");
-
-                    b.Property<int>("SyncVersion")
-                        .HasColumnType("integer")
-                        .HasColumnName("sync_version");
-
-                    b.Property<string>("TenantId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<uint>("xmin")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
-                    b.HasKey("Id")
-                        .HasName("p_k_wms_tarefas_separacao");
-
-                    b.HasIndex("SyncId")
-                        .IsUnique()
-                        .HasDatabaseName("ix__wms_tarefa_separacao_sync_id");
-
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix__wms_tarefa_separacao_tenant_id");
-
-                    b.HasIndex("TenantId", "ProdutoId")
-                        .HasDatabaseName("i_x_wms_tarefas_separacao_tenant_id_produto_id");
-
-                    b.HasIndex("TenantId", "ArmazemId", "Status")
-                        .HasDatabaseName("i_x_wms_tarefas_separacao_tenant_id_armazem_id_status");
-
-                    b.ToTable("wms_tarefas_separacao", "estoque");
                 });
 
             modelBuilder.Entity("Epros.Modules.Estoque.Infrastructure.Data.ServicoLookup", b =>

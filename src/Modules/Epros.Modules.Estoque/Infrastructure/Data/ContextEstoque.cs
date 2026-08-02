@@ -25,6 +25,8 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
 
         // Estoque
         public DbSet<EstoqueProduto> EstoqueProdutos => Set<EstoqueProduto>();
+        // D2 — saldo no grão fino (Empresa+Produto+Local+Lote+Série), em paralelo ao agregado acima.
+        public DbSet<EstoqueSaldoLocal> EstoqueSaldosLocais => Set<EstoqueSaldoLocal>();
         public DbSet<ProdutoFichaEstoqueEntrada> ProdutoFichaEstoqueEntradas => Set<ProdutoFichaEstoqueEntrada>();
         public DbSet<ProdutoFichaEstoqueSaida> ProdutoFichaEstoqueSaidas => Set<ProdutoFichaEstoqueSaida>();
         public DbSet<FatoGeradorEstoque> FatosGeradoresEstoque => Set<FatoGeradorEstoque>();
@@ -137,6 +139,8 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
         // ============ GESTÃO DE ARMAZÉM WMS (EST-WMS) ============
         public DbSet<WmsArmazem> WmsArmazens => Set<WmsArmazem>();
         public DbSet<WmsEnderecoOperacional> WmsEnderecosOperacionais => Set<WmsEnderecoOperacional>();
+        // D5 — tarefa operacional de separação/conferência (move o grão fino EstoqueSaldoLocal).
+        public DbSet<WmsTarefaSeparacao> WmsTarefasSeparacao => Set<WmsTarefaSeparacao>();
 
         // ============ GESTÃO DE CONTRATOS DE COMPRA (EST-GCC) ============
         public DbSet<GccContratoCompra> GccContratosCompra => Set<GccContratoCompra>();
@@ -380,6 +384,26 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
                       .HasForeignKey(e => e.ProdutoId)
                       .OnDelete(DeleteBehavior.Restrict);
                 entity.HasIndex(e => new { e.TenantId, e.EmpresaId, e.ProdutoId }).IsUnique();
+            });
+
+            // D2 — saldo por Local + Lote/Série (grão fino), paralelo ao agregado EstoqueProduto.
+            modelBuilder.Entity<EstoqueSaldoLocal>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.CodigoLote).HasMaxLength(60);
+                entity.Property(e => e.NumeroSerie).HasMaxLength(120);
+                entity.Property(e => e.QuantidadeSaldo).HasPrecision(18, 4);
+                entity.Property(e => e.QuantidadeReservada).HasPrecision(18, 4);
+                entity.Property(e => e.ValorSaldo).HasPrecision(18, 2);
+                entity.Property(e => e.ValorCustoMedio).HasPrecision(18, 2);
+                entity.HasOne(e => e.Produto)
+                      .WithMany()
+                      .HasForeignKey(e => e.ProdutoId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                // Unicidade do grão: uma linha por (tenant, empresa, produto, local, lote, série).
+                // Lote/Série normalizados a "" (nunca NULL) para a unicidade valer sob PostgreSQL.
+                entity.HasIndex(e => new { e.TenantId, e.EmpresaId, e.ProdutoId, e.LocalId, e.CodigoLote, e.NumeroSerie }).IsUnique();
+                entity.HasIndex(e => new { e.TenantId, e.ProdutoId, e.DataValidade }); // apoio ao FEFO
             });
 
             modelBuilder.Entity<FatoGeradorEstoque>(entity =>
@@ -1749,8 +1773,26 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
                 entity.Property(e => e.Rua).HasMaxLength(120);
                 entity.Property(e => e.Estante).HasMaxLength(60);
                 entity.Property(e => e.Caixa).HasMaxLength(60);
+                entity.Property(e => e.Zona).HasMaxLength(60);
+                entity.Property(e => e.Nivel).HasMaxLength(60);
+                entity.Property(e => e.Posicao).HasMaxLength(60);
+                entity.Property(e => e.CapacidadeMaxima).HasPrecision(18, 4);
                 entity.HasIndex(e => new { e.TenantId, e.ArmazemId });
                 entity.HasIndex(e => e.SyncId).IsUnique();
+            });
+
+            // D5 — tarefa de separação/conferência (move o grão fino).
+            modelBuilder.Entity<WmsTarefaSeparacao>(entity =>
+            {
+                entity.HasKey(t => t.Id);
+                entity.Property(t => t.CodigoLote).HasMaxLength(60);
+                entity.Property(t => t.NumeroSerie).HasMaxLength(120);
+                entity.Property(t => t.QuantidadeSolicitada).HasPrecision(18, 4);
+                entity.Property(t => t.QuantidadeConferida).HasPrecision(18, 4);
+                entity.Property(t => t.Observacao).HasMaxLength(1000);
+                entity.HasIndex(t => new { t.TenantId, t.ArmazemId, t.Status });
+                entity.HasIndex(t => new { t.TenantId, t.ProdutoId });
+                entity.HasIndex(t => t.SyncId).IsUnique();
             });
 
             // ============ GESTÃO DE CONTRATOS DE COMPRA (EST-GCC) ============
