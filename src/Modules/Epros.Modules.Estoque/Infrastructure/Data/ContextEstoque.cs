@@ -139,6 +139,8 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
         // ============ GESTÃO DE ARMAZÉM WMS (EST-WMS) ============
         public DbSet<WmsArmazem> WmsArmazens => Set<WmsArmazem>();
         public DbSet<WmsEnderecoOperacional> WmsEnderecosOperacionais => Set<WmsEnderecoOperacional>();
+        // D5 — tarefa operacional de separação/conferência (move o grão fino EstoqueSaldoLocal).
+        public DbSet<WmsTarefaSeparacao> WmsTarefasSeparacao => Set<WmsTarefaSeparacao>();
 
         // ============ GESTÃO DE CONTRATOS DE COMPRA (EST-GCC) ============
         public DbSet<GccContratoCompra> GccContratosCompra => Set<GccContratoCompra>();
@@ -1771,8 +1773,26 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
                 entity.Property(e => e.Rua).HasMaxLength(120);
                 entity.Property(e => e.Estante).HasMaxLength(60);
                 entity.Property(e => e.Caixa).HasMaxLength(60);
+                entity.Property(e => e.Zona).HasMaxLength(60);
+                entity.Property(e => e.Nivel).HasMaxLength(60);
+                entity.Property(e => e.Posicao).HasMaxLength(60);
+                entity.Property(e => e.CapacidadeMaxima).HasPrecision(18, 4);
                 entity.HasIndex(e => new { e.TenantId, e.ArmazemId });
                 entity.HasIndex(e => e.SyncId).IsUnique();
+            });
+
+            // D5 — tarefa de separação/conferência (move o grão fino).
+            modelBuilder.Entity<WmsTarefaSeparacao>(entity =>
+            {
+                entity.HasKey(t => t.Id);
+                entity.Property(t => t.CodigoLote).HasMaxLength(60);
+                entity.Property(t => t.NumeroSerie).HasMaxLength(120);
+                entity.Property(t => t.QuantidadeSolicitada).HasPrecision(18, 4);
+                entity.Property(t => t.QuantidadeConferida).HasPrecision(18, 4);
+                entity.Property(t => t.Observacao).HasMaxLength(1000);
+                entity.HasIndex(t => new { t.TenantId, t.ArmazemId, t.Status });
+                entity.HasIndex(t => new { t.TenantId, t.ProdutoId });
+                entity.HasIndex(t => t.SyncId).IsUnique();
             });
 
             // ============ GESTÃO DE CONTRATOS DE COMPRA (EST-GCC) ============

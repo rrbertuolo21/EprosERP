@@ -547,6 +547,92 @@ namespace Epros.Tests
 
         #endregion
 
+        #region D5 — WMS operacional: tarefa de separação/conferência move o grão fino
+
+        [Fact]
+        public async Task D5_Separacao_Reserva_Origem_E_Conferencia_Transfere_Para_Destino()
+        {
+            var ctx = CreateInMemoryContext("d5_separacao", TenantD2, "user-1");
+            var p = new Produto("SKU-WMS", "Produto WMS", 10m, TenantD2, "user-1");
+            ctx.Produtos.Add(p);
+            await ctx.SaveChangesAsync();
+
+            var origem = Guid.NewGuid();
+            var destino = Guid.NewGuid();
+            await EntradaGrainAsync(ctx, p.Id, 10m, 100m, origem, "L1", null); // saldo na posição de origem
+
+            var svc = new WmsSeparacaoService(ctx, TenantD2, "user-1");
+
+            // Criar tarefa → reserva 4 na origem (disponível cai para 6, saldo total continua 10).
+            var criar = await svc.CriarTarefaAsync(Guid.NewGuid(), MotorMovimentacaoEstoque.EmpresaPadrao, p.Id, origem, destino, "L1", null, 4m, null, CancellationToken.None);
+            Assert.True(criar.Sucesso, criar.Erro);
+            await ctx.SaveChangesAsync();
+
+            var posOrigem = await ctx.EstoqueSaldosLocais.FirstAsync(s => s.ProdutoId == p.Id && s.LocalId == origem);
+            Assert.Equal(10m, posOrigem.QuantidadeSaldo);
+            Assert.Equal(4m, posOrigem.QuantidadeReservada);
+            Assert.Equal(6m, posOrigem.QuantidadeDisponivel());
+
+            // Conferir → baixa 4 da origem, credita 4 no destino. Soma do grão do produto permanece 10.
+            var conf = await svc.ConferirTarefaAsync(criar.Tarefa!.Id, 4m, CancellationToken.None);
+            Assert.True(conf.Sucesso, conf.Erro);
+            await ctx.SaveChangesAsync();
+
+            posOrigem = await ctx.EstoqueSaldosLocais.FirstAsync(s => s.ProdutoId == p.Id && s.LocalId == origem);
+            var posDestino = await ctx.EstoqueSaldosLocais.FirstAsync(s => s.ProdutoId == p.Id && s.LocalId == destino);
+            Assert.Equal(6m, posOrigem.QuantidadeSaldo);
+            Assert.Equal(0m, posOrigem.QuantidadeReservada);
+            Assert.Equal(4m, posDestino.QuantidadeSaldo);
+
+            var somaGrao = await ctx.EstoqueSaldosLocais.Where(s => s.ProdutoId == p.Id).SumAsync(s => s.QuantidadeSaldo);
+            var agregado = await ctx.EstoqueProdutos.FirstAsync(e => e.ProdutoId == p.Id);
+            Assert.Equal(10m, somaGrao);                                   // transferência interna não altera total
+            Assert.Equal(10m, agregado.QuantidadeSaldoEstoque);           // agregado intocado por movimento de armazém
+            Assert.Equal(EStatusTarefaSeparacao.Conferida, conf.Tarefa!.Status);
+        }
+
+        [Fact]
+        public async Task D5_Separacao_Sem_Saldo_Disponivel_Falha()
+        {
+            var ctx = CreateInMemoryContext("d5_sem_saldo", TenantD2, "user-1");
+            var p = new Produto("SKU-WMS2", "Produto WMS2", 10m, TenantD2, "user-1");
+            ctx.Produtos.Add(p);
+            await ctx.SaveChangesAsync();
+
+            var origem = Guid.NewGuid();
+            await EntradaGrainAsync(ctx, p.Id, 3m, 100m, origem, "L1", null);
+
+            var svc = new WmsSeparacaoService(ctx, TenantD2, "user-1");
+            var criar = await svc.CriarTarefaAsync(Guid.NewGuid(), MotorMovimentacaoEstoque.EmpresaPadrao, p.Id, origem, null, "L1", null, 5m, null, CancellationToken.None);
+            Assert.False(criar.Sucesso); // 5 > 3 disponível
+        }
+
+        [Fact]
+        public async Task D5_Cancelar_Libera_Reserva_Da_Origem()
+        {
+            var ctx = CreateInMemoryContext("d5_cancelar", TenantD2, "user-1");
+            var p = new Produto("SKU-WMS3", "Produto WMS3", 10m, TenantD2, "user-1");
+            ctx.Produtos.Add(p);
+            await ctx.SaveChangesAsync();
+
+            var origem = Guid.NewGuid();
+            await EntradaGrainAsync(ctx, p.Id, 10m, 100m, origem, "L1", null);
+
+            var svc = new WmsSeparacaoService(ctx, TenantD2, "user-1");
+            var criar = await svc.CriarTarefaAsync(Guid.NewGuid(), MotorMovimentacaoEstoque.EmpresaPadrao, p.Id, origem, null, "L1", null, 4m, null, CancellationToken.None);
+            await ctx.SaveChangesAsync();
+
+            var cancelar = await svc.CancelarTarefaAsync(criar.Tarefa!.Id, CancellationToken.None);
+            Assert.True(cancelar.Sucesso, cancelar.Erro);
+            await ctx.SaveChangesAsync();
+
+            var pos = await ctx.EstoqueSaldosLocais.FirstAsync(s => s.ProdutoId == p.Id && s.LocalId == origem);
+            Assert.Equal(0m, pos.QuantidadeReservada);         // reserva devolvida
+            Assert.Equal(10m, pos.QuantidadeDisponivel());
+        }
+
+        #endregion
+
         #region Helpers e Doubles de Teste
 
         private ContextEstoque CreateInMemoryContext(string databaseName, string tenantId, string userId)

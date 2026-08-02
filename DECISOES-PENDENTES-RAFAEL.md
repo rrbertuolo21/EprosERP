@@ -133,3 +133,39 @@ eventos deve tratar só inspeção/financeiro, nunca re-creditar saldo.
   **front precisa enviar `AprovacaoOrigemId`** (id do pedido de compra/compra sob alçada) e a avaliação
   automática por VALOR no momento do lançamento exigiria comprador/categoria/valor no próprio comando de
   compra — decisão de produto (hoje a alçada é avaliada no fluxo de pedido de compra via `SolicitarAprovacao`).
+
+## D2/D5 — Saldo por Local+Lote/Série e WMS operacional (branch `wt/d2-wms`)
+
+Entregue nesta rodada (4 fatias, commit por fatia, agregado `EstoqueProduto` intocado — 1666 testes originais
+verdes + 6 novos):
+
+- **Fatia 1** — entidade `EstoqueSaldoLocal` (grão `Empresa+Produto+Local+Lote+Série`) + migration. Vive em
+  paralelo ao agregado; unicidade sob PostgreSQL garantida por normalizar Lote/Série a `""` e Local ausente a
+  `Guid.Empty` (NULL não colide em índice único).
+- **Fatia 2** — `MotorMovimentacaoEstoque` credita/debita `EstoqueSaldoLocal` na MESMA transação do agregado.
+  A **quantidade** do grão sempre reconcilia com o delta do agregado. Saída consome posições do local.
+- **Fatia 3** — `Produto.ControlaLote/ExigeSerializacao` (D10, default false) + **FEFO real**: produto que
+  controla lote baixa a menor validade primeiro; demais seguem PEPS por posição.
+- **Fatia 4** — endereço rico (`WmsEnderecoOperacional`: zona/nível/posição/capacidade) + tarefa
+  `WmsTarefaSeparacao` + `WmsSeparacaoService` (reserva origem → confere → transfere ao destino), movimento
+  INTERNO de armazém que não altera o total do produto na empresa.
+
+### Resíduo D2/D5 (próximos passos, decisão do Rafael)
+
+1. **Backfill do grão fino.** `EstoqueSaldoLocal` começa VAZIO para o histórico; é alimentado a partir das
+   próximas movimentações. Saída sobre produto/local sem grão materializado cai no *bucket base* do local
+   (Lote/Série `""`), podendo ficar **negativa transitoriamente** até o backfill. Falta um job/rotina de
+   backfill que projete o saldo atual (por local/lote) a partir das fichas de entrada com saldo remanescente.
+2. **Valorização PEPS/UEPS no grão.** A **quantidade** reconcilia sempre; o **valor** do grão na saída usa o
+   custo médio vigente (correto para o caminho custo-médio, `// valida-contador`). Para PEPS/UEPS o valor por
+   posição fica aproximado — casar camada-a-camada com `ProdutoFichaEstoqueEntrada` é o próximo passo.
+3. **Wiring CQRS/controller do WMS operacional.** `WmsSeparacaoService` está pronto no domínio/aplicação, mas
+   sem Command/Handler/Controller/ABAC nem eventos de Outbox. Falta expor endpoints (criar/separar/conferir/
+   cancelar) e emitir eventos funcionais. Sobe fail-closed (ABAC nega) como o restante do WMS.
+4. **Reserva no agregado.** A reserva hoje trava só a posição (`EstoqueSaldoLocal.QuantidadeReservada`); não
+   reflete em `EstoqueProduto.QuantidadeEstoqueReservado`. Decidir se a reserva de separação deve somar no
+   reservado agregado (afeta disponibilidade global do produto).
+5. **Capacidade e slotting.** `CapacidadeMaxima` do endereço é armazenada mas ainda **não é validada** na
+   entrada/transferência; ondas de separação, coletor/RF e slotting automático permanecem fora de escopo.
+6. **Série unitária na entrada.** O motor grava Série `""` por padrão (o parâmetro existe no grão). Fluxo de
+   entrada serializada (uma linha por nº de série) depende de `Produto.ExigeSerializacao` no caminho de compra.
