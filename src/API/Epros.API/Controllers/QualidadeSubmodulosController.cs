@@ -4,7 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using Epros.API.Security;
 using Epros.Modules.Qualidade.Application.Commands;
+using Epros.Modules.Qualidade.Application.Commands.Ins;
 using Epros.Modules.Qualidade.Application.Queries;
+using Epros.Modules.Qualidade.Application.Queries.Ins;
+using Epros.Modules.Qualidade.Domain.Services.Aql;
 using Epros.Shared.Application.Models;
 
 namespace Epros.API.Controllers
@@ -69,6 +72,65 @@ namespace Epros.API.Controllers
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<CommandResult>> Criar([FromBody] CriarPlanoInspecaoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        // Simulador do motor AQL (ISO 2859-1 / NBR 5426): N + nivel + AQL -> n, Ac/Re, 100%.
+        [HttpGet("amostragem/calcular")]
+        [AbacAuthorize("QualidadePlanosInspecao", "Ler")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        public async Task<IActionResult> CalcularAmostragem(
+            [FromQuery] long tamanhoLote, [FromQuery] ENivelInspecao nivel, [FromQuery] decimal aql,
+            [FromQuery] ESeveridadeAql severidade = ESeveridadeAql.Normal)
+            => Ok(await _mediator.Send(new CalcularPlanoAmostragemQuery(tamanhoLote, nivel, aql, severidade)));
+
+        [HttpPost("caracteristicas")]
+        [AbacAuthorize("QualidadePlanosInspecao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AdicionarCaracteristica([FromBody] AdicionarCaracteristicaPlanoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("regras-amostragem")]
+        [AbacAuthorize("QualidadePlanosInspecao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AdicionarRegra([FromBody] AdicionarRegraAmostragemCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("ativar")]
+        [AbacAuthorize("QualidadePlanosInspecao", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Ativar([FromBody] AtivarPlanoInspecaoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("status")]
+        [AbacAuthorize("QualidadePlanosInspecao", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AlterarStatus([FromBody] AlterarStatusPlanoInspecaoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("executar")]
+        [AbacAuthorize("QualidadePlanosInspecao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Executar([FromBody] ExecutarInspecaoCommand command)
         {
             var result = await _mediator.Send(command);
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);

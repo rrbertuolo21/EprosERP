@@ -291,6 +291,10 @@ try
     builder.Services.AddScoped<IMdfeFiscalService, MdfeFiscalServiceNaoConfigurado>();
 
     // Registra o MediatR para o processamento de Commands/Queries nos módulos
+    // Motores de dominio do modulo Qualidade (sem estado; QLD-INS amostragem AQL / comutacao).
+    builder.Services.AddSingleton<Epros.Modules.Qualidade.Domain.Services.Aql.MotorAql>();
+    builder.Services.AddSingleton<Epros.Modules.Qualidade.Domain.Services.Aql.MotorComutacao>();
+
     builder.Services.AddMediatR(cfg =>
     {
         cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);

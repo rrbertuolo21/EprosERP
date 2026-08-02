@@ -1,0 +1,229 @@
+using System;
+using System.Globalization;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Epros.Modules.Qualidade.Application.Commands.Ins;
+using Epros.Modules.Qualidade.Application.Queries.Ins;
+using Epros.Modules.Qualidade.Domain.Entities;
+using Epros.Modules.Qualidade.Domain.Enums;
+using Epros.Modules.Qualidade.Domain.Services.Aql;
+using Epros.Modules.Qualidade.Infrastructure.Data;
+using Epros.Shared.Application.Contracts;
+using Epros.Shared.Application.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace Epros.Modules.Qualidade.Application.Handlers.Ins
+{
+    // ============ Query: simulador do motor AQL ============
+    public class CalcularPlanoAmostragemQueryHandler : IQueryHandler<CalcularPlanoAmostragemQuery, CommandResult>
+    {
+        private readonly MotorAql _motor;
+        public CalcularPlanoAmostragemQueryHandler(MotorAql motor) => _motor = motor;
+
+        public Task<CommandResult> Handle(CalcularPlanoAmostragemQuery request, CancellationToken cancellationToken)
+        {
+            if (request.TamanhoLote < 1)
+                return Task.FromResult(CommandResult.Falha("O tamanho do lote deve ser >= 1."));
+
+            var plano = _motor.CalcularPlano(request.TamanhoLote, request.Nivel, request.Aql, request.Severidade);
+            return Task.FromResult(CommandResult.Ok("Plano de amostragem calculado.", new
+            {
+                plano.TamanhoLote,
+                Nivel = plano.Nivel.ToString(),
+                plano.Aql,
+                Severidade = plano.Severidade.ToString(),
+                LetraCodigo = plano.LetraCodigo.ToString(),
+                plano.TamanhoAmostra,
+                plano.NumeroAceitacao,
+                plano.NumeroRejeicao,
+                plano.InspecaoTotal
+            }));
+        }
+    }
+
+    // ============ Comandos: caracteristica / regra / ativacao / status / execucao ============
+    public class AdicionarCaracteristicaPlanoCommandHandler : ICommandHandler<AdicionarCaracteristicaPlanoCommand>
+    {
+        private readonly ContextQualidade _context;
+        private readonly ITenantProvider _tenant;
+        private readonly ICurrentUser _user;
+        public AdicionarCaracteristicaPlanoCommandHandler(ContextQualidade context, ITenantProvider tenant, ICurrentUser user)
+        { _context = context; _tenant = tenant; _user = user; }
+
+        public async Task<CommandResult> Handle(AdicionarCaracteristicaPlanoCommand request, CancellationToken ct)
+        {
+            var tenantId = _tenant.GetTenantId();
+            var usuario = _user.GetUserId() ?? "system";
+
+            var plano = await _context.PlanosInspecao.FirstOrDefaultAsync(p => p.Id == request.PlanoId, ct);
+            if (plano is null) return CommandResult.Falha("Plano de inspecao nao encontrado.", block: true);
+            if (plano.Status == EStatusRegistroQualidade.Ativo || plano.Status == EStatusRegistroQualidade.Encerrado)
+                return CommandResult.Falha("Nao e possivel adicionar caracteristica a plano ativo/encerrado.", block: true);
+
+            if (await _context.CaracteristicasPlano.AnyAsync(c => c.PlanoId == request.PlanoId && c.Sequencia == request.Sequencia, ct))
+                return CommandResult.Falha($"Ja existe uma caracteristica com a sequencia {request.Sequencia} neste plano.", block: true);
+
+            var carac = new CaracteristicaPlano(request.PlanoId, request.Sequencia, request.Nome, request.TipoCaracteristica,
+                request.TipoDado, request.Obrigatoria, request.AtributoId, request.UnidadeMedidaId, request.ValorNominal,
+                request.LimiteInferior, request.LimiteSuperior, request.CriterioQualitativo, tenantId, usuario);
+            if (!carac.IsValid) return CommandResult.Falha(carac.Notifications.Select(n => n.Message));
+
+            _context.CaracteristicasPlano.Add(carac);
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok("Caracteristica adicionada ao plano.", new { carac.Id, carac.Sequencia });
+        }
+    }
+
+    public class AdicionarRegraAmostragemCommandHandler : ICommandHandler<AdicionarRegraAmostragemCommand>
+    {
+        private readonly ContextQualidade _context;
+        private readonly ITenantProvider _tenant;
+        private readonly ICurrentUser _user;
+        public AdicionarRegraAmostragemCommandHandler(ContextQualidade context, ITenantProvider tenant, ICurrentUser user)
+        { _context = context; _tenant = tenant; _user = user; }
+
+        public async Task<CommandResult> Handle(AdicionarRegraAmostragemCommand request, CancellationToken ct)
+        {
+            var tenantId = _tenant.GetTenantId();
+            var usuario = _user.GetUserId() ?? "system";
+
+            var plano = await _context.PlanosInspecao.FirstOrDefaultAsync(p => p.Id == request.PlanoId, ct);
+            if (plano is null) return CommandResult.Falha("Plano de inspecao nao encontrado.", block: true);
+
+            var regra = new RegraAmostragem(request.PlanoId, request.TipoAmostragem, request.CaracteristicaId,
+                request.NivelInspecao, request.Aql, request.FaixaLoteMin, request.FaixaLoteMax, request.TamanhoAmostra,
+                request.CriterioAceite, request.CriterioRejeicao, request.Severidade, tenantId, usuario);
+            if (!regra.IsValid) return CommandResult.Falha(regra.Notifications.Select(n => n.Message));
+
+            _context.RegrasAmostragem.Add(regra);
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok("Regra de amostragem adicionada ao plano.", new { regra.Id, TipoAmostragem = regra.TipoAmostragem.ToString() });
+        }
+    }
+
+    public class AtivarPlanoInspecaoCommandHandler : ICommandHandler<AtivarPlanoInspecaoCommand>
+    {
+        private readonly ContextQualidade _context;
+        private readonly ICurrentUser _user;
+        public AtivarPlanoInspecaoCommandHandler(ContextQualidade context, ICurrentUser user)
+        { _context = context; _user = user; }
+
+        public async Task<CommandResult> Handle(AtivarPlanoInspecaoCommand request, CancellationToken ct)
+        {
+            var usuario = _user.GetUserId() ?? "system";
+            var plano = await _context.PlanosInspecao.FirstOrDefaultAsync(p => p.Id == request.PlanoId, ct);
+            if (plano is null) return CommandResult.Falha("Plano de inspecao nao encontrado.", block: true);
+
+            // Caracteristicas sao persistidas em tabela propria (nav Ignore): reidrata p/ a invariante de Ativar.
+            var caracteristicas = await _context.CaracteristicasPlano.Where(c => c.PlanoId == request.PlanoId).ToListAsync(ct);
+            foreach (var c in caracteristicas) plano.AdicionarCaracteristica(c);
+
+            plano.Ativar(usuario);
+            if (!plano.IsValid) return CommandResult.Falha(plano.Notifications.Select(n => n.Message));
+
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok("Plano de inspecao ativado.", new { plano.Id, Status = plano.Status.ToString() });
+        }
+    }
+
+    public class AlterarStatusPlanoInspecaoCommandHandler : ICommandHandler<AlterarStatusPlanoInspecaoCommand>
+    {
+        private readonly ContextQualidade _context;
+        private readonly ICurrentUser _user;
+        public AlterarStatusPlanoInspecaoCommandHandler(ContextQualidade context, ICurrentUser user)
+        { _context = context; _user = user; }
+
+        public async Task<CommandResult> Handle(AlterarStatusPlanoInspecaoCommand request, CancellationToken ct)
+        {
+            var usuario = _user.GetUserId() ?? "system";
+            var plano = await _context.PlanosInspecao.FirstOrDefaultAsync(p => p.Id == request.PlanoId, ct);
+            if (plano is null) return CommandResult.Falha("Plano de inspecao nao encontrado.", block: true);
+
+            plano.AlterarStatus(request.NovoStatus, request.Motivo, usuario);
+            if (!plano.IsValid) return CommandResult.Falha(plano.Notifications.Select(n => n.Message));
+
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok("Status do plano alterado.", new { plano.Id, Status = plano.Status.ToString() });
+        }
+    }
+
+    public class ExecutarInspecaoCommandHandler : ICommandHandler<ExecutarInspecaoCommand>
+    {
+        private readonly ContextQualidade _context;
+        private readonly ITenantProvider _tenant;
+        private readonly ICurrentUser _user;
+        private readonly MotorAql _motor;
+        public ExecutarInspecaoCommandHandler(ContextQualidade context, ITenantProvider tenant, ICurrentUser user, MotorAql motor)
+        { _context = context; _tenant = tenant; _user = user; _motor = motor; }
+
+        public async Task<CommandResult> Handle(ExecutarInspecaoCommand request, CancellationToken ct)
+        {
+            var tenantId = _tenant.GetTenantId();
+            var usuario = _user.GetUserId() ?? "system";
+
+            var plano = await _context.PlanosInspecao.FirstOrDefaultAsync(p => p.Id == request.PlanoId, ct);
+            if (plano is null) return CommandResult.Falha("Plano de inspecao nao encontrado.", block: true);
+            // RN-INS-004/007: so plano Ativo executa.
+            if (plano.Status != EStatusRegistroQualidade.Ativo)
+                return CommandResult.Falha("Somente planos ativos podem gerar execucao de inspecao.", block: true);
+
+            var exec = new ExecucaoInspecao(request.PlanoId, request.ReferenciaTipo, request.ReferenciaId,
+                request.QuantidadeLote, request.InspetorId, tenantId, usuario);
+            if (!exec.IsValid) return CommandResult.Falha(exec.Notifications.Select(n => n.Message));
+
+            // Resolve amostragem: AQL explicito > regra AQL do plano > tamanho fixo de regra.
+            var regras = await _context.RegrasAmostragem.Where(r => r.PlanoId == request.PlanoId).ToListAsync(ct);
+            var (amostra, planoAql) = ResolverAmostra(request, regras);
+            if (amostra.HasValue)
+            {
+                exec.DefinirAmostraCalculada(amostra.Value, usuario);
+                if (!exec.IsValid) return CommandResult.Falha(exec.Notifications.Select(n => n.Message));
+            }
+
+            _context.ExecucoesInspecao.Add(exec);
+            await _context.SaveChangesAsync(ct);
+
+            object dados = planoAql is null
+                ? new { exec.Id, Status = exec.Status.ToString(), exec.TamanhoAmostraCalculado }
+                : new
+                {
+                    exec.Id,
+                    Status = exec.Status.ToString(),
+                    exec.TamanhoAmostraCalculado,
+                    LetraCodigo = planoAql.LetraCodigo.ToString(),
+                    planoAql.NumeroAceitacao,
+                    planoAql.NumeroRejeicao,
+                    planoAql.InspecaoTotal
+                };
+            return CommandResult.Ok("Execucao de inspecao aberta.", dados);
+        }
+
+        private (int? amostra, PlanoAmostragemResultado? planoAql) ResolverAmostra(
+            ExecutarInspecaoCommand request, System.Collections.Generic.List<RegraAmostragem> regras)
+        {
+            var regraAql = regras.FirstOrDefault(r => r.TipoAmostragem == ETipoAmostragem.AQL);
+
+            decimal? aql = request.Aql;
+            string? nivelStr = request.NivelInspecao;
+            string? sevStr = request.Severidade;
+            if (aql is null && regraAql != null)
+            {
+                if (decimal.TryParse(regraAql.Aql, NumberStyles.Any, CultureInfo.InvariantCulture, out var aqlRegra))
+                    aql = aqlRegra;
+                nivelStr ??= regraAql.NivelInspecao;
+                sevStr ??= regraAql.Severidade;
+            }
+
+            if (aql.HasValue && Enum.TryParse<ENivelInspecao>(nivelStr, true, out var nivel))
+            {
+                var sev = Enum.TryParse<ESeveridadeAql>(sevStr, true, out var s) ? s : ESeveridadeAql.Normal;
+                var resultado = _motor.CalcularPlano((long)request.QuantidadeLote, nivel, aql.Value, sev);
+                return (resultado.TamanhoAmostra, resultado);
+            }
+
+            var regraFixa = regras.FirstOrDefault(r => r.TamanhoAmostra.HasValue);
+            return (regraFixa?.TamanhoAmostra, null);
+        }
+    }
+}
