@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Epros.Modules.Aplicativo.Infrastructure.Data
 {
-    public class ContextAplicativo : ContextBase
+    public partial class ContextAplicativo : ContextBase
     {
         public DbSet<UsuarioInterno> UsuariosInternos => Set<UsuarioInterno>();
         public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
@@ -684,6 +684,13 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
                 entity.Property(h => h.IpOrigem).HasMaxLength(64);
                 entity.HasIndex(h => new { h.Entidade, h.EntidadeIdReferencia }).HasDatabaseName("ix_upl_historicos_entidade");
             });
+
+            // ===== PLATAFORMA COMPARTILHADA (PLT) — submódulos spec-only (GED/Assinatura/Analytics/
+            // Conectores/Wizards/IoT/SDK). Configuração no arquivo parcial ContextAplicativo.Plataforma.cs =====
+            ConfigurarPlataforma(modelBuilder);
         }
+
+        // Implementada em ContextAplicativo.Plataforma.cs (parcial).
+        partial void ConfigurarPlataforma(ModelBuilder modelBuilder);
     }
 }

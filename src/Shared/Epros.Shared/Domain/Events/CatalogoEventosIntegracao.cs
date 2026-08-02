@@ -289,8 +289,52 @@ namespace Epros.Shared.Domain.Events
             public const string PesReservaConfirmada = "con.pes.reserva_confirmada";
         }
 
+        /// <summary>
+        /// PLATAFORMA COMPARTILHADA (PLT) — eventos dos submódulos spec-only construídos sobre as
+        /// transversais (GED/T10, Assinatura/T10, cofre/T5, eventos/T2). Prefixo <c>plt.*</c>.
+        /// [MÍNIMO — adicionado pelo agente da Plataforma; sinalizado no relatório para homologação
+        /// central junto com os demais eventos de integração.]
+        /// </summary>
+        public static class Plataforma
+        {
+            // GED — gestão eletrônica de documentos (canônico único)
+            public const string GedDocumentoRegistrado = "plt.ged.documento_registrado";
+            public const string GedNovaVersaoRegistrada = "plt.ged.nova_versao_registrada";
+            public const string GedDocumentoVinculado = "plt.ged.documento_vinculado";
+            public const string GedRetencaoVencida = "plt.ged.retencao_vencida";
+            // Assinatura eletrônica ICP (documental)
+            public const string AssinaturaSolicitada = "plt.assinatura.solicitada";
+            public const string AssinaturaRegistrada = "plt.assinatura.registrada";
+            public const string AssinaturaConcluida = "plt.assinatura.concluida";
+            public const string AssinaturaRecusada = "plt.assinatura.recusada";
+            public const string AssinaturaLinkPublicoRevogado = "plt.assinatura.link_publico_revogado";
+            // Analytics
+            public const string AnalyticsSnapshotGerado = "plt.analytics.snapshot_gerado";
+            // Conectores / Webhooks
+            public const string ConectorEndpointRegistrado = "plt.conector.endpoint_registrado";
+            public const string ConectorEntregaFalhou = "plt.conector.entrega_falhou";
+            public const string ConectorEntregaConcluida = "plt.conector.entrega_concluida";
+            // Wizards
+            public const string WizardExecucaoConcluida = "plt.wizard.execucao_concluida";
+            // IoT
+            public const string IotLeituraForaFaixa = "plt.iot.leitura_fora_faixa";
+            public const string IotCondicaoOperacionalDetectada = "plt.iot.condicao_operacional_detectada";
+            // SDK / Extensões
+            public const string SdkChaveApiGerada = "plt.sdk.chave_api_gerada";
+            public const string SdkChaveApiRevogada = "plt.sdk.chave_api_revogada";
+        }
+
         private static readonly HashSet<string> _todos = new(new[]
         {
+            Plataforma.GedDocumentoRegistrado, Plataforma.GedNovaVersaoRegistrada, Plataforma.GedDocumentoVinculado,
+            Plataforma.GedRetencaoVencida,
+            Plataforma.AssinaturaSolicitada, Plataforma.AssinaturaRegistrada, Plataforma.AssinaturaConcluida,
+            Plataforma.AssinaturaRecusada, Plataforma.AssinaturaLinkPublicoRevogado,
+            Plataforma.AnalyticsSnapshotGerado,
+            Plataforma.ConectorEndpointRegistrado, Plataforma.ConectorEntregaFalhou, Plataforma.ConectorEntregaConcluida,
+            Plataforma.WizardExecucaoConcluida,
+            Plataforma.IotLeituraForaFaixa, Plataforma.IotCondicaoOperacionalDetectada,
+            Plataforma.SdkChaveApiGerada, Plataforma.SdkChaveApiRevogada,
             Assinatura.AssinaturaCancelada, Assinatura.AssinaturaReativada, Assinatura.PlanoAlterado,
             Assinatura.TrialEncerrado, Assinatura.ComissaoApurada, Assinatura.FaturaAlertaCobranca,
             Assinatura.PagamentoEstornado, Assinatura.ReciboEmitido,
