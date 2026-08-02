@@ -45,21 +45,69 @@ export const erpMenu: MenuGroup[] = [
       { label: 'NF-e', to: '/erp/vendas/emissao/nfe' },
       { label: 'NF-e Simplificada', to: '/erp/vendas/emissao/nfe-simplificada' },
       { label: 'NFC-e', to: '/erp/vendas/emissao/nfce' },
+      { label: 'NF-e Devolução/Retorno', to: '/erp/vendas/emissao/devolucao-retorno/nfe' },
       { label: 'Transmissões', to: '/erp/vendas/transmissoes' },
       { label: 'Inutilização', to: '/erp/vendas/inutilizacao-numeracao' }
     ]
   },
   {
+    label: 'Vendas / Comercial',
+    icon: 'file-invoice',
+    itens: [
+      { label: 'Comercial (hub)', to: '/erp/vendas/comercial' },
+      { label: 'Contratos de Venda', to: '/erp/vendas/contratos' },
+      { label: 'Planejamento de Demanda', to: '/erp/vendas/demanda' },
+      { label: 'Logística de Saída', to: '/erp/vendas/logistica-saida' },
+      { label: 'E-commerce', to: '/erp/vendas/ecommerce' },
+      { label: 'Serviços — Catálogo', to: '/erp/vendas/servicos/catalogo' },
+      { label: 'Serviços — Faturas', to: '/erp/vendas/servicos/faturas' },
+      { label: 'Garantias — Coberturas', to: '/erp/vendas/garantias/coberturas' },
+      { label: 'Garantias — Políticas', to: '/erp/vendas/garantias/politicas' },
+      { label: 'FCI — Documentos', to: '/erp/vendas/faturamento-internacional/documentos' },
+      { label: 'FCI — Impostos', to: '/erp/vendas/faturamento-internacional/impostos' },
+      { label: 'Portal — Solicitações', to: '/erp/vendas/portal/solicitacoes' },
+      { label: 'Portal — Usuários', to: '/erp/vendas/portal/usuarios' }
+    ]
+  },
+  {
+    label: 'Vendas / CRM',
+    icon: 'users',
+    itens: [
+      { label: 'CRM (hub)', to: '/erp/vendas/crm' },
+      { label: 'Leads', to: '/erp/vendas/crm/leads' },
+      { label: 'Oportunidades', to: '/erp/vendas/crm/oportunidades' },
+      { label: 'Atividades / Agenda', to: '/erp/vendas/crm/atividades' },
+      { label: 'Campanhas', to: '/erp/vendas/crm/campanhas' },
+      { label: 'Fidelização', to: '/erp/vendas/crm/fidelizacao' },
+      { label: 'Tickets', to: '/erp/vendas/crm/tickets' },
+      { label: 'Webforms', to: '/erp/vendas/crm/webforms' },
+      { label: 'Pix Relacional', to: '/erp/vendas/crm/pix' }
+    ]
+  },
+  {
     label: 'PDV',
     icon: 'pos',
-    itens: [{ label: 'Caixa', to: '/erp/pdv' }]
+    itens: [
+      { label: 'Caixa', to: '/erp/pdv' },
+      { label: 'Gestão de Caixa', to: '/erp/pdv/caixa' }
+    ]
   },
   {
     label: 'Compras',
     icon: 'shopping-cart',
     itens: [
       { label: 'Lista de Compras', to: '/erp/compras' },
+      { label: 'Gestão de Compras', to: '/erp/compras/gestao' },
+      { label: 'Aprovações & Alçadas', to: '/erp/compras/aprovacoes' },
+      { label: 'Sourcing — Cotações', to: '/erp/compras/sourcing' },
+      { label: 'Contratos GCC', to: '/erp/compras/contratos-gcc' },
       { label: 'Entrada de Mercadorias', to: '/erp/compras/entrada-mercadorias' },
+      { label: 'NF-e de Entrada', to: '/erp/compras/emissao/nfe-entrada' },
+      { label: 'NF-e Entrada — Devolução/Retorno', to: '/erp/compras/emissao/devolucao-retorno/nfe-entrada' },
+      { label: 'Devolução de Compra', to: '/erp/compras/devolucao' },
+      { label: 'Subcontratação', to: '/erp/compras/subcontratacao' },
+      { label: 'TMS — Frete', to: '/erp/compras/tms' },
+      { label: 'Comércio Exterior', to: '/erp/compras/comercio-exterior' },
       { label: 'Importar XML', to: '/erp/integracao/importar-xml' }
     ]
   },
@@ -68,7 +116,15 @@ export const erpMenu: MenuGroup[] = [
     icon: 'package',
     itens: [
       { label: 'Produtos', to: '/erp/estoque/produtos' },
-      { label: 'Movimento Manual', to: '/erp/estoque/movimento-manual' }
+      { label: 'Saldo', to: '/erp/estoque/saldo' },
+      { label: 'Movimento Manual', to: '/erp/estoque/movimento-manual' },
+      { label: 'Transferências', to: '/erp/estoque/transferencias' },
+      { label: 'Ajustes e Avarias', to: '/erp/estoque/ajustes' },
+      { label: 'Inventários', to: '/erp/estoque/inventarios' },
+      { label: 'Rastreabilidade', to: '/erp/estoque/rastreabilidade' },
+      { label: 'WMS — Armazéns', to: '/erp/estoque/wms' },
+      { label: 'Análise & Planejamento', to: '/erp/estoque/analise' },
+      { label: 'Portal do Fornecedor', to: '/erp/estoque/portal-fornecedor' }
     ]
   },
   {
@@ -100,7 +156,16 @@ export const erpMenu: MenuGroup[] = [
   {
     label: 'Relatórios',
     icon: 'report',
-    itens: [{ label: 'Vendas Simplificado', to: '/erp/relatorios/vendas/simplificado01' }]
+    itens: [
+      { label: 'Central de Relatórios', to: '/erp/relatorios' },
+      { label: 'BI — Painel Gerencial', to: '/erp/relatorios/bi/painel' },
+      { label: 'Vendas Simplificado', to: '/erp/relatorios/vendas/simplificado01' },
+      { label: 'Operacional — Vendas', to: '/erp/relatorios/operacionais/vendas' },
+      { label: 'Operacional — Posição de Estoque', to: '/erp/relatorios/operacionais/posicao-estoque' },
+      { label: 'Operacional — Giro de Estoque', to: '/erp/relatorios/operacionais/giro-estoque' },
+      { label: 'Operacional — Fluxo de Caixa', to: '/erp/relatorios/operacionais/fluxo-caixa' },
+      { label: 'Operacional — Aging CP/CR', to: '/erp/relatorios/operacionais/aging' }
+    ]
   },
   {
     label: 'Configurações',
@@ -293,7 +358,9 @@ export const erpMenu: MenuGroup[] = [
     label: 'Imobiliária',
     icon: 'building',
     itens: [
+      { label: 'Gestão Imobiliária', to: '/erp/imobiliaria' },
       { label: 'Imóveis', to: '/erp/imobiliaria/imoveis' },
+      { label: 'Propostas', to: '/erp/imobiliaria/propostas' },
       { label: 'Locações', to: '/erp/imobiliaria/locacoes' },
       { label: 'Contratos de Serviço', to: '/erp/imobiliaria/contratos-servico' }
     ]
