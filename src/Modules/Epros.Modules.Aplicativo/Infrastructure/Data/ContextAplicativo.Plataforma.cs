@@ -2,6 +2,7 @@ using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Analytics;
 using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Assinatura;
 using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Conectores;
 using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Ged;
+using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Iot;
 using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Wizards;
 using Microsoft.EntityFrameworkCore;
 
@@ -45,6 +46,11 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
         public DbSet<CampoWizard> CamposWizard => Set<CampoWizard>();
         public DbSet<ExecucaoWizard> ExecucoesWizard => Set<ExecucaoWizard>();
 
+        // ===== IoT (submódulo 6) =====
+        public DbSet<DispositivoIot> DispositivosIot => Set<DispositivoIot>();
+        public DbSet<SensorIot> SensoresIot => Set<SensorIot>();
+        public DbSet<LeituraSensor> LeiturasSensor => Set<LeituraSensor>();
+
         partial void ConfigurarPlataforma(ModelBuilder modelBuilder)
         {
             ConfigurarGed(modelBuilder);
@@ -52,6 +58,7 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
             ConfigurarAnalytics(modelBuilder);
             ConfigurarConectores(modelBuilder);
             ConfigurarWizards(modelBuilder);
+            ConfigurarIot(modelBuilder);
         }
 
         private static void ConfigurarGed(ModelBuilder modelBuilder)
@@ -290,6 +297,48 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
                 e.HasIndex(x => x.DefinicaoId).HasDatabaseName("ix_plt_wizard_execucoes_definicao");
                 e.HasIndex(x => x.TokenPublico).IsUnique().HasFilter("token_publico IS NOT NULL")
                     .HasDatabaseName("ix_plt_wizard_execucoes_token");
+            });
+        }
+
+        private static void ConfigurarIot(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<DispositivoIot>(e =>
+            {
+                e.ToTable("plt_iot_dispositivos", "aplicativo");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Codigo).HasMaxLength(100);
+                e.Property(x => x.Nome).HasMaxLength(200);
+                e.Property(x => x.Tipo).HasMaxLength(100);
+                e.Property(x => x.Protocolo).HasMaxLength(20);
+                e.Property(x => x.AtivoVinculadoTipo).HasMaxLength(150);
+                e.Property(x => x.AtivoVinculadoId).HasMaxLength(100);
+                e.HasIndex(x => new { x.TenantId, x.Codigo })
+                    .IsUnique().HasDatabaseName("ix_plt_iot_dispositivos_tenant_codigo");
+                e.HasIndex(x => new { x.AtivoVinculadoTipo, x.AtivoVinculadoId })
+                    .HasDatabaseName("ix_plt_iot_dispositivos_ativo");
+            });
+
+            modelBuilder.Entity<SensorIot>(e =>
+            {
+                e.ToTable("plt_iot_sensores", "aplicativo");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Codigo).HasMaxLength(100);
+                e.Property(x => x.Grandeza).HasMaxLength(100);
+                e.Property(x => x.Unidade).HasMaxLength(20);
+                e.Property(x => x.LimiteMin).HasPrecision(20, 6);
+                e.Property(x => x.LimiteMax).HasPrecision(20, 6);
+                e.HasIndex(x => new { x.DispositivoId, x.Codigo })
+                    .IsUnique().HasDatabaseName("ix_plt_iot_sensores_dispositivo_codigo");
+            });
+
+            modelBuilder.Entity<LeituraSensor>(e =>
+            {
+                e.ToTable("plt_iot_leituras", "aplicativo");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Valor).HasPrecision(20, 6);
+                e.HasIndex(x => new { x.SensorId, x.MedidoEm })
+                    .HasDatabaseName("ix_plt_iot_leituras_sensor_medido");
+                e.HasIndex(x => x.ForaFaixa).HasDatabaseName("ix_plt_iot_leituras_fora_faixa");
             });
         }
     }
