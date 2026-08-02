@@ -119,6 +119,18 @@ namespace Epros.Infrastructure.Data
                     modelBuilder.Entity(entityType.ClrType)
                         .HasIndex(nameof(EntidadeSaaSBase.TenantId))
                         .HasDatabaseName(ToSnakeCase($"ix_{entityType.ClrType.Name}_tenant_id"));
+
+                    // REG-017 — LOCK OTIMISTA global: usa a coluna de sistema xmin do PostgreSQL como
+                    // concurrency token (aditivo, sem migration/coluna nova). Todo UPDATE/DELETE passa a
+                    // carregar "WHERE ... AND xmin = @original"; se a linha mudou entre a leitura e o save,
+                    // o EF lança DbUpdateConcurrencyException (mapeada a 409 no middleware global).
+                    // Aplicado SÓ no provider Npgsql: o xmin não existe no InMemory (usado por parte da
+                    // suíte), e como é ValueGeneratedOnAddOrUpdate o Postgres o preenche sozinho — inserts
+                    // com seeds não precisam setar versão (não há "match em insert").
+                    if (Database.IsNpgsql())
+                    {
+                        modelBuilder.Entity(entityType.ClrType).UseXminAsConcurrencyToken();
+                    }
                 }
             }
         }

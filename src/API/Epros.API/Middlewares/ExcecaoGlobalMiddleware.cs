@@ -50,6 +50,24 @@ namespace Epros.API.Middlewares
                 return context.Response.WriteAsync(JsonSerializer.Serialize(details));
             }
 
+            // REG-017 — LOCK OTIMISTA: conflito de concorrência (xmin divergente) vira 409 Conflict, não 500.
+            // Sinaliza ao cliente "a linha mudou desde a sua leitura; recarregue e tente de novo" (last-write-wins
+            // proibido nas entidades-chave). Mapeado aqui, no ponto central, para todo SaveChanges da aplicação.
+            if (exception is Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+            {
+                context.Response.StatusCode = (int)HttpStatusCode.Conflict;
+                var conflict = new ProblemDetails
+                {
+                    Status = (int)HttpStatusCode.Conflict,
+                    Title = "Conflito de concorrência",
+                    Detail = "O registro foi alterado por outra operação desde a sua leitura. " +
+                             "Recarregue os dados e refaça a alteração.",
+                    Instance = context.Request.Path
+                };
+                conflict.Extensions.Add("traceId", context.TraceIdentifier);
+                return context.Response.WriteAsync(JsonSerializer.Serialize(conflict));
+            }
+
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
             var problemDetails = new ProblemDetails

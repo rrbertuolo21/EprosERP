@@ -642,6 +642,12 @@ try
                 Log.Information("Semeando catálogo de permissões RBAC (Capacidade/Papel Administrador)...");
                 await Epros.API.Seed.CapacidadeCatalogoSeeder.SeedAsync(dbClientes);
                 Log.Information("Catálogo de permissões RBAC semeado.");
+
+                // 1.10 — catálogo de MENU real com CapacidadeRequerida amarrada às capacidades descobertas,
+                // para que GET /api/v1/menu projete o menu dinâmico (em vez do fallback estático). Idempotente.
+                Log.Information("Semeando catálogo de MENU (capacidades por item)...");
+                await Epros.API.Seed.MenuCatalogoSeeder.SeedAsync(dbClientes);
+                Log.Information("Catálogo de MENU semeado.");
             }
             catch (Exception ex)
             {
