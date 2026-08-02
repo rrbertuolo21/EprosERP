@@ -157,6 +157,17 @@ namespace Epros.Modules.Vendas.Infrastructure.Data
         public DbSet<EcoFavoritoProduto> EcoFavoritosProduto => Set<EcoFavoritoProduto>();
         public DbSet<EcoHistorico> EcoHistoricos => Set<EcoHistorico>();
 
+        // Faturamento Comercial Internacional (VEN-FCI)
+        public DbSet<FciDocumentoComercial> FciDocumentos => Set<FciDocumentoComercial>();
+        public DbSet<FciDocumentoItem> FciDocumentoItens => Set<FciDocumentoItem>();
+        public DbSet<FciImposto> FciImpostos => Set<FciImposto>();
+        public DbSet<FciPreferenciaGeral> FciPreferencias => Set<FciPreferenciaGeral>();
+        public DbSet<FciConfiguracaoDocumento> FciConfiguracoes => Set<FciConfiguracaoDocumento>();
+        public DbSet<FciLancamentoEstoque> FciLancamentosEstoque => Set<FciLancamentoEstoque>();
+        public DbSet<FciLancamentoRazao> FciLancamentosRazao => Set<FciLancamentoRazao>();
+        public DbSet<FciPdfDocumento> FciPdfDocumentos => Set<FciPdfDocumento>();
+        public DbSet<FciHistorico> FciHistoricos => Set<FciHistorico>();
+
         public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
         // Lookups read-only cross-module (Guid FK) — ver VendasLookups.cs e seção 6.4 da convenção.
@@ -296,6 +307,7 @@ namespace Epros.Modules.Vendas.Infrastructure.Data
             ConfigurarLogisticaSaida(modelBuilder);
             ConfigurarPortalCliente(modelBuilder);
             ConfigurarComercioEletronico(modelBuilder);
+            ConfigurarFaturamentoComercialInternacional(modelBuilder);
 
             modelBuilder.Entity<OutboxMessage>(entity =>
             {
@@ -1245,6 +1257,135 @@ namespace Epros.Modules.Vendas.Infrastructure.Data
                 e.Property(x => x.DadosNovosJson).HasColumnType("jsonb");
                 e.HasIndex(x => new { x.TenantId, x.EntidadeId }).HasDatabaseName("ix_ven_garantia_historicos_tenant_entidade");
                 e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_ven_garantia_historicos_sync_id");
+            });
+        }
+
+        /// <summary>Mapping do submódulo Faturamento Comercial Internacional (VEN-FCI). Fonte: EF §10. Prefixo fci_.</summary>
+        private static void ConfigurarFaturamentoComercialInternacional(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<FciDocumentoComercial>(e =>
+            {
+                e.ToTable("fci_documento_comercial");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.TipoDocumento).HasConversion<int>();
+                e.Property(x => x.Status).HasConversion<int>();
+                e.Property(x => x.TipoDesconto).HasConversion<int>();
+                e.Property(x => x.Numero).HasMaxLength(60);
+                e.Property(x => x.Moeda).HasMaxLength(8);
+                e.Property(x => x.Incoterm).HasMaxLength(12);
+                e.Property(x => x.Referencia).HasMaxLength(200);
+                e.Property(x => x.Observacao).HasMaxLength(4000);
+                e.Property(x => x.TaxaCambio).HasColumnType("numeric(18,6)");
+                foreach (var p in new[] { nameof(FciDocumentoComercial.AliquotaImposto), nameof(FciDocumentoComercial.TotalImposto),
+                    nameof(FciDocumentoComercial.PercentualDesconto), nameof(FciDocumentoComercial.DescontoDocumento),
+                    nameof(FciDocumentoComercial.ValorFrete), nameof(FciDocumentoComercial.TotalBruto),
+                    nameof(FciDocumentoComercial.TotalLiquido), nameof(FciDocumentoComercial.TotalGeral),
+                    nameof(FciDocumentoComercial.ValorPago), nameof(FciDocumentoComercial.SaldoAnterior),
+                    nameof(FciDocumentoComercial.SaldoEmAberto) })
+                    e.Property(p).HasColumnType("numeric(18,2)");
+                e.HasMany(x => x.Itens).WithOne().HasForeignKey(i => i.DocumentoId).OnDelete(DeleteBehavior.Cascade);
+                e.Metadata.FindNavigation(nameof(FciDocumentoComercial.Itens))!.SetPropertyAccessMode(PropertyAccessMode.Field);
+                e.HasIndex(x => new { x.TenantId, x.TipoDocumento, x.Numero }).IsUnique().HasDatabaseName("uq_fci_documento_tenant_tipo_numero");
+                e.HasIndex(x => new { x.TenantId, x.ClienteId }).HasDatabaseName("ix_fci_documento_tenant_cliente");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_fci_documento_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<FciDocumentoItem>(e =>
+            {
+                e.ToTable("fci_documento_item");
+                e.HasKey(x => x.Id);
+                foreach (var p in new[] { nameof(FciDocumentoItem.Quantidade), nameof(FciDocumentoItem.ValorUnitario),
+                    nameof(FciDocumentoItem.Desconto), nameof(FciDocumentoItem.ValorDesconto), nameof(FciDocumentoItem.AliquotaImposto),
+                    nameof(FciDocumentoItem.ValorImposto), nameof(FciDocumentoItem.ValorBruto), nameof(FciDocumentoItem.ValorLiquido),
+                    nameof(FciDocumentoItem.ValorTotal) })
+                    e.Property(p).HasColumnType("numeric(18,4)");
+                e.HasIndex(x => new { x.TenantId, x.DocumentoId }).HasDatabaseName("ix_fci_item_tenant_documento");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_fci_item_sync_id");
+            });
+
+            modelBuilder.Entity<FciImposto>(e =>
+            {
+                e.ToTable("fci_imposto");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Nome).HasMaxLength(120);
+                e.Property(x => x.Aliquota).HasColumnType("numeric(18,4)");
+                e.HasIndex(x => new { x.TenantId, x.Nome }).IsUnique().HasDatabaseName("uq_fci_imposto_tenant_nome");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_fci_imposto_sync_id");
+                e.HasQueryFilter(x => x.DeletadoEm == null);
+            });
+
+            modelBuilder.Entity<FciPreferenciaGeral>(e =>
+            {
+                e.ToTable("fci_preferencia_geral");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.ModoCalculoEstoque).HasMaxLength(60);
+                e.HasIndex(x => x.TenantId).IsUnique().HasDatabaseName("uq_fci_preferencia_tenant");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_fci_preferencia_sync_id");
+            });
+
+            modelBuilder.Entity<FciConfiguracaoDocumento>(e =>
+            {
+                e.ToTable("fci_configuracao_documento");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.TipoDocumento).HasConversion<int>();
+                e.Property(x => x.NomeTipoDocumento).HasMaxLength(120);
+                e.Property(x => x.Prefixo).HasMaxLength(20);
+                e.Property(x => x.Sufixo).HasMaxLength(20);
+                e.Property(x => x.NumeroPedido).HasMaxLength(60);
+                e.Property(x => x.NumeroTransporte).HasMaxLength(60);
+                e.Property(x => x.Veiculo).HasMaxLength(60);
+                e.HasIndex(x => new { x.TenantId, x.TipoDocumento }).IsUnique().HasDatabaseName("uq_fci_config_tenant_tipo");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_fci_config_sync_id");
+            });
+
+            modelBuilder.Entity<FciLancamentoEstoque>(e =>
+            {
+                e.ToTable("fci_lancamento_estoque");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.TipoDocumento).HasConversion<int>();
+                e.Property(x => x.NumeroDocumento).HasMaxLength(60);
+                e.Property(x => x.ModoCalculo).HasMaxLength(60);
+                e.Property(x => x.QuantidadeEntrada).HasColumnType("numeric(18,4)");
+                e.Property(x => x.QuantidadeSaida).HasColumnType("numeric(18,4)");
+                e.HasIndex(x => new { x.TenantId, x.DocumentoId }).HasDatabaseName("ix_fci_estoque_tenant_documento");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_fci_estoque_sync_id");
+            });
+
+            modelBuilder.Entity<FciLancamentoRazao>(e =>
+            {
+                e.ToTable("fci_lancamento_razao");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.TipoDocumento).HasConversion<int>();
+                e.Property(x => x.Categoria).HasConversion<int>();
+                e.Property(x => x.NumeroDocumento).HasMaxLength(60);
+                e.Property(x => x.Debito).HasColumnType("numeric(18,2)");
+                e.Property(x => x.Credito).HasColumnType("numeric(18,2)");
+                e.HasIndex(x => new { x.TenantId, x.DocumentoId }).HasDatabaseName("ix_fci_razao_tenant_documento");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_fci_razao_sync_id");
+            });
+
+            modelBuilder.Entity<FciPdfDocumento>(e =>
+            {
+                e.ToTable("fci_pdf_documento");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.TipoSaida).HasConversion<int>();
+                e.Property(x => x.PaginaOrigem).HasMaxLength(300);
+                e.Property(x => x.ArquivoReferencia).HasMaxLength(500);
+                e.HasIndex(x => new { x.TenantId, x.DocumentoId }).HasDatabaseName("ix_fci_pdf_tenant_documento");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_fci_pdf_sync_id");
+            });
+
+            modelBuilder.Entity<FciHistorico>(e =>
+            {
+                e.ToTable("fci_historico");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.EntidadeTipo).HasConversion<int>();
+                e.Property(x => x.Evento).HasConversion<int>();
+                e.Property(x => x.DadosAnterioresJson).HasColumnType("jsonb");
+                e.Property(x => x.DadosNovosJson).HasColumnType("jsonb");
+                e.HasIndex(x => new { x.TenantId, x.DocumentoId }).HasDatabaseName("ix_fci_historico_tenant_documento");
+                e.HasIndex(x => x.SyncId).IsUnique().HasDatabaseName("uq_fci_historico_sync_id");
             });
         }
 
