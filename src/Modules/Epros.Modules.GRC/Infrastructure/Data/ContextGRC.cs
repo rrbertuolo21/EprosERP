@@ -55,6 +55,13 @@ namespace Epros.Modules.GRC.Infrastructure.Data
         public DbSet<ViolacaoSoD> ViolacoesSoD => Set<ViolacaoSoD>();
         public DbSet<ExcecaoSoD> ExcecoesSoD => Set<ExcecaoSoD>();
 
+        // GRC — Parametrizacao por tenant (D-TEC-04): os 5 grc_*_parametro que faltavam
+        public DbSet<PoliticaParametro> PoliticaParametros => Set<PoliticaParametro>();
+        public DbSet<ComplianceParametro> ComplianceParametros => Set<ComplianceParametro>();
+        public DbSet<RiscoParametro> RiscoParametros => Set<RiscoParametro>();
+        public DbSet<ControleParametro> ControleParametros => Set<ControleParametro>();
+        public DbSet<SegregacaoParametro> SegregacaoParametros => Set<SegregacaoParametro>();
+
         public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
         public ContextGRC(
@@ -304,6 +311,42 @@ namespace Epros.Modules.GRC.Infrastructure.Data
                 entity.HasKey(e => e.Id);
                 entity.ToTable("grc_sod_excecao");
                 entity.HasIndex(e => e.ViolacaoId);
+            });
+
+            // ===================== GRC — Parametros por tenant (D-TEC-04) =====================
+            modelBuilder.Entity<PoliticaParametro>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.ToTable("grc_pol_parametro");
+                entity.HasIndex(p => new { p.TenantId, p.Chave }).IsUnique();
+            });
+
+            modelBuilder.Entity<ComplianceParametro>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.ToTable("grc_reg_parametro");
+                entity.HasIndex(p => new { p.TenantId, p.Chave }).IsUnique();
+            });
+
+            modelBuilder.Entity<RiscoParametro>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.ToTable("grc_ris_parametro");
+                entity.HasIndex(p => new { p.TenantId, p.Chave }).IsUnique();
+            });
+
+            modelBuilder.Entity<ControleParametro>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.ToTable("grc_cia_parametro");
+                entity.HasIndex(p => new { p.TenantId, p.Chave }).IsUnique();
+            });
+
+            modelBuilder.Entity<SegregacaoParametro>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.ToTable("grc_sod_parametro");
+                entity.HasIndex(p => new { p.TenantId, p.Chave }).IsUnique();
             });
 
             modelBuilder.Entity<OutboxMessage>(entity =>
