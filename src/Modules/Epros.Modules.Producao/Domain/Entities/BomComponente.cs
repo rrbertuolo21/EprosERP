@@ -22,7 +22,11 @@ namespace Epros.Modules.Producao.Domain.Entities
         public int? OrdemMontagem { get; private set; }
         public decimal? CustoUnitarioComImpostos { get; private set; }
         public decimal? CustoLinha { get; private set; }
+        public ETipoComponenteBom TipoComponente { get; private set; } = ETipoComponenteBom.Normal;
         public EStatusComponenteBom Status { get; private set; } = EStatusComponenteBom.Rascunho;
+
+        /// <summary>PD6 · DP-BOM-013: item fantasma é atravessado na explosão, sem gerar consumo próprio.</summary>
+        public bool EhFantasma => TipoComponente == ETipoComponenteBom.Fantasma;
 
         protected BomComponente() { } // EF Core
 
@@ -37,7 +41,8 @@ namespace Epros.Modules.Producao.Domain.Entities
             decimal? percentualDesperdicio = null,
             Guid? grupoComponenteId = null,
             int? ordemMontagem = null,
-            decimal? custoUnitarioComImpostos = null)
+            decimal? custoUnitarioComImpostos = null,
+            ETipoComponenteBom tipoComponente = ETipoComponenteBom.Normal)
             : base(tenantId, criadoPor)
         {
             EstruturaId = estruturaId;
@@ -49,6 +54,7 @@ namespace Epros.Modules.Producao.Domain.Entities
             GrupoComponenteId = grupoComponenteId;
             OrdemMontagem = ordemMontagem;
             CustoUnitarioComImpostos = custoUnitarioComImpostos;
+            TipoComponente = tipoComponente;
             Status = EStatusComponenteBom.Rascunho;
 
             Recalcular();
