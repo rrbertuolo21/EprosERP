@@ -43,6 +43,13 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
         public DbSet<SaldoInicialItem> SaldosIniciaisItens => Set<SaldoInicialItem>();
         public DbSet<HistoricoEstoque> HistoricosEstoque => Set<HistoricoEstoque>();
 
+        // Inventário Físico e Contagem Cíclica (EST-INV) — EF §16
+        public DbSet<Inventario> Inventarios => Set<Inventario>();
+        public DbSet<InventarioItem> InventarioItens => Set<InventarioItem>();
+        public DbSet<InventarioMovimentoAjuste> InventarioMovimentoAjustes => Set<InventarioMovimentoAjuste>();
+        public DbSet<InventarioReajuste> InventarioReajustes => Set<InventarioReajuste>();
+        public DbSet<InventarioReajusteItem> InventarioReajusteItens => Set<InventarioReajusteItem>();
+
         // Compras
         public DbSet<Compra> Compras => Set<Compra>();
         public DbSet<CompraItem> CompraItens => Set<CompraItem>();
@@ -559,6 +566,75 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
                 entity.Property(h => h.UsuarioId).HasMaxLength(200);
                 entity.HasIndex(h => new { h.TenantId, h.Entidade, h.EntidadeId });
                 entity.HasIndex(h => h.SyncId).IsUnique();
+            });
+
+            // ============ INVENTÁRIO FÍSICO E CONTAGEM CÍCLICA (EST-INV) — EF §16 ============
+
+            modelBuilder.Entity<Inventario>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.Acuracidade).HasPrecision(9, 4);
+                entity.Property(i => i.Observacao).HasMaxLength(1000);
+                entity.Property(i => i.MotivoCancelamento).HasMaxLength(1000);
+                entity.HasMany(i => i.Itens)
+                      .WithOne(it => it.Inventario)
+                      .HasForeignKey(it => it.InventarioId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(i => new { i.TenantId, i.Situacao });
+                entity.HasIndex(i => new { i.TenantId, i.EmpresaId });
+                entity.HasIndex(i => i.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<InventarioItem>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.QuantidadeSistema).HasPrecision(18, 4);
+                entity.Property(i => i.Contagem01).HasPrecision(18, 4);
+                entity.Property(i => i.Contagem02).HasPrecision(18, 4);
+                entity.Property(i => i.Contagem03).HasPrecision(18, 4);
+                entity.Property(i => i.QuantidadeContada).HasPrecision(18, 4);
+                entity.Property(i => i.Divergencia).HasPrecision(18, 4);
+                entity.Property(i => i.Lote).HasMaxLength(60);
+                entity.HasOne<Produto>()
+                      .WithMany()
+                      .HasForeignKey(i => i.ProdutoId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(i => new { i.TenantId, i.InventarioId });
+                entity.HasIndex(i => i.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<InventarioMovimentoAjuste>(entity =>
+            {
+                entity.HasKey(m => m.Id);
+                entity.Property(m => m.QuantidadeAplicada).HasPrecision(18, 4);
+                entity.HasIndex(m => new { m.TenantId, m.InventarioId });
+                entity.HasIndex(m => m.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<InventarioReajuste>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.Porcentagem).HasPrecision(9, 4);
+                entity.Property(r => r.TipoReajuste).HasMaxLength(60);
+                entity.HasMany(r => r.Itens)
+                      .WithOne(it => it.Reajuste)
+                      .HasForeignKey(it => it.ReajusteId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(r => new { r.TenantId, r.ColaboradorId });
+                entity.HasIndex(r => r.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<InventarioReajusteItem>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.ValorOriginal).HasPrecision(18, 4);
+                entity.Property(i => i.ValorReajuste).HasPrecision(18, 4);
+                entity.HasOne<Produto>()
+                      .WithMany()
+                      .HasForeignKey(i => i.ProdutoId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(i => new { i.TenantId, i.ReajusteId });
+                entity.HasIndex(i => i.SyncId).IsUnique();
             });
 
             // ============================ COMPRAS ============================

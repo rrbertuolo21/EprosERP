@@ -97,6 +97,12 @@ namespace Epros.Shared.Domain.Events
             public const string GccConsumoRegistrado = "estoque.gcc.consumo_registrado";
             public const string SubEnvioRegistrado = "estoque.sub.envio_registrado";
             public const string SubRetornoRegistrado = "estoque.sub.retorno_registrado";
+            // Inventário Físico e Contagem Cíclica (EST-INV) — EF §13.
+            public const string InventarioCriado = "estoque.inv.inventario_criado";
+            public const string InventarioItemContado = "estoque.inv.item_contado";
+            public const string InventarioDivergenciaCalculada = "estoque.inv.divergencia_calculada";
+            public const string InventarioAprovado = "estoque.inv.inventario_aprovado";
+            public const string InventarioAjusteGerado = "estoque.inv.ajuste_gerado";
         }
 
         /// <summary>Operações (produção/manutenção/qualidade/RH/GRC).</summary>
@@ -128,6 +134,8 @@ namespace Epros.Shared.Domain.Events
             Estoque.WmsArmazemCriado, Estoque.WmsArmazemAlterado, Estoque.WmsArmazemExclusaoSolicitada,
             Estoque.GccContratoCriado, Estoque.GccContratoEnviadoAprovacao, Estoque.GccContratoAprovado,
             Estoque.GccConsumoRegistrado, Estoque.SubEnvioRegistrado, Estoque.SubRetornoRegistrado,
+            Estoque.InventarioCriado, Estoque.InventarioItemContado, Estoque.InventarioDivergenciaCalculada,
+            Estoque.InventarioAprovado, Estoque.InventarioAjusteGerado,
             Operacoes.OrdemProducaoEncerrada, Operacoes.OrdemManutencaoConcluida, Operacoes.InspecaoReprovada,
             Operacoes.FolhaProcessada, Operacoes.DenunciaProcedente
         }, System.StringComparer.Ordinal);
