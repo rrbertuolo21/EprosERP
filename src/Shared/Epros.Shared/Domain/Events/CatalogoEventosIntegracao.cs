@@ -115,6 +115,10 @@ namespace Epros.Shared.Domain.Events
             public const string GccAditivoRegistrado = "estoque.gcc.aditivo_registrado";
             public const string SubEnvioRegistrado = "estoque.sub.envio_registrado";
             public const string SubRetornoRegistrado = "estoque.sub.retorno_registrado";
+            /// <summary>Serviço de beneficiamento cobrado (SUB-009): gera a compra do serviço + contas a pagar (via evento).</summary>
+            public const string SubServicoCobrado = "estoque.sub.servico_cobrado";
+            /// <summary>Documento fiscal de remessa/retorno da subcontratação com CFOP parametrizado (valida-contador).</summary>
+            public const string SubDocumentoFiscalRegistrado = "estoque.sub.documento_fiscal_registrado";
             // Inventário Físico e Contagem Cíclica (EST-INV) — EF §13.
             public const string InventarioCriado = "estoque.inv.inventario_criado";
             public const string InventarioItemContado = "estoque.inv.item_contado";
@@ -172,6 +176,7 @@ namespace Epros.Shared.Domain.Events
             Estoque.WmsArmazemCriado, Estoque.WmsArmazemAlterado, Estoque.WmsArmazemExclusaoSolicitada,
             Estoque.GccContratoCriado, Estoque.GccContratoEnviadoAprovacao, Estoque.GccContratoAprovado,
             Estoque.GccConsumoRegistrado, Estoque.GccAditivoRegistrado, Estoque.SubEnvioRegistrado, Estoque.SubRetornoRegistrado,
+            Estoque.SubServicoCobrado, Estoque.SubDocumentoFiscalRegistrado,
             Estoque.InventarioCriado, Estoque.InventarioItemContado, Estoque.InventarioDivergenciaCalculada,
             Estoque.InventarioAprovado, Estoque.InventarioAjusteGerado,
             Estoque.LoteCriado, Estoque.LoteBloqueado, Estoque.LoteDesbloqueado,

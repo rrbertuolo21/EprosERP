@@ -183,4 +183,84 @@ namespace Epros.Modules.Estoque.Application.Handlers
             return CommandResult.Ok("Retorno de subcontratação registrado com sucesso!", new { retorno.Id });
         }
     }
+
+    /// <summary>
+    /// SUB-009 — registra a cobrança do serviço de beneficiamento e publica evento para gerar a compra do
+    /// serviço + contas a pagar (fato gerador único). ValorServico deve ser positivo.
+    /// </summary>
+    public class RegistrarSubServicoCobrancaCommandHandler : ICommandHandler<RegistrarSubServicoCobrancaCommand>
+    {
+        private readonly ContextEstoque _context;
+        private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
+
+        public RegistrarSubServicoCobrancaCommandHandler(ContextEstoque context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        {
+            _context = context;
+            _tenantProvider = tenantProvider;
+            _currentUser = currentUser;
+        }
+
+        public async Task<CommandResult> Handle(RegistrarSubServicoCobrancaCommand request, CancellationToken cancellationToken)
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var usuario = _currentUser.GetUserId() ?? "system";
+
+            if (request.ValorServico <= 0m)
+                return CommandResult.Falha("O valor do serviço deve ser maior que zero [SUB-030].");
+
+            var ordem = await _context.SubOrdens.FirstOrDefaultAsync(o => o.Id == request.OrdemId && o.DeletadoEm == null, cancellationToken);
+            if (ordem == null)
+                return CommandResult.Falha("Ordem de subcontratação não encontrada.");
+
+            var cobranca = new SubServicoCobranca(request.OrdemId, request.CompraId, request.ValorServico, tenantId, usuario);
+            _context.SubServicosCobranca.Add(cobranca);
+            _context.SubHistoricos.Add(new SubHistorico(ordem.Id, "servico_cobrado", null, null, null, tenantId, usuario));
+
+            // SUB-009: gera a compra do serviço + contas a pagar via evento (fato gerador único, idempotente).
+            _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Estoque.SubServicoCobrado,
+                JsonSerializer.Serialize(new { ordemId = ordem.Id, cobrancaId = cobranca.Id, request.ValorServico, request.CompraId, idempotencia = $"sub-servico:{cobranca.Id}", usuario })));
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Cobrança de serviço registrada — compra do serviço solicitada.", new { cobranca.Id });
+        }
+    }
+
+    /// <summary>
+    /// SUB-008 — registra o documento fiscal de remessa/retorno da subcontratação com CFOP PARAMETRIZADO
+    /// (valida-contador). O código não calcula o CFOP: apenas persiste o informado e publica o evento.
+    /// </summary>
+    public class RegistrarSubDocumentoFiscalCommandHandler : ICommandHandler<RegistrarSubDocumentoFiscalCommand>
+    {
+        private readonly ContextEstoque _context;
+        private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
+
+        public RegistrarSubDocumentoFiscalCommandHandler(ContextEstoque context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        {
+            _context = context;
+            _tenantProvider = tenantProvider;
+            _currentUser = currentUser;
+        }
+
+        public async Task<CommandResult> Handle(RegistrarSubDocumentoFiscalCommand request, CancellationToken cancellationToken)
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var usuario = _currentUser.GetUserId() ?? "system";
+
+            var ordem = await _context.SubOrdens.FirstOrDefaultAsync(o => o.Id == request.OrdemId && o.DeletadoEm == null, cancellationToken);
+            if (ordem == null)
+                return CommandResult.Falha("Ordem de subcontratação não encontrada.");
+
+            var doc = new SubDocumentoFiscal(request.OrdemId, request.EnvioId, request.RetornoId, request.DocumentoFiscalId,
+                request.CfopRemessa, request.CfopRetorno, tenantId, usuario);
+            _context.SubDocumentosFiscais.Add(doc);
+            _context.SubHistoricos.Add(new SubHistorico(ordem.Id, "documento_fiscal_registrado", null, null, null, tenantId, usuario));
+            _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Estoque.SubDocumentoFiscalRegistrado,
+                JsonSerializer.Serialize(new { ordemId = ordem.Id, documentoId = doc.Id, request.CfopRemessa, request.CfopRetorno, usuario })));
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Documento fiscal de subcontratação registrado (CFOP parametrizado — valida-contador).", new { doc.Id });
+        }
+    }
 }
