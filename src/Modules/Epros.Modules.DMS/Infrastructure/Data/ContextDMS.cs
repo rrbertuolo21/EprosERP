@@ -291,6 +291,14 @@ namespace Epros.Modules.DMS.Infrastructure.Data
                 entity.Property(s => s.ChaveIdempotencia).HasMaxLength(100);
                 entity.Property(s => s.PrazoUnidade).HasMaxLength(20);
                 entity.Property(s => s.OrigemVersao).HasMaxLength(60);
+                // Resultado do motor F&I (NF-01)
+                entity.Property(s => s.Sistema).HasMaxLength(10);
+                entity.Property(s => s.TaxaJurosMensal).HasPrecision(18, 8);
+                entity.Property(s => s.ValorParcela).HasPrecision(18, 2);
+                entity.Property(s => s.TotalPago).HasPrecision(18, 2);
+                entity.Property(s => s.TotalJuros).HasPrecision(18, 2);
+                entity.Property(s => s.Iof).HasPrecision(18, 2);
+                entity.Property(s => s.CetAnual).HasPrecision(18, 6);
                 entity.HasIndex(s => new { s.TenantId, s.ChaveIdempotencia }).IsUnique();
             });
 

@@ -55,5 +55,49 @@ namespace Epros.API.Controllers
         [HttpGet("propostas")]
         [AbacAuthorize("ConcessionariasVendas", "Consultar")]
         public async Task<IActionResult> ListarPropostas() => Ok(await _mediator.Send(new ObterPropostasVendaQuery()));
+
+        // ----- Transições de Proposta / Estoque / Reserva (D-02) -----
+
+        [HttpPost("propostas/{id}/aceitar")]
+        [AbacAuthorize("ConcessionariasVendas", "Editar")]
+        public async Task<ActionResult<CommandResult>> AceitarProposta(System.Guid id)
+        {
+            var result = await _mediator.Send(new AceitarPropostaVendaCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("propostas/{id}/expirar")]
+        [AbacAuthorize("ConcessionariasVendas", "Editar")]
+        public async Task<ActionResult<CommandResult>> ExpirarProposta(System.Guid id)
+        {
+            var result = await _mediator.Send(new ExpirarPropostaVendaCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("estoque/{id}/reservar")]
+        [AbacAuthorize("ConcessionariasVendas", "Reservar")]
+        public async Task<ActionResult<CommandResult>> ReservarEstoque(System.Guid id)
+        {
+            var result = await _mediator.Send(new ReservarEstoqueVeiculoCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("estoque/{id}/liberar")]
+        [AbacAuthorize("ConcessionariasVendas", "Reservar")]
+        public async Task<ActionResult<CommandResult>> LiberarEstoque(System.Guid id)
+        {
+            var result = await _mediator.Send(new LiberarEstoqueVeiculoCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("reservas/{id}/cancelar")]
+        [AbacAuthorize("ConcessionariasVendas", "Reservar")]
+        public async Task<ActionResult<CommandResult>> CancelarReserva(System.Guid id, [FromBody] CancelarReservaVeiculoBody body)
+        {
+            var result = await _mediator.Send(new CancelarReservaVeiculoCommand(id, body.Motivo));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        public record CancelarReservaVeiculoBody(string Motivo);
     }
 }

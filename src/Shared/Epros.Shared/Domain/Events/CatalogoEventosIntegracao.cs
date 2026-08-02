@@ -261,6 +261,34 @@ namespace Epros.Shared.Domain.Events
             public const string CiaAchadoCritico = "grc.cia.achado_critico";
         }
 
+        /// <summary>
+        /// CONCESSIONÁRIAS / DMS (con.*) — vertical automotiva. ⚠️ ADIÇÃO MÍNIMA pelo agente do
+        /// módulo CONCESSIONARIAS (worktree wt/concessionarias); homologar nomes/consumidores na
+        /// revisão central do catálogo (T2). Contratos CON-EVT-* da EF de integração.
+        /// </summary>
+        public static class Concessionarias
+        {
+            // CON-FIN (F&I)
+            /// <summary>Simulação de financiamento calculada (parcela/CET/IOF) — CON-EVT F&I (NF-01).</summary>
+            public const string FinSimulacaoCalculada = "con.fin.simulacao_calculada";
+            public const string FinContratoEmitido = "con.fin.contrato_emitido";
+            public const string FinJornadaEncerrada = "con.fin.jornada_encerrada";
+            // CON-VEN (venda de veículo)
+            public const string VenPropostaAceita = "con.ven.proposta_aceita";
+            public const string VenVeiculoReservado = "con.ven.veiculo_reservado";
+            public const string VenVeiculoFaturado = "con.ven.veiculo_faturado";
+            // CON-CRM
+            public const string CrmOportunidadeConvertida = "con.crm.oportunidade_convertida";
+            public const string CrmOportunidadePerdida = "con.crm.oportunidade_perdida";
+            // CON-GAR
+            public const string GarSolicitacaoJulgada = "con.gar.solicitacao_julgada";
+            // CON-SRV / CON-MNT (oficina via MAN)
+            public const string MntOrdemServicoAberta = "con.mnt.ordem_servico_aberta";
+            public const string MntOrdemServicoFechada = "con.mnt.ordem_servico_fechada";
+            // CON-PES (peças via EST)
+            public const string PesReservaConfirmada = "con.pes.reserva_confirmada";
+        }
+
         private static readonly HashSet<string> _todos = new(new[]
         {
             Assinatura.AssinaturaCancelada, Assinatura.AssinaturaReativada, Assinatura.PlanoAlterado,
@@ -308,7 +336,13 @@ namespace Epros.Shared.Domain.Events
             Grc.SodExcecaoAprovada, Grc.SodViolacaoDetectada,
             Grc.RegCertificadoAlertaVencimento, Grc.RegCertificadoRevogado,
             Grc.PolPoliticaPublicada, Grc.RisKriExcedido, Grc.CiaAchadoCritico,
-            Financeiro.LancamentoContabilGerado, Financeiro.RetornoBancarioProcessado, Financeiro.RemessaCnabGerada
+            Financeiro.LancamentoContabilGerado, Financeiro.RetornoBancarioProcessado, Financeiro.RemessaCnabGerada,
+            Concessionarias.FinSimulacaoCalculada, Concessionarias.FinContratoEmitido,
+            Concessionarias.FinJornadaEncerrada, Concessionarias.VenPropostaAceita,
+            Concessionarias.VenVeiculoReservado, Concessionarias.VenVeiculoFaturado,
+            Concessionarias.CrmOportunidadeConvertida, Concessionarias.CrmOportunidadePerdida,
+            Concessionarias.GarSolicitacaoJulgada, Concessionarias.MntOrdemServicoAberta,
+            Concessionarias.MntOrdemServicoFechada, Concessionarias.PesReservaConfirmada
         }, System.StringComparer.Ordinal);
 
         /// <summary>Todos os tipos de evento homologados no catálogo.</summary>
