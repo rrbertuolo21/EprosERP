@@ -27,5 +27,14 @@ namespace Epros.API.Providers
         {
             return _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Email)?.Value;
         }
+
+        /// <summary>
+        /// Lê a claim do principal autenticado. Base para o isolamento dos portais externos
+        /// (clienteId/fornecedorId/portalUsuarioId) — o valor vem do token assinado, nunca do request.
+        /// </summary>
+        public string? GetClaim(string claimType)
+        {
+            return _httpContextAccessor.HttpContext?.User?.FindFirst(claimType)?.Value;
+        }
     }
 }

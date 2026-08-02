@@ -133,6 +133,9 @@ try
     builder.Services.AddScoped<Epros.Shared.Application.Contracts.INumeracaoService, Epros.Modules.Aplicativo.Infrastructure.Services.NumeracaoService>();
     builder.Services.AddScoped<Epros.Shared.Application.Contracts.IRegistroAuditoriaService, Epros.Modules.Aplicativo.Infrastructure.Services.RegistroAuditoriaService>();
     builder.Services.AddScoped<Epros.Shared.Application.Contracts.IAssinaturaDigitalService, Epros.Modules.Aplicativo.Infrastructure.Services.AssinaturaDigitalPendenteService>();
+    // GRC · D-SOD-03 — avaliador preventivo de Segregação de Funções ligado ao caminho de concessão
+    // RBAC (GestaoClientes). Torna o bloqueio SoD EFETIVO em runtime (antes o handler existia sem caller).
+    builder.Services.AddScoped<Epros.Shared.Application.Contracts.ISoDAvaliadorConcessao, Epros.Modules.GRC.Application.Services.SoDAvaliadorConcessaoService>();
     // PLT · GED (T10) — storage documental atrás de abstração. Provider real (MinIO/S3/servidor de
     // storage) entra por ambiente; sem ele, usa a implementação "não configurada" (// valida-ambiente).
     builder.Services.AddScoped<Epros.Modules.Aplicativo.Application.Contracts.IArmazenamentoDocumentoService, Epros.Modules.Aplicativo.Infrastructure.Services.ArmazenamentoLocalNaoConfiguradoService>();

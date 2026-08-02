@@ -174,6 +174,36 @@ namespace Epros.Tests
             Assert.Single(await context.BypassesSoD.ToListAsync());
         }
 
+        // ===== D-SOD-03: bloqueio SoD EFETIVO em runtime via porta de concessão (ISoDAvaliadorConcessao) =====
+
+        [Fact]
+        public async Task Avaliador_De_Concessao_Bloqueia_Quando_Regra_Bloqueia()
+        {
+            using var context = NovoContexto(nameof(Avaliador_De_Concessao_Bloqueia_Quando_Regra_Bloqueia));
+            var (a, b) = await SemearRegraAtivaAsync(context, "Bloqueia");
+            var servico = new Epros.Modules.GRC.Application.Services.SoDAvaliadorConcessaoService(context, new FakeTenant("tenant-1"));
+
+            var res = await servico.AvaliarConcessaoAsync(Guid.NewGuid(), new[] { a }, new[] { b }, CancellationToken.None);
+
+            Assert.True(res.Bloqueado);
+            Assert.True(res.TemConflito);
+            Assert.Single(res.RegrasBloqueantes);
+        }
+
+        [Fact]
+        public async Task Avaliador_De_Concessao_Libera_Sem_Conflito()
+        {
+            using var context = NovoContexto(nameof(Avaliador_De_Concessao_Libera_Sem_Conflito));
+            await SemearRegraAtivaAsync(context, "Bloqueia");
+            var servico = new Epros.Modules.GRC.Application.Services.SoDAvaliadorConcessaoService(context, new FakeTenant("tenant-1"));
+
+            // Concessão de uma função sem par conflitante → liberada.
+            var res = await servico.AvaliarConcessaoAsync(Guid.NewGuid(), new Guid[0], new[] { Guid.NewGuid() }, CancellationToken.None);
+
+            Assert.False(res.Bloqueado);
+            Assert.False(res.TemConflito);
+        }
+
         private class FakeTenant : ITenantProvider
         {
             private readonly string _t;

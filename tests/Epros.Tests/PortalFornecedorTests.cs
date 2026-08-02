@@ -139,13 +139,77 @@ namespace Epros.Tests
             Assert.False(rInval.Sucesso);
 
             // Consulta do fornecedor B não vê documentos de A (isolamento).
-            var rListaB = await new ListarDocumentosFornecedorQueryHandler(ctx).Handle(new ListarDocumentosFornecedorQuery(fornecedorB), CancellationToken.None);
+            var rListaB = await new ListarDocumentosFornecedorQueryHandler(ctx, tp, cu).Handle(new ListarDocumentosFornecedorQuery(fornecedorB), CancellationToken.None);
             var totalB = (int)rListaB.Dados!.GetType().GetProperty("Total")!.GetValue(rListaB.Dados)!;
             Assert.Equal(0, totalB);
 
-            var rListaA = await new ListarDocumentosFornecedorQueryHandler(ctx).Handle(new ListarDocumentosFornecedorQuery(fornecedorA), CancellationToken.None);
+            var rListaA = await new ListarDocumentosFornecedorQueryHandler(ctx, tp, cu).Handle(new ListarDocumentosFornecedorQuery(fornecedorA), CancellationToken.None);
             var totalA = (int)rListaA.Dados!.GetType().GetProperty("Total")!.GetValue(rListaA.Dados)!;
             Assert.Equal(1, totalA);
+        }
+
+        [Fact(DisplayName = "PFO | Principal externo NÃO envia pré-aviso como outro fornecedor (VAL-PFO-004)")]
+        public async Task Externo_NaoAge_ComoOutroFornecedor()
+        {
+            var ctx = CreateContext(nameof(Externo_NaoAge_ComoOutroFornecedor));
+            var tp = new TestTenantProvider(TenantId);
+            var fornecedorA = Guid.NewGuid(); var fornecedorB = Guid.NewGuid();
+
+            // Acesso ativo do fornecedor A (semeado pelo fluxo de convite/ativação).
+            await SemearAcessoAtivo(ctx, fornecedorA);
+
+            // Principal externo de A tenta enviar pré-aviso informando o fornecedor B → NEGADO.
+            var externoA = new TestCurrentUser(UserId, fornecedorId: fornecedorA);
+            var r = await new EnviarPreAvisoEmbarqueCommandHandler(ctx, tp, externoA).Handle(
+                new EnviarPreAvisoEmbarqueCommand(Guid.NewGuid(), fornecedorB, DateTime.UtcNow.AddDays(2),
+                    new List<PreAvisoItemInput> { new(Guid.NewGuid(), Guid.NewGuid(), 5m, null) }), CancellationToken.None);
+            Assert.False(r.Sucesso);
+        }
+
+        [Fact(DisplayName = "PFO | Principal externo consulta apenas o próprio fornecedor (VAL-PFO-005)")]
+        public async Task Externo_Consulta_SoOProprio()
+        {
+            var ctx = CreateContext(nameof(Externo_Consulta_SoOProprio));
+            var tp = new TestTenantProvider(TenantId);
+            var fornecedorA = Guid.NewGuid(); var fornecedorB = Guid.NewGuid();
+            await SemearAcessoAtivo(ctx, fornecedorA);
+
+            // Documento de B existe no tenant.
+            await new EnviarDocumentoFornecedorCommandHandler(ctx, tp, new TestCurrentUser(UserId)).Handle(
+                new EnviarDocumentoFornecedorCommand(fornecedorB, EReferenciaDocumentoFornecedor.Pedido, Guid.NewGuid(), Guid.NewGuid(), "NF-e"), CancellationToken.None);
+
+            // Externo de A tenta forçar fornecedor B na consulta → NEGADO.
+            var externoA = new TestCurrentUser(UserId, fornecedorId: fornecedorA);
+            var rForcado = await new ListarDocumentosFornecedorQueryHandler(ctx, tp, externoA).Handle(
+                new ListarDocumentosFornecedorQuery(fornecedorB), CancellationToken.None);
+            Assert.False(rForcado.Sucesso);
+
+            // Consultando sem forçar id, vê só o próprio (A) — zero docs de B.
+            var rProprio = await new ListarDocumentosFornecedorQueryHandler(ctx, tp, externoA).Handle(
+                new ListarDocumentosFornecedorQuery(Guid.Empty), CancellationToken.None);
+            Assert.True(rProprio.Sucesso);
+            var total = (int)rProprio.Dados!.GetType().GetProperty("Total")!.GetValue(rProprio.Dados)!;
+            Assert.Equal(0, total);
+        }
+
+        [Fact(DisplayName = "PFO | Principal externo sem acesso ativo é barrado (PFO-002)")]
+        public async Task Externo_SemAcessoAtivo_Barrado()
+        {
+            var ctx = CreateContext(nameof(Externo_SemAcessoAtivo_Barrado));
+            var tp = new TestTenantProvider(TenantId);
+            var fornecedorA = Guid.NewGuid();
+            // Nenhum acesso ativo semeado para A.
+            var externoA = new TestCurrentUser(UserId, fornecedorId: fornecedorA);
+            var r = await new ListarDocumentosFornecedorQueryHandler(ctx, tp, externoA).Handle(
+                new ListarDocumentosFornecedorQuery(fornecedorA), CancellationToken.None);
+            Assert.False(r.Sucesso);
+        }
+
+        private static async Task SemearAcessoAtivo(ContextEstoque ctx, Guid fornecedorId)
+        {
+            ctx.PfoUsuariosFornecedor.Add(new Epros.Modules.Estoque.Domain.Entities.PfoUsuarioFornecedor(
+                fornecedorId, Guid.NewGuid(), TenantId, UserId));
+            await ctx.SaveChangesAsync();
         }
 
         private ContextEstoque CreateContext(string dbName)
@@ -162,10 +226,13 @@ namespace Epros.Tests
 
         private class TestCurrentUser : ICurrentUser
         {
-            private readonly string _u; public TestCurrentUser(string u) => _u = u;
+            private readonly string _u;
+            private readonly Guid? _fornecedorId;
+            public TestCurrentUser(string u, Guid? fornecedorId = null) { _u = u; _fornecedorId = fornecedorId; }
             public string? GetUserId() => _u;
             public string? GetUserName() => "Test User";
             public string? GetUserEmail() => "test@epros.com";
+            public string? GetClaim(string claimType) => claimType == "fornecedorId" ? _fornecedorId?.ToString() : null;
         }
     }
 }

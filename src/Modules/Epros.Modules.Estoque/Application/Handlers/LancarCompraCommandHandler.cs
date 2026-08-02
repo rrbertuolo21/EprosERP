@@ -7,6 +7,7 @@ using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
 using Epros.Shared.Domain.Events;
 using Epros.Modules.Estoque.Application.Commands;
+using Epros.Modules.Estoque.Application.Security;
 using Epros.Modules.Estoque.Application.Services;
 using Epros.Modules.Estoque.Domain.Entities;
 using Epros.Modules.Estoque.Domain.Enums;
@@ -36,6 +37,10 @@ namespace Epros.Modules.Estoque.Application.Handlers
         {
             var tenantId = _tenantProvider.GetTenantId();
             var usuario = _currentUser.GetUserId() ?? "system";
+
+            // CD3/SRC-008: se a origem está sob alçada, só efetiva com o pedido de aprovação APROVADO.
+            var erroAlcada = await AlcadaCompraGate.GarantirAprovadaAsync(_context, request.AprovacaoOrigemId, cancellationToken);
+            if (erroAlcada != null) return erroAlcada;
 
             // 1. Evitar lançamento em duplicidade de nota fiscal de compra (ChaveAcesso única por tenant)
             var notaExistente = await _context.Compras.AnyAsync(c => c.ChaveAcesso == request.ChaveAcesso, cancellationToken);

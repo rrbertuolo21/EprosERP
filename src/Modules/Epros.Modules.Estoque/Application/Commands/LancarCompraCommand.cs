@@ -12,7 +12,10 @@ namespace Epros.Modules.Estoque.Application.Commands
         string ChaveAcesso,
         decimal ValorTotal,
         DateTime DataEmissao,
-        List<ItemCompraInput> Itens
+        List<ItemCompraInput> Itens,
+        // CD3/SRC-008: id da origem sob alçada (pedido de compra/compra). Quando informado, o lançamento
+        // só efetiva se o pedido de aprovação estiver APROVADO. Opcional (default null) — ver AlcadaCompraGate.
+        Guid? AprovacaoOrigemId = null
     ) : ICommand;
 
     public record ItemCompraInput(

@@ -8,6 +8,7 @@ using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
 using Epros.Shared.Domain.Events;
 using Epros.Modules.Estoque.Application.Commands;
+using Epros.Modules.Estoque.Application.Security;
 using Epros.Modules.Estoque.Domain.Entities;
 using Epros.Modules.Estoque.Infrastructure.Data;
 
@@ -118,18 +119,22 @@ namespace Epros.Modules.Estoque.Application.Handlers
             var tenantId = _tenantProvider.GetTenantId();
             var usuario = _currentUser.GetUserId() ?? "system";
 
+            // PFO-002: o fornecedor efetivo vem do principal externo (nunca do request).
+            var (erroAcesso, fornecedorEfetivo) = await PortalFornecedorAcesso.ResolverAsync(_currentUser, _context, tenantId, request.FornecedorId, cancellationToken);
+            if (erroAcesso != null) return erroAcesso;
+
             var cotacao = await _context.PfoCotacoesPublicadas.FirstOrDefaultAsync(c => c.Id == request.CotacaoPublicadaId && c.DeletadoEm == null, cancellationToken);
             if (cotacao == null) return CommandResult.Falha("Cotação não encontrada.");
 
             // PFO-002 / VAL-PFO-001: isolamento — o fornecedor só responde a cotação vinculada a ele.
-            if (cotacao.FornecedorId != request.FornecedorId)
+            if (cotacao.FornecedorId != fornecedorEfetivo)
                 return CommandResult.Falha("Acesso negado: cotação de outro fornecedor [PFO-002/VAL-PFO-001].");
 
             // VAL-PFO-003: cotação encerrada/vencida não aceita resposta.
             if (!cotacao.AceitaResposta())
                 return CommandResult.Falha("Cotação encerrada ou fora do prazo de resposta [VAL-PFO-003].");
 
-            var resposta = new PfoRespostaCotacao(cotacao.Id, request.FornecedorId, request.ValorTotal, request.Observacao, tenantId, usuario);
+            var resposta = new PfoRespostaCotacao(cotacao.Id, fornecedorEfetivo, request.ValorTotal, request.Observacao, tenantId, usuario);
             if (!resposta.IsValid)
                 return CommandResult.Falha(resposta.Notifications.Select(n => n.Message), "Dados da resposta são inválidos.");
             _context.PfoRespostasCotacao.Add(resposta);
@@ -163,10 +168,14 @@ namespace Epros.Modules.Estoque.Application.Handlers
             var tenantId = _tenantProvider.GetTenantId();
             var usuario = _currentUser.GetUserId() ?? "system";
 
+            // PFO-002/VAL-PFO-004: o fornecedor efetivo vem do principal externo (nunca do request).
+            var (erroAcesso, fornecedorEfetivo) = await PortalFornecedorAcesso.ResolverAsync(_currentUser, _context, tenantId, request.FornecedorId, cancellationToken);
+            if (erroAcesso != null) return erroAcesso;
+
             if (request.Itens == null || request.Itens.Count == 0)
                 return CommandResult.Falha("O pré-aviso deve possuir ao menos um item.");
 
-            var preAviso = new PfoPreAvisoEmbarque(request.PedidoCompraId, request.FornecedorId, request.DataPrevistaEntrega, request.Observacao, tenantId, usuario);
+            var preAviso = new PfoPreAvisoEmbarque(request.PedidoCompraId, fornecedorEfetivo, request.DataPrevistaEntrega, request.Observacao, tenantId, usuario);
             if (!preAviso.IsValid)
                 return CommandResult.Falha(preAviso.Notifications.Select(n => n.Message), "Dados do pré-aviso são inválidos.");
             _context.PfoPreAvisosEmbarque.Add(preAviso);
@@ -204,7 +213,11 @@ namespace Epros.Modules.Estoque.Application.Handlers
             var tenantId = _tenantProvider.GetTenantId();
             var usuario = _currentUser.GetUserId() ?? "system";
 
-            var doc = new PfoDocumentoFornecedor(request.FornecedorId, request.ReferenciaTipo, request.ReferenciaId, request.TipoDocumento, request.ArquivoId, tenantId, usuario);
+            // PFO-002/VAL-PFO-005: o fornecedor efetivo vem do principal externo (nunca do request).
+            var (erroAcesso, fornecedorEfetivo) = await PortalFornecedorAcesso.ResolverAsync(_currentUser, _context, tenantId, request.FornecedorId, cancellationToken);
+            if (erroAcesso != null) return erroAcesso;
+
+            var doc = new PfoDocumentoFornecedor(fornecedorEfetivo, request.ReferenciaTipo, request.ReferenciaId, request.TipoDocumento, request.ArquivoId, tenantId, usuario);
             if (!doc.IsValid)
                 return CommandResult.Falha(doc.Notifications.Select(n => n.Message), "Dados do documento são inválidos.");
             _context.PfoDocumentosFornecedor.Add(doc);

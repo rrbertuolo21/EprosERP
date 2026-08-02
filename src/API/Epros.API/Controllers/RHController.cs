@@ -6,6 +6,7 @@ using MediatR;
 using Epros.Modules.RH.Application.Commands;
 using Epros.Modules.RH.Application.Queries;
 using Epros.Shared.Application.Models;
+using Epros.API.Security;
 
 namespace Epros.API.Controllers
 {
@@ -22,6 +23,7 @@ namespace Epros.API.Controllers
         }
 
         [HttpPost("colaboradores")]
+        [AbacAuthorize("RhColaborador", "Criar")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<CommandResult>> AdmitirColaborador([FromBody] AdmitirColaboradorCommand command)
@@ -32,6 +34,7 @@ namespace Epros.API.Controllers
         }
 
         [HttpPost("colaboradores/{id}/desligar")]
+        [AbacAuthorize("RhColaborador", "Editar")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<CommandResult>> DesligarColaborador(Guid id, [FromBody] DesligarColaboradorRequest request)
@@ -45,6 +48,7 @@ namespace Epros.API.Controllers
         public record DesligarColaboradorRequest(DateTime DataDemissao);
 
         [HttpPost("timesheets")]
+        [AbacAuthorize("RhPonto", "Criar")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<CommandResult>> RegistrarTimesheet([FromBody] RegistrarTimesheetCommand command)
@@ -55,6 +59,7 @@ namespace Epros.API.Controllers
         }
 
         [HttpPost("folhas/processar")]
+        [AbacAuthorize("RhFolha", "Processar")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<CommandResult>> ProcessarFolhaPagamento([FromBody] ProcessarFolhaPagamentoCommand command)
@@ -65,6 +70,7 @@ namespace Epros.API.Controllers
         }
 
         [HttpGet("colaboradores")]
+        [AbacAuthorize("RhColaborador", "Ler")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> ListarColaboradores()
         {
@@ -73,6 +79,7 @@ namespace Epros.API.Controllers
         }
 
         [HttpGet("folhas")]
+        [AbacAuthorize("RhFolha", "Ler")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> ListarFolhas()
         {
