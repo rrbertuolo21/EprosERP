@@ -427,6 +427,8 @@ namespace Epros.Modules.Producao.Infrastructure.Data
                 entity.HasIndex(e => new { e.TenantId, e.Referencia });
                 entity.HasIndex(e => new { e.TenantId, e.Status });
                 entity.HasIndex(e => new { e.TenantId, e.EmpresaId });
+                // T5 — vínculo com a ordem de produção canônica (ordens_producao); indexado para lookup reverso.
+                entity.HasIndex(e => new { e.TenantId, e.OrdemProducaoRefId });
                 entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
                 entity.Property(e => e.Referencia).HasMaxLength(80);
                 entity.Property(e => e.TipoCustoProducao).HasMaxLength(50);
