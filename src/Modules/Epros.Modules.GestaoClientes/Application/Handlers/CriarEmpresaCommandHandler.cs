@@ -2,9 +2,11 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
+using Epros.Shared.Domain.Events;
 using Epros.Modules.GestaoClientes.Application.Commands;
 using Epros.Modules.GestaoClientes.Domain.Entities;
 using Epros.Modules.GestaoClientes.Domain.ValueObjects;
@@ -108,6 +110,13 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 return CommandResult.Falha(erros, "Invariantes de domínio da Empresa não foram atendidas.");
             }
 
+            // T-03: contrato de evento CAD-* empresa.criada, publicado via Outbox no mesmo commit.
+            var eventoEmpresaCriada = new OutboxMessage(
+                tenantId,
+                "empresa.criada",
+                JsonSerializer.Serialize(new EmpresaCriadaEventNotification(
+                    empresa.Id, tenantId, tempCnpj.Valor, request.RazaoSocial ?? string.Empty, DateTime.UtcNow, criadoPor)));
+
             var existeEmpresas = await _context.Empresas.AnyAsync(e => e.TenantId == tenantId, cancellationToken);
             if (!existeEmpresas)
             {
@@ -115,6 +124,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 try
                 {
                     _context.Empresas.Add(empresa);
+                    _context.OutboxMessages.Add(eventoEmpresaCriada);
                     await _context.SaveChangesAsync(cancellationToken);
 
                     // Criar Plano Inicial (pega o primeiro plano ativo do Siser super admin, que tem tenant_id = "system")
@@ -165,6 +175,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             else
             {
                 _context.Empresas.Add(empresa);
+                _context.OutboxMessages.Add(eventoEmpresaCriada);
                 await _context.SaveChangesAsync(cancellationToken);
             }
 

@@ -99,6 +99,34 @@ namespace Epros.Tests
         }
 
         [Fact]
+        public async Task Deve_Publicar_Evento_empresa_criada_No_Outbox()
+        {
+            // T-03: contrato CAD-* empresa.criada emitido via Outbox no cadastro da empresa.
+            using var context = CreateInMemoryContext("db_empresa_outbox_evento");
+            var planoMaster = new Plano("Plano Outbox", 100m, "system", "system");
+            context.Planos.Add(planoMaster);
+            await context.SaveChangesAsync();
+
+            var handler = new CriarEmpresaCommandHandler(
+                context, new TestTenantProvider(TenantId), new TestCurrentUser(Usuario), new FakeValidadorLimitesSaaS(false, ""));
+
+            var enderecoDto = new EmpresaEnderecoDto("Rua X", "1", null, "Centro", "13010-000", "Campinas", "SP");
+            var command = new CriarEmpresaCommand(
+                "Empresa Outbox S/A", "Outbox", "12345678000195",
+                null, null, null, null,
+                RegimeTributario.SimplesNacional, RegimeApuracao.Cumulativo,
+                null, null, null, null, null, null, null, null, null, null,
+                enderecoDto);
+
+            var result = await handler.Handle(command, CancellationToken.None);
+            Assert.True(result.Sucesso);
+
+            var evento = await context.OutboxMessages.FirstOrDefaultAsync(o => o.EventType == "empresa.criada" && o.TenantId == TenantId);
+            Assert.NotNull(evento);
+            Assert.Contains("12345678000195", evento!.Payload);
+        }
+
+        [Fact]
         public async Task Deve_Retornar_Falha_Se_Exceder_Limite_De_Empresas()
         {
             // Arrange
