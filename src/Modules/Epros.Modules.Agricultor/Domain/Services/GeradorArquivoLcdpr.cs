@@ -59,10 +59,16 @@ namespace Epros.Modules.Agricultor.Domain.Services
             // ---- 0040 (+0045) : imóveis ----
             foreach (var imovel in esc.Imoveis.OrderBy(i => i.CodImovel))
             {
+                // Leiaute 1.3 — 0040 tem 17 colunas (REG + 16): REG, COD_IMOVEL, PAIS, MOEDA, CAD_ITR,
+                // CAEPF, INSCR_ESTADUAL, NOME_IMOVEL, ENDERECO, NUM, COMPL, BAIRRO, UF, COD_MUN, CEP,
+                // TIPO_EXPLORACAO, PARTICIPACAO. O bloco de endereço estava ausente e as colunas UF/COD_MUN
+                // saíam deslocadas — corrigido abaixo (AGR-D17).
                 linhas.Add(FormatadorLcdpr.MontarLinha(
                     "0040", FormatadorLcdpr.Codigo3(imovel.CodImovel), "BR", "BRL",
                     imovel.CadItrCafir, imovel.Caepf, string.Empty, // INSCR_ESTADUAL (opc)
-                    imovel.NomeImovel, string.Empty, imovel.Uf, imovel.CodMunicipio, string.Empty,
+                    imovel.NomeImovel,
+                    imovel.Endereco, imovel.Num, imovel.Compl, imovel.Bairro,
+                    imovel.Uf, imovel.CodMunicipio, imovel.Cep,
                     ((int)imovel.TipoExploracao).ToString(),
                     FormatadorLcdpr.PercentualImplicito(imovel.Participacao)));
 

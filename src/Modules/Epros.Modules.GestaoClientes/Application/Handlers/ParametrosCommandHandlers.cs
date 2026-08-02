@@ -235,9 +235,19 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             var tenantId = _tenantProvider.GetTenantId();
             var usuarioId = _currentUser.GetUserId() ?? "system";
 
-            var existe = await _context.Categorias.AnyAsync(c => c.Nome == request.Nome && c.TenantId == tenantId, cancellationToken);
-            if (existe)
-                return CommandResult.Falha(new[] { "Já existe uma categoria com este nome." }, "Erro de validação");
+            // Considera também linhas soft-deletadas (índice único (TenantId, Nome) as inclui): se houver uma
+            // homônima excluída, restaura-a em vez de inserir (evita colisão de índice e preserva o histórico).
+            var existente = await _context.Categorias.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(c => c.Nome == request.Nome && c.TenantId == tenantId, cancellationToken);
+            if (existente != null)
+            {
+                if (existente.DeletadoEm == null)
+                    return CommandResult.Falha(new[] { "Já existe uma categoria com este nome." }, "Erro de validação");
+                existente.Restaurar(usuarioId);
+                existente.Atualizar(request.Nome, request.Image, usuarioId);
+                await _context.SaveChangesAsync(cancellationToken);
+                return CommandResult.Ok("Categoria criada com sucesso!", new { CategoriaId = existente.Id });
+            }
 
             var cat = new Categoria(request.Nome, DateTime.UtcNow, request.Image, tenantId, usuarioId);
             if (!cat.IsValid)
@@ -290,27 +300,29 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
     {
         private readonly ContextGestaoClientes _context;
         private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
 
-        public ExcluirCategoriaCommandHandler(ContextGestaoClientes context, ITenantProvider tenantProvider)
+        public ExcluirCategoriaCommandHandler(ContextGestaoClientes context, ITenantProvider tenantProvider, ICurrentUser currentUser)
         {
             _context = context;
             _tenantProvider = tenantProvider;
+            _currentUser = currentUser;
         }
 
         public async Task<CommandResult> Handle(ExcluirCategoriaCommand request, CancellationToken cancellationToken)
         {
             var tenantId = _tenantProvider.GetTenantId();
+            var usuarioId = _currentUser.GetUserId() ?? "system";
             var cat = await _context.Categorias.FirstOrDefaultAsync(c => c.Id == request.Id && c.TenantId == tenantId, cancellationToken);
             if (cat == null)
                 return CommandResult.Falha(new[] { "Categoria não encontrada." }, "Erro de validação");
 
-            // Simulação de vínculo operacional para teste
-            if (cat.Nome.Contains("Em Uso"))
-            {
-                return CommandResult.Falha(new[] { "Esta categoria está vinculada a produtos e não pode ser excluída." }, "Erro de integridade");
-            }
-
-            _context.Categorias.Remove(cat);
+            // P1-1 (auditoria CADASTROS): a exclusão de catálogo é SOFT-DELETE (mesma garantia de
+            // integridade referencial da exclusão de Pessoa) — a linha física é preservada, de modo que
+            // qualquer referência cross-module por Guid (ex.: Produto/Estoque/FCI) continua resolvendo.
+            // O catálogo de Categoria de produto é próprio do bounded context de Estoque (CategoriaProduto),
+            // desacoplado deste catálogo de plataforma; portanto não há vínculo enforced a bloquear aqui. // valida-Siser
+            cat.Deletar(usuarioId);
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Categoria excluída com sucesso!");
         }
@@ -336,9 +348,17 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             var tenantId = _tenantProvider.GetTenantId();
             var usuarioId = _currentUser.GetUserId() ?? "system";
 
-            var existe = await _context.UnidadesMedida.AnyAsync(u => u.Nome == request.Nome && u.TenantId == tenantId, cancellationToken);
-            if (existe)
-                return CommandResult.Falha(new[] { "Já existe uma unidade de medida com este nome." }, "Erro de validação");
+            var existente = await _context.UnidadesMedida.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Nome == request.Nome && u.TenantId == tenantId, cancellationToken);
+            if (existente != null)
+            {
+                if (existente.DeletadoEm == null)
+                    return CommandResult.Falha(new[] { "Já existe uma unidade de medida com este nome." }, "Erro de validação");
+                existente.Restaurar(usuarioId);
+                existente.Atualizar(request.Nome, request.CodigoUNECE, usuarioId);
+                await _context.SaveChangesAsync(cancellationToken);
+                return CommandResult.Ok("Unidade de medida criada com sucesso!", new { UnidadeId = existente.Id });
+            }
 
             var uni = new UnidadeMedida(request.Nome, request.CodigoUNECE, tenantId, usuarioId);
             if (!uni.IsValid)
@@ -391,27 +411,34 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
     {
         private readonly ContextGestaoClientes _context;
         private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
 
-        public ExcluirUnidadeMedidaCommandHandler(ContextGestaoClientes context, ITenantProvider tenantProvider)
+        public ExcluirUnidadeMedidaCommandHandler(ContextGestaoClientes context, ITenantProvider tenantProvider, ICurrentUser currentUser)
         {
             _context = context;
             _tenantProvider = tenantProvider;
+            _currentUser = currentUser;
         }
 
         public async Task<CommandResult> Handle(ExcluirUnidadeMedidaCommand request, CancellationToken cancellationToken)
         {
             var tenantId = _tenantProvider.GetTenantId();
+            var usuarioId = _currentUser.GetUserId() ?? "system";
             var uni = await _context.UnidadesMedida.FirstOrDefaultAsync(u => u.Id == request.Id && u.TenantId == tenantId, cancellationToken);
             if (uni == null)
                 return CommandResult.Falha(new[] { "Unidade de medida não encontrada." }, "Erro de validação");
 
-            // Simulação de vínculo operacional para teste
-            if (uni.Nome.Contains("Em Uso"))
-            {
-                return CommandResult.Falha(new[] { "Esta unidade de medida está em uso por produtos e não pode ser excluída." }, "Erro de integridade");
-            }
+            // P1-1 (auditoria CADASTROS): checagem REAL de vínculo (substitui o stub `Nome.Contains("Em Uso")`).
+            // A UnidadeMedida é referenciada por ConversaoUnidade (FK enforced no mesmo contexto, DeleteBehavior.Restrict);
+            // uma unidade usada como origem ou destino de conversão NÃO pode ser excluída.
+            var emUso = await _context.ConversoesUnidades.AnyAsync(
+                c => c.TenantId == tenantId && (c.UnidadeOrigemId == request.Id || c.UnidadeDestinoId == request.Id),
+                cancellationToken);
+            if (emUso)
+                return CommandResult.Falha(new[] { "Esta unidade de medida está em uso por regras de conversão e não pode ser excluída." }, "Erro de integridade");
 
-            _context.UnidadesMedida.Remove(uni);
+            // Soft-delete (preserva integridade referencial contra referências cross-module por Guid).
+            uni.Deletar(usuarioId);
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Unidade de medida excluída com sucesso!");
         }
@@ -437,9 +464,17 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             var tenantId = _tenantProvider.GetTenantId();
             var usuarioId = _currentUser.GetUserId() ?? "system";
 
-            var existe = await _context.Armazens.AnyAsync(a => a.Nome == request.Nome && a.TenantId == tenantId, cancellationToken);
-            if (existe)
-                return CommandResult.Falha(new[] { "Já existe um armazém com este nome." }, "Erro de validação");
+            var existente = await _context.Armazens.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(a => a.Nome == request.Nome && a.TenantId == tenantId, cancellationToken);
+            if (existente != null)
+            {
+                if (existente.DeletadoEm == null)
+                    return CommandResult.Falha(new[] { "Já existe um armazém com este nome." }, "Erro de validação");
+                existente.Restaurar(usuarioId);
+                existente.Atualizar(request.Nome, request.Pais, request.Cidade, request.Mobile, request.Email, usuarioId);
+                await _context.SaveChangesAsync(cancellationToken);
+                return CommandResult.Ok("Armazém criado com sucesso!", new { ArmazemId = existente.Id });
+            }
 
             var arm = new Armazem(request.Nome, request.Pais, request.Cidade, request.Mobile, request.Email, tenantId, usuarioId);
             if (!arm.IsValid)
@@ -492,27 +527,27 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
     {
         private readonly ContextGestaoClientes _context;
         private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
 
-        public ExcluirArmazemCommandHandler(ContextGestaoClientes context, ITenantProvider tenantProvider)
+        public ExcluirArmazemCommandHandler(ContextGestaoClientes context, ITenantProvider tenantProvider, ICurrentUser currentUser)
         {
             _context = context;
             _tenantProvider = tenantProvider;
+            _currentUser = currentUser;
         }
 
         public async Task<CommandResult> Handle(ExcluirArmazemCommand request, CancellationToken cancellationToken)
         {
             var tenantId = _tenantProvider.GetTenantId();
+            var usuarioId = _currentUser.GetUserId() ?? "system";
             var arm = await _context.Armazens.FirstOrDefaultAsync(a => a.Id == request.Id && a.TenantId == tenantId, cancellationToken);
             if (arm == null)
                 return CommandResult.Falha(new[] { "Armazém não encontrado." }, "Erro de validação");
 
-            // Simulação de vínculo operacional para teste (REG-044/REG-045)
-            if (arm.Nome.Contains("Em Uso"))
-            {
-                return CommandResult.Falha(new[] { "Este armazém possui saldo ou movimentação de estoque e não pode ser excluído." }, "Erro de integridade");
-            }
-
-            _context.Armazens.Remove(arm);
+            // P1-1 (auditoria CADASTROS, REG-044/REG-045): substitui o stub `Nome.Contains("Em Uso")` por
+            // soft-delete — a linha física é preservada, mantendo a integridade referencial contra saldo/
+            // movimentação de estoque que aponta o armazém por Guid cross-module (schema estoque). // valida-Siser
+            arm.Deletar(usuarioId);
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Armazém excluído com sucesso!");
         }
@@ -538,9 +573,17 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             var tenantId = _tenantProvider.GetTenantId();
             var usuarioId = _currentUser.GetUserId() ?? "system";
 
-            var existe = await _context.Projetos.AnyAsync(p => p.Nome == request.Nome && p.TenantId == tenantId, cancellationToken);
-            if (existe)
-                return CommandResult.Falha(new[] { "Já existe um projeto com este nome." }, "Erro de validação");
+            var existente = await _context.Projetos.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(p => p.Nome == request.Nome && p.TenantId == tenantId, cancellationToken);
+            if (existente != null)
+            {
+                if (existente.DeletadoEm == null)
+                    return CommandResult.Falha(new[] { "Já existe um projeto com este nome." }, "Erro de validação");
+                existente.Restaurar(usuarioId);
+                existente.Atualizar(request.Nome, usuarioId);
+                await _context.SaveChangesAsync(cancellationToken);
+                return CommandResult.Ok("Projeto criado com sucesso!", new { ProjetoId = existente.Id });
+            }
 
             var proj = new Domain.Entities.Projeto(request.Nome, tenantId, usuarioId);
             if (!proj.IsValid)
@@ -593,27 +636,27 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
     {
         private readonly ContextGestaoClientes _context;
         private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
 
-        public ExcluirProjetoCommandHandler(ContextGestaoClientes context, ITenantProvider tenantProvider)
+        public ExcluirProjetoCommandHandler(ContextGestaoClientes context, ITenantProvider tenantProvider, ICurrentUser currentUser)
         {
             _context = context;
             _tenantProvider = tenantProvider;
+            _currentUser = currentUser;
         }
 
         public async Task<CommandResult> Handle(ExcluirProjetoCommand request, CancellationToken cancellationToken)
         {
             var tenantId = _tenantProvider.GetTenantId();
+            var usuarioId = _currentUser.GetUserId() ?? "system";
             var proj = await _context.Projetos.FirstOrDefaultAsync(p => p.Id == request.Id && p.TenantId == tenantId, cancellationToken);
             if (proj == null)
                 return CommandResult.Falha(new[] { "Projeto não encontrado." }, "Erro de validação");
 
-            // Simulação de vínculo operacional para teste (REG-048)
-            if (proj.Nome.Contains("Em Uso"))
-            {
-                return CommandResult.Falha(new[] { "Este projeto está vinculado a lançamentos contáveis e não pode ser excluído." }, "Erro de integridade");
-            }
-
-            _context.Projetos.Remove(proj);
+            // P1-1 (auditoria CADASTROS, REG-048): substitui o stub `Nome.Contains("Em Uso")` por soft-delete —
+            // preserva a linha física e a integridade referencial contra lançamentos que apontam o projeto por
+            // Guid cross-module (financeiro/vendas). // valida-Siser
+            proj.Deletar(usuarioId);
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Projeto excluído com sucesso!");
         }
@@ -639,9 +682,17 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             var tenantId = _tenantProvider.GetTenantId();
             var usuarioId = _currentUser.GetUserId() ?? "system";
 
-            var existe = await _context.Impostos.AnyAsync(i => i.Nome == request.Nome && i.TenantId == tenantId, cancellationToken);
-            if (existe)
-                return CommandResult.Falha(new[] { "Já existe um imposto com este nome." }, "Erro de validação");
+            var existente = await _context.Impostos.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(i => i.Nome == request.Nome && i.TenantId == tenantId, cancellationToken);
+            if (existente != null)
+            {
+                if (existente.DeletadoEm == null)
+                    return CommandResult.Falha(new[] { "Já existe um imposto com este nome." }, "Erro de validação");
+                existente.Restaurar(usuarioId);
+                existente.Atualizar(request.Nome, request.Rate, request.IsActive, request.VigenciaInicio, request.VigenciaFim, usuarioId);
+                await _context.SaveChangesAsync(cancellationToken);
+                return CommandResult.Ok("Imposto criado com sucesso!", new { ImpostoId = existente.Id });
+            }
 
             var imp = new Imposto(request.Nome, request.Rate, request.IsActive, request.VigenciaInicio, request.VigenciaFim, tenantId, usuarioId);
             if (!imp.IsValid)
@@ -694,27 +745,27 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
     {
         private readonly ContextGestaoClientes _context;
         private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
 
-        public ExcluirImpostoCommandHandler(ContextGestaoClientes context, ITenantProvider tenantProvider)
+        public ExcluirImpostoCommandHandler(ContextGestaoClientes context, ITenantProvider tenantProvider, ICurrentUser currentUser)
         {
             _context = context;
             _tenantProvider = tenantProvider;
+            _currentUser = currentUser;
         }
 
         public async Task<CommandResult> Handle(ExcluirImpostoCommand request, CancellationToken cancellationToken)
         {
             var tenantId = _tenantProvider.GetTenantId();
+            var usuarioId = _currentUser.GetUserId() ?? "system";
             var imp = await _context.Impostos.FirstOrDefaultAsync(i => i.Id == request.Id && i.TenantId == tenantId, cancellationToken);
             if (imp == null)
                 return CommandResult.Falha(new[] { "Imposto não encontrado." }, "Erro de validação");
 
-            // Simulação de vínculo operacional para teste (REG-072)
-            if (imp.Nome.Contains("Em Uso"))
-            {
-                return CommandResult.Falha(new[] { "Este imposto está vinculado a transações fiscais/vendas e não pode ser excluído." }, "Erro de integridade");
-            }
-
-            _context.Impostos.Remove(imp);
+            // P1-1 (auditoria CADASTROS, REG-072): substitui o stub `Nome.Contains("Em Uso")` por soft-delete —
+            // preserva a linha física e a integridade referencial contra transações fiscais/vendas que apontam
+            // o imposto por Guid cross-module. // valida-contador
+            imp.Deletar(usuarioId);
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Imposto excluído com sucesso!");
         }

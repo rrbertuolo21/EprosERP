@@ -36,6 +36,8 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public Guid? EmpresaParametrosDfeId { get; private set; }
 
         public string? LinkWebApiAppVendas { get; private set; }
+        // T-01 (hardening de segredos, P1-2): persistido CIFRADO no cofre (ISegredoCofreService) pelos
+        // command handlers; a UI recebe apenas a máscara (MascaraTokenPix), nunca o ciphertext nem o claro.
         public string? TokenMercadoPagoPix { get; private set; }
         public string? Logo { get; private set; }
         public string DateFormat { get; private set; } = "MM-DD-YYYY";
@@ -54,6 +56,19 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public IReadOnlyCollection<EmpresaContato> Contatos => _contatos.AsReadOnly();
         private readonly List<IeSt> _ieSts = new();
         public IReadOnlyCollection<IeSt> IeSts => _ieSts.AsReadOnly();
+
+        /// <summary>Máscara devolvida à UI no lugar do segredo (REG-069). Recebê-la de volta = segredo inalterado.</summary>
+        public const string MascaraTokenPix = "••••••••";
+
+        /// <summary>
+        /// T-01/P1-2: substitui o TokenMercadoPagoPix (armazenado cifrado) pela máscara antes de serializar
+        /// para a UI, garantindo que nem o ciphertext nem o texto plano trafeguem na resposta. No-op quando vazio.
+        /// </summary>
+        public void MascararTokenPixParaLeitura()
+        {
+            if (!string.IsNullOrEmpty(TokenMercadoPagoPix))
+                TokenMercadoPagoPix = MascaraTokenPix;
+        }
 
         protected Empresa() { } // EF Core
 

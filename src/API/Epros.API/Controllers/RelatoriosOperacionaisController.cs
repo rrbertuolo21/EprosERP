@@ -12,8 +12,9 @@ namespace Epros.API.Controllers
     /// <summary>
     /// RPT-OPB — Relatorios Operacionais (Openbook). Somente leitura (query-side).
     /// Controller fino: apenas MediatR. Protegido por ABAC (recurso "RelatoriosOperacionais").
-    /// Submodulo novo: sobe desabilitado (ABAC nega por padrao ate a permissao ser semeada).
-    /// Isolamento por empresa/tenant e aplicado pelo global query filter do ContextBase (EF RN-001).
+    /// A capacidade "relatoriosoperacionais:ler" e semeada no boot por CapacidadeCatalogoSeeder
+    /// (auto-descoberta por reflexao deste [AbacAuthorize]) e ligada ao papel Administrador, que o
+    /// admin do tenant recebe. Isolamento por empresa/tenant via global query filter do ContextBase (RN-001).
     /// </summary>
     [ApiController]
     [Route("api/v1/relatorios/operacionais")]

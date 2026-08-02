@@ -12,7 +12,8 @@ namespace Epros.API.Controllers
     /// <summary>
     /// RPT-ONM — BI (OneManager): KPIs gerenciais e series temporais multi-modulo.
     /// Somente leitura (query-side). Protegido por ABAC (recurso "RelatoriosBi").
-    /// Submodulo novo: sobe desabilitado (ABAC nega por padrao ate a permissao ser semeada).
+    /// A capacidade "relatoriosbi:ler" e semeada no boot por CapacidadeCatalogoSeeder (auto-descoberta
+    /// por reflexao deste [AbacAuthorize]) e ligada ao papel Administrador, que o admin do tenant recebe.
     /// Isolamento por tenant via global query filter (EF RN-BI-001).
     /// </summary>
     [ApiController]

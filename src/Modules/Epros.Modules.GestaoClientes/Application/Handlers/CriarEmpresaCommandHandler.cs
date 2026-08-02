@@ -21,17 +21,20 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
         private readonly ITenantProvider _tenantProvider;
         private readonly ICurrentUser _currentUser;
         private readonly IValidadorLimitesSaaS _validadorLimites;
+        private readonly ISegredoCofreService _cofreService;
 
         public CriarEmpresaCommandHandler(
             ContextGestaoClientes context,
             ITenantProvider tenantProvider,
             ICurrentUser currentUser,
-            IValidadorLimitesSaaS validadorLimites)
+            IValidadorLimitesSaaS validadorLimites,
+            ISegredoCofreService cofreService)
         {
             _context = context;
             _tenantProvider = tenantProvider;
             _currentUser = currentUser;
             _validadorLimites = validadorLimites;
+            _cofreService = cofreService;
         }
 
         public async Task<CommandResult> Handle(CriarEmpresaCommand request, CancellationToken cancellationToken)
@@ -73,6 +76,13 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 request.Endereco.Estado
             );
 
+            // T-01/P1-2: o TokenMercadoPagoPix nunca é persistido em claro. Se veio um valor (não vazio e
+            // diferente da máscara), cifra via cofre; senão persiste nulo.
+            var tokenInformado = !string.IsNullOrEmpty(request.TokenMercadoPagoPix) && request.TokenMercadoPagoPix != Empresa.MascaraTokenPix;
+            var tokenParaPersistir = tokenInformado
+                ? await _cofreService.CriptografarAsync(request.TokenMercadoPagoPix!)
+                : null;
+
             // Instancia Empresa
             var empresa = new Empresa(
                 request.RazaoSocial,
@@ -92,7 +102,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 request.CertificadoDigitalId,
                 request.EmpresaParametrosDfeId,
                 request.LinkWebApiAppVendas,
-                request.TokenMercadoPagoPix,
+                tokenParaPersistir,
                 request.Logo,
                 endereco,
                 tenantId,
