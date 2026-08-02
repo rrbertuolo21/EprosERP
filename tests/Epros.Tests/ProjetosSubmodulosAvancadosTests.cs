@@ -200,5 +200,46 @@ namespace Epros.Tests
             Assert.True(pf.IsValid);
             Assert.Single(pf.Itens);
         }
+
+        [Fact(DisplayName = "PortfolioItem | score = media ponderada (beneficios somam, custos penalizam) (DP-PRT-score)")]
+        public void PortfolioItem_CalcularScore_MediaPonderada()
+        {
+            // npv=80, alinhamento=60 (beneficios); payback=20, risco=40 (custos). Pesos iguais (1).
+            // score = (80 + 60 - 20 - 40) / 4 = 20
+            var item = new PortfolioItem(Guid.NewGuid(), 1, "projeto", null, null, null, null, null, null,
+                npv: 80m, payback: 20m, alinhamentoEstrategico: 60m, risco: 40m, score: null,
+                justificativaPrioridade: null, observacao: null, TenantId, UserId);
+            var score = item.CalcularScore(PesosPortfolio.Padrao);
+            Assert.Equal(20m, score);
+            Assert.Equal(20m, item.Score);
+        }
+
+        [Fact(DisplayName = "Portfolio | RecalcularScores consolida ScoreTotal dos itens ativos (DP-PRT-score)")]
+        public void Portfolio_RecalcularScores_ConsolidaTotal()
+        {
+            var pf = new Portfolio("PRT-SC", "Descricao", Guid.NewGuid(), null, null, TenantId, UserId);
+            pf.AdicionarItem(1, "projeto", Guid.NewGuid(), null, null, null, null, null, 100m, 0m, 0m, 0m, null, null, null, UserId); // score 25
+            pf.AdicionarItem(2, "projeto", Guid.NewGuid(), null, null, null, null, null, 40m, 0m, 40m, 0m, null, null, null, UserId);  // score 20
+            pf.RecalcularScores(PesosPortfolio.Padrao, UserId);
+            Assert.True(pf.IsValid);
+            Assert.Equal(45m, pf.ScoreTotal); // 25 + 20
+        }
+
+        [Fact(DisplayName = "Programa | codigo vazio deve ser invalido (T-PRG)")]
+        public void Programa_CodigoVazio_DeveSerInvalido()
+        {
+            var prog = new Programa("", "Nome", null, Guid.NewGuid(), null, TenantId, UserId);
+            Assert.False(prog.IsValid);
+        }
+
+        [Fact(DisplayName = "Programa | dados validos nasce em Rascunho e ativa (T-PRG)")]
+        public void Programa_DadosValidos_Ativa()
+        {
+            var prog = new Programa("PRG-001", "Programa Transformacao", "desc", Guid.NewGuid(), Guid.NewGuid(), TenantId, UserId);
+            Assert.True(prog.IsValid);
+            Assert.Equal(EProjetoWorkflowStatus.Rascunho, prog.Status);
+            prog.Ativar(UserId);
+            Assert.Equal(EProjetoWorkflowStatus.Ativo, prog.Status);
+        }
     }
 }
