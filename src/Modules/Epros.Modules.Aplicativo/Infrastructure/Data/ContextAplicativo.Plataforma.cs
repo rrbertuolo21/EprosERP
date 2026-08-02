@@ -2,6 +2,7 @@ using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Analytics;
 using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Assinatura;
 using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Conectores;
 using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Ged;
+using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Wizards;
 using Microsoft.EntityFrameworkCore;
 
 namespace Epros.Modules.Aplicativo.Infrastructure.Data
@@ -38,12 +39,19 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
         public DbSet<EndpointWebhook> EndpointsWebhook => Set<EndpointWebhook>();
         public DbSet<EntregaWebhook> EntregasWebhook => Set<EntregaWebhook>();
 
+        // ===== Wizards (submódulo 5) =====
+        public DbSet<DefinicaoWizard> DefinicoesWizard => Set<DefinicaoWizard>();
+        public DbSet<EtapaWizard> EtapasWizard => Set<EtapaWizard>();
+        public DbSet<CampoWizard> CamposWizard => Set<CampoWizard>();
+        public DbSet<ExecucaoWizard> ExecucoesWizard => Set<ExecucaoWizard>();
+
         partial void ConfigurarPlataforma(ModelBuilder modelBuilder)
         {
             ConfigurarGed(modelBuilder);
             ConfigurarAssinatura(modelBuilder);
             ConfigurarAnalytics(modelBuilder);
             ConfigurarConectores(modelBuilder);
+            ConfigurarWizards(modelBuilder);
         }
 
         private static void ConfigurarGed(ModelBuilder modelBuilder)
@@ -234,6 +242,54 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
                 e.HasIndex(x => new { x.Status, x.ProximaTentativaEm })
                     .HasDatabaseName("ix_plt_conector_entregas_status_proxima");
                 e.HasIndex(x => x.EndpointId).HasDatabaseName("ix_plt_conector_entregas_endpoint");
+            });
+        }
+
+        private static void ConfigurarWizards(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<DefinicaoWizard>(e =>
+            {
+                e.ToTable("plt_wizard_definicoes", "aplicativo");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Codigo).HasMaxLength(100);
+                e.Property(x => x.Nome).HasMaxLength(200);
+                e.Property(x => x.Descricao).HasMaxLength(1000);
+                e.HasIndex(x => new { x.TenantId, x.Codigo })
+                    .IsUnique().HasDatabaseName("ix_plt_wizard_definicoes_tenant_codigo");
+            });
+
+            modelBuilder.Entity<EtapaWizard>(e =>
+            {
+                e.ToTable("plt_wizard_etapas", "aplicativo");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Titulo).HasMaxLength(200);
+                e.Property(x => x.Descricao).HasMaxLength(1000);
+                e.HasIndex(x => new { x.DefinicaoId, x.Ordem })
+                    .IsUnique().HasDatabaseName("ix_plt_wizard_etapas_definicao_ordem");
+            });
+
+            modelBuilder.Entity<CampoWizard>(e =>
+            {
+                e.ToTable("plt_wizard_campos", "aplicativo");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Chave).HasMaxLength(100);
+                e.Property(x => x.Rotulo).HasMaxLength(200);
+                e.Property(x => x.Tipo).HasMaxLength(30);
+                e.Property(x => x.OpcoesJson).HasColumnType("text");
+                e.HasIndex(x => new { x.EtapaId, x.Chave })
+                    .IsUnique().HasDatabaseName("ix_plt_wizard_campos_etapa_chave");
+            });
+
+            modelBuilder.Entity<ExecucaoWizard>(e =>
+            {
+                e.ToTable("plt_wizard_execucoes", "aplicativo");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Status).HasMaxLength(20);
+                e.Property(x => x.RespostasJson).HasColumnType("text");
+                e.Property(x => x.TokenPublico).HasMaxLength(64);
+                e.HasIndex(x => x.DefinicaoId).HasDatabaseName("ix_plt_wizard_execucoes_definicao");
+                e.HasIndex(x => x.TokenPublico).IsUnique().HasFilter("token_publico IS NOT NULL")
+                    .HasDatabaseName("ix_plt_wizard_execucoes_token");
             });
         }
     }
