@@ -126,6 +126,11 @@ try
     // T1 — Outbox de PROJETOS migrado do job por-módulo para o dispatcher central: "ProjetoFaturado" -> título
     // em Contas a Receber (via MediatR, preservando o efeito legado); prj.orcamento.baseline_congelada -> fallback.
     builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Projetos.Application.Outbox.ProjetoFaturadoConsumer>();
+    // T1 — Outbox de VENDAS migrado do job por-módulo para o dispatcher central: VendaFaturada/VendaCancelada ->
+    // efeito preservado 1:1 (fan-out Financeiro/Fiscal + baixa/estorno de estoque via MediatR); PedidoEcommerceParaVenda,
+    // DemandaPlanejadaPublicada e ven.ExpedicaoConfirmada -> fallback (pendência de regra; expedição NÃO recontam saída).
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Vendas.Application.Outbox.VendaFaturadaConsumer>();
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Vendas.Application.Outbox.VendaCanceladaConsumer>();
 
     // Registra o serviço de hashing de senhas (PBKDF2 / HMAC-SHA256). Sem estado -> Singleton.
     builder.Services.AddSingleton<IPasswordHasher, Epros.Infrastructure.Services.Pbkdf2PasswordHasher>();
@@ -418,12 +423,17 @@ try
             .WithIdentity("OutboxProcessorJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
 
-        var vendasOutboxJobKey = new JobKey("VendasOutboxProcessorJob");
-        q.AddJob<VendasOutboxProcessorJob>(opts => opts.WithIdentity(vendasOutboxJobKey));
+        // TRANSVERSAL T1 — Outbox de VENDAS migrado do job por-módulo (que drenava só VendaFaturada/VendaCancelada
+        // e deixava PedidoEcommerceParaVenda/DemandaPlanejadaPublicada/ven.ExpedicaoConfirmada morrerem na fila)
+        // para o DISPATCHER CENTRAL: um único drenador do schema "vendas". VendaFaturada/VendaCancelada mantêm o
+        // efeito legado (consumidores reais via MediatR); os demais eventos conhecidos caem no fallback.
+        var vendasOutboxJobKey = new JobKey("VendasOutboxDispatcherJob");
+        q.AddJob<Epros.Infrastructure.Outbox.OutboxDispatcherJob<Epros.Modules.Vendas.Infrastructure.Data.ContextVendas>>(
+            opts => opts.WithIdentity(vendasOutboxJobKey));
 
         q.AddTrigger(opts => opts
             .ForJob(vendasOutboxJobKey)
-            .WithIdentity("VendasOutboxProcessorJob-trigger")
+            .WithIdentity("VendasOutboxDispatcherJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
 
         var aplicativoOutboxJobKey = new JobKey("AplicativoOutboxProcessorJob");

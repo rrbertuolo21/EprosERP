@@ -55,6 +55,8 @@ namespace Epros.Shared.Domain.Events
             public const string VendaCancelada = "VendaCancelada";
             public const string PedidoEcommerceParaVenda = "PedidoEcommerceParaVenda";
             public const string DemandaPlanejadaPublicada = "DemandaPlanejadaPublicada";
+            /// <summary>Expedição/logística de saída confirmada (VEN ven.*). ⚠️ NÃO baixa estoque (VendaFaturada já baixa — anti-dupla-contagem): sem consumidor de efeito, roteia ao fallback (pendência de regra).</summary>
+            public const string ExpedicaoConfirmada = "ven.ExpedicaoConfirmada";
             public const string ProjetoFaturado = "ProjetoFaturado";
         }
 
@@ -356,7 +358,7 @@ namespace Epros.Shared.Domain.Events
             Workflow.AprovacaoSolicitada, Workflow.AprovacaoConcluida,
             Pessoa.Criada, Pessoa.Atualizada, Pessoa.Inativada, Pessoa.Mesclada, Pessoa.Anonimizada,
             Vendas.VendaFaturada, Vendas.VendaCancelada, Vendas.PedidoEcommerceParaVenda,
-            Vendas.DemandaPlanejadaPublicada, Vendas.ProjetoFaturado,
+            Vendas.DemandaPlanejadaPublicada, Vendas.ExpedicaoConfirmada, Vendas.ProjetoFaturado,
             Compras.CompraLancada, Compras.CompraCancelada, Compras.CompraFiscalLancada,
             Compras.CompraEntradaPropriaLancada, Compras.CompraEntradaFornecedorLancada,
             Compras.DevolucaoCompraConfirmada, Compras.DevolucaoCompraSaidaEstoque,
