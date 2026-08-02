@@ -295,6 +295,7 @@ try
     builder.Services.AddSingleton<Epros.Modules.Qualidade.Domain.Services.Aql.MotorAql>();
     builder.Services.AddSingleton<Epros.Modules.Qualidade.Domain.Services.Aql.MotorComutacao>();
     builder.Services.AddSingleton<Epros.Modules.Qualidade.Domain.Services.Qps.MotorScoreFornecedor>();
+    builder.Services.AddSingleton<Epros.Modules.Qualidade.Domain.Services.Rst.MotorGenealogia>();
 
     builder.Services.AddMediatR(cfg =>
     {

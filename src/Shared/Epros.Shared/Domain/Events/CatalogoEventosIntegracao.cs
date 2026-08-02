@@ -165,6 +165,12 @@ namespace Epros.Shared.Domain.Events
             public const string NcrAberta = "qld.ncr.aberta";
             /// <summary>NCR encerrada.</summary>
             public const string NcrEncerrada = "qld.ncr.encerrada";
+            /// <summary>Recall aberto (RST).</summary>
+            public const string RstRecallAberto = "qld.rst.recall_aberto";
+            /// <summary>Recall encerrado (RST).</summary>
+            public const string RstRecallEncerrado = "qld.rst.recall_encerrado";
+            /// <summary>RST solicita contencao/bloqueio de lote/serie ao Estoque (nao movimenta saldo — D6/D24).</summary>
+            public const string RstBloqueioSolicitado = "qld.rst.bloqueio_solicitado";
         }
 
         /// <summary>Operações (produção/manutenção/qualidade/RH/GRC).</summary>
@@ -211,7 +217,8 @@ namespace Epros.Shared.Domain.Events
             Operacoes.FolhaProcessada, Operacoes.DenunciaProcedente,
             Qualidade.AcrLoteBloqueado, Qualidade.AcrLoteLiberado, Qualidade.AcrLoteQuarentena,
             Qualidade.AcrNcrSolicitada, Qualidade.AcrDevolucaoSolicitada, Qualidade.InsInspecaoConcluida,
-            Qualidade.NcrAberta, Qualidade.NcrEncerrada
+            Qualidade.NcrAberta, Qualidade.NcrEncerrada,
+            Qualidade.RstRecallAberto, Qualidade.RstRecallEncerrado, Qualidade.RstBloqueioSolicitado
         }, System.StringComparer.Ordinal);
 
         /// <summary>Todos os tipos de evento homologados no catálogo.</summary>
