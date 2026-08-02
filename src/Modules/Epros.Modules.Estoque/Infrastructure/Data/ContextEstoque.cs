@@ -165,6 +165,9 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
         public DbSet<DevolucaoCompra> DevolucoesCompra => Set<DevolucaoCompra>();
         public DbSet<DevolucaoCompraItem> DevolucaoCompraItens => Set<DevolucaoCompraItem>();
 
+        // Comércio Exterior / Importação (CD1 / EF COMERCIO_EXTERIOR) — parâmetro de rateio landed.
+        public DbSet<ComprasImportacaoRateioConfig> ComprasImportacaoRateioConfigs => Set<ComprasImportacaoRateioConfig>();
+
         // Lookup somente leitura (dono: módulo Fiscal, schema plataforma).
         public DbSet<ServicoLookup> ServicosLookup => Set<ServicoLookup>();
 
@@ -816,6 +819,9 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
                 entity.Property(c => c.InformacoesComplementares).HasMaxLength(5000);
                 entity.Property(c => c.InformacoesAdicionaisFisco).HasMaxLength(2000);
                 entity.Property(c => c.FormaPagamento).HasMaxLength(50);
+                // Comércio Exterior / Importação (CD1): incoterm (enum), moeda e câmbio factuais.
+                entity.Property(c => c.Moeda).HasMaxLength(3);
+                entity.Property(c => c.TaxaCambio).HasPrecision(18, 6);
 
                 entity.HasMany(c => c.Itens)
                       .WithOne(i => i.Compra)
@@ -1980,6 +1986,16 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
                 entity.HasIndex(i => new { i.TenantId, i.DevolucaoId });
                 entity.HasIndex(i => i.CompraItemOrigemId);
                 entity.HasIndex(i => i.SyncId).IsUnique();
+            });
+
+            // ============ COMÉRCIO EXTERIOR / IMPORTAÇÃO (CD1 / EF COMERCIO_EXTERIOR §5.3) ============
+
+            modelBuilder.Entity<ComprasImportacaoRateioConfig>(entity =>
+            {
+                entity.ToTable("com_importacao_rateio_config");
+                entity.HasKey(c => c.Id);
+                entity.HasIndex(c => new { c.TenantId, c.EmpresaId }).IsUnique();
+                entity.HasIndex(c => c.SyncId).IsUnique();
             });
 
             base.OnModelCreating(modelBuilder);

@@ -74,6 +74,12 @@ namespace Epros.Shared.Domain.Events
             /// <summary>Estorno/redução do passivo — fato gerador financeiro único, idempotente por devolução/compra (DEV-006).</summary>
             public const string DevolucaoCompraEstornoFinanceiro = "com.devolucao.estorno_financeiro";
             public const string DevolucaoCompraCancelada = "com.devolucao.cancelada";
+            // Comércio Exterior / Importação (CD1 / EF COMERCIO_EXTERIOR). Nacionalização gera entrada no
+            // Estoque (motor único D1) com custo landed (quando ligado) + títulos financeiros de tributos/frete.
+            /// <summary>Entrada nacionalizada da importação — consumida pelo motor único de saldo (D1), com custo (landed quando ligado).</summary>
+            public const string ImportacaoNacionalizada = "com.importacao.nacionalizada";
+            /// <summary>Títulos financeiros de tributos/frete de importação — fato gerador único, idempotente por compra.</summary>
+            public const string ImportacaoTitulosFinanceiros = "com.importacao.titulos_financeiros";
         }
 
         /// <summary>Fiscal (documento eletrônico).</summary>
@@ -153,6 +159,7 @@ namespace Epros.Shared.Domain.Events
             Compras.CompraEntradaPropriaLancada, Compras.CompraEntradaFornecedorLancada,
             Compras.DevolucaoCompraConfirmada, Compras.DevolucaoCompraSaidaEstoque,
             Compras.DevolucaoCompraEstornoFinanceiro, Compras.DevolucaoCompraCancelada,
+            Compras.ImportacaoNacionalizada, Compras.ImportacaoTitulosFinanceiros,
             Fiscal.DocumentoFiscalAutorizado, Fiscal.DocumentoFiscalCancelado,
             Estoque.LdeEntradaCriada, Estoque.LdeEntradaConfirmada, Estoque.LdeEntradaCancelada,
             Estoque.LdeEntradaEstornada, Estoque.LdeDocumentoVinculado, Estoque.LdeLocalEntregaAlterado,
