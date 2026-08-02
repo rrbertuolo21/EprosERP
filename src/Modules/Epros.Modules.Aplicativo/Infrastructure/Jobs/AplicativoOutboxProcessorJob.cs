@@ -16,6 +16,36 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Jobs
     [DisallowConcurrentExecution]
     public class AplicativoOutboxProcessorJob : IJob
     {
+        // TRANSVERSAL T1 — eventos da PLATAFORMA (plt.*) publicados no schema "aplicativo"
+        // (ContextAplicativo) que MORRIAM na fila: este job é o ÚNICO leitor de aplicativo.outbox_messages,
+        // então registrar um OutboxDispatcherJob<ContextAplicativo> criaria um SEGUNDO leitor na mesma tabela
+        // (corrida no flag processado) — proibido. Por isso o leitor único passa a DRENÁ-los como FALLBACK
+        // (pendência de regra): os submódulos plt.* são spec-only, sem efeito in-process próprio; loga a
+        // pendência e marca processado (não deixa acumular), SEM inventar efeito. Ganham consumidor real
+        // quando o efeito for definido. NÃO inclui os eventos de Workflow (AprovacaoSolicitada/Concluida),
+        // que seguem seu próprio fluxo — escopo intocado.
+        private static readonly string[] PlataformaFallbackEventos =
+        {
+            CatalogoEventosIntegracao.Plataforma.GedDocumentoRegistrado,
+            CatalogoEventosIntegracao.Plataforma.GedNovaVersaoRegistrada,
+            CatalogoEventosIntegracao.Plataforma.GedDocumentoVinculado,
+            CatalogoEventosIntegracao.Plataforma.GedRetencaoVencida,
+            CatalogoEventosIntegracao.Plataforma.AssinaturaSolicitada,
+            CatalogoEventosIntegracao.Plataforma.AssinaturaRegistrada,
+            CatalogoEventosIntegracao.Plataforma.AssinaturaConcluida,
+            CatalogoEventosIntegracao.Plataforma.AssinaturaRecusada,
+            CatalogoEventosIntegracao.Plataforma.AssinaturaLinkPublicoRevogado,
+            CatalogoEventosIntegracao.Plataforma.AnalyticsSnapshotGerado,
+            CatalogoEventosIntegracao.Plataforma.ConectorEndpointRegistrado,
+            CatalogoEventosIntegracao.Plataforma.ConectorEntregaFalhou,
+            CatalogoEventosIntegracao.Plataforma.ConectorEntregaConcluida,
+            CatalogoEventosIntegracao.Plataforma.WizardExecucaoConcluida,
+            CatalogoEventosIntegracao.Plataforma.IotLeituraForaFaixa,
+            CatalogoEventosIntegracao.Plataforma.IotCondicaoOperacionalDetectada,
+            CatalogoEventosIntegracao.Plataforma.SdkChaveApiGerada,
+            CatalogoEventosIntegracao.Plataforma.SdkChaveApiRevogada
+        };
+
         private readonly ContextAplicativo _context;
         private readonly ContextGestaoClientes _gestaoClientesContext;
         private readonly IMediator _mediator;
@@ -47,7 +77,8 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Jobs
                              m.EventType == "UsuarioDeletado" ||
                              m.EventType == "ImpersonacaoIniciada" ||
                              m.EventType == "AcessoSuporteIniciado" ||
-                             m.EventType == "ComunicacaoSuperAdminCriada") &&
+                             m.EventType == "ComunicacaoSuperAdminCriada" ||
+                             PlataformaFallbackEventos.Contains(m.EventType)) &&
                              m.ProcessadoEm == null &&
                              m.Tentativas < 5)
                 .OrderBy(m => m.CriadoEm)
@@ -201,6 +232,13 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Jobs
                             comunicacao.AtualizarStatus("Sucesso", "OutboxProcessor");
                             _context.ComunicacoesSuperAdmin.Update(comunicacao);
                         }
+                    }
+                    else if (PlataformaFallbackEventos.Contains(message.EventType))
+                    {
+                        // FALLBACK (pendência de regra): evento plt.* CONHECIDO do catálogo, drenado pelo leitor
+                        // único, mas sem consumidor de efeito in-process. Loga a pendência e marca processado
+                        // (não deixa acumular na fila). ⚠️ NÃO inventa efeito — ganha consumidor real quando definido.
+                        Console.WriteLine($"[Quartz] AplicativoOutbox: evento '{message.EventType}' (tenant {message.TenantId}, msg {message.Id}) drenado SEM consumidor de efeito (PENDENTE DE REGRA — registrar em DECISOES-PENDENTES).");
                     }
 
                     message.MarcarProcessado();
