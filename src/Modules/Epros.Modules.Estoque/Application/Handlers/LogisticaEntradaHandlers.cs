@@ -200,8 +200,40 @@ namespace Epros.Modules.Estoque.Application.Handlers
             var anterior = entrada.Situacao;
             entrada.Confirmar(usuario);
             _context.LdeHistoricos.Add(new LdeHistorico(entrada.Id, "entrada_confirmada", anterior, entrada.Situacao, null, usuario, tenantId, usuario));
-            _context.OutboxMessages.Add(new OutboxMessage(tenantId, "est.lde.entrada_confirmada",
+            _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Estoque.LdeEntradaConfirmada,
                 JsonSerializer.Serialize(new { entrada.Id, entrada.CompraId, documentoId = documento.Id, tenantId })));
+
+            // LDE (escopo máximo): a confirmação do recebimento físico publica MercadoriaRecebida no catálogo
+            // central para os consumidores a jusante — Qualidade (dispara inspeção de recebimento) e
+            // Financeiro (habilita a geração de contas a pagar a partir de fatura/duplicatas). Payload rico
+            // com itens (para conferência/inspeção) e duplicatas (para o contas a pagar).
+            var itensRecebidos = await _context.LdeDocumentoEntradaItens.AsNoTracking()
+                .Where(i => i.DocumentoEntradaId == documento.Id && i.DeletadoEm == null)
+                .Select(i => new { i.ProdutoId, i.QuantidadeDocumento, i.ValorItem })
+                .ToListAsync(cancellationToken);
+            var duplicatasReceber = await _context.LdeDocumentoEntradaDuplicatas.AsNoTracking()
+                .Where(d => d.DocumentoEntradaId == documento.Id && d.DeletadoEm == null)
+                .Select(d => new { d.Numero, d.DataVencimento, d.Valor })
+                .ToListAsync(cancellationToken);
+
+            _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Estoque.MercadoriaRecebida,
+                JsonSerializer.Serialize(new
+                {
+                    entradaId = entrada.Id,
+                    entrada.CompraId,
+                    entrada.FornecedorId,
+                    entrada.LocalEntregaId,
+                    documentoId = documento.Id,
+                    documento.ChaveAcesso,
+                    documento.Numero,
+                    documento.Serie,
+                    documento.ValorTotal,
+                    itens = itensRecebidos,
+                    duplicatas = duplicatasReceber,
+                    recebidoPor = usuario,
+                    recebidoEm = DateTime.UtcNow,
+                    tenantId
+                })));
 
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Entrada confirmada com sucesso!", new { entrada.Id });

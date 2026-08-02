@@ -84,6 +84,8 @@ namespace Epros.Shared.Domain.Events
             public const string LdeEntradaEstornada = "est.lde.entrada_estornada";
             public const string LdeDocumentoVinculado = "est.lde.documento_vinculado";
             public const string LdeLocalEntregaAlterado = "est.lde.local_entrega_alterado";
+            /// <summary>Mercadoria fisicamente recebida/conferida (LDE). Consumidores: Qualidade (inspecao) e Financeiro (contas a pagar).</summary>
+            public const string MercadoriaRecebida = "est.lde.mercadoria_recebida";
             public const string ScPedidoCompraCriado = "est.sc.pedido_compra_criado";
             public const string TmsAlterado = "est.tms.001.alterado";
             public const string WmsArmazemCriado = "estoque.wms.armazem_criado";
@@ -121,6 +123,7 @@ namespace Epros.Shared.Domain.Events
             Fiscal.DocumentoFiscalAutorizado, Fiscal.DocumentoFiscalCancelado,
             Estoque.LdeEntradaCriada, Estoque.LdeEntradaConfirmada, Estoque.LdeEntradaCancelada,
             Estoque.LdeEntradaEstornada, Estoque.LdeDocumentoVinculado, Estoque.LdeLocalEntregaAlterado,
+            Estoque.MercadoriaRecebida,
             Estoque.ScPedidoCompraCriado, Estoque.TmsAlterado,
             Estoque.WmsArmazemCriado, Estoque.WmsArmazemAlterado, Estoque.WmsArmazemExclusaoSolicitada,
             Estoque.GccContratoCriado, Estoque.GccContratoEnviadoAprovacao, Estoque.GccContratoAprovado,
