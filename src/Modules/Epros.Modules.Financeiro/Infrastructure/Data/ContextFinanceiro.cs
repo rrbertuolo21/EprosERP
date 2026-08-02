@@ -54,6 +54,8 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
         public DbSet<RemessaBoleto> RemessaBoletos => Set<RemessaBoleto>();
         public DbSet<RetornoBancario> RetornosBancarios => Set<RetornoBancario>();
         public DbSet<CobrancaEmail> CobrancasEmail => Set<CobrancaEmail>();
+        public DbSet<GatewayPagamento> GatewaysPagamento => Set<GatewayPagamento>();
+        public DbSet<WebhookPagamentoRecebido> WebhooksPagamento => Set<WebhookPagamentoRecebido>();
 
         // ----- FIN-CAM: Câmbio e Risco de Mercado -----
         public DbSet<Moeda> Moedas => Set<Moeda>();
@@ -716,6 +718,28 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
                 entity.Property(c => c.Nome).HasMaxLength(255);
                 entity.Property(c => c.Valor).HasPrecision(18, 2);
                 entity.HasIndex(c => new { c.TenantId, c.Status }).HasDatabaseName("ix_cobranca_email_tenant_status");
+            });
+
+            modelBuilder.Entity<GatewayPagamento>(entity =>
+            {
+                entity.HasKey(g => g.Id);
+                entity.Property(g => g.Nome).HasMaxLength(150);
+                entity.Property(g => g.ChaveAssinatura).HasMaxLength(512);
+                entity.Property(g => g.IdentificadorExterno).HasMaxLength(150);
+                entity.HasIndex(g => new { g.TenantId, g.Provedor }).HasDatabaseName("ix_gateway_pagamento_tenant_provedor");
+            });
+
+            modelBuilder.Entity<WebhookPagamentoRecebido>(entity =>
+            {
+                entity.HasKey(w => w.Id);
+                entity.Property(w => w.EventoExternoId).HasMaxLength(200);
+                entity.Property(w => w.TipoEvento).HasMaxLength(100);
+                entity.Property(w => w.Valor).HasPrecision(18, 2);
+                entity.Property(w => w.Detalhe).HasMaxLength(1000);
+                // Dedup/idempotência: um registro por (tenant x gateway x id de evento externo).
+                entity.HasIndex(w => new { w.TenantId, w.GatewayPagamentoId, w.EventoExternoId })
+                    .IsUnique().HasDatabaseName("ix_webhook_pagamento_dedup");
+                entity.HasIndex(w => new { w.TenantId, w.NossoNumero }).HasDatabaseName("ix_webhook_pagamento_tenant_nn");
             });
 
             // ===== FIN-CAM: Câmbio e Risco de Mercado =====

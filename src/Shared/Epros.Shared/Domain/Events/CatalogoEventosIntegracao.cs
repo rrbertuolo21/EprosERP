@@ -227,6 +227,8 @@ namespace Epros.Shared.Domain.Events
             public const string RetornoBancarioProcessado = "fin.cobranca.retorno_processado";
             /// <summary>Arquivo de remessa CNAB gerado (faturas remetidas — RSF-014).</summary>
             public const string RemessaCnabGerada = "fin.cobranca.remessa_gerada";
+            /// <summary>Webhook de pagamento processado (baixa de fatura por nosso número via gateway — assinatura + idempotência).</summary>
+            public const string WebhookPagamentoProcessado = "fin.cobranca.webhook_processado";
         }
 
         /// <summary>
@@ -400,6 +402,7 @@ namespace Epros.Shared.Domain.Events
             Grc.RegCertificadoAlertaVencimento, Grc.RegCertificadoRevogado,
             Grc.PolPoliticaPublicada, Grc.RisKriExcedido, Grc.CiaAchadoCritico,
             Financeiro.LancamentoContabilGerado, Financeiro.RetornoBancarioProcessado, Financeiro.RemessaCnabGerada,
+            Financeiro.WebhookPagamentoProcessado,
             Concessionarias.FinSimulacaoCalculada, Concessionarias.FinContratoEmitido,
             Concessionarias.FinJornadaEncerrada, Concessionarias.VenPropostaAceita,
             Concessionarias.VenVeiculoReservado, Concessionarias.VenVeiculoFaturado,
