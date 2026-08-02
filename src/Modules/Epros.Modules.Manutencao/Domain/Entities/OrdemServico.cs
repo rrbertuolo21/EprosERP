@@ -118,12 +118,38 @@ namespace Epros.Modules.Manutencao.Domain.Entities
             MarcarAlterado(usuario);
         }
 
+        // D19 — maquina de estado da OS (gating). Transicoes validas por status atual.
+        // Cancelamento se da por Cancelar() (exige motivo), nao por TransicionarStatus.
+        private static readonly System.Collections.Generic.Dictionary<EStatusOrdemServico, EStatusOrdemServico[]> TransicoesValidas = new()
+        {
+            [EStatusOrdemServico.Aberta] = new[] { EStatusOrdemServico.EmOrcamento, EStatusOrdemServico.Aprovada },
+            [EStatusOrdemServico.EmOrcamento] = new[] { EStatusOrdemServico.Aprovada, EStatusOrdemServico.Aberta },
+            [EStatusOrdemServico.Aprovada] = new[] { EStatusOrdemServico.Montagem },
+            [EStatusOrdemServico.Montagem] = new[] { EStatusOrdemServico.Pronta },
+            [EStatusOrdemServico.Pronta] = new[] { EStatusOrdemServico.Entregue },
+            [EStatusOrdemServico.Entregue] = System.Array.Empty<EStatusOrdemServico>(),
+            [EStatusOrdemServico.Cancelada] = System.Array.Empty<EStatusOrdemServico>()
+        };
+
+        public static bool PodeTransicionar(EStatusOrdemServico de, EStatusOrdemServico para) =>
+            TransicoesValidas.TryGetValue(de, out var destinos) && System.Array.IndexOf(destinos, para) >= 0;
+
         // Transicoes de status espelhando o campo de data associado.
         public void TransicionarStatus(EStatusOrdemServico novoStatus, string usuario)
         {
             if (Cancelado)
             {
                 AddNotification(nameof(StatusCodigo), "OS cancelada nao pode mudar de status.");
+                return;
+            }
+            if (novoStatus == EStatusOrdemServico.Cancelada)
+            {
+                AddNotification(nameof(StatusCodigo), "Use o cancelamento (com motivo) para cancelar a OS.");
+                return;
+            }
+            if (!PodeTransicionar(StatusCodigo, novoStatus))
+            {
+                AddNotification(nameof(StatusCodigo), $"Transicao de status invalida: {StatusCodigo} -> {novoStatus}.");
                 return;
             }
             StatusCodigo = novoStatus;

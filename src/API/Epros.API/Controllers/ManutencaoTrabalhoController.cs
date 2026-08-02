@@ -73,5 +73,29 @@ namespace Epros.API.Controllers
             var result = await _mediator.Send(command, ct);
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
+
+        // MAN-TRB D19 — apontamento/evolucao da OS (existia no dominio, sem rota).
+        [HttpPost("{id:guid}/evolucoes")]
+        [AbacAuthorize("ManutencaoOrdemServico", "Alterar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> RegistrarEvolucao(Guid id, [FromBody] RegistrarEvolucaoOrdemServicoCommand command, CancellationToken ct)
+        {
+            if (id != command.OrdemServicoId) return BadRequest("O ID da rota nao corresponde ao ID do corpo.");
+            var result = await _mediator.Send(command, ct);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        // MAN-TRB D19/D30-F — faturamento (efeito fiscal/financeiro real = valida-contador).
+        [HttpPost("{id:guid}/faturar")]
+        [AbacAuthorize("ManutencaoOrdemServico", "Alterar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> Faturar(Guid id, [FromBody] MarcarOrdemServicoFaturadaCommand command, CancellationToken ct)
+        {
+            if (id != command.OrdemServicoId) return BadRequest("O ID da rota nao corresponde ao ID do corpo.");
+            var result = await _mediator.Send(command, ct);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
     }
 }
