@@ -246,7 +246,7 @@ namespace Epros.Tests
             await contextGestao.SaveChangesAsync();
 
             var validadorLimites = new ValidadorLimitesSaaS(contextApp, contextGestao);
-            var handler = new CriarEmpresaCommandHandler(contextGestao, tenantProvider, currentUser, validadorLimites);
+            var handler = new CriarEmpresaCommandHandler(contextGestao, tenantProvider, currentUser, validadorLimites, new IdentityCofrePixLp());
 
             // Act: Tenta criar a segunda empresa
             var command = new CriarEmpresaCommand(
@@ -337,7 +337,7 @@ namespace Epros.Tests
             await contextGestao.SaveChangesAsync();
 
             var validadorLimites = new ValidadorLimitesSaaS(contextApp, contextGestao);
-            var handler = new CriarEmpresaCommandHandler(contextGestao, tenantProvider, currentUser, validadorLimites);
+            var handler = new CriarEmpresaCommandHandler(contextGestao, tenantProvider, currentUser, validadorLimites, new IdentityCofrePixLp());
 
             // Act: Tenta criar a segunda empresa
             var command = new CriarEmpresaCommand(
@@ -466,6 +466,12 @@ namespace Epros.Tests
             public string? GetUserId() => _userId;
             public string? GetUserName() => "Test User";
             public string? GetUserEmail() => "test@epros.com";
+        }
+
+        private sealed class IdentityCofrePixLp : ISegredoCofreService
+        {
+            public Task<string> CriptografarAsync(string valor) => Task.FromResult("enc:" + valor);
+            public Task<string> DescriptografarAsync(string ciphertext) => Task.FromResult(ciphertext);
         }
 
         #endregion

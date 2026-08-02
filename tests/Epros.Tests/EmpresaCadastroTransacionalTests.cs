@@ -47,7 +47,7 @@ namespace Epros.Tests
             var tenantProvider = new TestTenantProvider(TenantId);
             var currentUser = new TestCurrentUser(Usuario);
 
-            var handler = new CriarEmpresaCommandHandler(context, tenantProvider, currentUser, limitValidator);
+            var handler = new CriarEmpresaCommandHandler(context, tenantProvider, currentUser, limitValidator, new IdentityCofrePix());
 
             var enderecoDto = new EmpresaEnderecoDto("Rua das Oliveiras", "123", "Sala 2", "Centro", "13010-000", "Campinas", "SP");
             var command = new CriarEmpresaCommand(
@@ -108,7 +108,7 @@ namespace Epros.Tests
             await context.SaveChangesAsync();
 
             var handler = new CriarEmpresaCommandHandler(
-                context, new TestTenantProvider(TenantId), new TestCurrentUser(Usuario), new FakeValidadorLimitesSaaS(false, ""));
+                context, new TestTenantProvider(TenantId), new TestCurrentUser(Usuario), new FakeValidadorLimitesSaaS(false, ""), new IdentityCofrePix());
 
             var enderecoDto = new EmpresaEnderecoDto("Rua X", "1", null, "Centro", "13010-000", "Campinas", "SP");
             var command = new CriarEmpresaCommand(
@@ -135,7 +135,7 @@ namespace Epros.Tests
             var tenantProvider = new TestTenantProvider(TenantId);
             var currentUser = new TestCurrentUser(Usuario);
 
-            var handler = new CriarEmpresaCommandHandler(context, tenantProvider, currentUser, limitValidator);
+            var handler = new CriarEmpresaCommandHandler(context, tenantProvider, currentUser, limitValidator, new IdentityCofrePix());
 
             var enderecoDto = new EmpresaEnderecoDto("Rua das Oliveiras", "123", null, "Centro", "13010-000", "Campinas", "SP");
             var command = new CriarEmpresaCommand(
@@ -158,6 +158,58 @@ namespace Epros.Tests
 
             var empresa = await context.Empresas.FirstOrDefaultAsync(e => e.TenantId == TenantId);
             Assert.Null(empresa);
+        }
+
+        [Fact]
+        public async Task Token_Pix_E_Cifrado_No_Cofre_Mascarado_Na_Leitura_E_Preservado_No_Update()
+        {
+            // P1-2 (auditoria CADASTROS): Empresa.TokenMercadoPagoPix nunca em claro.
+            using var context = CreateInMemoryContext("db_empresa_pix_cofre");
+            var tenant = new TestTenantProvider(TenantId);
+            var user = new TestCurrentUser(Usuario);
+            var cofre = new IdentityCofrePix();
+
+            var planoMaster = new Plano("Plano Pix", 100m, "system", "system");
+            context.Planos.Add(planoMaster);
+            await context.SaveChangesAsync();
+
+            var endereco = new EmpresaEnderecoDto("Rua X", "1", null, "Centro", "13010-000", "Campinas", "SP");
+            var criar = new CriarEmpresaCommand(
+                "Empresa Pix S/A", "Pix", "12345678000195",
+                null, null, null, null,
+                RegimeTributario.SimplesNacional, RegimeApuracao.Cumulativo,
+                null, null, null, null, null, null, null, null,
+                "mp-token-abc-123", null, endereco);
+
+            var criarResult = await new CriarEmpresaCommandHandler(context, tenant, user, new FakeValidadorLimitesSaaS(false, ""), cofre)
+                .Handle(criar, CancellationToken.None);
+            Assert.True(criarResult.Sucesso);
+            var empresaId = (Guid)criarResult.Dados!.GetType().GetProperty("EmpresaId")!.GetValue(criarResult.Dados)!;
+
+            // 1) Persistido CIFRADO (nunca o texto plano).
+            var armazenado = await context.Empresas.AsNoTracking().FirstAsync(e => e.Id == empresaId);
+            Assert.Equal("enc:mp-token-abc-123", armazenado.TokenMercadoPagoPix);
+            Assert.NotEqual("mp-token-abc-123", armazenado.TokenMercadoPagoPix);
+
+            // 2) Leitura devolve a MÁSCARA (nem claro nem ciphertext).
+            var query = await new ObterEmpresaPorIdQueryHandler(context, tenant)
+                .Handle(new Epros.Modules.GestaoClientes.Application.Queries.ObterEmpresaPorIdQuery(empresaId), CancellationToken.None);
+            var empresaLida = (Empresa)query.Dados!;
+            Assert.Equal(Empresa.MascaraTokenPix, empresaLida.TokenMercadoPagoPix);
+
+            // 3) Update devolvendo a máscara PRESERVA o ciphertext (não regrava claro nem re-cifra a máscara).
+            var atualizar = new AtualizarEmpresaCommand(
+                empresaId, "Empresa Pix S/A", "Pix", "12345678000195",
+                null, null, null, null,
+                RegimeTributario.SimplesNacional, RegimeApuracao.Cumulativo,
+                null, null, null, null, null, null, null, null,
+                Empresa.MascaraTokenPix, null, endereco);
+            var updResult = await new UpdateEmpresaCommandHandler(context, tenant, user, cofre)
+                .Handle(atualizar, CancellationToken.None);
+            Assert.True(updResult.Sucesso);
+
+            var aposUpdate = await context.Empresas.AsNoTracking().FirstAsync(e => e.Id == empresaId);
+            Assert.Equal("enc:mp-token-abc-123", aposUpdate.TokenMercadoPagoPix);
         }
 
         #region Helpers
@@ -194,6 +246,12 @@ namespace Epros.Tests
             public Task<(bool Excedido, string Mensagem)> ValidarLimiteEmpresasAsync(string tenantId, CancellationToken cancellationToken = default) => Task.FromResult((_excedeu, _mensagem));
             public Task<(bool Excedido, string Mensagem)> ValidarLimiteClientesAsync(string tenantId, CancellationToken cancellationToken = default) => Task.FromResult((_excedeu, _mensagem));
             public Task<(bool Excedido, string Mensagem)> ValidarLimitePermissoesAsync(string tenantId, CancellationToken cancellationToken = default) => Task.FromResult((_excedeu, _mensagem));
+        }
+
+        private sealed class IdentityCofrePix : ISegredoCofreService
+        {
+            public Task<string> CriptografarAsync(string valor) => Task.FromResult("enc:" + valor);
+            public Task<string> DescriptografarAsync(string ciphertext) => Task.FromResult(ciphertext.StartsWith("enc:") ? ciphertext.Substring(4) : ciphertext);
         }
         #endregion
     }
