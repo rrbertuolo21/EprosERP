@@ -160,6 +160,50 @@ namespace Epros.API.Controllers
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
 
+        /// <summary>DP-PRT-score: recalcula o score dos itens por média ponderada (pesos parametrizáveis) e o ScoreTotal.</summary>
+        [HttpPost("{id:guid}/recalcular-score")]
+        [AbacAuthorize("ProjetosPortfolio", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> RecalcularScore(Guid id, [FromBody] RecalcularScoreRequest? request)
+        {
+            var result = await _mediator.Send(new RecalcularScorePortfolioCommand(
+                id, request?.PesoNpv, request?.PesoPayback, request?.PesoAlinhamento, request?.PesoRisco));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        public record RecalcularScoreRequest(decimal? PesoNpv, decimal? PesoPayback, decimal? PesoAlinhamento, decimal? PesoRisco);
+
+        // ===== T-PRG (Programa — hierarquia Portfólio > Programa > Projeto) =====
+
+        [HttpPost("programas")]
+        [AbacAuthorize("ProjetosPortfolio", "Criar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> CriarPrograma([FromBody] CriarProgramaCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("programas/{programaId:guid}/ativar")]
+        [AbacAuthorize("ProjetosPortfolio", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        public async Task<ActionResult<CommandResult>> AtivarPrograma(Guid programaId)
+        {
+            var result = await _mediator.Send(new AtivarProgramaCommand(programaId));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("programas/{programaId:guid}/encerrar")]
+        [AbacAuthorize("ProjetosPortfolio", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        public async Task<ActionResult<CommandResult>> EncerrarPrograma(Guid programaId)
+        {
+            var result = await _mediator.Send(new EncerrarProgramaCommand(programaId));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
         [HttpGet]
         [AbacAuthorize("ProjetosPortfolio", "Ler")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
