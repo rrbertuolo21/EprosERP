@@ -64,6 +64,23 @@ Mobile: **React Native** (submódulo `Epros.Mobile`).
   `POST /v1/payments`, consultar, testar-conexão), CRUD de gateways (token mascarado), endpoint
   `gerar-cobranca-pix` na fatura, tela **Integrações/Gateways** + botão "Gerar Pix" (QR+copia-e-cola).
   Migration `AddGatewayPagamentoConfig`. Validado: adaptador alcança a `api.mercadopago.com` real.
+- **Bloco 13 — Fundação da camada TRANSVERSAL compartilhada (kernel):** consolidados/construídos como
+  componente central ÚNICO os transversais que os 16 módulos vão reusar, todos em `Epros.Shared`
+  (+ implementações no Aplicativo/casa-de-plataforma). **Já existiam (confirmados):** cofre fail-closed
+  (`VaultEncryptionService`/`ISegredoCofreService`), RBAC Papel+Capacidade unificado (dono único
+  GestaoClientes: `Papel`/`Capacidade`/`PapelCapacidade`/`UsuarioCapacidade`/`CapacidadesEfetivasService`/
+  `AbacFilter`), Outbox + dedupe (`OutboxMessage` + `WebhookEventoProcessado`), lock otimista `xmin`→409
+  (REG-017 em `ContextBase`). **Construídos (novos):** T3 status canônico único (`ESituacaoCanonica` +
+  `MaquinaSituacaoCanonica`, máquina de estados reutilizável); T2 catálogo único de eventos
+  (`CatalogoEventosIntegracao` c/ 49 tipos + `EnvelopeEvento`); T9 numeração central atômica/gapless por
+  (tenant,tipo) via UPSERT `ON CONFLICT ... RETURNING` (`INumeracaoService`/`NumeracaoService` +
+  `SequenciaNumeracao`) — substitui o `CountAsync` que dá corrida; T8 trilha de auditoria imutável central
+  append-only (`RegistroAuditoria` POCO sem mutadores + `IRegistroAuditoriaService`); T10 GED canônico
+  (`DocumentoGed` metadados+versão+estado de assinatura) + assinatura ICP atrás de abstração
+  (`IAssinaturaDigitalService`, default fail-safe = "pendente de provedor", nunca forja validade jurídica);
+  T5 rotação do cofre (`ISegredoRotacaoService` = rewrap Vault / re-encrypt local, sem expor texto plano).
+  Migration `Implanta_Transversais_Compartilhadas` (3 tabelas no schema `aplicativo`, RLS automática).
+  Portão: build verde, **1055 testes** (10 novos em `TransversaisCompartilhadasTests`).
 
 ## 4. Como rodar (local)
 

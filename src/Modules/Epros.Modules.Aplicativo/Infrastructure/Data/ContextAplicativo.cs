@@ -337,6 +337,10 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
                       .HasDatabaseName("ix_registros_auditoria_tenant_entidade");
                 entity.HasIndex(r => r.OcorridoEm)
                       .HasDatabaseName("ix_registros_auditoria_ocorrido_em");
+                // Isolamento por tenant no nível de aplicação (espelha o filtro de EntidadeSaaSBase):
+                // não é EntidadeSaaSBase, então o filtro global não é aplicado automaticamente pelo
+                // ContextBase. A RLS (coluna tenant_id) permanece como defesa em profundidade no banco.
+                entity.HasQueryFilter(r => r.TenantId == _tenantProvider.GetTenantId());
             });
 
             // T10 — documento do GED canônico único (metadados + versão + estado de assinatura).
