@@ -100,6 +100,28 @@ namespace Epros.Modules.RH.Application.Handlers
                 }
             }
 
+            // JORNADA (RH-PNT): horas extras e adicional noturno viram proventos salariais (compõem bases).
+            var valorHora = Epros.Modules.RH.Domain.Jornada.Calculo.MotorJornada.ValorHora(
+                colaborador.SalarioBase, request.DivisorHoras);
+            if (request.HorasExtras > 0)
+            {
+                var he = Epros.Modules.RH.Domain.Jornada.Calculo.MotorJornada.HorasExtras(
+                    valorHora, request.HorasExtras, request.AdicionalHorasExtras);
+                if (he > 0) proventosAdicionais.Add(new ItemProvento("300", "Horas extras", he));
+            }
+            if (request.HorasNoturnas > 0)
+            {
+                var adNot = Epros.Modules.RH.Domain.Jornada.Calculo.MotorJornada.AdicionalNoturno(
+                    valorHora, request.HorasNoturnas);
+                if (adNot > 0) proventosAdicionais.Add(new ItemProvento("301", "Adicional noturno", adNot));
+            }
+
+            // SST: insalubridade/periculosidade (não cumulativo — o motor escolhe o mais benéfico).
+            var sst = Epros.Modules.RH.Domain.Sst.Calculo.MotorAdicionalSst.Calcular(
+                request.GrauInsalubridade, colaborador.SalarioBase, tabelas, request.TemPericulosidade);
+            if (sst.AdicionalDevido > 0)
+                proventosAdicionais.Add(new ItemProvento("310", $"Adicional {sst.Escolhido}", sst.AdicionalDevido));
+
             var entrada = new EntradaFolhaMensal(
                 SalarioBase: colaborador.SalarioBase,
                 ProventosAdicionais: proventosAdicionais,

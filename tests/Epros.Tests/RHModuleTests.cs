@@ -237,6 +237,45 @@ namespace Epros.Tests
         }
 
         [Fact]
+        public async Task Deve_Processar_Folha_Com_Jornada_E_Sst_Como_Proventos()
+        {
+            var options = new DbContextOptionsBuilder<ContextRH>()
+                .UseInMemoryDatabase("db_rh_folha_jornada_sst")
+                .Options;
+
+            var tenantProvider = new TestTenantProvider("tenant-1");
+            var currentUser = new TestCurrentUser("user-1");
+            using var context = new ContextRH(options, tenantProvider, currentUser);
+
+            var colaborador = new Colaborador("Bruno Lima", "33344455566", "bruno@epros.com.br", "Operador", "Produção", 2000m, DateTime.UtcNow.AddDays(-100), "tenant-1", "user-1");
+            context.Colaboradores.Add(colaborador);
+            await context.SaveChangesAsync();
+
+            var handler = new ProcessarFolhaPagamentoCommandHandler(context, tenantProvider, currentUser);
+
+            // Periculosidade (30% de 2000 = 600) + 10 horas extras a 50%.
+            var command = new ProcessarFolhaPagamentoCommand(
+                colaborador.Id, 6, 2026, new List<FolhaPagamentoVerbaInput>(),
+                HorasExtras: 10m,
+                AdicionalHorasExtras: 0.5m,
+                TemPericulosidade: true);
+
+            var result = await handler.Handle(command, CancellationToken.None);
+            Assert.True(result.Sucesso);
+
+            var folha = await context.FolhasPagamento.Include(f => f.Verbas).FirstAsync();
+
+            // valor-hora = 2000/220 = 9,090909; HE = 9,090909 × 1,5 × 10 = 136,36.
+            var valorHora = Epros.Modules.RH.Domain.Jornada.Calculo.MotorJornada.ValorHora(2000m);
+            var heEsperado = Epros.Modules.RH.Domain.Jornada.Calculo.MotorJornada.HorasExtras(valorHora, 10m, 0.5m);
+
+            Assert.Contains(folha.Verbas, v => v.Descricao == "Adicional Periculosidade" && v.Tipo == "Provento" && v.Valor == 600m);
+            Assert.Contains(folha.Verbas, v => v.Descricao == "Horas extras" && v.Tipo == "Provento" && v.Valor == heEsperado);
+            // Bruto = 2000 + 600 (pericul.) + HE.
+            Assert.Equal(2000m + 600m + heEsperado, folha.SalarioBruto);
+        }
+
+        [Fact]
         public async Task Deve_Criar_ContaPagar_Ao_Processar_FolhaProcessada()
         {
             // Organizar
