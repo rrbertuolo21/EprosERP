@@ -103,6 +103,14 @@ try
     builder.Services.AddScoped<ITenantProvider, TenantProvider>();
     builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
+    // TRANSVERSAL T1 — Dispatcher central de Outbox + consumidores in-process.
+    // O OutboxDispatcher resolve TODOS os IOutboxConsumer registrados e roteia por EventType do catálogo;
+    // o fallback (pendência de regra) trata eventos conhecidos ainda sem consumidor de efeito.
+    builder.Services.AddScoped<Epros.Infrastructure.Outbox.OutboxDispatcher>();
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxFallbackConsumer, Epros.Infrastructure.Outbox.PendingRuleFallbackConsumer>();
+    // Consumidor REAL: imo.aluguel.cobranca_gerada -> título em Contas a Receber (Financeiro).
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Financeiro.Application.EventHandlers.AluguelCobrancaGeradaConsumer>();
+
     // Registra o serviço de hashing de senhas (PBKDF2 / HMAC-SHA256). Sem estado -> Singleton.
     builder.Services.AddSingleton<IPasswordHasher, Epros.Infrastructure.Services.Pbkdf2PasswordHasher>();
     builder.Services.AddScoped<IValidadorLimitesSaaS, Epros.Modules.Aplicativo.Application.Services.ValidadorLimitesSaaS>();
@@ -507,6 +515,29 @@ try
             .ForJob(sincronizarGeografiaJobKey)
             .WithIdentity("SincronizarGeografiaJob-trigger")
             .WithCronSchedule("0 0 1 * * ?"));
+
+        // TRANSVERSAL T1 — DISPATCHERS CENTRAIS DE OUTBOX.
+        // Jobs genéricos (OutboxDispatcherJob<TContext>) que roteiam por EventType do catálogo os
+        // eventos de schemas que NÃO tinham processador (antes "morriam na fila"). Registrados apenas
+        // onde não há job legado, para não colidir no flag de processado da mesma tabela física:
+        //   - Imobiliária (schema "imobiliaria"): imo.aluguel.cobranca_gerada -> Contas a Receber (consumidor REAL),
+        //     demais imo.* -> fallback (pendente de regra).
+        //   - Concessionárias/DMS (schema "concessionarias"): con.* -> fallback (pendente de regra) até ganharem consumidor.
+        var imobiliariaOutboxJobKey = new JobKey("ImobiliariaOutboxDispatcherJob");
+        q.AddJob<Epros.Infrastructure.Outbox.OutboxDispatcherJob<Epros.Modules.Imobiliaria.Infrastructure.Data.ContextImobiliaria>>(
+            opts => opts.WithIdentity(imobiliariaOutboxJobKey));
+        q.AddTrigger(opts => opts
+            .ForJob(imobiliariaOutboxJobKey)
+            .WithIdentity("ImobiliariaOutboxDispatcherJob-trigger")
+            .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
+
+        var dmsOutboxJobKey = new JobKey("DmsOutboxDispatcherJob");
+        q.AddJob<Epros.Infrastructure.Outbox.OutboxDispatcherJob<Epros.Modules.DMS.Infrastructure.Data.ContextDMS>>(
+            opts => opts.WithIdentity(dmsOutboxJobKey));
+        q.AddTrigger(opts => opts
+            .ForJob(dmsOutboxJobKey)
+            .WithIdentity("DmsOutboxDispatcherJob-trigger")
+            .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
     });
     builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
