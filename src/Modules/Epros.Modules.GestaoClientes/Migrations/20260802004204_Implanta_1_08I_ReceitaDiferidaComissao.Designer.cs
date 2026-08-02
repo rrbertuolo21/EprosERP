@@ -3,6 +3,7 @@ using System;
 using Epros.Modules.GestaoClientes.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Epros.Modules.GestaoClientes.Migrations
 {
     [DbContext(typeof(ContextGestaoClientes))]
-    partial class ContextGestaoClientesModelSnapshot : ModelSnapshot
+    [Migration("20260802004204_Implanta_1_08I_ReceitaDiferidaComissao")]
+    partial class Implanta_1_08I_ReceitaDiferidaComissao
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

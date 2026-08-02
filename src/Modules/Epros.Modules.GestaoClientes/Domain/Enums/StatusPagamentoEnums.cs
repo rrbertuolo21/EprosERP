@@ -60,4 +60,42 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         Pending,
         Completed
     }
+
+    /// <summary>
+    /// 1.08I — Status de um lançamento de <c>ReconhecimentoReceita</c> (competência).
+    /// <c>Pendente</c> = receita diferida ainda não apropriada (passivo de contrato / receita a apropriar,
+    /// CPC 47 item 106). <c>Reconhecido</c> = apropriada como receita do período (competência, CPC 47 item 35(a)).
+    /// Persistido como string (HasConversion&lt;string&gt;).
+    /// </summary>
+    public enum ReconhecimentoReceitaStatus
+    {
+        Pendente,
+        Reconhecido
+    }
+
+    /// <summary>
+    /// 1.08I — Base de cálculo da comissão de parceiro. ⚠️ PARÂMETRO comercial (valida contador) —
+    /// skill Negocio-acumulado/financeiro RN07: não há norma única, é decisão de contrato.
+    /// Persistido como string.
+    /// </summary>
+    public enum BaseComissao
+    {
+        /// <summary>Valor cheio cobrado do cliente (default seguro do mecanismo).</summary>
+        Bruto,
+        /// <summary>Valor após tarifas/descontos do gateway (bruto − tarifa).</summary>
+        Liquido
+    }
+
+    /// <summary>
+    /// 1.08I — Momento de reconhecimento da comissão. ⚠️ PARÂMETRO (valida contador) —
+    /// skill Negocio-acumulado/financeiro RN08: duas práticas legítimas (competência × caixa).
+    /// Persistido como string.
+    /// </summary>
+    public enum MomentoComissao
+    {
+        /// <summary>Casada com a receita reconhecida (RN08-a — capitalizar/amortizar, CPC 47 itens 91–94).</summary>
+        Competencia,
+        /// <summary>No recebimento/liquidação (RN08-b — default seguro, mais simples operacionalmente).</summary>
+        Caixa
+    }
 }

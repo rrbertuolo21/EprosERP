@@ -21,16 +21,22 @@ namespace Epros.Modules.GestaoClientes.Application.Services
     /// (<see cref="AssinaturaCliente.ProximaCobrancaEm"/>) conforme a duração do plano — fechando o
     /// vínculo assinatura↔recorrência (Mensal → +1 mês; Anual → +1 ano; Vitalicia → sem renovação).
     ///
-    /// ⛔ DIFERIDO (skills de negócio vazias): NÃO aplica reconhecimento de receita por competência
-    /// (REG-025), NÃO apura comissão de revenda como regra fiscal, NÃO emite NFS-e. Só registra fatos.
+    /// 1.08I — MECANISMO de reconhecimento de receita por competência (diferimento anual = 12 avos, CPC 47
+    /// RN05) e APURAÇÃO de comissão parametrizável (base/momento = PARÂMETRO). ⚠️ Contas contábeis, política
+    /// de pró-rata/vitalício e base/momento de comissão = PARÂMETRO do cliente/contador (VALIDA CONTADOR).
+    /// NÃO emite NFS-e nem inventa número fiscal.
     /// </summary>
     public class FaturaLiquidacaoService
     {
         private readonly ContextGestaoClientes _context;
+        private readonly ReconhecimentoReceitaService _reconhecimentoReceita;
+        private readonly ApuracaoComissaoService _apuracaoComissao;
 
         public FaturaLiquidacaoService(ContextGestaoClientes context)
         {
             _context = context;
+            _reconhecimentoReceita = new ReconhecimentoReceitaService(context);
+            _apuracaoComissao = new ApuracaoComissaoService(context);
         }
 
         /// <summary>
@@ -101,7 +107,24 @@ namespace Epros.Modules.GestaoClientes.Application.Services
             {
                 assinatura.Ativar(alteradoPor);
                 await AncorarCicloCobrancaAsync(assinatura, alteradoPor, cancellationToken);
+
+                // 1.08I — DIFERIMENTO: gera o cronograma de reconhecimento de receita conforme a duração do
+                // plano (Anual = 12 avos; Mensal = 1; Vitalício = ponto único por default). A parcela ainda
+                // não apropriada é passivo de receita diferida; a rotina mensal a reconhece. [CPC 47 RN04/05/07]
+                var planoRef = await _context.Planos.IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(p => p.Id == assinatura.PlanoId, cancellationToken);
+                if (planoRef != null)
+                {
+                    var competenciaInicial = dataAprovacao ?? DateTime.UtcNow;
+                    await _reconhecimentoReceita.GerarCronogramaAsync(
+                        fatura, planoRef.Duration, competenciaInicial, alteradoPor, cancellationToken);
+                }
             }
+
+            // 1.08I — APURAÇÃO de comissão parametrizável (base/momento lidos de ConfiguracaoGlobal; default
+            // seguro Bruto/Caixa). Complementa o ComissaoApuradaEvent factual, registrando o resultado do
+            // mecanismo. ⚠️ base/momento/% = PARÂMETRO, VALIDA CONTADOR.
+            await _apuracaoComissao.ApurarAsync(fatura, liquido, alteradoPor, cancellationToken);
 
             if (cliente != null)
             {

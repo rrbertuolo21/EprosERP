@@ -12,6 +12,9 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
         public DbSet<Cliente> Clientes => Set<Cliente>();
         public DbSet<Fatura> Faturas => Set<Fatura>();
         public DbSet<FaturaItem> FaturaItens => Set<FaturaItem>();
+        // 1.08I — reconhecimento de receita por competência (diferimento) + apuração de comissão.
+        public DbSet<ReconhecimentoReceita> ReconhecimentosReceita => Set<ReconhecimentoReceita>();
+        public DbSet<ApuracaoComissao> ApuracoesComissao => Set<ApuracaoComissao>();
         public DbSet<GrupoPlano> GrupoPlanos => Set<GrupoPlano>();
         public DbSet<AssinaturaCliente> AssinaturasClientes => Set<AssinaturaCliente>();
         public DbSet<AjusteProracao> AjustesProracao => Set<AjusteProracao>();
@@ -215,6 +218,36 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
             {
                 entity.HasKey(i => i.Id);
                 entity.Property(i => i.Descricao).HasMaxLength(200);
+            });
+
+            // 1.08I — Cronograma de reconhecimento de receita por competência (diferimento anual = 12 avos).
+            modelBuilder.Entity<ReconhecimentoReceita>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.Status).HasConversion<string>().HasMaxLength(20);
+                entity.HasOne<Fatura>()
+                      .WithMany()
+                      .HasForeignKey(r => r.FaturaId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(r => r.FaturaId)
+                      .HasDatabaseName("ix_reconhecimento_receita_fatura");
+                entity.HasIndex(r => new { r.Status, r.Competencia })
+                      .HasDatabaseName("ix_reconhecimento_receita_status_competencia");
+            });
+
+            // 1.08I — Apuração de comissão parametrizável (base bruto|líquido; momento competência|caixa).
+            modelBuilder.Entity<ApuracaoComissao>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                entity.Property(a => a.Base).HasConversion<string>().HasMaxLength(20);
+                entity.Property(a => a.Momento).HasConversion<string>().HasMaxLength(20);
+                entity.Property(a => a.MotivoEstorno).HasColumnType("text");
+                entity.HasOne<Fatura>()
+                      .WithMany()
+                      .HasForeignKey(a => a.FaturaId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(a => a.FaturaId)
+                      .HasDatabaseName("ix_apuracao_comissao_fatura");
             });
 
             modelBuilder.Entity<GrupoPlano>(entity =>
