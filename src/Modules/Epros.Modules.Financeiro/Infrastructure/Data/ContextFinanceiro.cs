@@ -990,6 +990,7 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
                 e.Property(x => x.TotalDebito).HasPrecision(18, 2);
                 e.Property(x => x.TotalCredito).HasPrecision(18, 2);
                 e.Property(x => x.SaldoFinal).HasPrecision(18, 2);
+                e.Property(x => x.TotalEliminacoes).HasPrecision(18, 2);
                 e.HasMany(x => x.Linhas).WithOne(l => l.BalanceteConsolidado).HasForeignKey(l => l.BalanceteConsolidadoId).OnDelete(DeleteBehavior.Cascade);
                 e.HasIndex(x => new { x.GrupoConsolidacaoId, x.Periodo }).HasDatabaseName("ix_balancete_grupo_periodo");
             });

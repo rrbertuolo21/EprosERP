@@ -23,4 +23,10 @@ namespace Epros.Modules.Financeiro.Application.Commands
 
     // ----- Eliminação Intercompany -----
     public record RegistrarEliminacaoIntercompanyCommand(Guid GrupoConsolidacaoId, string Periodo, Guid? EmpresaOrigemId, Guid? EmpresaDestinoId, decimal? Valor, string? Descricao) : IRequest<CommandResult>;
+
+    /// <summary>
+    /// Motor de eliminação: aplica as eliminações intercompany PENDENTES do grupo/período ao balancete
+    /// consolidado provisório (gera linhas de eliminação e reagrega os totais). Idempotente.
+    /// </summary>
+    public record AplicarEliminacoesConsolidadoCommand(Guid GrupoConsolidacaoId, string Periodo) : IRequest<CommandResult>;
 }
