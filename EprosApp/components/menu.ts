@@ -156,7 +156,16 @@ export const erpMenu: MenuGroup[] = [
   {
     label: 'Relatórios',
     icon: 'report',
-    itens: [{ label: 'Vendas Simplificado', to: '/erp/relatorios/vendas/simplificado01' }]
+    itens: [
+      { label: 'Central de Relatórios', to: '/erp/relatorios' },
+      { label: 'BI — Painel Gerencial', to: '/erp/relatorios/bi/painel' },
+      { label: 'Vendas Simplificado', to: '/erp/relatorios/vendas/simplificado01' },
+      { label: 'Operacional — Vendas', to: '/erp/relatorios/operacionais/vendas' },
+      { label: 'Operacional — Posição de Estoque', to: '/erp/relatorios/operacionais/posicao-estoque' },
+      { label: 'Operacional — Giro de Estoque', to: '/erp/relatorios/operacionais/giro-estoque' },
+      { label: 'Operacional — Fluxo de Caixa', to: '/erp/relatorios/operacionais/fluxo-caixa' },
+      { label: 'Operacional — Aging CP/CR', to: '/erp/relatorios/operacionais/aging' }
+    ]
   },
   {
     label: 'Configurações',
