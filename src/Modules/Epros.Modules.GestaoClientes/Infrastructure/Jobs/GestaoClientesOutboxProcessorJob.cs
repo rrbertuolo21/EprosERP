@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Epros.Modules.GestaoClientes.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
+using Epros.Shared.Domain.Events;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
@@ -38,7 +39,21 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Jobs
             "FaturaAlertaCobrancaEvent",
             "TrialEncerradoEvent",
             "ReciboEmitidoEvent",
-            "PagamentoEstornadoEvent"
+            "PagamentoEstornadoEvent",
+            // TRANSVERSAL T1 — eventos que eram PUBLICADOS mas MORRIAM na fila (nenhum consumidor os drenava,
+            // apesar do comentário dos handlers dizerem "o GestaoClientesOutboxProcessorJob entrega"). Como este
+            // job é o ÚNICO leitor de plataforma.outbox_messages (ContextGestaoClientes E ContextFiscal apontam
+            // para a MESMA tabela física), NÃO se registra um segundo dispatcher (evita corrida no flag processado):
+            // ele passa a ser o drenador único também destes eventos.
+            //  • mudança/cancelamento/reativação de plano  -> NOTIFICAÇÃO REAL ao cliente (efeito preservado da 1.08D);
+            //  • ComissaoApurada (factual) e DocumentoFiscal* -> FALLBACK (pendência de regra: efeito já é síncrono na
+            //    apuração/emissão; NÃO se inventa regra fiscal/contábil aqui — valida-contador).
+            CatalogoEventosIntegracao.Assinatura.PlanoAlterado,
+            CatalogoEventosIntegracao.Assinatura.AssinaturaCancelada,
+            CatalogoEventosIntegracao.Assinatura.AssinaturaReativada,
+            CatalogoEventosIntegracao.Assinatura.ComissaoApurada,
+            CatalogoEventosIntegracao.Fiscal.DocumentoFiscalAutorizado,
+            CatalogoEventosIntegracao.Fiscal.DocumentoFiscalCancelado
         };
 
         private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
@@ -103,6 +118,25 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Jobs
                             break;
                         case "PagamentoEstornadoEvent":
                             await ProcessarPagamentoEstornadoAsync(message.Payload, notificador);
+                            break;
+                        case "PlanoAlteradoEvent":
+                            await ProcessarPlanoAlteradoAsync(message.Payload, notificador);
+                            break;
+                        case "AssinaturaCanceladaEvent":
+                            await ProcessarAssinaturaCanceladaAsync(message.Payload, notificador);
+                            break;
+                        case "AssinaturaReativadaEvent":
+                            await ProcessarAssinaturaReativadaAsync(message.Payload, notificador);
+                            break;
+                        case "ComissaoApuradaEvent":
+                        case "DocumentoFiscalAutorizado":
+                        case "DocumentoFiscalCancelado":
+                            // FALLBACK (pendência de regra): evento CONHECIDO do catálogo, drenado por este leitor único,
+                            // mas SEM efeito in-process próprio. ComissaoApurada é factual (a apuração já grava a
+                            // ApuracaoComissao + campos da Fatura de forma síncrona); DocumentoFiscal* não tem consumidor
+                            // de efeito e o efeito fiscal/financeiro é síncrono na emissão — ⚠️ valida-contador, NÃO se
+                            // inventa regra aqui. Loga a pendência e MARCA como processado (não deixa acumular na fila).
+                            Console.WriteLine($"[Quartz] GestaoClientesOutbox: evento '{message.EventType}' (tenant {message.TenantId}, msg {message.Id}) drenado SEM consumidor de efeito (PENDENTE DE REGRA — registrar em DECISOES-PENDENTES).");
                             break;
                     }
 
@@ -213,6 +247,77 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Jobs
             await notificador.EnviarEmailAsync(cliente.Email, assunto, corpo);
         }
 
+        // ===== 1.08D — notificações de ciclo de assinatura (efeito REAL preservado; morriam na fila antes) =====
+
+        private async Task ProcessarPlanoAlteradoAsync(string payloadJson, INotificacaoService? notificador)
+        {
+            var payload = JsonSerializer.Deserialize<PlanoAlteradoPayload>(payloadJson, JsonOpts);
+            if (payload == null) return;
+
+            var cliente = await ResolverClienteAsync(payload.ClienteId);
+            if (notificador == null || cliente == null || string.IsNullOrWhiteSpace(cliente.Email))
+                return; // sem provedor ou sem destinatário → no-op (mensagem é consumida assim mesmo).
+
+            var titulo = payload.TipoMudanca switch
+            {
+                "Upgrade" => "Seu plano foi atualizado (upgrade)",
+                "Downgrade" => "Seu plano foi alterado (downgrade)",
+                _ => "Seu plano foi alterado"
+            };
+            var trechoProracao = payload.TipoProracao switch
+            {
+                "Debito" => $"<p>Foi gerada uma cobrança de ajuste proporcional no valor de <strong>R$ {payload.ValorProracao:N2}</strong>.</p>",
+                "Credito" => $"<p>Um crédito proporcional de <strong>R$ {Math.Abs(payload.ValorProracao):N2}</strong> será compensado na sua próxima fatura.</p>",
+                _ => string.Empty
+            };
+            var assunto = $"[EprosERP] {titulo}";
+            var corpo =
+                $"<p>Olá, {cliente.RazaoSocial}.</p>" +
+                $"<p>{titulo} com sucesso.</p>" +
+                trechoProracao +
+                "<p>Equipe EprosERP.</p>";
+
+            await notificador.EnviarEmailAsync(cliente.Email, assunto, corpo);
+        }
+
+        private async Task ProcessarAssinaturaCanceladaAsync(string payloadJson, INotificacaoService? notificador)
+        {
+            var payload = JsonSerializer.Deserialize<AssinaturaCanceladaPayload>(payloadJson, JsonOpts);
+            if (payload == null) return;
+
+            var cliente = await ResolverClienteAsync(payload.ClienteId);
+            if (notificador == null || cliente == null || string.IsNullOrWhiteSpace(cliente.Email))
+                return;
+
+            var assunto = "[EprosERP] Assinatura cancelada — acesso somente-leitura por 30 dias";
+            var corpo =
+                $"<p>Olá, {cliente.RazaoSocial}.</p>" +
+                "<p>Sua assinatura foi cancelada. Você mantém acesso somente-leitura por 30 dias para exportar seus dados; " +
+                "reative quando quiser dentro desse período.</p>" +
+                (string.IsNullOrWhiteSpace(payload.Motivo) ? string.Empty : $"<p>Motivo informado: {payload.Motivo}</p>") +
+                "<p>Equipe EprosERP.</p>";
+
+            await notificador.EnviarEmailAsync(cliente.Email, assunto, corpo);
+        }
+
+        private async Task ProcessarAssinaturaReativadaAsync(string payloadJson, INotificacaoService? notificador)
+        {
+            var payload = JsonSerializer.Deserialize<AssinaturaReativadaPayload>(payloadJson, JsonOpts);
+            if (payload == null) return;
+
+            var cliente = await ResolverClienteAsync(payload.ClienteId);
+            if (notificador == null || cliente == null || string.IsNullOrWhiteSpace(cliente.Email))
+                return;
+
+            var assunto = "[EprosERP] Assinatura reativada";
+            var corpo =
+                $"<p>Olá, {cliente.RazaoSocial}.</p>" +
+                "<p>Sua assinatura foi reativada com sucesso e seus serviços voltaram a ficar ativos.</p>" +
+                "<p>Bem-vindo(a) de volta! Equipe EprosERP.</p>";
+
+            await notificador.EnviarEmailAsync(cliente.Email, assunto, corpo);
+        }
+
         private async Task<ClienteDestinatario?> ResolverClienteAsync(Guid clienteId)
         {
             if (clienteId == Guid.Empty) return null;
@@ -261,6 +366,38 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Jobs
             public decimal Valor { get; set; }
             public string MeioPagamento { get; set; } = string.Empty;
             public DateTime DataPagamento { get; set; }
+        }
+
+        private sealed class PlanoAlteradoPayload
+        {
+            public Guid AssinaturaId { get; set; }
+            public Guid ClienteId { get; set; }
+            public string TenantId { get; set; } = string.Empty;
+            public Guid PlanoAnteriorId { get; set; }
+            public Guid PlanoNovoId { get; set; }
+            public string TipoMudanca { get; set; } = string.Empty;
+            public decimal ValorProracao { get; set; }
+            public string TipoProracao { get; set; } = string.Empty;
+            public Guid? FaturaDiferencaId { get; set; }
+        }
+
+        private sealed class AssinaturaCanceladaPayload
+        {
+            public Guid AssinaturaId { get; set; }
+            public Guid ClienteId { get; set; }
+            public string TenantId { get; set; } = string.Empty;
+            public string Motivo { get; set; } = string.Empty;
+            public DateTime? CanceladaEm { get; set; }
+            public string CanceladaPor { get; set; } = string.Empty;
+        }
+
+        private sealed class AssinaturaReativadaPayload
+        {
+            public Guid AssinaturaId { get; set; }
+            public Guid ClienteId { get; set; }
+            public string TenantId { get; set; } = string.Empty;
+            public string ReativadaPor { get; set; } = string.Empty;
+            public DateTime? ReativadaEm { get; set; }
         }
 
         private sealed class PagamentoEstornadoPayload

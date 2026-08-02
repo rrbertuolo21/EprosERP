@@ -323,5 +323,126 @@ namespace Epros.Tests
         }
 
         #endregion
+
+        #region 4) TRANSVERSAL T1 — eventos de ciclo de assinatura que morriam na fila agora são DRENADOS
+
+        [Fact]
+        public async Task PlanoAlterado_Deve_Entregar_Notificacao_Ao_Cliente()
+        {
+            var tenantId = "tenant-plano";
+            var userId = "user";
+            using var context = CreateInMemoryContext(Guid.NewGuid().ToString(), tenantId, userId);
+
+            var cliente = NovoCliente(tenantId, userId, "plano@epros.com");
+            context.Clientes.Add(cliente);
+            var payload = JsonSerializer.Serialize(new
+            {
+                AssinaturaId = Guid.NewGuid(),
+                ClienteId = cliente.Id,
+                TenantId = tenantId,
+                PlanoAnteriorId = Guid.NewGuid(),
+                PlanoNovoId = Guid.NewGuid(),
+                TipoMudanca = "Upgrade",
+                ValorProracao = 49.90m,
+                TipoProracao = "Debito",
+                FaturaDiferencaId = (Guid?)Guid.NewGuid()
+            });
+            context.OutboxMessages.Add(new OutboxMessage(tenantId, "PlanoAlteradoEvent", payload));
+            await context.SaveChangesAsync();
+
+            var spy = new SpyNotificacaoService();
+            await CreateProcessor(context, spy).Execute(null!);
+
+            Assert.Equal(1, spy.EmailCalls);
+            Assert.Equal("plano@epros.com", spy.LastEmail);
+            Assert.Contains("upgrade", spy.LastAssunto, StringComparison.OrdinalIgnoreCase);
+            var msg = await context.OutboxMessages.AsNoTracking().FirstAsync(m => m.EventType == "PlanoAlteradoEvent");
+            Assert.NotNull(msg.ProcessadoEm);
+        }
+
+        [Fact]
+        public async Task AssinaturaCancelada_Deve_Entregar_Notificacao_Ao_Cliente()
+        {
+            var tenantId = "tenant-cancel";
+            var userId = "user";
+            using var context = CreateInMemoryContext(Guid.NewGuid().ToString(), tenantId, userId);
+
+            var cliente = NovoCliente(tenantId, userId, "cancel@epros.com");
+            context.Clientes.Add(cliente);
+            var payload = JsonSerializer.Serialize(new
+            {
+                AssinaturaId = Guid.NewGuid(),
+                ClienteId = cliente.Id,
+                TenantId = tenantId,
+                Motivo = "Motivo teste",
+                CanceladaEm = DateTime.UtcNow,
+                CanceladaPor = userId
+            });
+            context.OutboxMessages.Add(new OutboxMessage(tenantId, "AssinaturaCanceladaEvent", payload));
+            await context.SaveChangesAsync();
+
+            var spy = new SpyNotificacaoService();
+            await CreateProcessor(context, spy).Execute(null!);
+
+            Assert.Equal(1, spy.EmailCalls);
+            Assert.Equal("cancel@epros.com", spy.LastEmail);
+            Assert.Contains("cancelada", spy.LastAssunto, StringComparison.OrdinalIgnoreCase);
+            var msg = await context.OutboxMessages.AsNoTracking().FirstAsync(m => m.EventType == "AssinaturaCanceladaEvent");
+            Assert.NotNull(msg.ProcessadoEm);
+        }
+
+        [Fact]
+        public async Task AssinaturaReativada_Deve_Entregar_Notificacao_Ao_Cliente()
+        {
+            var tenantId = "tenant-react";
+            var userId = "user";
+            using var context = CreateInMemoryContext(Guid.NewGuid().ToString(), tenantId, userId);
+
+            var cliente = NovoCliente(tenantId, userId, "react@epros.com");
+            context.Clientes.Add(cliente);
+            var payload = JsonSerializer.Serialize(new
+            {
+                AssinaturaId = Guid.NewGuid(),
+                ClienteId = cliente.Id,
+                TenantId = tenantId,
+                ReativadaPor = userId,
+                ReativadaEm = DateTime.UtcNow
+            });
+            context.OutboxMessages.Add(new OutboxMessage(tenantId, "AssinaturaReativadaEvent", payload));
+            await context.SaveChangesAsync();
+
+            var spy = new SpyNotificacaoService();
+            await CreateProcessor(context, spy).Execute(null!);
+
+            Assert.Equal(1, spy.EmailCalls);
+            Assert.Equal("react@epros.com", spy.LastEmail);
+            Assert.Contains("reativada", spy.LastAssunto, StringComparison.OrdinalIgnoreCase);
+            var msg = await context.OutboxMessages.AsNoTracking().FirstAsync(m => m.EventType == "AssinaturaReativadaEvent");
+            Assert.NotNull(msg.ProcessadoEm);
+        }
+
+        [Fact]
+        public async Task Comissao_E_DocumentoFiscal_Sao_Drenados_Como_Fallback_Sem_Notificar()
+        {
+            // Estes eventos (factuais / de efeito síncrono) morriam na fila: agora o leitor único de
+            // plataforma.outbox_messages os DRENA (fallback, pendência de regra) sem inventar efeito e sem notificar.
+            var tenantId = "tenant-fallback";
+            var userId = "user";
+            using var context = CreateInMemoryContext(Guid.NewGuid().ToString(), tenantId, userId);
+
+            context.OutboxMessages.Add(new OutboxMessage(tenantId, "ComissaoApuradaEvent", "{}"));
+            context.OutboxMessages.Add(new OutboxMessage(tenantId, "DocumentoFiscalAutorizado", "{}"));
+            context.OutboxMessages.Add(new OutboxMessage(tenantId, "DocumentoFiscalCancelado", "{}"));
+            await context.SaveChangesAsync();
+
+            var spy = new SpyNotificacaoService();
+            await CreateProcessor(context, spy).Execute(null!);
+
+            Assert.Equal(0, spy.EmailCalls); // fallback NÃO notifica
+            var pendentes = await context.OutboxMessages.AsNoTracking().CountAsync(m => m.ProcessadoEm == null);
+            Assert.Equal(0, pendentes); // todos drenados (marcados processados), nada morre na fila
+        }
+
+        #endregion
     }
 }

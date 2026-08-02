@@ -30,7 +30,6 @@ using Epros.Modules.Producao.Infrastructure.Jobs;
 using Epros.Modules.RH.Infrastructure.Data;
 using Epros.Modules.RH.Infrastructure.Jobs;
 using Epros.Modules.Projetos.Infrastructure.Data;
-using Epros.Modules.Projetos.Infrastructure.Jobs;
 using Epros.Modules.Manutencao.Infrastructure.Data;
 using Epros.Modules.Manutencao.Infrastructure.Jobs;
 using Epros.Modules.GRC.Infrastructure.Data;
@@ -124,6 +123,14 @@ try
     // T5 — prd.ordem.concluida (MES) -> baixa de insumos + entrada do acabado no Estoque pelo motor único.
     // Roteado pelo ProducaoOutboxProcessorJob (mesma fila do evento legado OrdemProducaoEncerrada). Idempotente.
     builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.MesOrdemConcluidaEstoqueConsumer>();
+    // T1 — Outbox de PROJETOS migrado do job por-módulo para o dispatcher central: "ProjetoFaturado" -> título
+    // em Contas a Receber (via MediatR, preservando o efeito legado); prj.orcamento.baseline_congelada -> fallback.
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Projetos.Application.Outbox.ProjetoFaturadoConsumer>();
+    // T1 — Outbox de VENDAS migrado do job por-módulo para o dispatcher central: VendaFaturada/VendaCancelada ->
+    // efeito preservado 1:1 (fan-out Financeiro/Fiscal + baixa/estorno de estoque via MediatR); PedidoEcommerceParaVenda,
+    // DemandaPlanejadaPublicada e ven.ExpedicaoConfirmada -> fallback (pendência de regra; expedição NÃO recontam saída).
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Vendas.Application.Outbox.VendaFaturadaConsumer>();
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Vendas.Application.Outbox.VendaCanceladaConsumer>();
 
     // Registra o serviço de hashing de senhas (PBKDF2 / HMAC-SHA256). Sem estado -> Singleton.
     builder.Services.AddSingleton<IPasswordHasher, Epros.Infrastructure.Services.Pbkdf2PasswordHasher>();
@@ -416,12 +423,17 @@ try
             .WithIdentity("OutboxProcessorJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
 
-        var vendasOutboxJobKey = new JobKey("VendasOutboxProcessorJob");
-        q.AddJob<VendasOutboxProcessorJob>(opts => opts.WithIdentity(vendasOutboxJobKey));
+        // TRANSVERSAL T1 — Outbox de VENDAS migrado do job por-módulo (que drenava só VendaFaturada/VendaCancelada
+        // e deixava PedidoEcommerceParaVenda/DemandaPlanejadaPublicada/ven.ExpedicaoConfirmada morrerem na fila)
+        // para o DISPATCHER CENTRAL: um único drenador do schema "vendas". VendaFaturada/VendaCancelada mantêm o
+        // efeito legado (consumidores reais via MediatR); os demais eventos conhecidos caem no fallback.
+        var vendasOutboxJobKey = new JobKey("VendasOutboxDispatcherJob");
+        q.AddJob<Epros.Infrastructure.Outbox.OutboxDispatcherJob<Epros.Modules.Vendas.Infrastructure.Data.ContextVendas>>(
+            opts => opts.WithIdentity(vendasOutboxJobKey));
 
         q.AddTrigger(opts => opts
             .ForJob(vendasOutboxJobKey)
-            .WithIdentity("VendasOutboxProcessorJob-trigger")
+            .WithIdentity("VendasOutboxDispatcherJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
 
         var aplicativoOutboxJobKey = new JobKey("AplicativoOutboxProcessorJob");
@@ -473,12 +485,17 @@ try
             .WithIdentity("RHOutboxProcessorJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
 
-        var projetosOutboxJobKey = new JobKey("ProjetosOutboxProcessorJob");
-        q.AddJob<ProjetosOutboxProcessorJob>(opts => opts.WithIdentity(projetosOutboxJobKey));
+        // TRANSVERSAL T1 — Outbox de PROJETOS migrado do job por-módulo (que só drenava "ProjetoFaturado"
+        // e deixava prj.orcamento.baseline_congelada morrer na fila) para o DISPATCHER CENTRAL: um único
+        // drenador do schema "projetos", roteando "ProjetoFaturado" para o consumidor REAL (Contas a Receber)
+        // e os demais eventos conhecidos do catálogo (ex.: prj.orcamento.baseline_congelada) para o fallback.
+        var projetosOutboxJobKey = new JobKey("ProjetosOutboxDispatcherJob");
+        q.AddJob<Epros.Infrastructure.Outbox.OutboxDispatcherJob<Epros.Modules.Projetos.Infrastructure.Data.ContextProjetos>>(
+            opts => opts.WithIdentity(projetosOutboxJobKey));
 
         q.AddTrigger(opts => opts
             .ForJob(projetosOutboxJobKey)
-            .WithIdentity("ProjetosOutboxProcessorJob-trigger")
+            .WithIdentity("ProjetosOutboxDispatcherJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
 
         // TRANSVERSAL T1 — Outbox de MANUTENÇÃO migrado do job por-módulo ("OrdemManutencaoConcluida")
