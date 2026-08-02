@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MediatR;
+using Epros.Modules.Estoque.Application.Security;
 using Epros.Modules.Estoque.Domain.Enums;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
@@ -20,13 +21,19 @@ namespace Epros.Modules.Estoque.Application.Queries
     public class ListarCotacoesFornecedorQueryHandler : IRequestHandler<ListarCotacoesFornecedorQuery, CommandResult>
     {
         private readonly ContextEstoque _context;
-        public ListarCotacoesFornecedorQueryHandler(ContextEstoque context) => _context = context;
+        private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
+        public ListarCotacoesFornecedorQueryHandler(ContextEstoque context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        { _context = context; _tenantProvider = tenantProvider; _currentUser = currentUser; }
 
         public async Task<CommandResult> Handle(ListarCotacoesFornecedorQuery request, CancellationToken cancellationToken)
         {
-            if (request.FornecedorId == Guid.Empty) return CommandResult.Falha("Fornecedor é obrigatório [PFO-002].");
+            // PFO-002: fornecedor derivado do principal externo (nunca do request).
+            var (erro, fornecedorId) = await PortalFornecedorAcesso.ResolverAsync(_currentUser, _context, _tenantProvider.GetTenantId(), request.FornecedorId, cancellationToken);
+            if (erro != null) return erro;
+            if (fornecedorId == Guid.Empty) return CommandResult.Falha("Fornecedor é obrigatório [PFO-002].");
             var query = _context.PfoCotacoesPublicadas.AsNoTracking()
-                .Where(c => c.DeletadoEm == null && c.FornecedorId == request.FornecedorId);
+                .Where(c => c.DeletadoEm == null && c.FornecedorId == fornecedorId);
             if (request.Status.HasValue) query = query.Where(c => c.Status == request.Status.Value);
 
             var total = await query.CountAsync(cancellationToken);
@@ -41,13 +48,19 @@ namespace Epros.Modules.Estoque.Application.Queries
     public class ListarPreAvisosFornecedorQueryHandler : IRequestHandler<ListarPreAvisosFornecedorQuery, CommandResult>
     {
         private readonly ContextEstoque _context;
-        public ListarPreAvisosFornecedorQueryHandler(ContextEstoque context) => _context = context;
+        private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
+        public ListarPreAvisosFornecedorQueryHandler(ContextEstoque context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        { _context = context; _tenantProvider = tenantProvider; _currentUser = currentUser; }
 
         public async Task<CommandResult> Handle(ListarPreAvisosFornecedorQuery request, CancellationToken cancellationToken)
         {
-            if (request.FornecedorId == Guid.Empty) return CommandResult.Falha("Fornecedor é obrigatório [PFO-002].");
+            // PFO-002: fornecedor derivado do principal externo (nunca do request).
+            var (erro, fornecedorId) = await PortalFornecedorAcesso.ResolverAsync(_currentUser, _context, _tenantProvider.GetTenantId(), request.FornecedorId, cancellationToken);
+            if (erro != null) return erro;
+            if (fornecedorId == Guid.Empty) return CommandResult.Falha("Fornecedor é obrigatório [PFO-002].");
             var query = _context.PfoPreAvisosEmbarque.AsNoTracking()
-                .Where(p => p.DeletadoEm == null && p.FornecedorId == request.FornecedorId);
+                .Where(p => p.DeletadoEm == null && p.FornecedorId == fornecedorId);
             var total = await query.CountAsync(cancellationToken);
             var itens = await query.OrderByDescending(p => p.CriadoEm)
                 .Skip((request.Pagina - 1) * request.TamanhoPagina).Take(request.TamanhoPagina)
@@ -60,13 +73,19 @@ namespace Epros.Modules.Estoque.Application.Queries
     public class ListarDocumentosFornecedorQueryHandler : IRequestHandler<ListarDocumentosFornecedorQuery, CommandResult>
     {
         private readonly ContextEstoque _context;
-        public ListarDocumentosFornecedorQueryHandler(ContextEstoque context) => _context = context;
+        private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
+        public ListarDocumentosFornecedorQueryHandler(ContextEstoque context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        { _context = context; _tenantProvider = tenantProvider; _currentUser = currentUser; }
 
         public async Task<CommandResult> Handle(ListarDocumentosFornecedorQuery request, CancellationToken cancellationToken)
         {
-            if (request.FornecedorId == Guid.Empty) return CommandResult.Falha("Fornecedor é obrigatório [PFO-002].");
+            // PFO-002: fornecedor derivado do principal externo (nunca do request).
+            var (erro, fornecedorId) = await PortalFornecedorAcesso.ResolverAsync(_currentUser, _context, _tenantProvider.GetTenantId(), request.FornecedorId, cancellationToken);
+            if (erro != null) return erro;
+            if (fornecedorId == Guid.Empty) return CommandResult.Falha("Fornecedor é obrigatório [PFO-002].");
             var query = _context.PfoDocumentosFornecedor.AsNoTracking()
-                .Where(d => d.DeletadoEm == null && d.FornecedorId == request.FornecedorId);
+                .Where(d => d.DeletadoEm == null && d.FornecedorId == fornecedorId);
             var total = await query.CountAsync(cancellationToken);
             var itens = await query.OrderByDescending(d => d.EnviadoEm)
                 .Skip((request.Pagina - 1) * request.TamanhoPagina).Take(request.TamanhoPagina)
