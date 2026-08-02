@@ -131,9 +131,13 @@ namespace Epros.Modules.Financeiro.Application.Handlers
             // EF §7.3: não duplicar depreciação para a mesma competência.
             var jaExiste = await _context.DepreciacoesMensais.AnyAsync(d => d.AtivoId == request.AtivoId && d.Competencia == request.Competencia, ct);
             if (jaExiste) return CommandResult.Falha("Já existe depreciação para o ativo nesta competência.");
-            var dep = new DepreciacaoMensal(request.AtivoId, request.Competencia, request.Valor, request.MetodoDepreciacao, request.TaxaAplicada, tenantId, userId);
+            // Valor <= 0 ⇒ o motor calcula a cota do mês pela taxa informada no ativo (Linear/SaldoDecrescente).
+            // Fórmula universal (Negocio-acumulado/contabil); taxa é fato legal RFB já informado → valida-contador.
+            var valor = request.Valor > 0m ? request.Valor : ativo.CalcularCotaDepreciacaoMensal();
+            if (valor <= 0m) return CommandResult.Falha("Não há cota de depreciação a registrar (informe o valor ou configure taxa/depreciação no ativo).");
+            var dep = new DepreciacaoMensal(request.AtivoId, request.Competencia, valor, request.MetodoDepreciacao, request.TaxaAplicada, tenantId, userId);
             if (!dep.IsValid) return CommandResult.Falha(dep.Notifications.Select(n => n.Message));
-            ativo.AplicarDepreciacao(request.Valor, System.DateTime.UtcNow, userId);
+            ativo.AplicarDepreciacao(valor, System.DateTime.UtcNow, userId);
             if (!ativo.IsValid) return CommandResult.Falha(ativo.Notifications.Select(n => n.Message));
             _context.DepreciacoesMensais.Add(dep);
             await _context.SaveChangesAsync(ct);
