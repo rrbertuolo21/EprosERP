@@ -133,6 +133,35 @@ namespace Epros.Tests
             Assert.False((await handler.Handle(new JulgarSolicitacaoGarantiaCommand(s.Id, false), CancellationToken.None)).Sucesso);
         }
 
+        // ---------- Eventos em handlers de criação (D-08) ----------
+
+        [Fact(DisplayName = "Evento | CON-FIN | Criar contrato emite con.fin.contrato_emitido")]
+        public async Task Criar_Contrato_Emite_Evento()
+        {
+            using var ctx = Novo("db_evt_contrato");
+            var handler = new CriarContratoFinCommandHandler(ctx, new FakeTenant(Tenant), new FakeUser("user-1"));
+            var r = await handler.Handle(new CriarContratoFinCommand(null, Guid.NewGuid(), "CT-EVT-1", null), CancellationToken.None);
+
+            Assert.True(r.Sucesso);
+            var evt = await ctx.OutboxMessages.SingleAsync();
+            Assert.Equal(CatalogoEventosIntegracao.Concessionarias.FinContratoEmitido, evt.EventType);
+            Assert.True(CatalogoEventosIntegracao.EhEventoConhecido(evt.EventType));
+        }
+
+        [Fact(DisplayName = "Evento | CON-MNT | Abrir OS da oficina emite con.mnt.ordem_servico_aberta")]
+        public async Task Abrir_Os_Emite_Evento()
+        {
+            using var ctx = Novo("db_evt_os");
+            var handler = new AbrirOrdemServicoDmsCommandHandler(ctx, new FakeTenant(Tenant), new FakeUser("user-1"));
+            var r = await handler.Handle(
+                new AbrirOrdemServicoDmsCommand("OS-EVT-1", "9BWZZZ372HP123456", "Revisão", 100m, 200m, false),
+                CancellationToken.None);
+
+            Assert.True(r.Sucesso);
+            var evt = await ctx.OutboxMessages.SingleAsync();
+            Assert.Equal(CatalogoEventosIntegracao.Concessionarias.MntOrdemServicoAberta, evt.EventType);
+        }
+
         private sealed class FakeTenant : ITenantProvider
         {
             private readonly string _t;
