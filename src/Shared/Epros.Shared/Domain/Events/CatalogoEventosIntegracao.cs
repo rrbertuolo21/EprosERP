@@ -104,6 +104,8 @@ namespace Epros.Shared.Domain.Events
             /// <summary>Cotação decidida (CD2): vencedor escolhido após o mapa comparativo; apta a originar pedido.</summary>
             public const string ScCotacaoDecidida = "est.sc.cotacao_decidida";
             public const string TmsAlterado = "est.tms.001.alterado";
+            /// <summary>Frete de entrada rateado sobre os itens da compra (NF-04): compõe o custo (motor de custeio D1).</summary>
+            public const string TmsFreteRateado = "est.tms.frete_rateado";
             public const string WmsArmazemCriado = "estoque.wms.armazem_criado";
             public const string WmsArmazemAlterado = "estoque.wms.armazem_alterado";
             public const string WmsArmazemExclusaoSolicitada = "estoque.wms.armazem_exclusao_solicitada";
@@ -172,7 +174,7 @@ namespace Epros.Shared.Domain.Events
             Estoque.LdeEntradaCriada, Estoque.LdeEntradaConfirmada, Estoque.LdeEntradaCancelada,
             Estoque.LdeEntradaEstornada, Estoque.LdeDocumentoVinculado, Estoque.LdeLocalEntregaAlterado,
             Estoque.MercadoriaRecebida,
-            Estoque.ScPedidoCompraCriado, Estoque.ScCotacaoDecidida, Estoque.TmsAlterado,
+            Estoque.ScPedidoCompraCriado, Estoque.ScCotacaoDecidida, Estoque.TmsAlterado, Estoque.TmsFreteRateado,
             Estoque.WmsArmazemCriado, Estoque.WmsArmazemAlterado, Estoque.WmsArmazemExclusaoSolicitada,
             Estoque.GccContratoCriado, Estoque.GccContratoEnviadoAprovacao, Estoque.GccContratoAprovado,
             Estoque.GccConsumoRegistrado, Estoque.GccAditivoRegistrado, Estoque.SubEnvioRegistrado, Estoque.SubRetornoRegistrado,
