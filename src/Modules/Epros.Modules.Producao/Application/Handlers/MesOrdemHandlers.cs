@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using Epros.Modules.Producao.Domain.Enums;
 using Epros.Modules.Producao.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
+using Epros.Shared.Domain.Events;
 using Microsoft.EntityFrameworkCore;
 
 namespace Epros.Modules.Producao.Application.Handlers
@@ -225,14 +227,19 @@ namespace Epros.Modules.Producao.Application.Handlers
             var produtoAcabadoId = ordem.ProdutoAcabadoId ?? ordem.Itens.FirstOrDefault()?.ProdutoId ?? Guid.Empty;
             var quantidadeProduzida = ordem.Itens.Sum(i => i.QuantidadeProduzida);
             var quantidadeEfetiva = ordem.CalcularQuantidadeEfetiva(quantidadeProduzida);
+            var quantidadeAcabadoMovimento = quantidadeEfetiva > 0m ? quantidadeEfetiva : 1m;
 
             // MES-REG-014: entrada de produto acabado (movimento pai).
             var entrada = new MesMovimentoProducao(
                 ordem.Id, ETipoMovimentoMes.EntradaProdutoAcabado, produtoAcabadoId,
-                quantidadeEfetiva > 0m ? quantidadeEfetiva : 1m, request.LocalEstoqueId, tenantId, usuario,
+                quantidadeAcabadoMovimento, request.LocalEstoqueId, tenantId, usuario,
                 null, ordem.VariacaoProdutoAcabadoId, null,
                 request.ValorTotalFinal);
             _context.MesMovimentos.Add(entrada);
+
+            // Insumos que serão baixados no Estoque pelo motor único — construídos a partir dos MESMOS
+            // consumos registrados no ledger MES (anti-divergência: Estoque == ledger da ordem).
+            var insumosEvento = new List<object>();
 
             // MES-REG-013/015/016: consumo de materiais da estrutura ativa, vinculado à entrada (movimento pai).
             if (ordem.EstruturaId.HasValue && ordem.EstruturaId.Value != Guid.Empty)
@@ -252,17 +259,41 @@ namespace Epros.Modules.Producao.Application.Handlers
                     consumo.Confirmar(quantidadePrevista, usuario);
                     _context.MesConsumos.Add(consumo);
 
+                    var quantidadeMovimento = quantidadePrevista > 0m ? quantidadePrevista : 1m;
                     var movConsumo = new MesMovimentoProducao(
                         ordem.Id, ETipoMovimentoMes.ConsumoMaterial, comp.VariacaoComponenteId,
-                        quantidadePrevista > 0m ? quantidadePrevista : 1m, request.LocalEstoqueId, tenantId, usuario,
+                        quantidadeMovimento, request.LocalEstoqueId, tenantId, usuario,
                         entrada.Id, null, null, comp.CustoLinha);
                     movConsumo.Confirmar(usuario);
                     _context.MesMovimentos.Add(movConsumo);
+
+                    if (comp.VariacaoComponenteId != Guid.Empty && quantidadeMovimento > 0m)
+                        insumosEvento.Add(new { produtoId = comp.VariacaoComponenteId, quantidade = quantidadeMovimento });
                 }
             }
 
             entrada.Confirmar(usuario);
             _context.MesHistoricos.Add(new MesHistorico(ordem.Id, "Finalizacao", usuario, "{}", tenantId, usuario, EStatusOrdemMes.Ativo, EStatusOrdemMes.Finalizado));
+
+            // T5 — MES MOVE ESTOQUE DE VERDADE: publica o evento canônico de produção no Outbox pós-commit.
+            // O consumidor no Estoque (idempotente, anti-dupla-contagem) baixa os insumos e dá entrada do
+            // acabado pelo motor único. A ordem MES não movimenta estoque diretamente — apenas emite o fato.
+            // Lote/validade seguem para o kardex; efeito fiscal de lote/validade = valida-contador (DP-MES-015).
+            var eventoPayload = new
+            {
+                ordemId = ordem.Id,
+                tenantId,
+                produtoAcabadoId,
+                quantidadeAcabado = quantidadeAcabadoMovimento,
+                lote = ordem.Lote,
+                validade = ordem.Validade,
+                insumos = insumosEvento
+            };
+            _context.OutboxMessages.Add(new OutboxMessage(
+                tenantId,
+                Epros.Shared.Domain.Events.CatalogoEventosIntegracao.Producao.OrdemConcluida,
+                System.Text.Json.JsonSerializer.Serialize(eventoPayload)));
+
             await _context.SaveChangesAsync(cancellationToken);
 
             return CommandResult.Ok("Produção finalizada com entrada de produto acabado e consumo de materiais.", new { ordem.Id, ordem.Status });

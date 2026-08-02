@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Epros.Modules.Producao.Infrastructure.Data;
+using Epros.Shared.Application.Outbox;
 using Epros.Shared.Domain.Events;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -18,24 +19,35 @@ namespace Epros.Modules.Producao.Infrastructure.Jobs
         private readonly ContextProducao _context;
         private readonly IMediator _mediator;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IReadOnlyDictionary<string, List<IOutboxConsumer>> _consumersByType;
 
         public ProducaoOutboxProcessorJob(
             ContextProducao context,
             IMediator mediator,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IEnumerable<IOutboxConsumer> consumers)
         {
             _context = context;
             _mediator = mediator;
             _httpContextAccessor = httpContextAccessor;
+            _consumersByType = consumers
+                .GroupBy(c => c.EventType, StringComparer.Ordinal)
+                .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
         }
 
         public async Task Execute(IJobExecutionContext context)
         {
             Console.WriteLine("[Quartz] Iniciando ProducaoOutboxProcessorJob...");
 
+            // Fatia 1 (legado): OrdemProducaoEncerrada -> baixa via MediatR (INotificationHandler no Estoque).
+            // Fatia 2 (T5): eventos canônicos com IOutboxConsumer registrado (ex.: prd.ordem.concluida)
+            //               -> movimento pelo motor único, idempotente. Mesma fila/schema, um único job.
+            var tiposRoteados = _consumersByType.Keys.ToHashSet(StringComparer.Ordinal);
+
             var messages = await _context.OutboxMessages
                 .IgnoreQueryFilters()
-                .Where(m => m.EventType == "OrdemProducaoEncerrada" && m.ProcessadoEm == null && m.Tentativas < 5)
+                .Where(m => m.ProcessadoEm == null && m.Tentativas < 5
+                    && (m.EventType == "OrdemProducaoEncerrada" || tiposRoteados.Contains(m.EventType)))
                 .OrderBy(m => m.CriadoEm)
                 .ToListAsync();
 
@@ -53,7 +65,14 @@ namespace Epros.Modules.Producao.Infrastructure.Jobs
 
                 try
                 {
-                    if (message.EventType == "OrdemProducaoEncerrada")
+                    if (_consumersByType.TryGetValue(message.EventType, out var consumers))
+                    {
+                        // Consumidores idempotentes e tenant-explícitos (não dependem do HttpContext).
+                        foreach (var consumer in consumers)
+                            await consumer.ConsumeAsync(message);
+                        message.MarcarProcessado();
+                    }
+                    else if (message.EventType == "OrdemProducaoEncerrada")
                     {
                         var payload = JsonSerializer.Deserialize<OrdemProducaoEncerradaPayload>(message.Payload, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                         if (payload != null)
@@ -72,9 +91,12 @@ namespace Epros.Modules.Producao.Infrastructure.Jobs
 
                             await _mediator.Publish(notification);
                         }
+                        message.MarcarProcessado();
                     }
-
-                    message.MarcarProcessado();
+                    else
+                    {
+                        message.MarcarProcessado();
+                    }
                 }
                 catch (Exception ex)
                 {
