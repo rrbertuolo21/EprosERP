@@ -115,6 +115,8 @@ try
     //  - qld.acr.lote_liberado -> desbloqueio do lote. Todos idempotentes e tenant-explícitos.
     builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.InspecaoReprovadaEstoqueConsumer>();
     builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.OrdemManutencaoConcluidaEstoqueConsumer>();
+    // T5 — devolução de peça (estorno simétrico à baixa): entrada compensatória pelo motor único.
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.DevolucaoPecaManutencaoEstoqueConsumer>();
     builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.QualidadeLoteBloqueadoConsumer>();
     builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.QualidadeLoteQuarentenaConsumer>();
     builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.QualidadeRstBloqueioSolicitadoConsumer>();

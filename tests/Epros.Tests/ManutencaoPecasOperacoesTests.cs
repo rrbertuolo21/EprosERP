@@ -125,6 +125,8 @@ namespace Epros.Tests
             var item = await ctx.ItensPecaReposicao.FindAsync(itemId);
             Assert.Equal(3m, item!.QuantidadeEntregue);
             Assert.Equal(1, await ctx.MovimentosPeca.CountAsync(m => m.TipoMovimento == ETipoMovimentoPeca.Devolucao));
+            // T5 — devolucao enfileira o evento de estorno SIMETRICO (entrada compensatoria no motor unico).
+            Assert.Equal(1, await ctx.OutboxMessages.CountAsync(o => o.EventType == Epros.Shared.Domain.Events.CatalogoEventosIntegracao.Operacoes.DevolucaoPecaManutencao));
         }
 
         [Fact(DisplayName = "MAN-PEC | Devolucao acima do entregue e bloqueada")]

@@ -16,8 +16,9 @@ namespace Epros.Modules.Manutencao.Application.Commands
     /// <summary>
     /// MAN-PRV — D7/D8/D9: motor de vencimento sob demanda. Avalia os planos ATIVOS (ou um plano
     /// especifico) por calendario e/ou contador; ao vencer, cria UMA execucao programada por janela
-    /// (deduplicacao RN-PRV-010/011) marcada Elegivel e avanca a base da periodicidade.
-    /// A criacao da OT (man_trb_ordem_servico origem=Preventiva) e feita na fatia de unificacao de ordem.
+    /// (deduplicacao RN-PRV-010/011) e avanca a base da periodicidade.
+    /// T5 — cada execucao vencida CRIA a OT canonica (man_trb_ordem_servico, origem=Preventiva) como
+    /// ordem interna e marca a execucao como OrdemGerada, referenciando a OS criada.
     /// </summary>
     public record AvaliarVencimentoPreventivaCommand(
         Guid? PlanoId,
@@ -98,11 +99,19 @@ namespace Epros.Modules.Manutencao.Application.Commands
                 _context.PlanoPreventivoExecucoes.Add(exec);
                 execucoes.Add(exec); // evita duplicar dentro do mesmo lote
 
+                // T5 — a execucao elegivel passa a CRIAR a OT canonica (man_trb_ordem_servico)
+                // como ordem interna (origem=Preventiva, sem cliente), e a execucao referencia essa OS.
+                var os = OrdemServico.CriarInterna(
+                    EOrigemOrdemServico.Preventiva, exec.Id, dataRef, tenantId, usuario,
+                    observacaoAbertura: $"OS preventiva gerada por vencimento do plano {per.PlanoId} (execucao {exec.Id}).");
+                _context.OrdensServico.Add(os);
+                exec.RegistrarOrdemGerada(os.Id, usuario);
+
                 // D9 — avanca a base para o proximo vencimento.
                 per.AvancarVencimento(av.ProximaData, av.ProximoContador, usuario);
 
                 geradas++;
-                detalhes.Add(new { PeriodicidadeId = per.Id, ExecucaoId = exec.Id, Resultado = "elegivel", av.Motivo, av.DataAlvo });
+                detalhes.Add(new { PeriodicidadeId = per.Id, ExecucaoId = exec.Id, OrdemServicoId = os.Id, Resultado = "ordem-gerada", av.Motivo, av.DataAlvo });
             }
 
             if (geradas > 0)

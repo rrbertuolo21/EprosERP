@@ -142,6 +142,77 @@ namespace Epros.Modules.Estoque.Application.Outbox
         }
     }
 
+    // -------------------- MANUTENÇÃO: devolução de peça -> entrada compensatória (T5) --------------------
+
+    /// <summary>
+    /// T5 — Consome <c>DevolucaoPecaManutencao</c> (Outbox de Manutenção): ENTRADA compensatória das peças
+    /// devolvidas pelo MOTOR ÚNICO (Kardex, D1), simétrica à baixa <c>OrdemManutencaoConcluida</c>.
+    /// Reentra ao custo médio vigente (a média não se altera na devolução) e é idempotente por operação.
+    /// </summary>
+    public class DevolucaoPecaManutencaoEstoqueConsumer : IOutboxConsumer
+    {
+        private readonly ContextEstoque _context;
+        public DevolucaoPecaManutencaoEstoqueConsumer(ContextEstoque context) => _context = context;
+
+        public string EventType => Epros.Shared.Domain.Events.CatalogoEventosIntegracao.Operacoes.DevolucaoPecaManutencao;
+
+        public async Task ConsumeAsync(OutboxMessage message, CancellationToken cancellationToken = default)
+        {
+            var p = JsonSerializer.Deserialize<DevolucaoPecaPayload>(message.Payload, JsonOpts.Default);
+            if (p == null || p.Pecas == null || p.Pecas.Count == 0) return;
+
+            var tenantId = string.IsNullOrWhiteSpace(p.TenantId) ? message.TenantId : p.TenantId;
+            var referencia = $"Devolucao peca OS {p.OrdemManutencaoId}";
+
+            var jaProcessado = await _context.MovimentosEstoque
+                .IgnoreQueryFilters()
+                .AnyAsync(m => m.TenantId == tenantId && m.Tipo == "Entrada" && m.Historico.Contains(referencia), cancellationToken);
+            if (jaProcessado) return;
+
+            var motor = new MotorMovimentacaoEstoque(_context, tenantId, "system_maintenance");
+            var gravou = false;
+
+            foreach (var peca in p.Pecas)
+            {
+                var produto = await _context.Produtos
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Id == peca.ProdutoId, cancellationToken);
+                if (produto == null) continue;
+
+                // Reentrada ao custo médio vigente (não distorce a média); fallback: espelho do produto.
+                var custoMedio = await _context.EstoqueProdutos
+                    .Where(e => e.EmpresaId == MotorMovimentacaoEstoque.EmpresaPadrao && e.ProdutoId == peca.ProdutoId)
+                    .Select(e => (decimal?)e.ValorCustoMedio)
+                    .FirstOrDefaultAsync(cancellationToken) ?? produto.CustoMedio;
+
+                var fato = new FatoGeradorEstoque(null, null, null, EOrigemFatoGeradorEstoque.EntradaConsumidor, tenantId, "system_maintenance", referenciaExterna: referencia);
+                var res = await motor.AplicarEntradaAsync(MotorMovimentacaoEstoque.EmpresaPadrao, peca.ProdutoId, ETipoEstoque.Geral, peca.Quantidade, custoMedio, fato.Id, null, null, null, ETipoCusteioEstoque.CustoMedio, cancellationToken);
+                if (!res.Sucesso) continue; // motor é a autoridade
+
+                _context.FatosGeradoresEstoque.Add(fato);
+                _context.MovimentosEstoque.Add(new MovimentoEstoque(
+                    produtoId: peca.ProdutoId, quantidade: peca.Quantidade, tipo: "Entrada",
+                    historico: $"{referencia} (Equipamento: {p.EquipamentoId})", tenantId: tenantId, criadoPor: "system_maintenance"));
+                gravou = true;
+            }
+
+            if (gravou) await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        private class DevolucaoPecaPayload
+        {
+            public Guid OrdemManutencaoId { get; set; }
+            public Guid EquipamentoId { get; set; }
+            public List<PecaPayload> Pecas { get; set; } = new();
+            public string? TenantId { get; set; }
+        }
+        private class PecaPayload
+        {
+            public Guid ProdutoId { get; set; }
+            public decimal Quantidade { get; set; }
+        }
+    }
+
     // -------------------- QUALIDADE: bloqueio/quarentena/liberação de lote --------------------
 
     /// <summary>

@@ -184,8 +184,19 @@ namespace Epros.Modules.Manutencao.Application.Commands
             if (!movimento.IsValid) return CommandResult.Falha(movimento.Notifications.Select(n => n.Message));
             _context.MovimentosPeca.Add(movimento);
 
+            // T5 — estorno SIMETRICO a baixa: devolucao devolve a peca ao estoque real pelo MOTOR UNICO
+            // (entrada compensatoria), via evento idempotente pela mesma chave de operacao.
+            var payload = new
+            {
+                OrdemManutencaoId = operacaoId,
+                EquipamentoId = item.OrdemServicoId ?? Guid.Empty,
+                Pecas = new[] { new { ProdutoId = item.ProdutoId, Quantidade = request.Quantidade } },
+                TenantId = tenantId
+            };
+            _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Operacoes.DevolucaoPecaManutencao, JsonSerializer.Serialize(payload)));
+
             await _context.SaveChangesAsync(cancellationToken);
-            return CommandResult.Ok("Devolucao de peca registrada.",
+            return CommandResult.Ok("Devolucao de peca registrada; estoque sera estornado pelo motor unico.",
                 new { item.Id, MovimentoId = movimento.Id, OperacaoId = operacaoId, item.QuantidadeEntregue, Status = item.StatusItem.ToString() });
         }
     }

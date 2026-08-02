@@ -44,6 +44,17 @@ namespace Epros.Modules.Manutencao.Domain.Enums
         Campo = 1
     }
 
+    // T5 — Origem da OS canonica. Manual = ordem externa (cliente); as demais sao
+    // ordens INTERNAS geradas por outro submodulo (sem pessoa/cliente obrigatorio).
+    public enum EOrigemOrdemServico
+    {
+        Manual = 0,        // OS externa aberta manualmente (cliente obrigatorio)
+        Preventiva = 1,    // gerada por vencimento de plano preventivo (MAN-PRV)
+        Preditiva = 2,     // gerada por alarme preditivo (MAN-PDT)
+        Corretiva = 3,     // gerada por parada nao planejada (MAN-PAR)
+        Confiabilidade = 4 // gerada por recomendacao de revisao (MAN-CRV)
+    }
+
     public enum EStatusOrdemServico
     {
         Aberta = 1,
