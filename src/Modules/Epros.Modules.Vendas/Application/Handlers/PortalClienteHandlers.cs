@@ -2,6 +2,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Epros.Modules.Vendas.Application.Commands;
+using Epros.Modules.Vendas.Application.Security;
 using Epros.Modules.Vendas.Domain.Entities;
 using Epros.Modules.Vendas.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
@@ -26,14 +27,20 @@ namespace Epros.Modules.Vendas.Application.Handlers
             var tenantId = _tenantProvider.GetTenantId();
             var usuario = _currentUser.GetUserId() ?? "system";
 
+            // T-02: para principal externo, o cliente vem do vínculo autenticado (nunca do request).
+            var clienteReq = request.ClienteId == System.Guid.Empty ? (System.Guid?)null : request.ClienteId;
+            var (erroAcesso, clienteEfetivo) = await PortalClienteAcesso.ResolverAsync(_currentUser, _context, tenantId, clienteReq, cancellationToken);
+            if (erroAcesso != null) return erroAcesso;
+            var clienteId = clienteEfetivo ?? request.ClienteId;
+
             // §16.1 (UK email): e-mail único por tenant.
             var duplicado = await _context.PortalUsuariosCliente.AnyAsync(u => u.TenantId == tenantId && u.Email == request.Email, cancellationToken);
             if (duplicado) return CommandResult.Falha("Já existe um usuário do portal com este e-mail.");
 
-            var novo = new PortalUsuarioCliente(request.ClienteId, request.Nome, request.Email, request.Telefone, request.AdministradorCliente, null, tenantId, usuario);
+            var novo = new PortalUsuarioCliente(clienteId, request.Nome, request.Email, request.Telefone, request.AdministradorCliente, null, tenantId, usuario);
             if (!novo.IsValid) return CommandResult.Falha(novo.Notifications.Select(n => n.Message), "Dados do usuário do portal inválidos.");
             _context.PortalUsuariosCliente.Add(novo);
-            _context.PortalAuditorias.Add(new PortalAuditoria(null, null, request.ClienteId, "Usuarios", "Criacao", novo.Id, null, tenantId, usuario));
+            _context.PortalAuditorias.Add(new PortalAuditoria(null, null, clienteId, "Usuarios", "Criacao", novo.Id, null, tenantId, usuario));
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Usuário do portal criado.", new { novo.Id });
         }
@@ -54,6 +61,14 @@ namespace Epros.Modules.Vendas.Application.Handlers
         {
             var tenantId = _tenantProvider.GetTenantId();
             var usuario = _currentUser.GetUserId() ?? "system";
+
+            // T-02/§18: a permissão só pode ser definida sobre usuário do próprio cliente (para principal externo).
+            var alvo = await _context.PortalUsuariosCliente.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Id == request.UsuarioClienteId, cancellationToken);
+            if (alvo == null) return CommandResult.Falha("Usuário do portal não encontrado.");
+            var erroAcesso = await PortalClienteAcesso.GarantirClienteDoRecursoAsync(_currentUser, _context, tenantId, alvo.ClienteId, cancellationToken);
+            if (erroAcesso != null) return erroAcesso;
+
             var existente = await _context.PortalPermissoes.FirstOrDefaultAsync(p => p.TenantId == tenantId && p.UsuarioClienteId == request.UsuarioClienteId && p.Recurso == request.Recurso, cancellationToken);
             if (existente != null)
             {
@@ -83,6 +98,9 @@ namespace Epros.Modules.Vendas.Application.Handlers
 
         public async Task<CommandResult> Handle(CriarPortalFormularioCommand request, CancellationToken cancellationToken)
         {
+            // Catálogo de formulários é backoffice interno — nunca acessível por usuário externo do portal.
+            var erroInterno = PortalClienteAcesso.SomenteInterno(_currentUser);
+            if (erroInterno != null) return erroInterno;
             var tenantId = _tenantProvider.GetTenantId();
             var usuario = _currentUser.GetUserId() ?? "system";
             var form = new PortalFormulario(request.Codigo, request.Nome, request.Descricao, request.Publico, request.ConfiguracaoCampos, tenantId, usuario);
@@ -106,6 +124,8 @@ namespace Epros.Modules.Vendas.Application.Handlers
 
         public async Task<CommandResult> Handle(PublicarPortalFormularioCommand request, CancellationToken cancellationToken)
         {
+            var erroInterno = PortalClienteAcesso.SomenteInterno(_currentUser);
+            if (erroInterno != null) return erroInterno;
             var tenantId = _tenantProvider.GetTenantId();
             var usuario = _currentUser.GetUserId() ?? "system";
             var form = await _context.PortalFormularios.FirstOrDefaultAsync(f => f.TenantId == tenantId && f.Id == request.FormularioId, cancellationToken);
@@ -129,6 +149,8 @@ namespace Epros.Modules.Vendas.Application.Handlers
 
         public async Task<CommandResult> Handle(AtribuirPortalFormularioResponsavelCommand request, CancellationToken cancellationToken)
         {
+            var erroInterno = PortalClienteAcesso.SomenteInterno(_currentUser);
+            if (erroInterno != null) return erroInterno;
             var tenantId = _tenantProvider.GetTenantId();
             var usuario = _currentUser.GetUserId() ?? "system";
             var form = await _context.PortalFormularios.FirstOrDefaultAsync(f => f.TenantId == tenantId && f.Id == request.FormularioId, cancellationToken);
@@ -156,10 +178,16 @@ namespace Epros.Modules.Vendas.Application.Handlers
         {
             var tenantId = _tenantProvider.GetTenantId();
             var usuario = _currentUser.GetUserId() ?? "system";
-            var solicitacao = new PortalSolicitacao(request.ClienteId, request.UsuarioClienteId, request.FormularioId, request.Assunto, request.Descricao, request.DadosFormulario, tenantId, usuario);
+
+            // T-02: para principal externo, o cliente da solicitação é o do vínculo autenticado (nunca o request).
+            var (erroAcesso, clienteEfetivo) = await PortalClienteAcesso.ResolverAsync(_currentUser, _context, tenantId, request.ClienteId, cancellationToken);
+            if (erroAcesso != null) return erroAcesso;
+            var clienteId = clienteEfetivo ?? request.ClienteId;
+
+            var solicitacao = new PortalSolicitacao(clienteId, request.UsuarioClienteId, request.FormularioId, request.Assunto, request.Descricao, request.DadosFormulario, tenantId, usuario);
             if (!solicitacao.IsValid) return CommandResult.Falha(solicitacao.Notifications.Select(n => n.Message), "Dados da solicitação inválidos.");
             _context.PortalSolicitacoes.Add(solicitacao);
-            _context.PortalAuditorias.Add(new PortalAuditoria(request.UsuarioClienteId, null, request.ClienteId, "Solicitacoes", "Abertura", solicitacao.Id, null, tenantId, usuario));
+            _context.PortalAuditorias.Add(new PortalAuditoria(request.UsuarioClienteId, null, clienteId, "Solicitacoes", "Abertura", solicitacao.Id, null, tenantId, usuario));
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Solicitação aberta.", new { solicitacao.Id, Status = solicitacao.Status.ToString() });
         }
@@ -182,6 +210,9 @@ namespace Epros.Modules.Vendas.Application.Handlers
             var usuario = _currentUser.GetUserId() ?? "system";
             var solicitacao = await _context.PortalSolicitacoes.FirstOrDefaultAsync(s => s.TenantId == tenantId && s.Id == request.SolicitacaoId, cancellationToken);
             if (solicitacao == null) return CommandResult.Falha("Solicitação não encontrada.");
+            // T-02: principal externo só atua sobre solicitação do próprio cliente.
+            var erroAcesso = await PortalClienteAcesso.GarantirClienteDoRecursoAsync(_currentUser, _context, tenantId, solicitacao.ClienteId, cancellationToken);
+            if (erroAcesso != null) return erroAcesso;
             solicitacao.Responder(usuario);
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Solicitação respondida.", new { solicitacao.Id, Status = solicitacao.Status.ToString() });
