@@ -17,6 +17,13 @@ namespace Epros.Modules.Financeiro.Domain.Entities
         public decimal? Valor { get; private set; }
         public string? Descricao { get; private set; }
         public string? Estado { get; private set; }
+        public DateTime? AplicadaEm { get; private set; }
+
+        public const string EstadoPendente = "Pendente";
+        public const string EstadoAplicada = "Aplicada";
+
+        /// <summary>True quando a eliminação já foi aplicada ao balancete consolidado pelo motor.</summary>
+        public bool Aplicada => string.Equals(Estado, EstadoAplicada, StringComparison.OrdinalIgnoreCase);
 
         protected EliminacaoIntercompany() { } // EF Core
 
@@ -30,7 +37,16 @@ namespace Epros.Modules.Financeiro.Domain.Entities
             EmpresaDestinoId = empresaDestinoId;
             Valor = valor;
             Descricao = descricao;
+            Estado = EstadoPendente;
             Validar();
+        }
+
+        /// <summary>Marca a eliminação como aplicada ao balancete consolidado (idempotência do motor).</summary>
+        public void MarcarAplicada(string usuario)
+        {
+            Estado = EstadoAplicada;
+            AplicadaEm = DateTime.UtcNow;
+            MarcarAlterado(usuario);
         }
 
         public void Validar()

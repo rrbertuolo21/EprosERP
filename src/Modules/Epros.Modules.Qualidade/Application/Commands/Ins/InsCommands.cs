@@ -1,5 +1,6 @@
 using System;
 using Epros.Modules.Qualidade.Domain.Enums;
+using Epros.Modules.Qualidade.Domain.Services.Aql;
 using Epros.Shared.Application.Contracts;
 using FluentValidation;
 
@@ -99,6 +100,84 @@ namespace Epros.Modules.Qualidade.Application.Commands.Ins
         {
             RuleFor(c => c.PlanoId).NotEmpty();
             RuleFor(c => c.QuantidadeLote).GreaterThan(0);
+        }
+    }
+
+    /// <summary>
+    /// Registra o valor observado (medicao) de uma caracteristica em uma execucao aberta/em coleta
+    /// (secao 11.6). Uma medicao NaoConforme conta como desvio na consolidacao da inspecao.
+    /// </summary>
+    public record RegistrarMedicaoCommand(
+        Guid ExecucaoId,
+        Guid CaracteristicaId,
+        EResultadoMedicao Resultado,
+        Guid MedidoPor,
+        Guid? AmostraId,
+        decimal? ValorDecimal,
+        string? ValorTexto,
+        bool? ValorBooleano,
+        string? Desvio,
+        string? Observacao
+    ) : ICommand;
+
+    public class RegistrarMedicaoCommandValidator : AbstractValidator<RegistrarMedicaoCommand>
+    {
+        public RegistrarMedicaoCommandValidator()
+        {
+            RuleFor(c => c.ExecucaoId).NotEmpty();
+            RuleFor(c => c.CaracteristicaId).NotEmpty();
+            RuleFor(c => c.MedidoPor).NotEmpty();
+        }
+    }
+
+    /// <summary>
+    /// Conclui a execucao (secao 11.7): consolida o resultado tecnico (Aprovado/Reprovado/…) a partir
+    /// das medicoes registradas e, conforme o resultado, dispara ACR (feed) e/ou NCR (rejeicao) via Outbox.
+    /// O criterio Ac/Re do plano de amostragem e norma (// valida (PDF ABNT NBR 5426)); a decisao final
+    /// pode ser informada explicitamente pelo inspetor ou derivada do total de desvios.
+    /// </summary>
+    public record ConcluirInspecaoCommand(
+        Guid ExecucaoId,
+        Guid ConcluidoPor,
+        EResultadoInspecaoConsolidado? Resultado,
+        string? CriterioAceiteAplicado,
+        string? Conclusao
+    ) : ICommand;
+
+    public class ConcluirInspecaoCommandValidator : AbstractValidator<ConcluirInspecaoCommand>
+    {
+        public ConcluirInspecaoCommandValidator()
+        {
+            RuleFor(c => c.ExecucaoId).NotEmpty();
+            RuleFor(c => c.ConcluidoPor).NotEmpty();
+        }
+    }
+
+    /// <summary>
+    /// Registra a decisao de UM lote no regime de comutacao de severidade (NBR 5427) e PERSISTE o estado
+    /// por (fornecedor x produto x AQL), de modo que a severidade do proximo lote seja recuperada do banco.
+    /// A severidade retornada e a que vigora para o PROXIMO recebimento.
+    /// Tabelas/limites da norma = // valida (PDF ABNT NBR 5426/5427).
+    /// </summary>
+    public record RegistrarLoteComutacaoCommand(
+        Guid FornecedorId,
+        Guid ProdutoId,
+        string Aql,
+        EDecisaoLote Decisao,
+        int Defeituosos,
+        bool AtenuadaHabilitada,
+        bool ProducaoEstavel,
+        int? LimiteDefeituososAtenuada
+    ) : ICommand;
+
+    public class RegistrarLoteComutacaoCommandValidator : AbstractValidator<RegistrarLoteComutacaoCommand>
+    {
+        public RegistrarLoteComutacaoCommandValidator()
+        {
+            RuleFor(c => c.FornecedorId).NotEmpty();
+            RuleFor(c => c.ProdutoId).NotEmpty();
+            RuleFor(c => c.Aql).NotEmpty();
+            RuleFor(c => c.Defeituosos).GreaterThanOrEqualTo(0);
         }
     }
 }

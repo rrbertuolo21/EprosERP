@@ -163,6 +163,8 @@ namespace Epros.Shared.Domain.Events
             public const string AcrDevolucaoSolicitada = "qld.acr.devolucao_solicitada";
             /// <summary>INS concluiu execução com resultado técnico (alimenta ACR).</summary>
             public const string InsInspecaoConcluida = "qld.ins.inspecao_concluida";
+            /// <summary>INS reprovou a execução: sugere abertura de NCR por desvio (default seguro — sugere, não cria à revelia).</summary>
+            public const string InsNcrSolicitada = "qld.ins.ncr_solicitada";
             /// <summary>NCR aberta.</summary>
             public const string NcrAberta = "qld.ncr.aberta";
             /// <summary>NCR encerrada.</summary>
@@ -227,6 +229,22 @@ namespace Epros.Shared.Domain.Events
             public const string RetornoBancarioProcessado = "fin.cobranca.retorno_processado";
             /// <summary>Arquivo de remessa CNAB gerado (faturas remetidas — RSF-014).</summary>
             public const string RemessaCnabGerada = "fin.cobranca.remessa_gerada";
+            /// <summary>Webhook de pagamento processado (baixa de fatura por nosso número via gateway — assinatura + idempotência).</summary>
+            public const string WebhookPagamentoProcessado = "fin.cobranca.webhook_processado";
+
+            // ----- Chaves de TIPO DE EVENTO do de-para RegraContabilizacao (motor evento→ledger, TEC-8) -----
+            // A conta débito×crédito de cada uma é parametrização do contador (// valida-contador); sem
+            // de-para configurado o motor cai na conta transitória em Rascunho.
+            /// <summary>Depreciação mensal registrada de um ativo (contabilização automática).</summary>
+            public const string DepreciacaoRegistrada = "fin.ativos.depreciacao";
+            /// <summary>Baixa de ativo fixo (contabilização automática — resíduo/resultado na baixa).</summary>
+            public const string AtivoBaixado = "fin.ativos.baixa";
+            /// <summary>Variação cambial reconhecida numa reavaliação de títulos (contabilização automática).</summary>
+            public const string VariacaoCambialContabilizada = "fin.cambio.variacao";
+            /// <summary>Estorno contábil do cancelamento de uma compra.</summary>
+            public const string CompraCanceladaEstorno = "fin.contabilizacao.compra_cancelada_estorno";
+            /// <summary>Estorno contábil do cancelamento de uma venda.</summary>
+            public const string VendaCanceladaEstorno = "fin.contabilizacao.venda_cancelada_estorno";
         }
 
         /// <summary>
@@ -388,7 +406,7 @@ namespace Epros.Shared.Domain.Events
             Projetos.FaturamentoAprovado, Projetos.ProjetoEncerrado,
             Qualidade.AcrLoteBloqueado, Qualidade.AcrLoteLiberado, Qualidade.AcrLoteQuarentena,
             Qualidade.AcrNcrSolicitada, Qualidade.AcrDevolucaoSolicitada, Qualidade.InsInspecaoConcluida,
-            Qualidade.NcrAberta, Qualidade.NcrEncerrada,
+            Qualidade.InsNcrSolicitada, Qualidade.NcrAberta, Qualidade.NcrEncerrada,
             Qualidade.RstRecallAberto, Qualidade.RstRecallEncerrado, Qualidade.RstBloqueioSolicitado,
             Imobiliaria.ImovelDisponibilizado, Imobiliaria.ImovelInativado,
             Imobiliaria.LocacaoFormalizada, Imobiliaria.LocacaoEncerrada, Imobiliaria.LocacaoCancelada,
@@ -400,6 +418,7 @@ namespace Epros.Shared.Domain.Events
             Grc.RegCertificadoAlertaVencimento, Grc.RegCertificadoRevogado,
             Grc.PolPoliticaPublicada, Grc.RisKriExcedido, Grc.CiaAchadoCritico,
             Financeiro.LancamentoContabilGerado, Financeiro.RetornoBancarioProcessado, Financeiro.RemessaCnabGerada,
+            Financeiro.WebhookPagamentoProcessado,
             Concessionarias.FinSimulacaoCalculada, Concessionarias.FinContratoEmitido,
             Concessionarias.FinJornadaEncerrada, Concessionarias.VenPropostaAceita,
             Concessionarias.VenVeiculoReservado, Concessionarias.VenVeiculoFaturado,

@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Epros.Modules.Financeiro.Application.Commands;
 using Epros.Modules.Financeiro.Domain.Entities;
+using Epros.Modules.Financeiro.Domain.Services;
 using Epros.Modules.Financeiro.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
@@ -194,6 +195,59 @@ namespace Epros.Modules.Financeiro.Application.Handlers
             _context.EliminacoesIntercompany.Add(elim);
             await _context.SaveChangesAsync(ct);
             return CommandResult.Ok("Eliminação intercompany registrada.", new { elim.Id });
+        }
+    }
+
+    // ===== Motor de Eliminação Intercompany =====
+    public class AplicarEliminacoesConsolidadoCommandHandler : IRequestHandler<AplicarEliminacoesConsolidadoCommand, CommandResult>
+    {
+        private readonly ContextFinanceiro _context;
+        private readonly ITenantProvider _tenant;
+        private readonly ICurrentUser _user;
+        public AplicarEliminacoesConsolidadoCommandHandler(ContextFinanceiro context, ITenantProvider tenant, ICurrentUser user)
+        { _context = context; _tenant = tenant; _user = user; }
+
+        public async Task<CommandResult> Handle(AplicarEliminacoesConsolidadoCommand request, CancellationToken ct)
+        {
+            var tenantId = _tenant.GetTenantId();
+            var userId = _user.GetUserId() ?? "system";
+
+            // Aplica sobre o balancete PROVISÓRIO do grupo/período (publicado é imutável).
+            var balancete = await _context.BalancetesConsolidados
+                .Include(b => b.Linhas)
+                .FirstOrDefaultAsync(b => b.GrupoConsolidacaoId == request.GrupoConsolidacaoId && b.Periodo == request.Periodo
+                    && b.Estado == Domain.Enums.EEstadoConsolidacao.Provisorio, ct);
+            if (balancete == null)
+                return CommandResult.Falha("Balancete consolidado provisório não encontrado para o grupo/período.");
+
+            var eliminacoes = await _context.EliminacoesIntercompany
+                .Where(e => e.GrupoConsolidacaoId == request.GrupoConsolidacaoId && e.Periodo == request.Periodo)
+                .ToListAsync(ct);
+
+            var pendentes = eliminacoes.Where(e => !e.Aplicada).ToList();
+            if (pendentes.Count == 0)
+                return CommandResult.Ok("Nenhuma eliminação pendente para aplicar.", new
+                {
+                    balancete.Id, EliminacoesAplicadas = 0, balancete.TotalEliminacoes
+                });
+
+            var resultado = MotorEliminacaoConsolidacao.Aplicar(balancete, eliminacoes, tenantId, userId);
+
+            // Novas linhas de eliminação anexadas a um balancete JÁ existente: com chave gerada no cliente,
+            // o EF as trataria como Modified (UPDATE de linha inexistente). Marcamos explicitamente como Added.
+            _context.BalanceteLinhas.AddRange(resultado.NovasLinhas);
+
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok("Eliminações intercompany aplicadas ao balancete consolidado.", new
+            {
+                balancete.Id,
+                resultado.EliminacoesAplicadas,
+                resultado.TotalEliminado,
+                balancete.TotalDebito,
+                balancete.TotalCredito,
+                balancete.SaldoFinal,
+                balancete.TotalEliminacoes
+            });
         }
     }
 }

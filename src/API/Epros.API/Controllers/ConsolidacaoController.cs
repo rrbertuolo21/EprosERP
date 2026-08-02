@@ -142,5 +142,14 @@ namespace Epros.API.Controllers
             var r = await _mediator.Send(command);
             return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
         }
+
+        // Motor de eliminação: aplica as eliminações pendentes ao balancete consolidado provisório.
+        [HttpPost("grupos/{id:guid}/eliminacoes/aplicar")]
+        [AbacAuthorize("Consolidacao", "Editar")]
+        public async Task<ActionResult<CommandResult>> AplicarEliminacoes(Guid id, [FromQuery] string periodo)
+        {
+            var r = await _mediator.Send(new AplicarEliminacoesConsolidadoCommand(id, periodo));
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
     }
 }

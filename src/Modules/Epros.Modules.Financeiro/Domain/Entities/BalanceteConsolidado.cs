@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Epros.Modules.Financeiro.Domain.Enums;
 using Epros.Shared.Domain.Entities;
 using Flunt.Validations;
@@ -18,6 +19,9 @@ namespace Epros.Modules.Financeiro.Domain.Entities
         public decimal? TotalDebito { get; private set; }
         public decimal? TotalCredito { get; private set; }
         public decimal? SaldoFinal { get; private set; }
+        /// <summary>Total das eliminações intercompany já aplicadas a este balancete (agregação).</summary>
+        public decimal? TotalEliminacoes { get; private set; }
+        public bool EliminacoesAplicadas { get; private set; }
 
         private readonly List<BalanceteLinha> _linhas = new();
         public IReadOnlyCollection<BalanceteLinha> Linhas => _linhas.AsReadOnly();
@@ -43,6 +47,37 @@ namespace Epros.Modules.Financeiro.Domain.Entities
             TotalDebito = totalDebito;
             TotalCredito = totalCredito;
             SaldoFinal = saldoFinal;
+            MarcarAlterado(usuario);
+        }
+
+        /// <summary>
+        /// Adiciona uma linha de eliminação intercompany (partida balanceada débito = crédito) e recomputa
+        /// os totais a partir de TODAS as linhas. A eliminação preserva a partida dobrada do balancete; a
+        /// conta contábil de cada perna (a receber/a pagar intercompany) é parametrização — // valida-contador.
+        /// </summary>
+        public BalanceteLinha AplicarLinhaEliminacao(decimal valor, string? codigoConta, string? descricao, string tenantId, string usuario)
+        {
+            var linha = new BalanceteLinha(Id, null, codigoConta ?? "ELIM", descricao, null, valor, valor, 0m, tenantId, usuario);
+            _linhas.Add(linha);
+            TotalEliminacoes = (TotalEliminacoes ?? 0m) + valor;
+            RecomputarTotais(usuario);
+            return linha;
+        }
+
+        /// <summary>Recomputa TotalDebito/Credito/SaldoFinal somando todas as linhas (agregação).</summary>
+        public void RecomputarTotais(string usuario)
+        {
+            var debito = _linhas.Sum(l => l.Debito ?? 0m);
+            var credito = _linhas.Sum(l => l.Credito ?? 0m);
+            TotalDebito = debito;
+            TotalCredito = credito;
+            SaldoFinal = debito - credito;
+            MarcarAlterado(usuario);
+        }
+
+        public void MarcarEliminacoesAplicadas(string usuario)
+        {
+            EliminacoesAplicadas = true;
             MarcarAlterado(usuario);
         }
 

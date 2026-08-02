@@ -6,6 +6,7 @@ using Epros.Modules.Qualidade.Application.Commands.Ins;
 using Epros.Modules.Qualidade.Application.Handlers;
 using Epros.Modules.Qualidade.Application.Handlers.Ins;
 using Epros.Modules.Qualidade.Application.Queries.Ins;
+using Epros.Modules.Qualidade.Domain.Entities;
 using Epros.Modules.Qualidade.Domain.Enums;
 using Epros.Modules.Qualidade.Domain.Services.Aql;
 using Epros.Modules.Qualidade.Infrastructure.Data;
@@ -117,6 +118,161 @@ namespace Epros.Tests
                 .Handle(new ExecutarInspecaoCommand(planoId, EReferenciaExecucao.Recebimento,
                     null, 100m, null, "II", 1.0m, null), CancellationToken.None);
             Assert.False(r.Sucesso);
+        }
+
+        // Abre um plano ativo + execucao e devolve (planoId, caracteristicaId, execucaoId).
+        private static async Task<(Guid plano, Guid carac, Guid exec)> AbrirExecucao(string db, string codigo)
+        {
+            var planoId = await CriarPlano(db, codigo);
+            await AddCaracteristica(db, planoId);
+            using (var ctx = Novo(db))
+                await new AtivarPlanoInspecaoCommandHandler(ctx, User).Handle(
+                    new AtivarPlanoInspecaoCommand(planoId), CancellationToken.None);
+
+            Guid execId;
+            using (var ctx = Novo(db))
+            {
+                await new ExecutarInspecaoCommandHandler(ctx, Tenant, User, new MotorAql()).Handle(
+                    new ExecutarInspecaoCommand(planoId, EReferenciaExecucao.Recebimento, "NF-1", 100m, Guid.NewGuid(),
+                        "II", 1.0m, "Normal"), CancellationToken.None);
+                execId = (await ctx.ExecucoesInspecao.FirstAsync()).Id;
+            }
+            Guid caracId;
+            using (var ctx = Novo(db))
+                caracId = (await ctx.CaracteristicasPlano.FirstAsync(c => c.PlanoId == planoId)).Id;
+            return (planoId, caracId, execId);
+        }
+
+        [Fact]
+        public async Task Concluir_Com_Desvio_Reprova_E_Solicita_Ncr()
+        {
+            const string db = nameof(Concluir_Com_Desvio_Reprova_E_Solicita_Ncr);
+            var (_, carac, exec) = await AbrirExecucao(db, "PL-INS-4");
+
+            using (var ctx = Novo(db))
+            {
+                var m = await new RegistrarMedicaoCommandHandler(ctx, Tenant, User).Handle(
+                    new RegistrarMedicaoCommand(exec, carac, EResultadoMedicao.NaoConforme, Guid.NewGuid(),
+                        null, null, "trinca", null, "fora da spec", null), CancellationToken.None);
+                Assert.True(m.Sucesso);
+            }
+
+            using (var ctx = Novo(db))
+            {
+                var r = await new ConcluirInspecaoCommandHandler(ctx, Tenant, User).Handle(
+                    new ConcluirInspecaoCommand(exec, Guid.NewGuid(), null, null, "Reprovado por trinca"), CancellationToken.None);
+                Assert.True(r.Sucesso);
+            }
+
+            using (var ctx = Novo(db))
+            {
+                var res = await ctx.ResultadosInspecao.FirstAsync(r => r.ExecucaoId == exec);
+                Assert.Equal(EResultadoInspecaoConsolidado.Reprovado, res.Resultado);
+                Assert.Equal(1, res.TotalDesvios);
+                Assert.True(res.GerarNcr);
+                var e = await ctx.ExecucoesInspecao.FirstAsync(x => x.Id == exec);
+                Assert.Equal(EStatusExecucaoInspecao.Concluida, e.Status);
+                Assert.Contains(ctx.OutboxMessages, o => o.EventType == "qld.ins.ncr_solicitada");
+                Assert.Contains(ctx.OutboxMessages, o => o.EventType == "qld.ins.inspecao_concluida");
+            }
+        }
+
+        [Fact]
+        public async Task Concluir_Sem_Desvio_Aprova_Sem_Ncr()
+        {
+            const string db = nameof(Concluir_Sem_Desvio_Aprova_Sem_Ncr);
+            var (_, carac, exec) = await AbrirExecucao(db, "PL-INS-5");
+
+            using (var ctx = Novo(db))
+                await new RegistrarMedicaoCommandHandler(ctx, Tenant, User).Handle(
+                    new RegistrarMedicaoCommand(exec, carac, EResultadoMedicao.Conforme, Guid.NewGuid(),
+                        null, null, "ok", null, null, null), CancellationToken.None);
+
+            using (var ctx = Novo(db))
+            {
+                var r = await new ConcluirInspecaoCommandHandler(ctx, Tenant, User).Handle(
+                    new ConcluirInspecaoCommand(exec, Guid.NewGuid(), null, null, null), CancellationToken.None);
+                Assert.True(r.Sucesso);
+            }
+
+            using (var ctx = Novo(db))
+            {
+                var res = await ctx.ResultadosInspecao.FirstAsync(r => r.ExecucaoId == exec);
+                Assert.Equal(EResultadoInspecaoConsolidado.Aprovado, res.Resultado);
+                Assert.False(res.GerarNcr);
+                Assert.DoesNotContain(ctx.OutboxMessages, o => o.EventType == "qld.ins.ncr_solicitada");
+            }
+        }
+
+        [Fact]
+        public async Task Concluir_Execucao_Inexistente_Falha()
+        {
+            const string db = nameof(Concluir_Execucao_Inexistente_Falha);
+            using var ctx = Novo(db);
+            var r = await new ConcluirInspecaoCommandHandler(ctx, Tenant, User).Handle(
+                new ConcluirInspecaoCommand(Guid.NewGuid(), Guid.NewGuid(), null, null, null), CancellationToken.None);
+            Assert.False(r.Sucesso);
+        }
+
+        [Fact]
+        public async Task Comutacao_Persiste_Estado_Entre_Lotes_E_Vai_Para_Severa()
+        {
+            const string db = nameof(Comutacao_Persiste_Estado_Entre_Lotes_E_Vai_Para_Severa);
+            var fornecedor = Guid.NewGuid();
+            var produto = Guid.NewGuid();
+            const string aql = "1.0";
+
+            async Task Lote(EDecisaoLote decisao, int defeituosos)
+            {
+                using var ctx = Novo(db); // contexto novo por lote = requests separadas.
+                var r = await new RegistrarLoteComutacaoCommandHandler(ctx, Tenant, User, new MotorComutacao()).Handle(
+                    new RegistrarLoteComutacaoCommand(fornecedor, produto, aql, decisao, defeituosos, false, true, null),
+                    CancellationToken.None);
+                Assert.True(r.Sucesso);
+            }
+
+            // RN-02: 2 rejeicoes dentro de 5 lotes em normal -> severa (estado tem que sobreviver entre contextos).
+            await Lote(EDecisaoLote.Rejeita, 3);
+            await Lote(EDecisaoLote.Aceita, 0);
+            await Lote(EDecisaoLote.Rejeita, 4);
+
+            using (var ctx = Novo(db))
+            {
+                var estado = await ctx.EstadosComutacaoInspecao.FirstAsync(e => e.FornecedorId == fornecedor && e.ProdutoId == produto && e.Aql == aql);
+                Assert.Equal(ESeveridadeAql.Severa, estado.Severidade);
+                Assert.Equal(3, estado.LotesProcessados);
+            }
+        }
+
+        [Fact]
+        public async Task Comutacao_Severa_Volta_A_Normal_Apos_5_Aceitos_Persistido()
+        {
+            const string db = nameof(Comutacao_Severa_Volta_A_Normal_Apos_5_Aceitos_Persistido);
+            var fornecedor = Guid.NewGuid();
+            var produto = Guid.NewGuid();
+            const string aql = "2.5";
+
+            // Semeia estado ja em Severa.
+            using (var ctx = Novo(db))
+            {
+                var seed = EstadoComutacaoAql.Restaurar(ESeveridadeAql.Severa);
+                var ent = new EstadoComutacaoInspecao(fornecedor, produto, aql, "tenant-1", "user-1");
+                ent.AplicarEstadoMotor(seed, "user-1");
+                ctx.EstadosComutacaoInspecao.Add(ent);
+                await ctx.SaveChangesAsync();
+            }
+
+            for (int i = 0; i < 5; i++)
+                using (var ctx = Novo(db))
+                    await new RegistrarLoteComutacaoCommandHandler(ctx, Tenant, User, new MotorComutacao()).Handle(
+                        new RegistrarLoteComutacaoCommand(fornecedor, produto, aql, EDecisaoLote.Aceita, 0, false, true, null),
+                        CancellationToken.None);
+
+            using (var ctx = Novo(db))
+            {
+                var estado = await ctx.EstadosComutacaoInspecao.FirstAsync(e => e.FornecedorId == fornecedor);
+                Assert.Equal(ESeveridadeAql.Normal, estado.Severidade); // RN-03: 5 aceitos em severa -> normal.
+            }
         }
 
         [Fact]
