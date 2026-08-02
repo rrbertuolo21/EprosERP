@@ -6,6 +6,7 @@ using Epros.API.Security;
 using Epros.Modules.Qualidade.Application.Commands;
 using Epros.Modules.Qualidade.Application.Commands.Acr;
 using Epros.Modules.Qualidade.Application.Commands.Ins;
+using Epros.Modules.Qualidade.Application.Commands.Ncr;
 using Epros.Modules.Qualidade.Application.Queries;
 using Epros.Modules.Qualidade.Application.Queries.Ins;
 using Epros.Modules.Qualidade.Domain.Services.Aql;
@@ -46,6 +47,76 @@ namespace Epros.API.Controllers
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<CommandResult>> Tratar([FromBody] TratarNaoConformidadeCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("causa-raiz")]
+        [AbacAuthorize("QualidadeNaoConformidades", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AdicionarCausaRaiz([FromBody] AdicionarCausaRaizNcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("capa")]
+        [AbacAuthorize("QualidadeNaoConformidades", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AdicionarAcaoCapa([FromBody] AdicionarAcaoCapaNcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("capa/concluir")]
+        [AbacAuthorize("QualidadeNaoConformidades", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> ConcluirAcaoCapa([FromBody] ConcluirAcaoCapaNcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("verificacao-eficacia")]
+        [AbacAuthorize("QualidadeNaoConformidades", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> RegistrarVerificacao([FromBody] RegistrarVerificacaoEficaciaNcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("avancar-etapa")]
+        [AbacAuthorize("QualidadeNaoConformidades", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AvancarEtapa([FromBody] AvancarEtapaNcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("encerrar")]
+        [AbacAuthorize("QualidadeNaoConformidades", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Encerrar([FromBody] EncerrarNcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("cancelar")]
+        [AbacAuthorize("QualidadeNaoConformidades", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Cancelar([FromBody] CancelarNcrCommand command)
         {
             var result = await _mediator.Send(command);
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
