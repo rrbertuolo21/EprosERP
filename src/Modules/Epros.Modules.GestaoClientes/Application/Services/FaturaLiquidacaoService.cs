@@ -31,12 +31,15 @@ namespace Epros.Modules.GestaoClientes.Application.Services
         private readonly ContextGestaoClientes _context;
         private readonly ReconhecimentoReceitaService _reconhecimentoReceita;
         private readonly ApuracaoComissaoService _apuracaoComissao;
+        private readonly NfseMensalidadeService _nfseMensalidade;
 
         public FaturaLiquidacaoService(ContextGestaoClientes context)
         {
             _context = context;
             _reconhecimentoReceita = new ReconhecimentoReceitaService(context);
             _apuracaoComissao = new ApuracaoComissaoService(context);
+            // 1.08J — HOOK de NFS-e da mensalidade (provedor default = "não configurado"; emissão real = dependência).
+            _nfseMensalidade = new NfseMensalidadeService(context);
         }
 
         /// <summary>
@@ -125,6 +128,14 @@ namespace Epros.Modules.GestaoClientes.Application.Services
             // seguro Bruto/Caixa). Complementa o ComissaoApuradaEvent factual, registrando o resultado do
             // mecanismo. ⚠️ base/momento/% = PARÂMETRO, VALIDA CONTADOR.
             await _apuracaoComissao.ApurarAsync(fatura, liquido, alteradoPor, cancellationToken);
+
+            // 1.08J — HOOK de NFS-e da mensalidade: fatura de assinatura PAGA → registra a necessidade de NFS-e
+            // da COMPETÊNCIA (1 por competência/fatura, idempotente). Software/SaaS é serviço tributável pelo ISS
+            // (LC 116/2003 item 1.05 e/ou 1.03; STF ADI 1.945/5.659); fato gerador = prestação, por competência
+            // mensal (RN49/RN50). ⛔ MECANISMO apenas: fica Pendente enquanto alíquota/subitem/município/certificado/
+            // provedor forem dependência (overlay negocio-siser VAZIO + contador + infra). NÃO emite, NÃO inventa.
+            var competenciaNfse = dataAprovacao ?? DateTime.UtcNow;
+            await _nfseMensalidade.RegistrarPendenteAsync(fatura, competenciaNfse, alteradoPor, cancellationToken);
 
             if (cliente != null)
             {

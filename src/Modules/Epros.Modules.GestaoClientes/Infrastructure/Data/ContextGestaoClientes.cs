@@ -15,6 +15,8 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
         // 1.08I — reconhecimento de receita por competência (diferimento) + apuração de comissão.
         public DbSet<ReconhecimentoReceita> ReconhecimentosReceita => Set<ReconhecimentoReceita>();
         public DbSet<ApuracaoComissao> ApuracoesComissao => Set<ApuracaoComissao>();
+        // 1.08J — necessidade de NFS-e da mensalidade SaaS por competência (mecanismo/hook; emissão real = dependência).
+        public DbSet<NfseMensalidade> NfseMensalidades => Set<NfseMensalidade>();
         public DbSet<GrupoPlano> GrupoPlanos => Set<GrupoPlano>();
         public DbSet<AssinaturaCliente> AssinaturasClientes => Set<AssinaturaCliente>();
         public DbSet<AjusteProracao> AjustesProracao => Set<AjusteProracao>();
@@ -248,6 +250,26 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                       .OnDelete(DeleteBehavior.Cascade);
                 entity.HasIndex(a => a.FaturaId)
                       .HasDatabaseName("ix_apuracao_comissao_fatura");
+            });
+
+            // 1.08J — NFS-e da mensalidade SaaS por competência (mecanismo/hook). 1 por (fatura, competência).
+            modelBuilder.Entity<NfseMensalidade>(entity =>
+            {
+                entity.HasKey(n => n.Id);
+                entity.Property(n => n.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(n => n.Ambiente).HasConversion<string>().HasMaxLength(20);
+                entity.Property(n => n.Motivo).HasColumnType("text");
+                entity.Property(n => n.NumeroNfse).HasMaxLength(100);
+                entity.HasOne<Fatura>()
+                      .WithMany()
+                      .HasForeignKey(n => n.FaturaId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                // Idempotência do mecanismo: 1 NFS-e por competência/fatura.
+                entity.HasIndex(n => new { n.FaturaId, n.Competencia })
+                      .IsUnique()
+                      .HasDatabaseName("ix_nfse_mensalidade_fatura_competencia");
+                entity.HasIndex(n => new { n.Status, n.Competencia })
+                      .HasDatabaseName("ix_nfse_mensalidade_status_competencia");
             });
 
             modelBuilder.Entity<GrupoPlano>(entity =>

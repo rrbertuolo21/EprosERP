@@ -180,5 +180,23 @@ namespace Epros.API.Controllers
             public decimal? Valor { get; set; }
             public string? Motivo { get; set; }
         }
+
+        /// <summary>
+        /// 1.08J — VISIBILIDADE (landlord/operador interno): lista as NFS-e da mensalidade SaaS por competência
+        /// (default = Pendente). Apenas CONSULTA — NÃO emite NFS-e. A emissão REAL depende do overlay
+        /// `negocio-siser` (alíquota/subitem/município — contador) + provedor municipal + certificado; enquanto
+        /// isso os registros ficam Pendente. [LC 116/2003 item 1.05/1.03; STF ADI 1.945/5.659]
+        /// </summary>
+        [HttpGet("nfse-mensalidade")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> ListarNfseMensalidade(
+            [FromQuery] int pagina = 1,
+            [FromQuery] int tamanhoPagina = 25,
+            [FromQuery] string? status = "Pendente",
+            [FromQuery] Guid? clienteId = null)
+        {
+            var result = await _mediator.Send(new ListarNfseMensalidadesQuery(pagina, tamanhoPagina, status, clienteId));
+            return Ok(result);
+        }
     }
 }

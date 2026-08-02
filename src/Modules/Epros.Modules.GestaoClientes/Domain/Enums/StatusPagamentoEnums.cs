@@ -98,4 +98,22 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         /// <summary>No recebimento/liquidação (RN08-b — default seguro, mais simples operacionalmente).</summary>
         Caixa
     }
+
+    /// <summary>
+    /// 1.08J — Status de uma <c>NfseMensalidade</c> (necessidade de NFS-e da mensalidade SaaS por competência).
+    /// <c>Pendente</c> = necessidade registrada, ainda NÃO emitida (default do MECANISMO — não há provedor
+    /// municipal / certificado / alíquota configurados; ver overlay `negocio-siser`, hoje VAZIO).
+    /// <c>Emitida</c> = NFS-e efetivamente autorizada pelo provedor municipal (número fiscal REAL registrado).
+    /// <c>Dispensada</c> = competência dispensada de emissão por decisão do operador (ex.: fatura estornada/cancelada).
+    /// <c>Erro</c> = provedor retornou falha na tentativa de emissão (mantém rastro do motivo).
+    /// ⛔ O mecanismo NUNCA passa de <c>Pendente</c> sozinho: a emissão REAL depende de alíquota/subitem/município/
+    /// certificado/provedor (LC 116/2003 item 1.05/1.03; overlay + contador). Persistido como string.
+    /// </summary>
+    public enum NfseMensalidadeStatus
+    {
+        Pendente,
+        Emitida,
+        Dispensada,
+        Erro
+    }
 }
