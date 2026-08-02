@@ -215,6 +215,18 @@ namespace Epros.Shared.Domain.Events
             public const string ProjetoEncerrado = "prj.encerramento.aprovado";
         }
 
+        /// <summary>Eventos do módulo Financeiro (FIN-*): motor de contabilização automática (TEC-8)
+        /// e conciliação de retorno bancário CNAB (FD2/FD-NF11).</summary>
+        public static class Financeiro
+        {
+            /// <summary>Lançamento contábil automático gerado a partir de um fato de integração (motor evento→ledger, TEC-8).</summary>
+            public const string LancamentoContabilGerado = "fin.contabilizacao.lancamento_gerado";
+            /// <summary>Retorno bancário CNAB processado (baixas de faturas por nosso número — RSF-007).</summary>
+            public const string RetornoBancarioProcessado = "fin.cobranca.retorno_processado";
+            /// <summary>Arquivo de remessa CNAB gerado (faturas remetidas — RSF-014).</summary>
+            public const string RemessaCnabGerada = "fin.cobranca.remessa_gerada";
+        }
+
         /// <summary>Operações (produção/manutenção/qualidade/RH/GRC).</summary>
         public static class Operacoes
         {
@@ -295,7 +307,8 @@ namespace Epros.Shared.Domain.Events
             Grc.SodConcessaoAvaliada, Grc.SodConcessaoBloqueada, Grc.SodBypassAdmin,
             Grc.SodExcecaoAprovada, Grc.SodViolacaoDetectada,
             Grc.RegCertificadoAlertaVencimento, Grc.RegCertificadoRevogado,
-            Grc.PolPoliticaPublicada, Grc.RisKriExcedido, Grc.CiaAchadoCritico
+            Grc.PolPoliticaPublicada, Grc.RisKriExcedido, Grc.CiaAchadoCritico,
+            Financeiro.LancamentoContabilGerado, Financeiro.RetornoBancarioProcessado, Financeiro.RemessaCnabGerada
         }, System.StringComparer.Ordinal);
 
         /// <summary>Todos os tipos de evento homologados no catálogo.</summary>

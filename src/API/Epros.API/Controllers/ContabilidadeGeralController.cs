@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using Epros.Modules.Financeiro.Application.Commands;
 using Epros.Modules.Financeiro.Application.Queries;
+using Epros.Modules.Financeiro.Application.Handlers;
 using Epros.API.Security;
 using Epros.Shared.Application.Models;
 
@@ -143,6 +144,29 @@ namespace Epros.API.Controllers
         public async Task<ActionResult<CommandResult>> RegistrarSaldoAbertura([FromBody] RegistrarSaldoAberturaCommand command)
         {
             var r = await _mediator.Send(command);
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
+        // ----- DE-PARA evento→conta (motor de contabilização automática — TEC-8) -----
+        // ⛔ valida-contador: o par de contas é parâmetro do contador (conta do plano do cliente).
+        [HttpGet("regras-contabilizacao")]
+        [AbacAuthorize("ContabilidadeGeral", "Ler")]
+        public async Task<IActionResult> ListarRegrasContabilizacao()
+            => Ok(await _mediator.Send(new ListarRegrasContabilizacaoQuery()));
+
+        [HttpPut("regras-contabilizacao")]
+        [AbacAuthorize("ContabilidadeGeral", "Editar")]
+        public async Task<ActionResult<CommandResult>> DefinirRegraContabilizacao([FromBody] DefinirRegraContabilizacaoCommand command)
+        {
+            var r = await _mediator.Send(command);
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
+        [HttpDelete("regras-contabilizacao/{id:guid}")]
+        [AbacAuthorize("ContabilidadeGeral", "Excluir")]
+        public async Task<ActionResult<CommandResult>> RemoverRegraContabilizacao(Guid id)
+        {
+            var r = await _mediator.Send(new RemoverRegraContabilizacaoCommand(id));
             return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
         }
     }

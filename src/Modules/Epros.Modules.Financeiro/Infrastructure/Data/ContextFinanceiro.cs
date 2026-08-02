@@ -41,6 +41,7 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
         public DbSet<LancamentoContabil> LancamentosContabeis => Set<LancamentoContabil>();
         public DbSet<LancamentoContabilLinha> LancamentoContabilLinhas => Set<LancamentoContabilLinha>();
         public DbSet<SaldoAbertura> SaldosAbertura => Set<SaldoAbertura>();
+        public DbSet<RegraContabilizacao> RegrasContabilizacao => Set<RegraContabilizacao>();
 
         // ----- FIN-SF: Serviços Financeiros (cobrança/boleto/remessa) -----
         public DbSet<ConfiguracaoCedente> ConfiguracoesCedente => Set<ConfiguracaoCedente>();
@@ -51,6 +52,7 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
         public DbSet<Boleto> Boletos => Set<Boleto>();
         public DbSet<Remessa> Remessas => Set<Remessa>();
         public DbSet<RemessaBoleto> RemessaBoletos => Set<RemessaBoleto>();
+        public DbSet<RetornoBancario> RetornosBancarios => Set<RetornoBancario>();
         public DbSet<CobrancaEmail> CobrancasEmail => Set<CobrancaEmail>();
 
         // ----- FIN-CAM: Câmbio e Risco de Mercado -----
@@ -77,6 +79,7 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
         public DbSet<ContratoFinanceiro> ContratosFinanceiros => Set<ContratoFinanceiro>();
         public DbSet<FaturaRecorrente> FaturasRecorrentes => Set<FaturaRecorrente>();
         public DbSet<ReajusteContrato> ReajustesContrato => Set<ReajusteContrato>();
+        public DbSet<ContratoArrendamento> ContratosArrendamento => Set<ContratoArrendamento>();
 
         // ----- FIN-SBF: Subsídios e Fundos -----
         public DbSet<ProgramaSubsidio> ProgramasSubsidio => Set<ProgramaSubsidio>();
@@ -549,10 +552,19 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
                 entity.HasIndex(p => new { p.TenantId, p.AnoFiscal }).HasDatabaseName("ix_periodo_contabil_tenant_ano");
             });
 
+            // DE-PARA evento→conta (motor de contabilização automática — TEC-8/FD-NF3)
+            modelBuilder.Entity<RegraContabilizacao>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.TipoEvento).HasMaxLength(80);
+                entity.Property(r => r.Historico).HasMaxLength(255);
+                entity.HasIndex(r => new { r.TenantId, r.TipoEvento }).HasDatabaseName("ix_regra_contabilizacao_tenant_evento");
+            });
+
             modelBuilder.Entity<LancamentoContabil>(entity =>
             {
                 entity.HasKey(l => l.Id);
-                entity.Property(l => l.NumeroLancamento).HasMaxLength(50);
+                entity.Property(l => l.NumeroLancamento).HasMaxLength(80);
                 entity.Ignore(l => l.TotalDebitos);
                 entity.Ignore(l => l.TotalCreditos);
                 entity.Ignore(l => l.Balanceado);
@@ -685,6 +697,15 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
             {
                 entity.HasKey(rb => rb.Id);
                 entity.HasIndex(rb => new { rb.RemessaId, rb.BoletoId }).IsUnique().HasDatabaseName("uq_remessa_boleto");
+            });
+
+            modelBuilder.Entity<RetornoBancario>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.NomeArquivo).HasMaxLength(200);
+                entity.Property(x => x.HashArquivo).HasMaxLength(64);
+                entity.Property(x => x.ValorTotalBaixado).HasPrecision(18, 2);
+                entity.HasIndex(x => new { x.TenantId, x.HashArquivo }).HasDatabaseName("ix_retorno_bancario_tenant_hash");
             });
 
             modelBuilder.Entity<CobrancaEmail>(entity =>
@@ -866,6 +887,21 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
                 e.Property(x => x.Motivo).HasMaxLength(500);
                 e.HasOne<ContratoFinanceiro>().WithMany().HasForeignKey(x => x.ContratoId).HasConstraintName("fk_reajuste_contrato").OnDelete(DeleteBehavior.Cascade);
                 e.HasIndex(x => x.ContratoId).HasDatabaseName("ix_reajuste_contrato");
+            });
+
+            // FIN-GCF extensão — Arrendamento mercantil (IFRS-16 / CPC 06 R2)
+            modelBuilder.Entity<ContratoArrendamento>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Descricao).HasMaxLength(255);
+                e.Property(x => x.ValorContraprestacao).HasPrecision(18, 2);
+                e.Property(x => x.TaxaIncrementalPeriodo).HasPrecision(18, 8);
+                e.Property(x => x.CustosDiretosIniciais).HasPrecision(18, 2);
+                e.Property(x => x.IncentivosRecebidos).HasPrecision(18, 2);
+                e.Property(x => x.PassivoArrendamentoInicial).HasPrecision(18, 2);
+                e.Property(x => x.DireitoDeUsoInicial).HasPrecision(18, 2);
+                e.Property(x => x.MotivoEncerramento).HasMaxLength(500);
+                e.HasIndex(x => new { x.TenantId, x.Status }).HasDatabaseName("ix_contrato_arrendamento_tenant_status");
             });
 
             // ===== FIN-SBF: Subsídios e Fundos =====

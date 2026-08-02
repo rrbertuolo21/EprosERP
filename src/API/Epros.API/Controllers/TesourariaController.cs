@@ -6,6 +6,7 @@ using MediatR;
 using Epros.Modules.Financeiro.Application.Commands;
 using Epros.Modules.Financeiro.Application.Queries;
 using Epros.Modules.Financeiro.Domain.Enums;
+using Epros.Modules.Financeiro.Domain.Services;
 using Epros.API.Security;
 using Epros.Shared.Application.Models;
 
@@ -79,6 +80,14 @@ namespace Epros.API.Controllers
             var r = await _mediator.Send(command);
             return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
         }
+
+        // ----- Fluxo de caixa projetado -----
+        [HttpGet("fluxo-caixa/projecao")]
+        [AbacAuthorize("Tesouraria", "Ler")]
+        public async Task<IActionResult> ProjetarFluxoCaixa(
+            [FromQuery] DateTime? dataBase, [FromQuery] int numeroPeriodos = 12,
+            [FromQuery] EGranularidadeFluxo granularidade = EGranularidadeFluxo.Mensal)
+            => Ok(await _mediator.Send(new ProjetarFluxoCaixaQuery(dataBase, numeroPeriodos, granularidade)));
 
         // ----- Movimentos financeiros -----
         [HttpGet("movimentos")]
