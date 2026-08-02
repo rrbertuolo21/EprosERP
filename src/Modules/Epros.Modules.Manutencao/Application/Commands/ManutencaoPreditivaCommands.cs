@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Epros.Modules.Manutencao.Domain.Entities;
 using Epros.Modules.Manutencao.Domain.Enums;
+using Epros.Modules.Manutencao.Domain.Services;
 using Epros.Modules.Manutencao.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
@@ -194,15 +195,25 @@ namespace Epros.Modules.Manutencao.Application.Commands
 
             var ponto = await _context.PontosMedicao
                 .Include(p => p.Leituras)
+                .Include(p => p.Regras)
                 .FirstOrDefaultAsync(p => p.Id == request.PontoMedicaoId, cancellationToken);
             if (ponto == null)
                 return CommandResult.Falha("Ponto de medicao nao encontrado.");
 
             // RN: monitoramento deve estar ativo para receber leitura.
-            var monitoramentoAtivo = await _context.MonitoramentosPreditivos
-                .AnyAsync(m => m.Id == ponto.MonitoramentoId && m.Status == EStatusRegistroManutencao.Ativo, cancellationToken);
-            if (!monitoramentoAtivo)
+            var monitoramento = await _context.MonitoramentosPreditivos
+                .FirstOrDefaultAsync(m => m.Id == ponto.MonitoramentoId, cancellationToken);
+            if (monitoramento == null || !monitoramento.PermiteLeituraOuAlarme())
                 return CommandResult.Falha("Somente monitoramento ativo pode receber leitura.");
+
+            // D12: validacao da leitura (unidade/sequencia/duplicidade/qualidade) -> LEITURA_INVALIDA.
+            var duplicada = ponto.Leituras.Any(l => l.DataHoraMedicao == request.DataHoraMedicao);
+            var ultimaData = ponto.Leituras.Any() ? ponto.Leituras.Max(l => l.DataHoraMedicao) : (DateTime?)null;
+            var validacao = MotorAvaliacaoPreditiva.ValidarLeitura(
+                request.Unidade, ponto.Unidade, request.QualidadeDado, request.DataHoraMedicao, ultimaData, duplicada,
+                MotorAvaliacaoPreditiva.QualidadeMinimaDefault);
+            if (!validacao.Valida)
+                return CommandResult.Falha(validacao.Motivo!);
 
             var leitura = new LeituraCondicao(ponto.Id, request.DataHoraMedicao, request.Valor, request.Unidade,
                 request.QualidadeDado, request.Origem, request.PayloadJson, tenantId, usuario);
@@ -213,8 +224,42 @@ namespace Epros.Modules.Manutencao.Application.Commands
 
             // Filho novo em agregado já existente: Add explícito garante estado Added (evita UPDATE de linha inexistente).
             _context.LeiturasCondicao.Add(leitura);
+
+            // D11: avaliacao AUTOMATICA das regras vigentes na leitura (nao comando manual).
+            var alarmesGerados = new System.Collections.Generic.List<Guid>();
+            var alarmesAbertos = await _context.AlarmesPreditivos
+                .Where(a => a.MonitoramentoId == monitoramento.Id
+                            && a.PontoMedicaoId == ponto.Id
+                            && (a.Status == EStatusAlarmePreditivo.Aberto || a.Status == EStatusAlarmePreditivo.EmAnalise))
+                .Select(a => a.RegraId)
+                .ToListAsync(cancellationToken);
+
+            foreach (var regra in ponto.Regras)
+            {
+                if (!regra.GeraAlarme()) continue;
+                if (regra.VigenciaInicio.HasValue && request.DataHoraMedicao < regra.VigenciaInicio.Value) continue;
+                if (regra.VigenciaFim.HasValue && request.DataHoraMedicao > regra.VigenciaFim.Value) continue;
+                if (!MotorAvaliacaoPreditiva.RegraDispara(request.Valor, regra.TipoRegra, regra.Operador, regra.LimiteMinimo, regra.LimiteMaximo)) continue;
+
+                // D13 (correlacao/deduplicacao): nao repete alarme aberto para a mesma regra+ponto.
+                if (alarmesAbertos.Contains(regra.Id)) continue;
+
+                var descricao = $"Alarme automatico: {regra.TipoRegra} {regra.Operador} (min={regra.LimiteMinimo}, max={regra.LimiteMaximo}); leitura={request.Valor} {request.Unidade}.";
+                var alarme = new AlarmePreditivo(monitoramento.Id, ponto.Id, regra.Id, leitura.Id, regra.Severidade, descricao, tenantId, usuario);
+                if (!alarme.IsValid) continue;
+                var historico = new HistoricoPreditivo(monitoramento.Id, alarme.Id, EAcaoHistoricoPreditivo.Disparado, monitoramento.ResponsavelId, null, "{}", tenantId, usuario);
+                _context.AlarmesPreditivos.Add(alarme);
+                _context.HistoricosPreditivos.Add(historico);
+                alarmesGerados.Add(alarme.Id);
+                alarmesAbertos.Add(regra.Id); // evita duplicar dentro do mesmo lote
+            }
+
             await _context.SaveChangesAsync(cancellationToken);
-            return CommandResult.Ok("Leitura registrada.", new { leitura.Id });
+            return CommandResult.Ok(
+                alarmesGerados.Count > 0
+                    ? $"Leitura registrada; {alarmesGerados.Count} alarme(s) disparado(s) automaticamente."
+                    : "Leitura registrada.",
+                new { leitura.Id, AlarmesGerados = alarmesGerados });
         }
     }
 
