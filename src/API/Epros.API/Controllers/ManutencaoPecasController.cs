@@ -71,5 +71,41 @@ namespace Epros.API.Controllers
             var result = await _mediator.Send(command, ct);
             return result.Sucesso ? Created(string.Empty, result) : UnprocessableEntity(result);
         }
+
+        // MAN-PEC D22 — reservar peca (ciclo reservar -> consumir).
+        [HttpPost("itens/{itemId:guid}/reservar")]
+        [AbacAuthorize("ManutencaoPecas", "Alterar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> Reservar(Guid itemId, [FromBody] ReservarPecaCommand command, CancellationToken ct)
+        {
+            if (itemId != command.ItemId) return BadRequest("O ID da rota nao corresponde ao ID do corpo.");
+            var result = await _mediator.Send(command, ct);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        // MAN-PEC D22 — baixar peca (consumo, delta, idempotente; move estoque pelo motor unico).
+        [HttpPost("itens/{itemId:guid}/baixar")]
+        [AbacAuthorize("ManutencaoPecas", "Alterar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> Baixar(Guid itemId, [FromBody] BaixarPecaCommand command, CancellationToken ct)
+        {
+            if (itemId != command.ItemId) return BadRequest("O ID da rota nao corresponde ao ID do corpo.");
+            var result = await _mediator.Send(command, ct);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        // MAN-PEC D22 — devolver peca (movimento inverso).
+        [HttpPost("itens/{itemId:guid}/devolver")]
+        [AbacAuthorize("ManutencaoPecas", "Alterar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> Devolver(Guid itemId, [FromBody] DevolverPecaCommand command, CancellationToken ct)
+        {
+            if (itemId != command.ItemId) return BadRequest("O ID da rota nao corresponde ao ID do corpo.");
+            var result = await _mediator.Send(command, ct);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
     }
 }

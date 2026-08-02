@@ -159,6 +159,36 @@ namespace Epros.Modules.Manutencao.Domain.Entities
             StatusItem = QuantidadeEntregue >= Quantidade ? EStatusItemPeca.EntregueTotal : EStatusItemPeca.EntregueParcial;
             MarcarAlterado(usuario);
         }
+
+        // MAN-PEC RN-PEC-007/008: devolucao correlacionada reduz o entregue (movimento inverso).
+        public void RegistrarDevolucao(decimal quantidadeDevolvida, string usuario)
+        {
+            if (quantidadeDevolvida <= 0)
+            {
+                AddNotification(nameof(QuantidadeEntregue), "A quantidade devolvida deve ser maior que zero.");
+                return;
+            }
+            if (quantidadeDevolvida > QuantidadeEntregue)
+            {
+                AddNotification(nameof(QuantidadeEntregue), "A devolucao nao pode exceder a quantidade entregue.");
+                return;
+            }
+            QuantidadeEntregue -= quantidadeDevolvida;
+            StatusItem = QuantidadeEntregue <= 0m
+                ? EStatusItemPeca.Devolvido
+                : EStatusItemPeca.EntregueParcial;
+            MarcarAlterado(usuario);
+        }
+
+        // MAN-PEC: marca o item como reservado (ciclo reservar -> consumir).
+        public void MarcarReservado(string usuario)
+        {
+            if (StatusItem == EStatusItemPeca.Rascunho)
+                StatusItem = EStatusItemPeca.Reservado;
+            MarcarAlterado(usuario);
+        }
+
+        public decimal SaldoAConsumir() => Quantidade - QuantidadeEntregue;
     }
 
     /// <summary>MAN-PEC — Reserva de peca. EF 11.3.</summary>
