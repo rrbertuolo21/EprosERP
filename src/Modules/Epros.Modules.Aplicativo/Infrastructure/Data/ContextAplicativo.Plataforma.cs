@@ -3,6 +3,7 @@ using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Assinatura;
 using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Conectores;
 using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Ged;
 using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Iot;
+using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Sdk;
 using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Wizards;
 using Microsoft.EntityFrameworkCore;
 
@@ -51,6 +52,9 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
         public DbSet<SensorIot> SensoresIot => Set<SensorIot>();
         public DbSet<LeituraSensor> LeiturasSensor => Set<LeituraSensor>();
 
+        // ===== SDK/Extensões (submódulo 7) =====
+        public DbSet<ChaveApiPublica> ChavesApi => Set<ChaveApiPublica>();
+
         partial void ConfigurarPlataforma(ModelBuilder modelBuilder)
         {
             ConfigurarGed(modelBuilder);
@@ -59,6 +63,7 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
             ConfigurarConectores(modelBuilder);
             ConfigurarWizards(modelBuilder);
             ConfigurarIot(modelBuilder);
+            ConfigurarSdk(modelBuilder);
         }
 
         private static void ConfigurarGed(ModelBuilder modelBuilder)
@@ -339,6 +344,21 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
                 e.HasIndex(x => new { x.SensorId, x.MedidoEm })
                     .HasDatabaseName("ix_plt_iot_leituras_sensor_medido");
                 e.HasIndex(x => x.ForaFaixa).HasDatabaseName("ix_plt_iot_leituras_fora_faixa");
+            });
+        }
+
+        private static void ConfigurarSdk(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<ChaveApiPublica>(e =>
+            {
+                e.ToTable("plt_sdk_chaves_api", "aplicativo");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Nome).HasMaxLength(200);
+                e.Property(x => x.Prefixo).HasMaxLength(20);
+                e.Property(x => x.HashChave).HasMaxLength(128);
+                e.Property(x => x.EscoposJson).HasColumnType("text");
+                e.HasIndex(x => x.HashChave).IsUnique().HasDatabaseName("ix_plt_sdk_chaves_api_hash");
+                e.HasIndex(x => x.Prefixo).HasDatabaseName("ix_plt_sdk_chaves_api_prefixo");
             });
         }
     }
