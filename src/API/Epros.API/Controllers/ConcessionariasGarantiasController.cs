@@ -66,6 +66,14 @@ namespace Epros.API.Controllers
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
 
+        [HttpPost("veiculos/{id}/encerrar")]
+        [AbacAuthorize("ConcessionariasGarantias", "Editar")]
+        public async Task<ActionResult<CommandResult>> EncerrarVeiculoGarantia(System.Guid id)
+        {
+            var result = await _mediator.Send(new EncerrarVeiculoGarantiaCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
         public record JulgarSolicitacaoBody(bool Aprovar);
     }
 }

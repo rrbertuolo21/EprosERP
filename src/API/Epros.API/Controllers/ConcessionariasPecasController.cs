@@ -56,13 +56,29 @@ namespace Epros.API.Controllers
         [AbacAuthorize("ConcessionariasPecas", "Consultar")]
         public async Task<IActionResult> ListarReservas() => Ok(await _mediator.Send(new ObterReservasPecaQuery()));
 
-        // ----- Cancelamento de reserva (D-02: expõe ReservaPeca.Cancelar) -----
+        // ----- Transições (D-02) -----
 
         [HttpPost("reservas/{id}/cancelar")]
         [AbacAuthorize("ConcessionariasPecas", "Reservar")]
         public async Task<ActionResult<CommandResult>> CancelarReserva(System.Guid id)
         {
             var result = await _mediator.Send(new CancelarReservaPecaCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("demandas/{id}/atender")]
+        [AbacAuthorize("ConcessionariasPecas", "Editar")]
+        public async Task<ActionResult<CommandResult>> AtenderDemanda(System.Guid id)
+        {
+            var result = await _mediator.Send(new AtenderDemandaPecaCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("demandas/{id}/cancelar")]
+        [AbacAuthorize("ConcessionariasPecas", "Editar")]
+        public async Task<ActionResult<CommandResult>> CancelarDemanda(System.Guid id)
+        {
+            var result = await _mediator.Send(new CancelarDemandaPecaCommand(id));
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
     }

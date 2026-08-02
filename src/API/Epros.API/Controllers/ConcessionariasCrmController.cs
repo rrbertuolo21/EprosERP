@@ -82,6 +82,23 @@ namespace Epros.API.Controllers
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
 
+        [HttpPost("test-drives/{id}/realizar")]
+        [AbacAuthorize("ConcessionariasCrm", "TestDrive")]
+        public async Task<ActionResult<CommandResult>> RealizarTestDrive(System.Guid id, [FromBody] RealizarTestDriveBody body)
+        {
+            var result = await _mediator.Send(new RealizarTestDriveCommand(id, body.Resultado));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("test-drives/{id}/cancelar")]
+        [AbacAuthorize("ConcessionariasCrm", "TestDrive")]
+        public async Task<ActionResult<CommandResult>> CancelarTestDrive(System.Guid id)
+        {
+            var result = await _mediator.Send(new CancelarTestDriveCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        public record RealizarTestDriveBody(string Resultado);
         public record AvancarEtapaOportunidadeCommandBody(string NovaEtapa);
         public record ConverterOportunidadeCommandBody(System.Guid VendaId);
         public record RegistrarPerdaOportunidadeCommandBody(System.Guid MotivoPerdaId);
