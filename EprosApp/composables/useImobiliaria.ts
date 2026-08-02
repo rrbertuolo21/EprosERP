@@ -146,7 +146,7 @@ export function useImobiliaria() {
   const formalizar = (locacaoId: string) => post(`/imobiliaria/locacoes/${locacaoId}/formalizar`)
   const encerrar = (locacaoId: string) => post(`/imobiliaria/locacoes/${locacaoId}/encerrar`)
   const cancelar = (locacaoId: string) => post(`/imobiliaria/locacoes/${locacaoId}/cancelar`)
-  const renovar = (locacaoId: string, body: { periodoFinal: string | null; novoValor?: number | null }) =>
+  const renovar = (locacaoId: string, body: { novoPeriodoFinal: string | null }) =>
     post(`/imobiliaria/locacoes/${locacaoId}/renovar`, body)
 
   // ------- Reajuste (ID7/NF-02) -------

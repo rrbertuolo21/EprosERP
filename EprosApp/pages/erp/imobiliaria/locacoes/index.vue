@@ -144,6 +144,10 @@ function novaLocacao() {
   router.push('/erp/imobiliaria/locacoes/novo')
 }
 
+function gerirContrato(item: Locacao) {
+  router.push(`/erp/imobiliaria/contratos/${item.id}`)
+}
+
 onMounted(() => {
   void lista.buscar()
 })
@@ -186,6 +190,7 @@ onMounted(() => {
         <span class="badge">{{ rotularStatus(value) }}</span>
       </template>
       <template #actions="{ row }">
+        <button type="button" class="btn btn-ghost btn-sm" title="Gerir contrato (cobranças, garantias, reajustes, ciclo)" @click.stop="gerirContrato(row)">Gerir</button>
         <button type="button" class="btn btn-ghost btn-sm" title="Resumo do aluguel" @click.stop="abrirResumo(row)">Resumo</button>
         <button type="button" class="btn btn-ghost btn-sm btn-danger-action" title="Excluir" @click.stop="pedirExclusao(row)">Excluir</button>
       </template>
