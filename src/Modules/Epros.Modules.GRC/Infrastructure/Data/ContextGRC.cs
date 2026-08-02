@@ -47,6 +47,9 @@ namespace Epros.Modules.GRC.Infrastructure.Data
         public DbSet<TesteControle> TestesControle => Set<TesteControle>();
         public DbSet<Achado> Achados => Set<Achado>();
         public DbSet<PlanoAcaoAuditoria> PlanosAcaoAuditoria => Set<PlanoAcaoAuditoria>();
+        public DbSet<AmostraAuditoria> AmostrasAuditoria => Set<AmostraAuditoria>();
+        public DbSet<TokenAcessoAuditoria> TokensAcessoAuditoria => Set<TokenAcessoAuditoria>();
+        public DbSet<EvidenciaAuditoria> EvidenciasAuditoria => Set<EvidenciaAuditoria>();
 
         // GRC-SOD (Segregacao de Funcoes)
         public DbSet<FuncaoSoD> FuncoesSoD => Set<FuncaoSoD>();
@@ -281,6 +284,30 @@ namespace Epros.Modules.GRC.Infrastructure.Data
                 entity.HasKey(p => p.Id);
                 entity.ToTable("grc_cia_plano_acao");
                 entity.HasIndex(p => new { p.ResponsavelId, p.Status });
+            });
+
+            modelBuilder.Entity<AmostraAuditoria>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                entity.ToTable("grc_cia_amostra");
+                entity.HasIndex(a => a.TesteControleId);
+                entity.HasIndex(a => a.PlanoAuditoriaId);
+            });
+
+            modelBuilder.Entity<TokenAcessoAuditoria>(entity =>
+            {
+                entity.HasKey(t => t.Id);
+                entity.ToTable("grc_cia_token_acesso");
+                entity.HasIndex(t => t.PlanoAuditoriaId);
+                entity.HasIndex(t => new { t.TenantId, t.TokenHash }).IsUnique();
+            });
+
+            modelBuilder.Entity<EvidenciaAuditoria>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("grc_cia_evidencia");
+                entity.HasIndex(e => e.AchadoId);
+                entity.HasIndex(e => e.TesteControleId);
             });
 
             // ===================== GRC-SOD =====================
