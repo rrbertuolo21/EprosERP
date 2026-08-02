@@ -65,5 +65,81 @@ namespace Epros.API.Controllers
             var result = await _mediator.Send(command, cancellationToken);
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
+
+        // ===================== Declaração de Importação (DI) por item + adições (CEX-001..023) =====================
+        // valida-contador: ValorAFRMM/ValorDesconto são factuais (informados pelo despacho aduaneiro/contador).
+
+        [HttpGet("itens/{compraItemId:guid}/declaracoes")]
+        [AbacAuthorize("ComercioExterior", "Consultar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        public async Task<ActionResult<CommandResult>> ListarDeclaracoes(Guid compraItemId, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new ObterDeclaracoesImportacaoPorItemQuery(compraItemId), cancellationToken);
+            return result.Sucesso ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpPost("itens/{compraItemId:guid}/declaracoes")]
+        [AbacAuthorize("ComercioExterior", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> RegistrarDeclaracao(Guid compraItemId, [FromBody] RegistrarDeclaracaoImportacaoCommand body, CancellationToken cancellationToken)
+        {
+            var command = body with { CompraItemId = compraItemId };
+            var result = await _mediator.Send(command, cancellationToken);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPut("declaracoes/{declaracaoId:guid}")]
+        [AbacAuthorize("ComercioExterior", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AlterarDeclaracao(Guid declaracaoId, [FromBody] AlterarDeclaracaoImportacaoCommand body, CancellationToken cancellationToken)
+        {
+            var command = body with { Id = declaracaoId };
+            var result = await _mediator.Send(command, cancellationToken);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpDelete("declaracoes/{declaracaoId:guid}")]
+        [AbacAuthorize("ComercioExterior", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> ExcluirDeclaracao(Guid declaracaoId, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new ExcluirDeclaracaoImportacaoCommand(declaracaoId), cancellationToken);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("declaracoes/{declaracaoId:guid}/adicoes")]
+        [AbacAuthorize("ComercioExterior", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AdicionarAdicao(Guid declaracaoId, [FromBody] AdicionarAdicaoImportacaoCommand body, CancellationToken cancellationToken)
+        {
+            var command = body with { DeclaracaoImportacaoId = declaracaoId };
+            var result = await _mediator.Send(command, cancellationToken);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPut("declaracoes/{declaracaoId:guid}/adicoes/{adicaoId:guid}")]
+        [AbacAuthorize("ComercioExterior", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AlterarAdicao(Guid declaracaoId, Guid adicaoId, [FromBody] AlterarAdicaoImportacaoCommand body, CancellationToken cancellationToken)
+        {
+            var command = body with { DeclaracaoImportacaoId = declaracaoId, AdicaoId = adicaoId };
+            var result = await _mediator.Send(command, cancellationToken);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpDelete("declaracoes/{declaracaoId:guid}/adicoes/{adicaoId:guid}")]
+        [AbacAuthorize("ComercioExterior", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> ExcluirAdicao(Guid declaracaoId, Guid adicaoId, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new ExcluirAdicaoImportacaoCommand(declaracaoId, adicaoId), cancellationToken);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
     }
 }

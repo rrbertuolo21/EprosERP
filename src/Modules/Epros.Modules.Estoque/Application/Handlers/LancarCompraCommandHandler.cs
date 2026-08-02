@@ -67,6 +67,11 @@ namespace Epros.Modules.Estoque.Application.Handlers
             }
 
             // 3. Processar cada item da nota — a entrada de estoque passa pelo MOTOR ÚNICO (kardex, D1).
+            //    ANTI-DUPLA-CONTAGEM (Gap LDE): o LANÇAMENTO FISCAL é a ÚNICA autoridade que credita o estoque
+            //    da compra. O crédito é idempotente por ORIGEM = CompraId — um único FatoGeradorEstoque com
+            //    CompraId preenchido cobre TODOS os itens desta compra. O relançamento da mesma NF já é barrado
+            //    acima pela unicidade da ChaveAcesso. A LDE (recebimento físico) NÃO credita de novo; ela
+            //    consulta EstoqueCreditoCompra.JaCreditadaAsync para NÃO recreditar o que este fato já creditou.
             var motor = new MotorMovimentacaoEstoque(_context, tenantId, usuario);
             var fato = new FatoGeradorEstoque(null, compra.Id, null, EOrigemFatoGeradorEstoque.EntradaFiscal, tenantId, usuario, referenciaExterna: $"Compra NF {request.NumeroNota}");
             _context.FatosGeradoresEstoque.Add(fato);
