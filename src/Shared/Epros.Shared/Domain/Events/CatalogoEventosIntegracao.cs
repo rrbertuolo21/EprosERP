@@ -232,6 +232,8 @@ namespace Epros.Shared.Domain.Events
         {
             public const string OrdemProducaoEncerrada = "OrdemProducaoEncerrada";
             public const string OrdemManutencaoConcluida = "OrdemManutencaoConcluida";
+            /// <summary>T5 — Devolucao de peca de manutencao: entrada compensatoria no Estoque pelo motor unico (D1), simetrica a baixa.</summary>
+            public const string DevolucaoPecaManutencao = "DevolucaoPecaManutencao";
             public const string InspecaoReprovada = "InspecaoReprovada";
             public const string FolhaProcessada = "FolhaProcessada";
             public const string DenunciaProcedente = "DenunciaProcedente";
@@ -363,7 +365,8 @@ namespace Epros.Shared.Domain.Events
             Estoque.AnaliseParametrosAlterados, Estoque.AnaliseAlertaReposicao, Estoque.AnaliseExcessoMaximo,
             Estoque.PfoConviteEnviado, Estoque.PfoAcessoAtivado, Estoque.PfoCotacaoRespondida,
             Estoque.PfoPreAvisoEnviado, Estoque.PfoDocumentoEnviado,
-            Operacoes.OrdemProducaoEncerrada, Operacoes.OrdemManutencaoConcluida, Operacoes.InspecaoReprovada,
+            Operacoes.OrdemProducaoEncerrada, Operacoes.OrdemManutencaoConcluida, Operacoes.DevolucaoPecaManutencao,
+            Operacoes.InspecaoReprovada,
             Operacoes.FolhaProcessada, Operacoes.DenunciaProcedente,
             Projetos.ItemPortfolioAprovado, Projetos.OrcamentoBaselineCongelada,
             Projetos.FaturamentoAprovado, Projetos.ProjetoEncerrado,

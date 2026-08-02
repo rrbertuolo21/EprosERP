@@ -152,6 +152,51 @@ namespace Epros.Tests
             Assert.Single(await estCtx.MovimentosEstoque.IgnoreQueryFilters().Where(m => m.Tipo == "Saida").ToListAsync());
         }
 
+        [Fact]
+        public async Task Dispatcher_Manutencao_Devolucao_Estorna_Estoque_Simetrico()
+        {
+            var tenantId = "tenant-man-dev";
+            var tp = new TestTenantProvider(tenantId); var cu = new TestCurrentUser("u");
+            var db = Guid.NewGuid().ToString("N");
+            var manCtx = CreateManutencao(db, tp, cu);
+            var estCtx = CreateEstoque(db, tp, cu);
+
+            var produto = new Produto("SKU-DEV", "Peça devolvida", 5m, tenantId, "seed");
+            estCtx.Produtos.Add(produto);
+            await estCtx.SaveChangesAsync();
+            // Saldo pós-baixa: 6 (a peça já saiu). A devolução deve reentrar 4 -> 10.
+            await EstoqueTestSeed.SemearSaldoAsync(estCtx, tenantId, "seed", produto.Id, 6m, 5m);
+
+            var osId = Guid.NewGuid();
+            var payload = JsonSerializer.Serialize(new
+            {
+                OrdemManutencaoId = osId,
+                EquipamentoId = Guid.NewGuid(),
+                Pecas = new[] { new { ProdutoId = produto.Id, Quantidade = 4m } },
+                TenantId = tenantId
+            });
+            manCtx.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Operacoes.DevolucaoPecaManutencao, payload));
+            await manCtx.SaveChangesAsync();
+
+            var dispatcher = new OutboxDispatcher(
+                new IOutboxConsumer[] { new DevolucaoPecaManutencaoEstoqueConsumer(estCtx) },
+                NullLogger<OutboxDispatcher>.Instance);
+
+            var roteadas = await dispatcher.ProcessAsync(manCtx);
+            Assert.Equal(1, roteadas);
+
+            var prodPos = await estCtx.Produtos.IgnoreQueryFilters().FirstAsync(p => p.Id == produto.Id);
+            Assert.Equal(10m, prodPos.SaldoEstoque); // 6 + 4 (estorno simétrico)
+            var movs = await estCtx.MovimentosEstoque.IgnoreQueryFilters().Where(m => m.Tipo == "Entrada").ToListAsync();
+            Assert.Single(movs);
+            Assert.Contains($"Devolucao peca OS {osId}", movs[0].Historico);
+
+            // Idempotência: reexecutar não estorna de novo.
+            var roteadas2 = await dispatcher.ProcessAsync(manCtx);
+            Assert.Equal(0, roteadas2);
+            Assert.Single(await estCtx.MovimentosEstoque.IgnoreQueryFilters().Where(m => m.Tipo == "Entrada").ToListAsync());
+        }
+
         private ContextQualidade CreateQualidade(string db, ITenantProvider tp, ICurrentUser cu)
             => new ContextQualidade(new DbContextOptionsBuilder<ContextQualidade>().UseInMemoryDatabase("qld_" + db).Options, tp, cu);
         private ContextManutencao CreateManutencao(string db, ITenantProvider tp, ICurrentUser cu)
