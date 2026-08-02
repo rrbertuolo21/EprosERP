@@ -1,3 +1,4 @@
+using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Analytics;
 using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Assinatura;
 using Epros.Modules.Aplicativo.Domain.Entities.Plataforma.Ged;
 using Microsoft.EntityFrameworkCore;
@@ -25,10 +26,18 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
         public DbSet<PoliticaAssinatura> PoliticasAssinatura => Set<PoliticaAssinatura>();
         public DbSet<HistoricoAssinatura> HistoricosAssinatura => Set<HistoricoAssinatura>();
 
+        // ===== Analytics (submódulo 3) =====
+        public DbSet<DefinicaoKpi> DefinicoesKpi => Set<DefinicaoKpi>();
+        public DbSet<Dashboard> Dashboards => Set<Dashboard>();
+        public DbSet<DashboardWidget> DashboardWidgets => Set<DashboardWidget>();
+        public DbSet<SnapshotMetrica> SnapshotsMetrica => Set<SnapshotMetrica>();
+        public DbSet<ExportacaoAnalytics> ExportacoesAnalytics => Set<ExportacaoAnalytics>();
+
         partial void ConfigurarPlataforma(ModelBuilder modelBuilder)
         {
             ConfigurarGed(modelBuilder);
             ConfigurarAssinatura(modelBuilder);
+            ConfigurarAnalytics(modelBuilder);
         }
 
         private static void ConfigurarGed(ModelBuilder modelBuilder)
@@ -127,6 +136,69 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
                 e.Property(x => x.Acao).HasMaxLength(50);
                 e.Property(x => x.Detalhe).HasMaxLength(1000);
                 e.HasIndex(x => x.SolicitacaoId).HasDatabaseName("ix_plt_assinatura_historicos_solicitacao");
+            });
+        }
+
+        private static void ConfigurarAnalytics(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<DefinicaoKpi>(e =>
+            {
+                e.ToTable("plt_analytics_kpis", "aplicativo");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Codigo).HasMaxLength(100);
+                e.Property(x => x.Nome).HasMaxLength(200);
+                e.Property(x => x.Descricao).HasMaxLength(1000);
+                e.Property(x => x.Unidade).HasMaxLength(20);
+                e.Property(x => x.Categoria).HasMaxLength(100);
+                e.Property(x => x.FonteModulo).HasMaxLength(100);
+                e.Property(x => x.ChaveConsulta).HasMaxLength(200);
+                e.HasIndex(x => new { x.TenantId, x.Codigo, x.Versao })
+                    .IsUnique().HasDatabaseName("ix_plt_analytics_kpis_tenant_codigo_versao");
+            });
+
+            modelBuilder.Entity<Dashboard>(e =>
+            {
+                e.ToTable("plt_analytics_dashboards", "aplicativo");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Codigo).HasMaxLength(100);
+                e.Property(x => x.Nome).HasMaxLength(200);
+                e.Property(x => x.Descricao).HasMaxLength(1000);
+                e.HasIndex(x => new { x.TenantId, x.Codigo })
+                    .IsUnique().HasDatabaseName("ix_plt_analytics_dashboards_tenant_codigo");
+            });
+
+            modelBuilder.Entity<DashboardWidget>(e =>
+            {
+                e.ToTable("plt_analytics_widgets", "aplicativo");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.KpiCodigo).HasMaxLength(100);
+                e.Property(x => x.Titulo).HasMaxLength(200);
+                e.Property(x => x.TipoVisualizacao).HasMaxLength(30);
+                e.HasIndex(x => x.DashboardId).HasDatabaseName("ix_plt_analytics_widgets_dashboard");
+            });
+
+            modelBuilder.Entity<SnapshotMetrica>(e =>
+            {
+                e.ToTable("plt_analytics_snapshots", "aplicativo");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.KpiCodigo).HasMaxLength(100);
+                e.Property(x => x.Competencia).HasMaxLength(20);
+                e.Property(x => x.Valor).HasPrecision(20, 4);
+                e.Property(x => x.Dimensao).HasMaxLength(150);
+                e.Property(x => x.Origem).HasMaxLength(100);
+                e.HasIndex(x => new { x.KpiCodigo, x.Competencia, x.Dimensao })
+                    .HasDatabaseName("ix_plt_analytics_snapshots_kpi_competencia_dimensao");
+            });
+
+            modelBuilder.Entity<ExportacaoAnalytics>(e =>
+            {
+                e.ToTable("plt_analytics_exportacoes", "aplicativo");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Recurso).HasMaxLength(150);
+                e.Property(x => x.Formato).HasMaxLength(10);
+                e.Property(x => x.Status).HasMaxLength(20);
+                e.Property(x => x.UrlRef).HasMaxLength(1000);
+                e.HasIndex(x => x.Status).HasDatabaseName("ix_plt_analytics_exportacoes_status");
             });
         }
     }
