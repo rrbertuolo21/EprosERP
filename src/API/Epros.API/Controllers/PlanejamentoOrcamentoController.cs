@@ -141,11 +141,73 @@ namespace Epros.API.Controllers
             return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
         }
 
+        [HttpPost("budgets/{id:guid}/ativar")]
+        [AbacAuthorize("PlanejamentoOrcamento", "Editar")]
+        public async Task<ActionResult<CommandResult>> AtivarBudget(Guid id)
+        {
+            var r = await _mediator.Send(new AtivarBudgetCommand(id));
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
+        [HttpPost("budgets/{id:guid}/encerrar")]
+        [AbacAuthorize("PlanejamentoOrcamento", "Editar")]
+        public async Task<ActionResult<CommandResult>> EncerrarBudget(Guid id)
+        {
+            var r = await _mediator.Send(new EncerrarBudgetCommand(id));
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
+        [HttpDelete("budgets/{id:guid}")]
+        [AbacAuthorize("PlanejamentoOrcamento", "Excluir")]
+        public async Task<ActionResult<CommandResult>> ExcluirBudget(Guid id)
+        {
+            var r = await _mediator.Send(new ExcluirBudgetCommand(id));
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
         [HttpPost("budgets/{id:guid}/alocacoes")]
         [AbacAuthorize("PlanejamentoOrcamento", "Editar")]
         public async Task<ActionResult<CommandResult>> AlocarBudget(Guid id, [FromBody] AlocarBudgetCommand command)
         {
             var r = await _mediator.Send(command with { BudgetId = id });
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
+        // ----- Orçamento comercial -----
+        [HttpGet("orcamentos-comerciais")]
+        [AbacAuthorize("PlanejamentoOrcamento", "Ler")]
+        public async Task<IActionResult> ListarOrcamentosComerciais([FromQuery] int pagina = 1, [FromQuery] int tamanhoPagina = 20)
+            => Ok(await _mediator.Send(new ListarOrcamentosComerciaisQuery(pagina, tamanhoPagina)));
+
+        [HttpGet("orcamentos-comerciais/{id:guid}")]
+        [AbacAuthorize("PlanejamentoOrcamento", "Ler")]
+        public async Task<IActionResult> ObterOrcamentoComercial(Guid id)
+        {
+            var r = await _mediator.Send(new ObterOrcamentoComercialPorIdQuery(id));
+            return r.Sucesso ? Ok(r) : NotFound(r);
+        }
+
+        [HttpPost("orcamentos-comerciais")]
+        [AbacAuthorize("PlanejamentoOrcamento", "Criar")]
+        public async Task<ActionResult<CommandResult>> CriarOrcamentoComercial([FromBody] CriarOrcamentoComercialCommand command)
+        {
+            var r = await _mediator.Send(command);
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
+        [HttpPut("orcamentos-comerciais/{id:guid}")]
+        [AbacAuthorize("PlanejamentoOrcamento", "Editar")]
+        public async Task<ActionResult<CommandResult>> AlterarOrcamentoComercial(Guid id, [FromBody] AlterarOrcamentoComercialCommand command)
+        {
+            var r = await _mediator.Send(command with { Id = id });
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
+        [HttpDelete("orcamentos-comerciais/{id:guid}")]
+        [AbacAuthorize("PlanejamentoOrcamento", "Excluir")]
+        public async Task<ActionResult<CommandResult>> ExcluirOrcamentoComercial(Guid id)
+        {
+            var r = await _mediator.Send(new ExcluirOrcamentoComercialCommand(id));
             return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
         }
 
@@ -200,6 +262,22 @@ namespace Epros.API.Controllers
         public async Task<ActionResult<CommandResult>> RegistrarTracking(Guid id, [FromBody] RegistrarTrackingMetaCommand command)
         {
             var r = await _mediator.Send(command with { MetaId = id });
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
+        [HttpPost("metas/{id:guid}/milestones")]
+        [AbacAuthorize("PlanejamentoOrcamento", "Editar")]
+        public async Task<ActionResult<CommandResult>> CriarMilestone(Guid id, [FromBody] CriarMilestoneMetaCommand command)
+        {
+            var r = await _mediator.Send(command with { MetaId = id });
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
+        [HttpPost("milestones/{milestoneId:guid}/concluir")]
+        [AbacAuthorize("PlanejamentoOrcamento", "Editar")]
+        public async Task<ActionResult<CommandResult>> ConcluirMilestone(Guid milestoneId)
+        {
+            var r = await _mediator.Send(new ConcluirMilestoneMetaCommand(milestoneId));
             return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
         }
     }

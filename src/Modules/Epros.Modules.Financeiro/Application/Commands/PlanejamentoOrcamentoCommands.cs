@@ -22,7 +22,26 @@ namespace Epros.Modules.Financeiro.Application.Commands
 
     public record CriarBudgetCommand(Guid PeriodoId, string Tipo, decimal? Valor) : IRequest<CommandResult>;
     public record AprovarBudgetCommand(Guid Id) : IRequest<CommandResult>;
+    public record AtivarBudgetCommand(Guid Id) : IRequest<CommandResult>;
+    public record EncerrarBudgetCommand(Guid Id) : IRequest<CommandResult>;
+    public record ExcluirBudgetCommand(Guid Id) : IRequest<CommandResult>;
     public record AlocarBudgetCommand(Guid BudgetId, Guid ContaId, decimal? ValorAlocado, bool AutoAprovar) : IRequest<CommandResult>;
+
+    // ----- Orçamento comercial -----
+    public record OrcamentoComercialItemInput(Guid ProdutoId, decimal? Quantidade, decimal? ValorUnitario, decimal? TaxaDesconto);
+    public record CriarOrcamentoComercialCommand(
+        Guid VendedorId, Guid TransportadoraId, Guid ClienteId, Guid CondicaoPagamentoId,
+        string Tipo, string Codigo, string TipoFrete, string Observacao, string StatusPedido,
+        DateTime? DataCadastro, DateTime? DataEntrega, DateTime? Validade,
+        decimal? ValorFrete, decimal? TaxaComissao, decimal? TaxaDesconto,
+        IReadOnlyList<OrcamentoComercialItemInput> Itens) : IRequest<CommandResult>;
+    public record AlterarOrcamentoComercialCommand(
+        Guid Id, Guid VendedorId, Guid TransportadoraId, Guid ClienteId, Guid CondicaoPagamentoId,
+        string Tipo, string Codigo, string TipoFrete, string Observacao, string StatusPedido,
+        DateTime? DataEntrega, DateTime? Validade,
+        decimal? ValorFrete, decimal? TaxaComissao, decimal? TaxaDesconto,
+        IReadOnlyList<OrcamentoComercialItemInput> Itens) : IRequest<CommandResult>;
+    public record ExcluirOrcamentoComercialCommand(Guid Id) : IRequest<CommandResult>;
 
     // ----- Metas -----
     public record CriarMetaCategoriaCommand(string Nome, string Codigo, EEscopoMeta Escopo) : IRequest<CommandResult>;
@@ -30,4 +49,6 @@ namespace Epros.Modules.Financeiro.Application.Commands
     public record AtivarMetaCommand(Guid Id) : IRequest<CommandResult>;
     public record RegistrarContribuicaoMetaCommand(Guid MetaId, decimal Valor, string Tipo, DateTime? Data) : IRequest<CommandResult>;
     public record RegistrarTrackingMetaCommand(Guid MetaId, decimal Percentual, string StatusProgresso, DateTime? Data) : IRequest<CommandResult>;
+    public record CriarMilestoneMetaCommand(Guid MetaId, string? Descricao) : IRequest<CommandResult>;
+    public record ConcluirMilestoneMetaCommand(Guid MilestoneId) : IRequest<CommandResult>;
 }
