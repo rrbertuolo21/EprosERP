@@ -300,6 +300,10 @@ try
     builder.Services.AddMediatR(cfg =>
     {
         cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
+        // Modulo RELATORIOS & BI (RPT): read-side puro, sem DbContext proprio, portanto seu
+        // assembly nao e carregado por AddDbContext. Registro explicito garante a descoberta dos
+        // query handlers (RPT-OPB/RPT-ONM) independentemente da ordem de carga de assemblies.
+        cfg.RegisterServicesFromAssembly(typeof(Epros.Modules.Relatorios.Application.Queries.KpiFaturamentoQuery).Assembly);
         // Também registrará os Handlers dos módulos adicionados como referências de projeto
         cfg.RegisterServicesFromAssemblies(AppDomain.CurrentDomain.GetAssemblies());
         cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(Epros.Modules.Aplicativo.Infrastructure.Behaviors.MakerCheckerPipelineBehavior<,>));
