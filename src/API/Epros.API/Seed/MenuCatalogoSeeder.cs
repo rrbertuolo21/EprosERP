@@ -138,20 +138,65 @@ namespace Epros.API.Seed
                 new LeafDef("Transmissões", "/erp/vendas/transmissoes", "DocumentosFiscais"),
                 new LeafDef("Inutilização", "/erp/vendas/inutilizacao-numeracao", "DocumentosFiscais"),
             }),
+            new("Vendas / Comercial", "file-invoice", new[]
+            {
+                new LeafDef("Comercial (hub)", "/erp/vendas/comercial", null),        // hub sem gate próprio (nega por padrão: só aparece se tiver filho visível).
+                new LeafDef("Contratos de Venda", "/erp/vendas/contratos", "Contratos"),
+                new LeafDef("Planejamento de Demanda", "/erp/vendas/demanda", "DemandaPrevisoes"),
+                new LeafDef("Logística de Saída", "/erp/vendas/logistica-saida", "Expedicoes"),
+                new LeafDef("E-commerce", "/erp/vendas/ecommerce", "EcommercePedidos"),
+                new LeafDef("Serviços — Catálogo", "/erp/vendas/servicos/catalogo", "ServicosComerciais"),
+                new LeafDef("Serviços — Faturas", "/erp/vendas/servicos/faturas", "ServicosComerciaisFaturas"),
+                new LeafDef("Garantias — Coberturas", "/erp/vendas/garantias/coberturas", "GarantiaCoberturas"),
+                new LeafDef("Garantias — Políticas", "/erp/vendas/garantias/politicas", "GarantiaPoliticas"),
+                new LeafDef("FCI — Documentos", "/erp/vendas/faturamento-internacional/documentos", "FciDocumentos"),
+                new LeafDef("FCI — Impostos", "/erp/vendas/faturamento-internacional/impostos", "FciImpostos"),
+                new LeafDef("Portal — Solicitações", "/erp/vendas/portal/solicitacoes", "PortalSolicitacoes"),
+                new LeafDef("Portal — Usuários", "/erp/vendas/portal/usuarios", "PortalUsuarios"),
+            }),
+            new("Vendas / CRM", "users", new[]
+            {
+                new LeafDef("CRM (hub)", "/erp/vendas/crm", "CrmSetup"),
+                new LeafDef("Leads", "/erp/vendas/crm/leads", "CrmLeads"),
+                new LeafDef("Oportunidades", "/erp/vendas/crm/oportunidades", "CrmOportunidades"),
+                new LeafDef("Atividades / Agenda", "/erp/vendas/crm/atividades", "CrmAtividades"),
+                new LeafDef("Campanhas", "/erp/vendas/crm/campanhas", "CrmCampanhas"),
+                new LeafDef("Fidelização", "/erp/vendas/crm/fidelizacao", "CrmFidelizacao"),
+                new LeafDef("Tickets", "/erp/vendas/crm/tickets", "CrmTickets"),
+                new LeafDef("Webforms", "/erp/vendas/crm/webforms", "CrmWebforms"),
+                new LeafDef("Pix Relacional", "/erp/vendas/crm/pix", "CrmPix"),
+            }),
             new("PDV", "pos", new[]
             {
                 new LeafDef("Caixa", "/erp/pdv", null),                               // PDV/Caixa: sem recurso ABAC dedicado ainda.
+                new LeafDef("Gestão de Caixa", "/erp/pdv/caixa", null),               // Caixa: sem recurso ABAC dedicado ainda.
             }),
             new("Compras", "shopping-cart", new[]
             {
                 new LeafDef("Lista de Compras", "/erp/compras", null),
+                new LeafDef("Gestão de Compras", "/erp/compras/gestao", null),        // hub sem gate próprio.
+                new LeafDef("Aprovações & Alçadas", "/erp/compras/aprovacoes", "ComprasAprovacao"),
+                new LeafDef("Sourcing — Cotações", "/erp/compras/sourcing", "EstoqueSourcing"),
+                new LeafDef("Contratos GCC", "/erp/compras/contratos-gcc", "EstoqueGcc"),
                 new LeafDef("Entrada de Mercadorias", "/erp/compras/entrada-mercadorias", null),
+                new LeafDef("Devolução de Compra", "/erp/compras/devolucao", "DevolucaoCompra"),
+                new LeafDef("Subcontratação", "/erp/compras/subcontratacao", "EstoqueSub"),
+                new LeafDef("TMS — Frete", "/erp/compras/tms", "EstoqueTms"),
+                new LeafDef("Comércio Exterior", "/erp/compras/comercio-exterior", "ComercioExterior"),
                 new LeafDef("Importar XML", "/erp/integracao/importar-xml", null),
             }),
             new("Estoque", "package", new[]
             {
                 new LeafDef("Produtos", "/erp/estoque/produtos", "EstoqueSaldo"),
+                new LeafDef("Saldo", "/erp/estoque/saldo", "EstoqueSaldo"),
                 new LeafDef("Movimento Manual", "/erp/estoque/movimento-manual", "EstoqueMovimentacao"),
+                new LeafDef("Transferências", "/erp/estoque/transferencias", "EstoqueTransferencia"),
+                new LeafDef("Ajustes e Avarias", "/erp/estoque/ajustes", "EstoqueAjuste"),
+                new LeafDef("Inventários", "/erp/estoque/inventarios", "EstoqueInventario"),
+                new LeafDef("Rastreabilidade", "/erp/estoque/rastreabilidade", "EstoqueRastreabilidade"),
+                new LeafDef("WMS — Armazéns", "/erp/estoque/wms", "EstoqueWms"),
+                new LeafDef("Análise & Planejamento", "/erp/estoque/analise", "EstoqueAnalise"),
+                new LeafDef("Portal do Fornecedor", "/erp/estoque/portal-fornecedor", "EstoquePortalFornecedor"),
             }),
             new("Financeiro", "cash", new[]
             {
@@ -175,7 +220,14 @@ namespace Epros.API.Seed
             }),
             new("Relatórios", "report", new[]
             {
+                new LeafDef("Central de Relatórios", "/erp/relatorios", null),         // hub sem gate próprio.
+                new LeafDef("BI — Painel Gerencial", "/erp/relatorios/bi/painel", "RelatoriosBi"),
                 new LeafDef("Vendas Simplificado", "/erp/relatorios/vendas/simplificado01", null),
+                new LeafDef("Operacional — Vendas", "/erp/relatorios/operacionais/vendas", "RelatoriosOperacionais"),
+                new LeafDef("Operacional — Posição de Estoque", "/erp/relatorios/operacionais/posicao-estoque", "RelatoriosOperacionais"),
+                new LeafDef("Operacional — Giro de Estoque", "/erp/relatorios/operacionais/giro-estoque", "RelatoriosOperacionais"),
+                new LeafDef("Operacional — Fluxo de Caixa", "/erp/relatorios/operacionais/fluxo-caixa", "RelatoriosOperacionais"),
+                new LeafDef("Operacional — Aging CP/CR", "/erp/relatorios/operacionais/aging", "RelatoriosOperacionais"),
             }),
             new("Configurações", "settings", new[]
             {
@@ -332,7 +384,9 @@ namespace Epros.API.Seed
             }),
             new("Imobiliária", "building", new[]
             {
+                new LeafDef("Gestão Imobiliária", "/erp/imobiliaria", "ImobiliariaGestao"),
                 new LeafDef("Imóveis", "/erp/imobiliaria/imoveis", "ImobiliariaGestao"),
+                new LeafDef("Propostas", "/erp/imobiliaria/propostas", "ImobiliariaGestao"),
                 new LeafDef("Locações", "/erp/imobiliaria/locacoes", "ImobiliariaGestao"),
                 new LeafDef("Contratos de Serviço", "/erp/imobiliaria/contratos-servico", "ImobiliariaGestao"),
             }),
