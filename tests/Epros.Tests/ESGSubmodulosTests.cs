@@ -170,6 +170,24 @@ namespace Epros.Tests
             Assert.False(snap.IsValid);
         }
 
+        [Fact(DisplayName = "REL | Snapshot gera hash SHA-256 deterministico e verificavel (TE-02)")]
+        public void Snapshot_Hash_Sha256_Deterministico()
+        {
+            var id = Guid.NewGuid();
+            var data = new DateTime(2026, 6, 30, 0, 0, 0, DateTimeKind.Utc);
+            var a = new SnapshotIndicador(id, "v1", data, 123.45m, null, "tCO2e", "uf=SP", "Ativo", Tenant, User);
+            var b = new SnapshotIndicador(id, "v1", data, 123.45m, null, "tCO2e", "uf=SP", "Ativo", Tenant, User);
+
+            Assert.Equal(64, a.HashConteudo.Length);                 // SHA-256 hex
+            Assert.Equal(a.HashConteudo, b.HashConteudo);            // deterministico (mesmo conteudo)
+            Assert.True(a.HashConfere());                            // RN-REL-013: verificavel
+            Assert.Matches("^[0-9a-f]{64}$", a.HashConteudo);        // hex SHA-256 puro (nao GetHashCode X8)
+
+            // Conteudo diferente -> hash diferente (deteccao de adulteracao)
+            var c = new SnapshotIndicador(id, "v1", data, 123.46m, null, "tCO2e", "uf=SP", "Ativo", Tenant, User);
+            Assert.NotEqual(a.HashConteudo, c.HashConteudo);
+        }
+
         [Fact(DisplayName = "REL | Item com sequencia duplicada no mesmo relatorio e bloqueado")]
         public async Task Item_SequenciaDuplicada_Falha()
         {

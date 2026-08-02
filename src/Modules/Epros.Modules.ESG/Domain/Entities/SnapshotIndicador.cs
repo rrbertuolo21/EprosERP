@@ -1,4 +1,7 @@
 using System;
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using Epros.Shared.Domain.Entities;
 using Flunt.Validations;
 
@@ -44,11 +47,32 @@ namespace Epros.Modules.ESG.Domain.Entities
             Validar();
         }
 
+        // TE-02 (RN-REL-012/013): hash SHA-256 sobre payload canonico
+        // (valor+unidade+dimensoes+origem+versao+data). Deterministico e verificavel — garante
+        // imutabilidade do snapshot. GetHashCode() NAO serve (nao e estavel entre processos).
         private string GerarHash()
         {
-            var conteudo = $"{IndicadorReferenciaId}|{OrigemVersao}|{DataCorte:O}|{ValorNumerico}|{ValorTexto}|{Unidade}";
-            return conteudo.GetHashCode().ToString("X8");
+            var conteudo = string.Join("|", new[]
+            {
+                IndicadorReferenciaId.ToString(),
+                OrigemVersao ?? string.Empty,
+                DataCorte.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture),
+                ValorNumerico?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
+                ValorTexto ?? string.Empty,
+                Unidade ?? string.Empty,
+                Dimensoes ?? string.Empty,
+                StatusOrigem ?? string.Empty
+            });
+
+            using var sha = SHA256.Create();
+            var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(conteudo));
+            var sb = new StringBuilder(bytes.Length * 2);
+            foreach (var b in bytes) sb.Append(b.ToString("x2"));
+            return sb.ToString();
         }
+
+        /// <summary>RN-REL-013: recomputa o hash do conteudo atual e confirma que bate com o gravado.</summary>
+        public bool HashConfere() => HashConteudo == GerarHash();
 
         public void Validar()
         {
