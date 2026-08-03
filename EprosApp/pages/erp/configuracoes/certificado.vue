@@ -203,48 +203,6 @@ async function salvarParametrosDFe(): Promise<void> {
   }
 }
 
-// --- Certificado digital A1 (.pfx/.p12) ---
-const certSenha = ref('')
-const certArquivoBase64 = ref<string | null>(null)
-const certNomeArquivo = ref<string | null>(null)
-const enviandoCert = ref(false)
-
-function onCertificadoSelecionado(evento: Event): void {
-  const input = evento.target as HTMLInputElement
-  const arquivo = input.files?.[0]
-  if (!arquivo) return
-  certNomeArquivo.value = arquivo.name
-  const reader = new FileReader()
-  reader.onload = () => {
-    // dataURL: "data:...;base64,XXXX" -> pega só o base64
-    const resultado = String(reader.result)
-    certArquivoBase64.value = resultado.includes(',') ? resultado.split(',')[1] : resultado
-  }
-  reader.readAsDataURL(arquivo)
-}
-
-async function enviarCertificado(): Promise<void> {
-  if (!empresaId.value) { toast.error('Selecione uma empresa.'); return }
-  if (!certArquivoBase64.value) { toast.error('Selecione o arquivo do certificado (.pfx/.p12).'); return }
-  if (!certSenha.value) { toast.error('Informe a senha do certificado.'); return }
-  enviandoCert.value = true
-  try {
-    await useApi('/cadastros/empresas/{id}/certificados', {
-      method: 'POST',
-      params: { id: empresaId.value },
-      body: { arquivoBase64: certArquivoBase64.value, senha: certSenha.value }
-    })
-    toast.success('Certificado enviado e armazenado com segurança.')
-    certArquivoBase64.value = null
-    certNomeArquivo.value = null
-    certSenha.value = ''
-  } catch (e) {
-    toast.error(obterMensagemErro(e))
-  } finally {
-    enviandoCert.value = false
-  }
-}
-
 const tituloEmpresa = computed(() => empresaAtiva.value?.nome ?? 'nenhuma empresa selecionada')
 
 onMounted(() => {
@@ -341,31 +299,12 @@ watch(empresaId, () => {
         </div>
       </section>
 
-      <section class="glass-panel section">
-        <h3 class="section-title">Certificado digital A1</h3>
-        <p class="section-hint">
-          Envie o arquivo <code>.pfx</code>/<code>.p12</code> e a senha. É armazenado criptografado (cofre) e usado
-          para assinar e transmitir os documentos fiscais à SEFAZ. O A3 (token/cartão) não é suportado nesta tela.
-        </p>
-        <div class="form-grid">
-          <div class="col-6">
-            <label class="file-label">
-              <input type="file" accept=".pfx,.p12" class="file-input" @change="onCertificadoSelecionado" />
-              <span class="btn btn-secondary">Selecionar arquivo…</span>
-              <span class="file-nome">{{ certNomeArquivo ?? 'Nenhum arquivo selecionado' }}</span>
-            </label>
-          </div>
-          <div class="col-6">
-            <TextField v-model="certSenha" type="password" label="Senha do certificado" />
-          </div>
-        </div>
-        <div class="section-actions">
-          <button type="button" class="btn btn-primary" :disabled="enviandoCert" @click="enviarCertificado">
-            <span v-if="enviandoCert" class="spinner"></span>
-            <span v-else>Enviar certificado</span>
-          </button>
-        </div>
-      </section>
+      <div class="glass-panel section aviso">
+        <strong>Certificado digital (A1/A3):</strong> o backend atual não expõe endpoint de upload/gestão de
+        arquivo de certificado (equivalente a <code>certificados-digitais/*</code> no legado). Esta tela cobre
+        apenas os parâmetros de emissão (<code>fiscal/configuracoes-dfe</code> e
+        <code>cadastros/empresas/{empresaId}/parametros-dfe</code>). Ver observação ao integrador.
+      </div>
     </template>
   </div>
 </template>
@@ -377,8 +316,5 @@ watch(empresaId, () => {
 .section-actions { margin-top: 16px; display: flex; justify-content: flex-end; }
 .empty-state { padding: 32px; text-align: center; color: var(--text-secondary); }
 .aviso { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
-.aviso code, .section-hint code { background: rgba(255, 255, 255, 0.06); padding: 1px 5px; border-radius: 4px; }
-.file-label { display: flex; align-items: center; gap: 12px; cursor: pointer; }
-.file-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.file-nome { font-size: 13px; color: var(--text-secondary); }
+.aviso code { background: rgba(255, 255, 255, 0.06); padding: 1px 5px; border-radius: 4px; }
 </style>
