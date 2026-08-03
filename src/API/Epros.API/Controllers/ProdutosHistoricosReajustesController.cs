@@ -7,6 +7,7 @@ using MediatR;
 using Epros.Modules.Estoque.Application.Commands;
 using Epros.Modules.Estoque.Application.Queries;
 using Epros.Shared.Application.Models;
+using Epros.API.Security;
 
 namespace Epros.API.Controllers
 {
@@ -24,6 +25,7 @@ namespace Epros.API.Controllers
         public ProdutosHistoricosReajustesController(IMediator mediator) => _mediator = mediator;
 
         /// <summary>Listagem paginada do histórico de reajustes, com filtros localizar / dataAlteracao / ativo.</summary>
+        [AbacAuthorize("ProdutoReajuste", "Consultar")]
         [HttpGet]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         public async Task<IActionResult> Listar(
@@ -41,6 +43,7 @@ namespace Epros.API.Controllers
         }
 
         /// <summary>Histórico de reajustes de um produto específico.</summary>
+        [AbacAuthorize("ProdutoReajuste", "Consultar")]
         [HttpGet("localizar-por-id-produto/{idProduto:guid}")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         public async Task<IActionResult> ListarPorProduto(Guid idProduto, CancellationToken cancellationToken)
@@ -50,6 +53,7 @@ namespace Epros.API.Controllers
         }
 
         /// <summary>Obtém um registro de histórico de reajuste por Id.</summary>
+        [AbacAuthorize("ProdutoReajuste", "Consultar")]
         [HttpGet("{id:guid}")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status404NotFound)]

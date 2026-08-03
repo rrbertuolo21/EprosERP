@@ -64,6 +64,7 @@ const adminMenu: MenuGroup[] = [
     icon: 'lock',
     itens: [
       { label: 'Desenvolvedor', to: '/plataforma/admin/desenvolvedor' },
+      { label: 'Upgrades de Versão', to: '/plataforma/admin/upgrades' },
       { label: 'Sobre', to: '/plataforma/admin/sobre' }
     ]
   }

@@ -129,6 +129,7 @@ namespace Epros.API.Seed
                 new LeafDef("Empresas", "/erp/cadastros/empresas", "Empresa"),
                 new LeafDef("Contadores", "/erp/cadastros/contadores", null),         // Contador: CRUD legado.
                 new LeafDef("Serviços", "/erp/cadastros/servicos", null),             // Serviço: CRUD legado.
+                new LeafDef("Reajustes de Preço", "/erp/cadastros/produtos-reajustes", "ProdutoReajuste"),
             }),
             new("Vendas / Emissão", "file-invoice", new[]
             {
@@ -184,6 +185,7 @@ namespace Epros.API.Seed
                 new LeafDef("TMS — Frete", "/erp/compras/tms", "EstoqueTms"),
                 new LeafDef("Comércio Exterior", "/erp/compras/comercio-exterior", "ComercioExterior"),
                 new LeafDef("Importar XML", "/erp/integracao/importar-xml", null),
+                new LeafDef("Relatórios", "/erp/compras/relatorios", "ComprasRelatorio"),
             }),
             new("Estoque", "package", new[]
             {
@@ -197,6 +199,7 @@ namespace Epros.API.Seed
                 new LeafDef("WMS — Armazéns", "/erp/estoque/wms", "EstoqueWms"),
                 new LeafDef("Análise & Planejamento", "/erp/estoque/analise", "EstoqueAnalise"),
                 new LeafDef("Portal do Fornecedor", "/erp/estoque/portal-fornecedor", "EstoquePortalFornecedor"),
+                new LeafDef("Logística de Entrada", "/erp/estoque/logistica-entrada", "EstoqueLogisticaEntrada"),
             }),
             new("Financeiro", "cash", new[]
             {
@@ -234,6 +237,7 @@ namespace Epros.API.Seed
                 new LeafDef("Certificado", "/erp/configuracoes/certificado", null),
                 new LeafDef("Usuários", "/erp/configuracoes/permissoes/usuarios", null), // gestão de usuários internos: gate próprio ainda ausente.
                 new LeafDef("Perfis de Acesso", "/erp/configuracoes/permissoes/perfis", "PerfilAcesso"),
+                new LeafDef("Importações", "/erp/configuracoes/importacoes", "Importacao"),
             }),
 
             // ===== Módulos avançados =====
@@ -267,6 +271,7 @@ namespace Epros.API.Seed
                 new LeafDef("Dimensões", "/erp/contabilidade/dimensoes", "ContabilidadeGerencial"),
                 new LeafDef("Alocações", "/erp/contabilidade/alocacoes", "ContabilidadeGerencial"),
                 new LeafDef("Consolidação", "/erp/contabilidade/consolidacao", "Consolidacao"),
+                new LeafDef("Ativos Fixos", "/erp/contabilidade/ativos-fixos", "AtivosFixos"),
             }),
             new("RH", "users", new[]
             {
