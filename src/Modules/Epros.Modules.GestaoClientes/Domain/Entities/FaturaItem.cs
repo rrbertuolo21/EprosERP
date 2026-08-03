@@ -25,7 +25,7 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             );
 
             FaturaId = faturaId;
-            Descricao = descricao;
+            Descricao = descricao ?? string.Empty;
             Valor = valor;
         }
 
@@ -40,7 +40,7 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
 
             if (!IsValid) return;
 
-            Descricao = descricao;
+            Descricao = descricao ?? string.Empty;
             Valor = valor;
             MarcarAlterado(alteradoPor);
         }

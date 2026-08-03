@@ -145,7 +145,8 @@ namespace Epros.Modules.Vendas.Domain.Entities
             MarcarAlterado(alteradoPor);
         }
 
-        public void Restaurar(string alteradoPor)
+        /// <summary>CRM-008: reverte <see cref="Arquivar"/> sem conflitar com soft-delete (<see cref="EntidadeSaaSBase.Restaurar"/>).</summary>
+        public void Desarquivar(string alteradoPor)
         {
             EstadoArquivo = ECrmEstadoArquivo.Ativo;
             Status = Convertido ? ECrmLeadStatus.Convertido : ECrmLeadStatus.EmQualificacao;

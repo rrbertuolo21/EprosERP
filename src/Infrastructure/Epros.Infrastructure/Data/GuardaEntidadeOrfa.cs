@@ -102,7 +102,7 @@ namespace Epros.Infrastructure.Data
             if (entityType.FindProperty(PropriedadeTenant) != null) return true;
             return entityType.GetProperties().Any(p =>
                 string.Equals(p.Name, PropriedadeTenant, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(p.GetColumnBaseName(), ColunaTenant, StringComparison.OrdinalIgnoreCase));
+                || string.Equals(p.GetColumnName(), ColunaTenant, StringComparison.OrdinalIgnoreCase));
         }
 
         // Chave por NOME DE TABELA (sem schema). Read-models cross-módulo (os *Lookup) apontam para

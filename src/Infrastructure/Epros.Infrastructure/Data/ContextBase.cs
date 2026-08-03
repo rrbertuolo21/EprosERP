@@ -129,7 +129,10 @@ namespace Epros.Infrastructure.Data
                     // com seeds não precisam setar versão (não há "match em insert").
                     if (Database.IsNpgsql())
                     {
-                        modelBuilder.Entity(entityType.ClrType).UseXminAsConcurrencyToken();
+                        // Npgsql 7+: uint + IsRowVersion() mapeia automaticamente para a coluna de sistema xmin.
+                        modelBuilder.Entity(entityType.ClrType)
+                            .Property<uint>("xmin")
+                            .IsRowVersion();
                     }
                 }
             }

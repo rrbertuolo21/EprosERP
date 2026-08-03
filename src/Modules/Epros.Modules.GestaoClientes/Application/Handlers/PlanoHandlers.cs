@@ -68,7 +68,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             }
 
             var plano = new Plano(
-                request.Nome,
+                request.Nome ?? string.Empty,
                 request.Valor,
                 request.GrupoPlanoId,
                 request.LimiteUsuarios,
@@ -165,7 +165,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             }
 
             plano.Atualizar(
-                request.Nome,
+                request.Nome ?? string.Empty,
                 request.Valor,
                 request.GrupoPlanoId,
                 request.LimiteUsuarios,

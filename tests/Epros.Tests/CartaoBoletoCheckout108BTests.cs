@@ -373,12 +373,14 @@ namespace Epros.Tests
             var criar = new Epros.Modules.Aplicativo.Application.Handlers.CriarPedidoSaaSCommandHandler(ctx, tp, cu);
             var rp = await criar.Handle(new Epros.Modules.Aplicativo.Application.Commands.CriarPedidoSaaSCommand(plano.Id, null, "Gateway"), CancellationToken.None);
             Assert.True(rp.Sucesso);
+            Assert.NotNull(rp.Dados);
             var pedidoId = (Guid)rp.Dados.GetType().GetProperty("PedidoId")!.GetValue(rp.Dados)!;
 
             var handler = new Epros.Modules.Aplicativo.Application.Handlers.IniciarCheckoutCommandHandler(ctx, tp, cu, new FakeGateway());
             var r = await handler.Handle(new Epros.Modules.Aplicativo.Application.Commands.IniciarCheckoutCommand(pedidoId), CancellationToken.None);
 
             Assert.True(r.Sucesso, string.Join(",", r.Erros ?? Array.Empty<string>()));
+            Assert.NotNull(r.Dados);
             var url = (string)r.Dados.GetType().GetProperty("CheckoutUrl")!.GetValue(r.Dados)!;
             var pref = (string)r.Dados.GetType().GetProperty("PreferenceId")!.GetValue(r.Dados)!;
             Assert.Equal("https://mp/checkout/pref-123", url); // URL real do gateway, não mais stub epros.com
@@ -402,6 +404,8 @@ namespace Epros.Tests
 
             var criar = new Epros.Modules.Aplicativo.Application.Handlers.CriarPedidoSaaSCommandHandler(ctx, tp, cu);
             var rp = await criar.Handle(new Epros.Modules.Aplicativo.Application.Commands.CriarPedidoSaaSCommand(plano.Id, null, "Gateway"), CancellationToken.None);
+            Assert.True(rp.Sucesso);
+            Assert.NotNull(rp.Dados);
             var pedidoId = (Guid)rp.Dados.GetType().GetProperty("PedidoId")!.GetValue(rp.Dados)!;
 
             var handler = new Epros.Modules.Aplicativo.Application.Handlers.IniciarCheckoutCommandHandler(ctx, tp, cu, new FakeGateway());
