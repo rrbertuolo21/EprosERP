@@ -31,8 +31,7 @@ namespace Epros.API.Controllers
             {
                 return UnprocessableEntity(result);
             }
-            var createdId = ((dynamic)result.Dados!).PessoaGrupoId;
-            return CreatedAtAction(nameof(ObterPorId), new { id = createdId }, result);
+            return Created(string.Empty, result);
         }
 
         [HttpPut("{id}")]

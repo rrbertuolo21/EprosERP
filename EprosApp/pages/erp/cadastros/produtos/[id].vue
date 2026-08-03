@@ -27,7 +27,9 @@ definePageMeta({
 const route = useRoute()
 const idParam = computed(() => route.params.id as string)
 const ehNovo = computed(() => idParam.value === 'novo')
-const produtoId = computed(() => (ehNovo.value ? null : Number(idParam.value)))
+// O produto base usa id GUID (rota /estoque/produtos/{id:guid}); manter como string
+// (o legado usava Number(), que virava NaN para GUID e quebrava a edição).
+const produtoId = computed(() => (ehNovo.value ? null : idParam.value))
 
 const toast = useToast()
 
@@ -196,7 +198,7 @@ async function carregarProduto() {
   if (!produtoId.value) return
   carregando.value = true
   try {
-    const resp = await useApi(`/estoque-produtos/{id}`, { params: { id: produtoId.value } })
+    const resp = await useApi(`/estoque/produtos/{id}`, { params: { id: produtoId.value } })
     const dados = extrairDados<Record<string, unknown>>(resp)
     if (!dados) {
       toast.error('Produto não encontrado')
@@ -245,9 +247,9 @@ async function salvar() {
     }
 
     if (produto.value.id) {
-      await useApi(`/estoque-produtos/{id}`, { method: 'PUT', params: { id: produto.value.id }, body: payload })
+      await useApi(`/estoque/produtos/{id}`, { method: 'PUT', params: { id: produto.value.id }, body: payload })
     } else {
-      await useApi('/estoque-produtos', { method: 'POST', body: payload })
+      await useApi('/estoque/produtos', { method: 'POST', body: payload })
     }
 
     toast.success('Produto salvo com sucesso')
