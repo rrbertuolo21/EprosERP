@@ -2,10 +2,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Epros.Modules.Financeiro.Application.Commands;
+using Epros.Modules.Financeiro.Application.Services;
 using Epros.Modules.Financeiro.Domain.Entities;
 using Epros.Modules.Financeiro.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
+using Epros.Shared.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -108,6 +110,13 @@ namespace Epros.Modules.Financeiro.Application.Handlers
             var mov = new MovimentacaoAtivo(ativo.Id, Domain.Enums.ETipoMovimentacaoAtivo.Baixa, request.DataBaixa,
                 request.ValorBaixa, request.Observacao, null, _tenant.GetTenantId(), userId);
             _context.MovimentacoesAtivo.Add(mov);
+
+            // Wiring evento→ledger (TEC-8): baixa de ativo gera lançamento automático (de-para = valida-contador).
+            await ContabilizacaoEventoService.GerarLancamentoAsync(
+                _context, _tenant.GetTenantId(), userId,
+                CatalogoEventosIntegracao.Financeiro.AtivoBaixado, ativo.Id, request.ValorBaixa ?? 0m,
+                $"Baixa do ativo fixo {ativo.Id}", ct);
+
             await _context.SaveChangesAsync(ct);
             return CommandResult.Ok("Ativo fixo baixado.", new { ativo.Id });
         }
@@ -131,11 +140,23 @@ namespace Epros.Modules.Financeiro.Application.Handlers
             // EF §7.3: não duplicar depreciação para a mesma competência.
             var jaExiste = await _context.DepreciacoesMensais.AnyAsync(d => d.AtivoId == request.AtivoId && d.Competencia == request.Competencia, ct);
             if (jaExiste) return CommandResult.Falha("Já existe depreciação para o ativo nesta competência.");
-            var dep = new DepreciacaoMensal(request.AtivoId, request.Competencia, request.Valor, request.MetodoDepreciacao, request.TaxaAplicada, tenantId, userId);
+            // Valor <= 0 ⇒ o motor calcula a cota do mês pela taxa informada no ativo (Linear/SaldoDecrescente).
+            // Fórmula universal (Negocio-acumulado/contabil); taxa é fato legal RFB já informado → valida-contador.
+            var valor = request.Valor > 0m ? request.Valor : ativo.CalcularCotaDepreciacaoMensal();
+            if (valor <= 0m) return CommandResult.Falha("Não há cota de depreciação a registrar (informe o valor ou configure taxa/depreciação no ativo).");
+            var dep = new DepreciacaoMensal(request.AtivoId, request.Competencia, valor, request.MetodoDepreciacao, request.TaxaAplicada, tenantId, userId);
             if (!dep.IsValid) return CommandResult.Falha(dep.Notifications.Select(n => n.Message));
-            ativo.AplicarDepreciacao(request.Valor, System.DateTime.UtcNow, userId);
+            ativo.AplicarDepreciacao(valor, System.DateTime.UtcNow, userId);
             if (!ativo.IsValid) return CommandResult.Falha(ativo.Notifications.Select(n => n.Message));
             _context.DepreciacoesMensais.Add(dep);
+
+            // Wiring evento→ledger (TEC-8): despesa de depreciação × depreciação acumulada
+            // (de-para = valida-contador). Idempotente por (evento + id da depreciação da competência).
+            await ContabilizacaoEventoService.GerarLancamentoAsync(
+                _context, tenantId, userId,
+                CatalogoEventosIntegracao.Financeiro.DepreciacaoRegistrada, dep.Id, valor,
+                $"Depreciação {request.Competencia} do ativo {request.AtivoId}", ct);
+
             await _context.SaveChangesAsync(ct);
             return CommandResult.Ok("Depreciação mensal registrada.", new { dep.Id, ativo.ValorAtualizado, ativo.Status });
         }

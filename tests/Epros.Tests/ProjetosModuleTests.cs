@@ -45,7 +45,7 @@ namespace Epros.Tests
             var projetos = await context.Projetos.ToListAsync();
             Assert.Single(projetos);
             Assert.Equal("Construção Fábrica", projetos[0].Nome);
-            Assert.Equal("Planejado", projetos[0].Status);
+            Assert.Equal(Epros.Modules.Projetos.Domain.Enums.EProjetoWorkflowStatus.Rascunho, projetos[0].Status);
             Assert.Equal(100000m, projetos[0].OrcamentoTotal);
         }
 
@@ -112,7 +112,7 @@ namespace Epros.Tests
             Assert.True(result.Sucesso);
 
             var atualizado = await context.Projetos.Include(p => p.ItensWbs).FirstAsync(p => p.Id == projeto.Id);
-            Assert.Equal("EmAndamento", atualizado.Status);
+            Assert.Equal(Epros.Modules.Projetos.Domain.Enums.EProjetoWorkflowStatus.Ativo, atualizado.Status);
             // 50% de conclusão na tarefa de peso 10, com outra tarefa de peso 10 zerada: (50 * 10 + 0 * 10) / 20 = 25% de progresso do projeto
             Assert.Equal(25m, atualizado.PercentualConclusao);
 
@@ -157,6 +157,42 @@ namespace Epros.Tests
             Assert.Equal(notification.ClienteId, contas[0].PessoaId);
             Assert.Equal(25000m, contas[0].ValorTitulo);
             Assert.Contains("Faturamento automático", contas[0].Detalhamento);
+        }
+
+        [Fact]
+        public void Projeto_Interno_SemCliente_SemOrcamento_DeveSerValido()
+        {
+            // A3/A4: projeto interno nasce sem cliente e sem orçamento, em Rascunho.
+            var projeto = new Projeto("P&D Interno", "Pesquisa", Guid.Empty, DateTime.UtcNow, null, 0m, "tenant-1", "user-1");
+            Assert.True(projeto.IsValid);
+            Assert.Equal(Epros.Modules.Projetos.Domain.Enums.EProjetoWorkflowStatus.Rascunho, projeto.Status);
+            Assert.Equal(Epros.Modules.Projetos.Domain.Enums.ETipoProjeto.Normal, projeto.Tipo);
+        }
+
+        [Fact]
+        public void Projeto_Workflow_Submeter_Aprovar_Ativa_E_NaoAutoEncerra()
+        {
+            var projeto = new Projeto("Obra", "Construção", Guid.NewGuid(), DateTime.UtcNow, null, 1000m, "tenant-1", "user-1");
+            projeto.Submeter("user-1");
+            Assert.Equal(Epros.Modules.Projetos.Domain.Enums.EProjetoWorkflowStatus.EmAnalise, projeto.Status);
+            projeto.Aprovar("user-1");
+            Assert.Equal(Epros.Modules.Projetos.Domain.Enums.EProjetoWorkflowStatus.Ativo, projeto.Status);
+
+            // A2: 100% de progresso NÃO auto-encerra.
+            projeto.AdicionarItemWbs("T1", "tarefa", DateTime.UtcNow, DateTime.UtcNow.AddDays(1), 10m, "user-1");
+            projeto.AtualizarProgressoTarefa(projeto.ItensWbs[0].Id, 100m, "user-1");
+            Assert.Equal(100m, projeto.PercentualConclusao);
+            Assert.Equal(Epros.Modules.Projetos.Domain.Enums.EProjetoWorkflowStatus.Ativo, projeto.Status);
+        }
+
+        [Fact]
+        public void Projeto_ConverterTemplate_AlternaTipo()
+        {
+            var projeto = new Projeto("Modelo", "base", Guid.NewGuid(), DateTime.UtcNow, null, 0m, "tenant-1", "user-1");
+            projeto.ConverterParaTemplate("user-1");
+            Assert.Equal(Epros.Modules.Projetos.Domain.Enums.ETipoProjeto.Template, projeto.Tipo);
+            projeto.DefinirComoNormal("user-1");
+            Assert.Equal(Epros.Modules.Projetos.Domain.Enums.ETipoProjeto.Normal, projeto.Tipo);
         }
 
         private class TestTenantProvider : ITenantProvider

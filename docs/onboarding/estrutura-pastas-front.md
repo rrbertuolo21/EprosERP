@@ -1,16 +1,16 @@
 ﻿---
-title: "Estrutura de pastas do Epros.App — superfícies e domínios"
+title: "Estrutura de pastas do EprosApp — superfícies e domínios"
 last_updated: "2026-08-01"
 ---
 
-> **Adaptado para EprosERP.** Layout real do Nuxt 3 em `Epros.App/`. Rules e skills: [`docs/fabrica/`](../fabrica/).
+> **Adaptado para EprosERP.** Layout real do Nuxt 3 em `EprosApp/`. Rules e skills: [`docs/fabrica/`](../fabrica/).
 
 > [!NOTE]
 > **O que você vai aprender:** onde cada arquivo do frontend vive, como as três superfícies se separam e como o IO com a API deve ser feito.
 
 O backend organiza código em `src/Modules/Epros.Modules.<Nome>/` (Clean Arch: Domain / Application / Infrastructure). O frontend **não** espelha 1:1 o assembly — espelha **domínio de UX** em `pages/erp/<área>/`.
 
-Mapa de rotas e fatias para fan-out: [`Epros.App/MAPA_FRONTEND.md`](../../Epros.App/MAPA_FRONTEND.md).
+Mapa de rotas e fatias para fan-out: [`EprosApp/MAPA_FRONTEND.md`](../../EprosApp/MAPA_FRONTEND.md).
 
 ---
 
@@ -19,10 +19,10 @@ Mapa de rotas e fatias para fan-out: [`Epros.App/MAPA_FRONTEND.md`](../../Epros.
 | Camada | Caminho | Convenção |
 |---|---|---|
 | Backend | `src/Modules/Epros.Modules.<Nome>/` | Assembly por módulo |
-| Frontend (ERP) | `Epros.App/pages/erp/<domínio>/` | kebab-case nas pastas de rota |
-| Frontend (Landlord) | `Epros.App/pages/plataforma/` | Admin SaaS |
-| Frontend (Portal) | `Epros.App/pages/area-cliente/` | Área do cliente final |
-| Componentes | `Epros.App/components/<feature>/` + `components/shared/` | Parallel às áreas |
+| Frontend (ERP) | `EprosApp/pages/erp/<domínio>/` | kebab-case nas pastas de rota |
+| Frontend (Landlord) | `EprosApp/pages/plataforma/` | Admin SaaS |
+| Frontend (Portal) | `EprosApp/pages/area-cliente/` | Área do cliente final |
+| Componentes | `EprosApp/components/<feature>/` + `components/shared/` | Parallel às áreas |
 
 ```
 Negócio              Módulo backend              Rota UI
@@ -35,10 +35,10 @@ Produtos        →    Epros.Modules.Estoque    →  pages/erp/estoque/... ou ca
 
 ---
 
-## Árvore raiz do `Epros.App/`
+## Árvore raiz do `EprosApp/`
 
 ```
-Epros.App/
+EprosApp/
 ├── pages/
 │   ├── index.vue                 # Login
 │   ├── cadastro.vue

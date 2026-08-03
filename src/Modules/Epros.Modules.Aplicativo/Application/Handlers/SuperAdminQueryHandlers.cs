@@ -44,28 +44,49 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
 
             var totalAssinaturasAtivas = await _contextGestao.AssinaturasClientes
                 .IgnoreQueryFilters()
-                .CountAsync(a => a.Status == AssinaturaStatus.Aprovada && a.DeletadoEm == null, cancellationToken);
+                .CountAsync(a => a.Status == AssinaturaStatus.Ativa && a.DeletadoEm == null, cancellationToken);
 
             var activeSubscribers = await _contextGestao.AssinaturasClientes
                 .IgnoreQueryFilters()
-                .Where(a => a.Status == AssinaturaStatus.Aprovada && a.DeletadoEm == null)
+                .Where(a => a.Status == AssinaturaStatus.Ativa && a.DeletadoEm == null)
                 .Select(a => a.ClienteId)
                 .Distinct()
                 .ToListAsync(cancellationToken);
 
-            var mrr = await _contextGestao.Contratos
+            // 1.08G — MRR REBASEADO na AssinaturaCliente (fonte da verdade do ciclo), não mais no Contrato.
+            // Soma o valor recorrente NORMALIZADO p/ mês de cada assinatura ATIVA, lido do Plano vinculado:
+            //   Mensal   → Preço
+            //   Anual    → Preço / 12
+            //   Vitalícia→ 0 (cobrança única, receita NÃO recorrente — tratamento documentado; fora do MRR)
+            var assinaturasAtivas = await _contextGestao.AssinaturasClientes
                 .IgnoreQueryFilters()
-                .Where(c => activeSubscribers.Contains(c.ClienteId) && c.Ativo && c.DeletadoEm == null)
-                .SumAsync(c => c.ValorRecorrente, cancellationToken);
+                .Where(a => a.Status == AssinaturaStatus.Ativa && a.DeletadoEm == null)
+                .Select(a => new { a.PlanoId })
+                .ToListAsync(cancellationToken);
+
+            var planoIdsAtivos = assinaturasAtivas.Select(a => a.PlanoId).Distinct().ToList();
+            var planosAtivos = await _contextGestao.Planos
+                .IgnoreQueryFilters()
+                .Where(p => planoIdsAtivos.Contains(p.Id))
+                .Select(p => new { p.Id, p.Preco, p.Duration })
+                .ToListAsync(cancellationToken);
+            var planoPorId = planosAtivos.ToDictionary(p => p.Id, p => p);
+
+            decimal mrr = 0m;
+            foreach (var a in assinaturasAtivas)
+            {
+                if (!planoPorId.TryGetValue(a.PlanoId, out var plano)) continue;
+                mrr += NormalizarValorMensal(plano.Preco, plano.Duration);
+            }
 
             var inicioMes = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var novasAssinaturasMes = await _contextGestao.AssinaturasClientes
                 .IgnoreQueryFilters()
-                .CountAsync(a => a.Status == AssinaturaStatus.Aprovada && a.CriadoEm >= inicioMes && a.DeletadoEm == null, cancellationToken);
+                .CountAsync(a => a.Status == AssinaturaStatus.Ativa && a.CriadoEm >= inicioMes && a.DeletadoEm == null, cancellationToken);
 
             var totalAtivas = await _contextGestao.AssinaturasClientes
                 .IgnoreQueryFilters()
-                .CountAsync(a => a.Status == AssinaturaStatus.Aprovada && a.DeletadoEm == null, cancellationToken);
+                .CountAsync(a => a.Status == AssinaturaStatus.Ativa && a.DeletadoEm == null, cancellationToken);
 
             var canceladas30Dias = await _contextGestao.AssinaturasClientes
                 .IgnoreQueryFilters()
@@ -83,14 +104,75 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 .Where(f => f.Status == FaturaStatus.Paga && f.DeletadoEm == null)
                 .SumAsync(f => f.Valor, cancellationToken);
 
+            // 1.08G — ARPU = receita recorrente (MRR) / nº de clientes ativos (distintos).
+            decimal arpu = 0m;
+            if (activeSubscribers.Count > 0)
+            {
+                arpu = Math.Round(mrr / activeSubscribers.Count, 2);
+            }
+
+            // 1.08G — Conversão trial→pago = (trials convertidos) / (total de trials) na base.
+            // Usa os marcos da 1.08A: TrialAte != null (teve trial); TrialConvertidoEm != null (converteu).
+            var totalTrials = await _contextGestao.AssinaturasClientes
+                .IgnoreQueryFilters()
+                .CountAsync(a => a.TrialAte != null && a.DeletadoEm == null, cancellationToken);
+            var trialsConvertidos = await _contextGestao.AssinaturasClientes
+                .IgnoreQueryFilters()
+                .CountAsync(a => a.TrialConvertidoEm != null && a.DeletadoEm == null, cancellationToken);
+            decimal conversaoTrial = 0m;
+            if (totalTrials > 0)
+            {
+                conversaoTrial = Math.Round(((decimal)trialsConvertidos * 100m) / totalTrials, 2);
+            }
+
+            // 1.08G — LTV = ARPU / churn (fração). ⚠️ MÉTODO = PARÂMETRO (há variantes); não é verdade contábil.
+            decimal ltv = 0m;
+            if (churnRate > 0m)
+            {
+                ltv = Math.Round(arpu / (churnRate / 100m), 2);
+            }
+
+            // 1.08G — Inadimplência agregada = valor total e nº de faturas VENCIDAS e NÃO PAGAS na base.
+            var agora = DateTime.UtcNow;
+            var faturasVencidas = _contextGestao.Faturas
+                .IgnoreQueryFilters()
+                .Where(f => f.DeletadoEm == null
+                            && f.Status != FaturaStatus.Paga
+                            && f.Status != FaturaStatus.Cancelada
+                            && f.Status != FaturaStatus.Estornada
+                            && f.DataVencimento < agora);
+            var inadimplenciaQtd = await faturasVencidas.CountAsync(cancellationToken);
+            var inadimplenciaValor = await faturasVencidas.SumAsync(f => f.Valor, cancellationToken);
+
             return new DashboardGlobalDto(
                 TotalTenants: totalTenants,
                 TotalAssinaturasAtivas: totalAssinaturasAtivas,
                 ReceitaEstimadaMRR: mrr,
                 NovasAssinaturasMes: novasAssinaturasMes,
                 ChurnRate: churnRate,
-                ReceitaTotal: receitaTotal
+                ReceitaTotal: receitaTotal,
+                Arpu: arpu,
+                ConversaoTrialParaPago: conversaoTrial,
+                Ltv: ltv,
+                InadimplenciaValorTotal: inadimplenciaValor,
+                InadimplenciaQtdFaturas: inadimplenciaQtd
             );
+        }
+
+        // 1.08G — Normaliza o preço do plano para valor MENSAL recorrente (base do MRR).
+        // Vitalícia = 0: cobrança única, receita NÃO recorrente — tratamento documentado (fora do MRR).
+        private static decimal NormalizarValorMensal(decimal preco, PlanoDuration duration)
+        {
+            switch (duration)
+            {
+                case PlanoDuration.Mensal:
+                    return preco;
+                case PlanoDuration.Anual:
+                    return Math.Round(preco / 12m, 2);
+                case PlanoDuration.Vitalicia:
+                default:
+                    return 0m;
+            }
         }
     }
 
@@ -147,18 +229,24 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 throw new UnauthorizedAccessException("Acesso Proibido: Esta operação é restrita ao tenant do sistema (Siser).");
             }
 
+            // 1.11 fix #4 (REG-030 / §19): NUNCA devolver o valor integral de um segredo numa listagem.
+            // Segredos são mascarados; só um operador com capacidade explícita obtém o valor (por um
+            // fluxo dedicado, fora desta listagem). Não-segredos seguem inalterados.
+            const string MascaraSegredo = "••••••";
+
             var settings = await _context.SystemSettings
                 .Where(s => s.DeletadoEm == null)
+                .Select(s => new { s.Id, s.Chave, s.Valor, s.Escopo, s.EhSegredo })
+                .ToListAsync(cancellationToken);
+
+            return settings
                 .Select(s => new SystemSettingDto(
                     s.Id,
                     s.Chave,
-                    s.Valor,
+                    s.EhSegredo ? MascaraSegredo : s.Valor,
                     s.Escopo,
-                    s.EhSegredo
-                ))
-                .ToListAsync(cancellationToken);
-
-            return settings;
+                    s.EhSegredo))
+                .ToList();
         }
     }
 
@@ -300,7 +388,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     c.Cnpj,
                     c.Email,
                     plano?.Nome ?? "Plano Desconhecido",
-                    c.StatusSaaS,
+                    c.StatusSaaS.ToString(),
                     c.Ativo
                 ));
             }

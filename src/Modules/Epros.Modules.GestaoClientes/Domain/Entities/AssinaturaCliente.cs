@@ -4,13 +4,20 @@ using Flunt.Validations;
 
 namespace Epros.Modules.GestaoClientes.Domain.Entities
 {
+    // 1.01 — Status do ciclo da assinatura do cliente (AssinaturaCliente.Status).
+    // Nomes alinhados ao vocabulário da fatia 1.01: Ativa/AguardandoAprovacao/Recusada/Futura/Expirada.
+    // Persistido como string via HasConversion<string>; valores legados migrados na
+    // migration Fecha_1_01_StatusSaaS_Enums (Aprovada->Ativa, Aguardando->AguardandoAprovacao).
     public enum AssinaturaStatus
     {
-        Aprovada = 1,
-        Aguardando = 2,
+        Ativa = 1,
+        AguardandoAprovacao = 2,
         Recusada = 3,
         Futura = 4,
-        Expirada = 5
+        Expirada = 5,
+        // 1.08D — Cancelamento self-service governado. Persistido como string (HasConversion<string>),
+        // portanto o novo membro não exige alteração de schema para a coluna Status.
+        Cancelada = 6
     }
 
     public class AssinaturaCliente : EntidadeSaaSBase
@@ -27,6 +34,29 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public bool Arquivada { get; private set; }
         public string? OperadorAprovacao { get; private set; }
         public string? JustificativaAprovacao { get; private set; }
+
+        // 1.08A — Instante em que o fim do trial foi processado (fatura da 1ª mensalidade gerada + cobrança
+        // disparada). Fonte de idempotência do job de fim-de-trial: preenchido → o trial não é reconvertido.
+        public DateTime? TrialConvertidoEm { get; private set; }
+
+        // 1.08B — Vínculo da assinatura ao CICLO de cobrança (fecha o desacoplamento assinatura↔recorrência).
+        // ProximaCobrancaEm = vencimento do ciclo em que a próxima fatura deve ser gerada, conforme
+        // PlanoDuration (Mensal → +1 mês; Anual → +1 ano; Vitalicia → null, cobrança única, sem renovação).
+        // O job de renovação usa esta data como âncora idempotente: ao gerar a fatura do ciclo, avança a data.
+        public DateTime? ProximaCobrancaEm { get; private set; }
+        public DateTime? UltimaRenovacaoEm { get; private set; }
+
+        // 1.08D — Cancelamento self-service GOVERNADO: registra quem/quando/por quê cancelou.
+        // A janela somente-leitura/export de 30 dias (REG-021, InquilinoSaaSMiddleware) é ancorada
+        // em Cliente.StatusSaaSAtualizadoEm; estes campos guardam o rastro no nível da assinatura.
+        public DateTime? CanceladaEm { get; private set; }
+        public string? MotivoCancelamento { get; private set; }
+        public string? CanceladaPor { get; private set; }
+
+        // 1.08E — Cupom de desconto RECORRENTE vinculado à assinatura. Quando presente e válido (validade +
+        // limite de uso do Cupom), o job de renovação aplica o desconto na fatura de cada ciclo até expirar
+        // ou esgotar o limite. Default de produto: aplica o cupom vinculado à assinatura (ajustável).
+        public Guid? CupomId { get; private set; }
 
         protected AssinaturaCliente() { } // EF Core
 
@@ -65,13 +95,24 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
 
         public void Ativar(string alteradoPor)
         {
-            Status = AssinaturaStatus.Aprovada;
+            Status = AssinaturaStatus.Ativa;
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>
+        /// 1.08E — Vincula (ou desvincula, com null) um cupom de desconto RECORRENTE à assinatura.
+        /// A aplicação de fato acontece na geração da fatura do ciclo (job de renovação), respeitando
+        /// validade e limite de uso do próprio <c>Cupom</c>.
+        /// </summary>
+        public void VincularCupom(Guid? cupomId, string alteradoPor)
+        {
+            CupomId = cupomId == Guid.Empty ? null : cupomId;
             MarcarAlterado(alteradoPor);
         }
 
         public void AprovarManualmente(string operador, string justificativa, string alteradoPor)
         {
-            Status = AssinaturaStatus.Aprovada;
+            Status = AssinaturaStatus.Ativa;
             OperadorAprovacao = operador;
             JustificativaAprovacao = justificativa;
 
@@ -85,9 +126,91 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             MarcarAlterado(alteradoPor);
         }
 
+        /// <summary>
+        /// 1.08A — Marca que o fim do trial já foi processado (fatura gerada + cobrança disparada),
+        /// tornando o job de fim-de-trial idempotente. Não altera o Status da assinatura.
+        /// </summary>
+        public void MarcarTrialConvertido(string alteradoPor)
+        {
+            TrialConvertidoEm = DateTime.UtcNow;
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>
+        /// 1.08B — Define o próximo vencimento do ciclo de cobrança conforme a duração do plano.
+        /// <paramref name="proximaCobranca"/> null (plano Vitalícia) desliga a renovação (cobrança única).
+        /// </summary>
+        public void DefinirProximaCobranca(DateTime? proximaCobranca, string alteradoPor)
+        {
+            ProximaCobrancaEm = proximaCobranca;
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>
+        /// 1.08B — Registra que a fatura do ciclo foi gerada e AVANÇA o vínculo para o próximo vencimento
+        /// (idempotência da renovação: o mesmo ciclo não gera fatura duas vezes).
+        /// </summary>
+        public void RegistrarRenovacao(DateTime? proximaCobranca, string alteradoPor)
+        {
+            UltimaRenovacaoEm = DateTime.UtcNow;
+            ProximaCobrancaEm = proximaCobranca;
+            MarcarAlterado(alteradoPor);
+        }
+
         public void Expirar(string alteradoPor)
         {
             Status = AssinaturaStatus.Expirada;
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>
+        /// 1.08D — Troca o plano contratado desta assinatura (upgrade/downgrade self-service).
+        /// Não apaga excedente de uso: a reavaliação de limites/entitlement é feita pelo
+        /// <c>ValidadorLimitesSaaS</c>, que lê o plano vigente do Cliente (bloqueia NOVAS criações
+        /// se o novo plano tiver limite menor que o uso atual — decisão da 1.06).
+        /// </summary>
+        public void TrocarPlano(Guid novoPlanoId, string? novosDetalhesPacoteJson, string alteradoPor)
+        {
+            AddNotifications(new Contract<AssinaturaCliente>()
+                .Requires()
+                .AreNotEquals(novoPlanoId, Guid.Empty, nameof(PlanoId), "Novo plano é obrigatório")
+            );
+
+            if (!IsValid) return;
+
+            PlanoId = novoPlanoId;
+            if (novosDetalhesPacoteJson != null)
+            {
+                DetalhesPacoteJson = novosDetalhesPacoteJson;
+            }
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>
+        /// 1.08D — Cancelamento self-service GOVERNADO. Move a assinatura para <c>Cancelada</c> e registra
+        /// quem/quando/por quê. Não bloqueia de imediato: a janela somente-leitura/export de 30 dias
+        /// (REG-021) segue valendo no middleware, ancorada em Cliente.StatusSaaSAtualizadoEm. Reversível
+        /// dentro da janela via <see cref="Reativar"/> (honra a skill jurídica).
+        /// </summary>
+        public void RegistrarCancelamento(string? motivo, string alteradoPor)
+        {
+            Status = AssinaturaStatus.Cancelada;
+            CanceladaEm = DateTime.UtcNow;
+            MotivoCancelamento = motivo;
+            CanceladaPor = alteradoPor;
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>
+        /// 1.08D — Reativa uma assinatura cancelada dentro da janela de 30 dias: volta a <c>Ativa</c> e
+        /// limpa o marco de cancelamento (o rastro de auditoria vive no Outbox e em StatusSaaSAtualizadoEm).
+        /// </summary>
+        public void Reativar(string alteradoPor)
+        {
+            Status = AssinaturaStatus.Ativa;
+            CanceladaEm = null;
+            MotivoCancelamento = null;
+            CanceladaPor = null;
             MarcarAlterado(alteradoPor);
         }
 

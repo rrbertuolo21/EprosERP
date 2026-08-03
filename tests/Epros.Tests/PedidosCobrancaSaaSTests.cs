@@ -162,7 +162,7 @@ namespace Epros.Tests
             Assert.Equal(PedidoSaaSStatus.Succeeded, pedidoDB1!.Status);
 
             var assinaturaDB1 = await context.AssinaturasClientes.FindAsync(assinaturaId);
-            Assert.Equal(AssinaturaStatus.Aprovada, assinaturaDB1!.Status);
+            Assert.Equal(AssinaturaStatus.Ativa, assinaturaDB1!.Status);
 
             var totalPagamentosGlobais = await context.PagamentosGlobais.CountAsync();
             Assert.Equal(1, totalPagamentosGlobais);
@@ -250,7 +250,7 @@ namespace Epros.Tests
             Assert.Equal(PedidoSaaSStatus.Succeeded, pedidoDB!.Status);
 
             var assinaturaDB = await context.AssinaturasClientes.FindAsync(assinaturaId);
-            Assert.Equal(AssinaturaStatus.Aprovada, assinaturaDB!.Status);
+            Assert.Equal(AssinaturaStatus.Ativa, assinaturaDB!.Status);
 
             var clienteDB = await context.Clientes.FindAsync(cliente.Id);
             Assert.Equal(plano.Id, clienteDB!.PlanoId); // Plano atualizado no cliente

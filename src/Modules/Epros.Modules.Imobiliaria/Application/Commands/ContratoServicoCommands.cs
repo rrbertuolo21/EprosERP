@@ -36,4 +36,21 @@ namespace Epros.Modules.Imobiliaria.Application.Commands
             RuleFor(c => c.ContratoId).NotEmpty().WithMessage("Identificador do contrato invalido.");
         }
     }
+
+    /// <summary>Altera o contrato de servico (ID3/PRD-03). Remuneracao = NF-06 (valida-contador).</summary>
+    public record AlterarContratoServicoCommand(
+        Guid ContratoId,
+        string? Descricao,
+        DateTime? VigenciaInicio,
+        DateTime? VigenciaFim,
+        decimal? Remuneracao
+    ) : ICommand;
+
+    public class AlterarContratoServicoCommandValidator : AbstractValidator<AlterarContratoServicoCommand>
+    {
+        public AlterarContratoServicoCommandValidator()
+        {
+            RuleFor(c => c.ContratoId).NotEmpty().WithMessage("Identificador do contrato invalido.");
+        }
+    }
 }

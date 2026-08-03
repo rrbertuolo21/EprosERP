@@ -45,7 +45,7 @@ Toca hardware ou sistema operacional?
 
 ```
 nuxt build → dist/
-    ├── electron-builder --dir dist/  → Epros.App (.exe / .dmg / .deb)
+    ├── electron-builder --dir dist/  → EprosApp (.exe / .dmg / .deb)
     └── cap sync → cap build ios      → Epros iOS
                  → cap build android  → Epros Android
 ```

@@ -24,6 +24,9 @@ using Xunit;
 
 namespace Epros.Tests.Integration
 {
+    // Serializada com os demais testes de WebApplicationFactory<Program> (ver IntegrationWebAppCollection):
+    // construir factories de Program em paralelo dispara ObjectDisposedException no HostFactoryResolver.
+    [Collection(IntegrationWebAppCollection.Nome)]
     public class MiddlewareIntegrationTests
     {
         [Fact]
@@ -40,24 +43,13 @@ namespace Epros.Tests.Integration
             });
 
             var client = factory.CreateClient();
-            // API agora exige autenticação (FallbackPolicy). Em ambiente de testes, o esquema EprosToken
-            // autentica via header X-Tenant-Id — necessário para a requisição alcançar o controller e
-            // então exercitar a formatação de erro (ProblemDetails) do ExcecaoGlobalMiddleware.
-            client.DefaultRequestHeaders.Add("X-Tenant-Id", "tenant-teste-erro");
-            client.DefaultRequestHeaders.Add("X-User-Id", "admin-erro");
-
-            // ClientesController agora exige SuperAdmin:Configurar. Cadastra Administrador (ignora ACL no AbacFilter)
-            // para a requisição passar da autorização e alcançar o mediator que lança a exceção simulada.
-            using (var scope = factory.Services.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<ContextGestaoClientes>();
-                var perfil = new PerfilColaborador("admin-erro", "Adm Erro", "adm@erro.com", "Administrador", "TI", 0m, "tenant-teste-erro", "system");
-                typeof(Epros.Shared.Domain.Entities.EntidadeSaaSBase)
-                    .GetField("<Id>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
-                    .SetValue(perfil, Guid.NewGuid());
-                db.PerfisUsuarios.Add(perfil);
-                await db.SaveChangesAsync();
-            }
+            // 1.11 fix #1 — ClientesController (SuperAdmin) só autoriza operador interno REAL. O antigo
+            // atalho "Administrador de tenant comum" foi fechado; autenticamos como operador interno
+            // (tenant="system" + perfilId="interno", PrimaryAdmin por default) para a requisição passar
+            // da autorização e alcançar o mediator que lança a exceção simulada (ProblemDetails).
+            client.DefaultRequestHeaders.Add("X-Tenant-Id", "system");
+            client.DefaultRequestHeaders.Add("X-User-Id", "operador-interno-erro");
+            client.DefaultRequestHeaders.Add("X-Perfil-Id", "interno");
 
             var command = new CriarClienteCommand("Cliente Teste Ltda", "12345678000100", "teste@cliente.com", Guid.NewGuid());
 
@@ -78,27 +70,23 @@ namespace Epros.Tests.Integration
         {
             using var factory = new CustomWebApplicationFactory();
             var client = factory.CreateClient();
-            client.DefaultRequestHeaders.Add("X-Tenant-Id", "tenant-teste-customizado");
-            client.DefaultRequestHeaders.Add("X-User-Id", "admin-customizado");
+            // 1.11 fix #1/#2 — criar cliente é operação landlord: autentica como operador interno
+            // (tenant="system"). O pipeline header->ITenantProvider->entidade continua sendo exercitado
+            // (o X-Tenant-Id="system" flui até o TenantId do Cliente criado).
+            client.DefaultRequestHeaders.Add("X-Tenant-Id", "system");
+            client.DefaultRequestHeaders.Add("X-User-Id", "operador-interno-custom");
+            client.DefaultRequestHeaders.Add("X-Perfil-Id", "interno");
 
             var planoId = Guid.NewGuid();
             using (var scope = factory.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<ContextGestaoClientes>();
-                var plano = new Plano("Plano Teste", 99.90m, "tenant-teste-customizado", "user-teste");
+                var plano = new Plano("Plano Teste", 99.90m, "system", "user-teste");
 
                 // Força a inserção de ID Guid gerado localmente
                 typeof(Epros.Shared.Domain.Entities.EntidadeSaaSBase).GetField("<Id>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.SetValue(plano, planoId);
 
                 db.Planos.Add(plano);
-
-                // ClientesController agora exige SuperAdmin:Configurar — cadastra Administrador (ignora ACL no AbacFilter).
-                var perfil = new PerfilColaborador("admin-customizado", "Adm Custom", "adm@custom.com", "Administrador", "TI", 0m, "tenant-teste-customizado", "system");
-                typeof(Epros.Shared.Domain.Entities.EntidadeSaaSBase)
-                    .GetField("<Id>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
-                    .SetValue(perfil, Guid.NewGuid());
-                db.PerfisUsuarios.Add(perfil);
-
                 await db.SaveChangesAsync();
             }
 
@@ -113,7 +101,7 @@ namespace Epros.Tests.Integration
                 var db = scope.ServiceProvider.GetRequiredService<ContextGestaoClientes>();
                 var cliente = await db.Clientes.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Cnpj == "12345678000100");
                 Assert.NotNull(cliente);
-                Assert.Equal("tenant-teste-customizado", cliente!.TenantId);
+                Assert.Equal("system", cliente!.TenantId);
             }
         }
 
@@ -158,18 +146,64 @@ namespace Epros.Tests.Integration
         }
 
         [Fact]
-        public async Task Deve_Bloquear_Acesso_A_Modulo_Para_Tenant_Bloqueado()
+        public async Task Deve_Bloquear_Acesso_A_Modulo_Nao_Contratado_No_Plano()
         {
+            // 1.06 — entitlement REAL: o stub demonstrativo (tenant hardcoded + /financas) foi
+            // removido. O bloqueio agora cruza a ROTA do módulo com a FLAG do plano do tenant.
+            // Semeamos um plano SEM o módulo Financeiro (flags nascem false) + cliente ativo nele;
+            // a rota do Financeiro deve responder 403 "modulo_nao_contratado".
             using var factory = new CustomWebApplicationFactory();
-            var client = factory.CreateClient();
-            client.DefaultRequestHeaders.Add("X-Tenant-Id", "tenant-teste-bloqueado");
 
-            // Acesso ao financeiro (financas) bloqueado para "tenant-teste-bloqueado" no ModuloTenantMiddleware
-            var response = await client.GetAsync("/api/v1/financas/contas-pagar");
+            const string tenant = "tenant-sem-financeiro";
+            Guid planoId;
+            using (var scope = factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<ContextGestaoClientes>();
+                var plano = new Plano("Plano Básico Sem Financeiro", 99.90m, tenant, "seed"); // ModuloFinanceiro=false
+                db.Planos.Add(plano);
+                var cliente = new Cliente("Cliente Sem Financeiro Ltda", "22222222000122", "sf@cliente.com", plano.Id, tenant, "seed");
+                db.Clientes.Add(cliente);
+                await db.SaveChangesAsync();
+                planoId = plano.Id;
+            }
+
+            var client = factory.CreateClient();
+            client.DefaultRequestHeaders.Add("X-Tenant-Id", tenant);
+
+            var response = await client.GetAsync("/api/v1/financeiro/contas-pagar");
 
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
             var content = await response.Content.ReadAsStringAsync();
-            Assert.Contains("Módulo desabilitado", content);
+            Assert.Contains("modulo_nao_contratado", content);
+        }
+
+        [Fact]
+        public async Task Deve_Permitir_Acesso_A_Modulo_Contratado_No_Plano()
+        {
+            // Contrapartida: plano COM a flag Financeiro → o ModuloTenantMiddleware NÃO barra por
+            // entitlement. Isolamos o middleware: o corpo NÃO deve conter o código do gate de módulo
+            // ("modulo_nao_contratado"). O que vier depois (401/403 de ABAC, 404, 200) é de outra camada.
+            using var factory = new CustomWebApplicationFactory();
+
+            const string tenant = "tenant-com-financeiro";
+            using (var scope = factory.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<ContextGestaoClientes>();
+                var plano = new Plano("Plano Completo", 499.90m, null, 999, 99, null, tenant, "seed",
+                    moduloCrm: true, moduloProjetos: true, moduloRh: true, moduloFinanceiro: true, moduloPdv: true);
+                db.Planos.Add(plano);
+                var cliente = new Cliente("Cliente Com Financeiro Ltda", "33333333000133", "cf@cliente.com", plano.Id, tenant, "seed");
+                db.Clientes.Add(cliente);
+                await db.SaveChangesAsync();
+            }
+
+            var client = factory.CreateClient();
+            client.DefaultRequestHeaders.Add("X-Tenant-Id", tenant);
+
+            var response = await client.GetAsync("/api/v1/financeiro/contas-pagar");
+
+            var content = await response.Content.ReadAsStringAsync();
+            Assert.DoesNotContain("modulo_nao_contratado", content);
         }
 
         [Fact]
@@ -189,22 +223,11 @@ namespace Epros.Tests.Integration
         {
             using var factory = new CustomWebApplicationFactory();
             var client = factory.CreateClient();
+            // 1.11 fix #1 — o caminho legítimo do landlord é o OPERADOR INTERNO real (perfilId="interno"),
+            // não o cargo "Administrador" de um PerfilColaborador. Autentica como operador interno.
             client.DefaultRequestHeaders.Add("X-Tenant-Id", "system");
-            client.DefaultRequestHeaders.Add("X-User-Id", "admin-siser");
-
-            // Cadastra o PerfilUsuario de Administrador no tenant "system"
-            using (var scope = factory.Services.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<ContextGestaoClientes>();
-                var perfil = new PerfilColaborador("admin-siser", "Adm Siser", "adm@siser.com", "Administrador", "TI", 0m, "system", "system");
-
-                typeof(Epros.Shared.Domain.Entities.EntidadeSaaSBase)
-                    .GetField("<Id>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
-                    .SetValue(perfil, Guid.NewGuid());
-
-                db.PerfisUsuarios.Add(perfil);
-                await db.SaveChangesAsync();
-            }
+            client.DefaultRequestHeaders.Add("X-User-Id", "operador-interno-siser");
+            client.DefaultRequestHeaders.Add("X-Perfil-Id", "interno");
 
             var command = new DefinirConfiguracaoGlobalCommand("trial_days", "30", false, "Dias de Trial");
             var response = await client.PostAsJsonAsync("/api/v1/plataforma/configuracoes", command);
@@ -246,7 +269,8 @@ namespace Epros.Tests.Integration
             var command = new DefinirConfiguracaoGlobalCommand("trial_days", "30", false, "Dias de Trial");
             var response = await client.PostAsJsonAsync("/api/v1/plataforma/configuracoes", command);
 
-            // Retorno esperado do AbacFilter (ForbidResult -> 403 Forbidden)
+            // 1.11 fix #1 — sem perfilId="interno" a identidade NÃO é operador interno; recurso SuperAdmin
+            // exige operador interno real. O AbacFilter responde ForbidResult (403).
             Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
 
@@ -303,8 +327,27 @@ namespace Epros.Tests.Integration
             {
                 builder.UseEnvironment("Testing");
 
+                // "Testing" é tratado como ambiente deployado (fail-closed): o segredo de assinatura
+                // do token NÃO cai mais no valor fixo de dev por causa do ambiente. O host de teste
+                // fornece a chave explicitamente — como um deploy real faria via env/secret.
+                builder.UseSetting("Seguranca:JwtSigningKey", "chave-de-teste-de-assinatura-jwt-com-mais-de-32-chars-0123456789");
+
                 builder.ConfigureServices(services =>
                 {
+                    // Injeta a identidade pelo HOST DE TESTE (fechamento do "gato"): remapeia o
+                    // esquema "EprosToken" para um handler que lê X-Tenant-Id/X-User-Id/etc. Assim os
+                    // testes de integração continuam autenticando por header SEM que o runtime
+                    // deployado tenha qualquer caminho de header. A FallbackPolicy autentica pelo
+                    // esquema "EprosToken", então o remap do HandlerType é suficiente.
+                    services.PostConfigure<Microsoft.AspNetCore.Authentication.AuthenticationOptions>(options =>
+                    {
+                        if (options.SchemeMap.TryGetValue(
+                                Epros.API.Security.EprosTokenAuthenticationHandler.SchemeName, out var scheme))
+                        {
+                            scheme.HandlerType = typeof(HeaderTestAuthHandler);
+                        }
+                    });
+
                     // Remove as opções e contextos default PostgreSQL
                     RemoveDbContext<ContextGestaoClientes>(services);
                     RemoveDbContext<ContextEstoque>(services);

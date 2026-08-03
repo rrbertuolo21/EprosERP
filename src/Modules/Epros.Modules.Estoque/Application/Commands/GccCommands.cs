@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Epros.Modules.Estoque.Domain.Enums;
 using Epros.Shared.Application.Contracts;
 
 namespace Epros.Modules.Estoque.Application.Commands
@@ -42,5 +43,24 @@ namespace Epros.Modules.Estoque.Application.Commands
         Guid? CompraId,
         decimal QuantidadeConsumida,
         decimal ValorConsumido
+    ) : ICommand;
+
+    /// <summary>
+    /// CD5 — registra um aditivo contratual em contrato APROVADO. Conforme o tipo aplica: Vigencia
+    /// (NovaVigenciaFim), Preco/Quantidade (por item: ContratoCompraItemId + NovoPreco/QuantidadeAdicional,
+    /// e opcionalmente NovoValorTotal no cabeçalho), Condicoes (NovaObservacao).
+    /// </summary>
+    public record RegistrarGccAditivoCommand(
+        Guid ContratoCompraId,
+        ETipoAditivoContrato TipoAditivo,
+        string? NumeroAditivo = null,
+        string? Justificativa = null,
+        DateTime? DataAditivo = null,
+        DateTime? NovaVigenciaFim = null,
+        decimal? NovoValorTotal = null,
+        string? NovaObservacao = null,
+        Guid? ContratoCompraItemId = null,
+        decimal? NovoPreco = null,
+        decimal? QuantidadeAdicional = null
     ) : ICommand;
 }

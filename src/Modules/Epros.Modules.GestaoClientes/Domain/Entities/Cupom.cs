@@ -6,6 +6,7 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
 {
     public class Cupom : EntidadeSaaSBase
     {
+        public string Nome { get; private set; } = string.Empty;
         public string Codigo { get; private set; } = string.Empty;
         public string Tipo { get; private set; } = "Fixo"; // Fixo, Percentual
         public decimal ValorDesconto { get; private set; }
@@ -23,7 +24,8 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             int? limiteUso,
             DateTime? validoAte,
             string tenantId,
-            string criadoPor)
+            string criadoPor,
+            string nome = "")
             : base(tenantId, criadoPor)
         {
             AddNotifications(new Contract<Cupom>()
@@ -43,6 +45,7 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
                 AddNotification(nameof(ValorDesconto), "Desconto percentual não pode ser maior que 100%.");
             }
 
+            Nome = string.IsNullOrWhiteSpace(nome) ? codigo.ToUpperInvariant() : nome;
             Codigo = codigo.ToUpperInvariant();
             Tipo = tipo;
             ValorDesconto = valorDesconto;
@@ -84,6 +87,26 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public void Ativar(string alteradoPor)
         {
             Ativo = true;
+            MarcarAlterado(alteradoPor);
+        }
+
+        public void Atualizar(string nome, string tipo, decimal valorDesconto, int? limiteUso, DateTime? validoAte, string alteradoPor)
+        {
+            if (tipo != "Fixo" && tipo != "Percentual")
+            {
+                AddNotification(nameof(Tipo), "Tipo de desconto inválido. Escolha 'Fixo' ou 'Percentual'.");
+                return;
+            }
+            if (tipo == "Percentual" && valorDesconto > 100)
+            {
+                AddNotification(nameof(ValorDesconto), "Desconto percentual não pode ser maior que 100%.");
+                return;
+            }
+            if (!string.IsNullOrWhiteSpace(nome)) Nome = nome;
+            Tipo = tipo;
+            ValorDesconto = valorDesconto;
+            LimiteUso = limiteUso;
+            ValidoAte = validoAte;
             MarcarAlterado(alteradoPor);
         }
 

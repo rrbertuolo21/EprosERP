@@ -27,7 +27,7 @@ Todo pedaço do ERP tem três nomes:
 No repositório, o **identificador de módulo** vira assembly `Epros.Modules.<Nome>`. Submódulos no catálogo são unidades de planejamento (Jira/mapa); o layout interno do assembly é Clean Arch (`Domain` / `Application` / `Infrastructure`), não pasta por submódulo.
 
 `Backend:  src/Modules/Epros.Modules.Financeiro/…`  
-`Frontend: Epros.App/pages/erp/financeiro/…` (domínio de UX — ver [estrutura-pastas-front.md](estrutura-pastas-front.md))
+`Frontend: EprosApp/pages/erp/financeiro/…` (domínio de UX — ver [estrutura-pastas-front.md](estrutura-pastas-front.md))
 
 > [!IMPORTANT]
 > O que está no catálogo de negócio guia Jira e priorização. No código, siga `CONVENCAO_CODIGO.md` e o layout real dos Modules.

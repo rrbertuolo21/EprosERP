@@ -10,7 +10,7 @@
 | **Nome atual** | Epros |
 | **Tipo** | ERP SaaS multi-tenant |
 | **Repositório backend** | `PlataformaSaaS/` |
-| **Repositório desktop** | `Epros.App/` |
+| **Repositório desktop** | `EprosApp/` |
 | **Repositório mobile** | `Epros.Mobile/` |
 | **Clientes em produção** | 20 clientes no Epros.ERP legado |
 | **Bloco atual** | Painel Landlord Backoffice Integrado (Bloco 16 concluído) |
@@ -35,7 +35,7 @@ Logs:           Serilog 3.x + sink Loki
 Observab:       OpenTelemetry .NET → Grafana+Prometheus+Loki+Tempo
 Testes:         xUnit + Testcontainers
 Frontend web:   Nuxt 3 + Pinia
-Desktop:        Electron + Nuxt 3 (Epros.App)
+Desktop:        Electron + Nuxt 3 (EprosApp)
 Mobile/PDV:     React Native + Expo
 Reverse proxy:  Caddy 2 (HTTPS automático)
 IaC:            OpenTofu 1.7+
@@ -304,7 +304,7 @@ Estágio 2 (Claude) → merge semântico → preenche documentos canônicos
 | **Bloco 6** | Estoque/Compras: Compra + NF-e entrada + ContaPagar + EntradaEstoque | 🔴 Alta |
 | **Bloco 7** | Infra: Migrations EF Core · Seeders Keycloak · CI/CD GitHub Actions · Script long→Guid (20 clientes) | 🔴 Alta |
 | **Bloco 8** | Qualidade + Testes Testcontainers + Sync delta + Worker vencimento + Webhook MercadoPago | 🟡 Média |
-| **Bloco 9** | Cadastros Base (Pessoa/Empresa) + Epros.App (Electron + Nuxt 3) | ✅ Concluído |
+| **Bloco 9** | Cadastros Base (Pessoa/Empresa) + EprosApp (Electron + Nuxt 3) | ✅ Concluído |
 | **Bloco 10** | Permissões ABAC + Epros.Mobile (React Native) | ✅ Concluído |
 | **Bloco 11** | Contratos e Faturamento Recorrente (SaaS) | ✅ Concluído |
 
@@ -566,7 +566,7 @@ Esse checkpoint deverá ser suficiente para que outro engenheiro continue o dese
 * **Bloco 6 (Concluído)**: Reengenharia de Estoque/Compras. Criado projeto `Epros.Modules.Estoque`. Implementadas as entidades `Produto`, `Compra`, `CompraItem`, `MovimentoEstoque`. Lógica do **Custo Médio Ponderado** testada e validada. Handler `LancarCompraCommand` e endpoint de API integrados. Implementada a reengenharia do fluxo de cancelamento de compras (`CancelarCompraCommand`), integrado via Outbox Pattern para estornar automaticamente contas a pagar no Financeiro, com suite de testes de integração (`CompraOutboxIntegrationTests.cs`) validando os cenários ponta a ponta (totalizando 90 testes passando).
 * **Bloco 7 (Concluído)**: DevOps & Infra: Criada a pipeline de CI/CD (.github/workflows/ci-sast-sec.yml), sementes do Keycloak 24 (infra/keycloak/epros-realm-export.json) configurando roles e claim tenantId, e script SQL determinístico para migração de chaves legadas long para Guid (scripts/migracao_legado_long_to_guid.sql).
 * **Bloco 8 (Concluído)**: Qualidade + Testes Testcontainers + Sync delta + Worker vencimento + Webhook MercadoPago. Adicionados testes de integração real em container PostgreSQL, implementado endpoint `/sync/delta` com suporte a soft-deletes para sincronização incremental off-line, configurado Job agendado com Quartz.NET para alteração de status de faturas vencidas e suspensão automática, e webhook MercadoPago para baixa de pagamento integrada via MediatR.
-* **Bloco 9 (Concluído)**: Cadastros Base (Pessoa/Empresa) e Epros.App (Electron + Nuxt 3). Implementadas as entidades transversais `Pessoa` e `Empresa` (com endereço como Owned Type e regime tributário) sob o schema `plataforma` com 4 novos testes unitários adicionados. Estruturado o esqueleto da aplicação desktop local `Epros.App` com Electron e Nuxt 3 SPA (baseURL relativa para carregar assets do sistema de arquivos).
+* **Bloco 9 (Concluído)**: Cadastros Base (Pessoa/Empresa) e EprosApp (Electron + Nuxt 3). Implementadas as entidades transversais `Pessoa` e `Empresa` (com endereço como Owned Type e regime tributário) sob o schema `plataforma` com 4 novos testes unitários adicionados. Estruturado o esqueleto da aplicação desktop local `EprosApp` com Electron e Nuxt 3 SPA (baseURL relativa para carregar assets do sistema de arquivos).
 * **Bloco 10 (Concluído)**: Permissões ABAC e Mobile Scaffolding (React Native). Implementadas as entidades de perfis e permissões, filtro ABAC global para autorização e o scaffolding inicial do app móvel com Expo e SQLite.
 * **Bloco 11 (Concluído)**: Contratos e Faturamento Recorrente (SaaS). Entidades de contratos mapeadas no banco e comandos automáticos de processamento recorrente via Quartz integrados.
 * **Bloco 12 (Concluído)**: Emissão de DFe. Entidades de Documento Fiscal integradas à biblioteca `Hercules.NET.NFe.NFCe` com total suporte a tributação brasileira.
@@ -596,7 +596,7 @@ Esse checkpoint deverá ser suficiente para que outro engenheiro continue o dese
 ## 22. CHECKPOINT DE CONTINUIDADE (INFRAESTRUTURA LOCAL E AUTO-MIGRATIONS CONCLUÍDAS)
 
 ### 1. Estado atual do projeto
-A solução backend compila 100% limpa (0 erros, 0 warnings) e passa 100 testes unitários e de integração. A aplicação desktop `Epros.App` (Nuxt 3 + Electron) possui o fluxo da Área do Cliente e o Dashboard operacional funcionais, com login conectado nativamente ao Keycloak OIDC (com fallback local off-line). A API C# foi atualizada para realizar migrations automáticas em tempo de execução para os 5 DbContexts em ambiente de desenvolvimento, e o Keycloak local está configurado para auto-importar o realm no boot do container.
+A solução backend compila 100% limpa (0 erros, 0 warnings) e passa 100 testes unitários e de integração. A aplicação desktop `EprosApp` (Nuxt 3 + Electron) possui o fluxo da Área do Cliente e o Dashboard operacional funcionais, com login conectado nativamente ao Keycloak OIDC (com fallback local off-line). A API C# foi atualizada para realizar migrations automáticas em tempo de execução para os 5 DbContexts em ambiente de desenvolvimento, e o Keycloak local está configurado para auto-importar o realm no boot do container.
 
 ### 2. Funcionalidades concluídas
 - Projetos estruturados com isolamento de escopo por pastas.
@@ -607,7 +607,7 @@ A solução backend compila 100% limpa (0 erros, 0 warnings) e passa 100 testes 
 - Qualidade, Sincronização e Integrações: Testcontainers PostgreSQL 16, sincronização incremental `/sync/delta`, background worker faturamento/suspensão e webhook Mercado Pago.
 - Cadastros Base e Desktop Frontend (Bloco 9):
   - Entidades transversais `Pessoa` e `Empresa` mapeadas sob o schema `plataforma`.
-  - Estruturação do `Epros.App` com Electron e Nuxt 3 SPA.
+  - Estruturação do `EprosApp` com Electron e Nuxt 3 SPA.
 - Permissões ABAC e Mobile Scaffolding (Bloco 10):
   - Entidades `PerfilUsuario` e `UsuarioPermissao` mapeadas no banco sob o schema `plataforma`.
   - Filtro customizado `AbacFilter` interceptando rotas da API e validando permissões locais.
@@ -627,22 +627,22 @@ A solução backend compila 100% limpa (0 erros, 0 warnings) e passa 100 testes 
 - Operações de Caixa / PDV Mobile (Bloco 15):
   - Entidades `Caixa` e `CaixaMovimento` no módulo `Epros.Modules.Vendas` sob o schema `vendas.*`.
   - Comandos e Handlers: `AbrirCaixa`, `FecharCaixa`, `RegistrarCaixaMovimento`, `SincronizarCaixas` com conciliação automática e cálculo de divergências no monólito.
-- Área do Cliente / Inquilino em Nuxt 3 (Epros.App):
+- Área do Cliente / Inquilino em Nuxt 3 (EprosApp):
   - Criada Área do Cliente com design premium dark e glassmorphism.
   - Tela de login persistindo o inquilino no localStorage e inicializando status.
   - Tabela de cobrança com faturas, dialog Pix e simulação de webhook MercadoPago.
   - Catálogo comparativo dos planos Silver, Gold e Platinum, integrando fluxo de upgrade.
   - Middleware global de roteamento bloqueando inadimplentes (overdue > 15 dias) e forçando redirecionamento à página de faturas.
-- Painel SaaS Super Admin / Landlord Backoffice em Nuxt 3 (Epros.App) (APP-TEN-010):
+- Painel SaaS Super Admin / Landlord Backoffice em Nuxt 3 (EprosApp) (APP-TEN-010):
   - Criado painel administrativo em /plataforma/admin com KPIs de MRR, Churn e faturamento.
   - Tabela de inquilinos com suspensão e ativação manuais integradas na persistência.
   - Edição dinâmica do preço/limite de planos comerciais com propagação reativa.
   - Console terminal de logs de simulação de Quartz jobs e Outbox workers.
-- Workspace ERP & Dashboard Shell em Nuxt 3 (Epros.App) (APP-DSH-001):
+- Workspace ERP & Dashboard Shell em Nuxt 3 (EprosApp) (APP-DSH-001):
   - Criada interface operacional com menu lateral (Visão Geral, Estoque, Vendas, Financeiro e Fiscal).
   - Exibição de KPIs e gráficos reativos consumindo as APIs REST locais de Vendas, Estoque, Financeiro e Fiscal com fallbacks de simulação.
   - Integração do fluxo de login e middleware global para inquilinos adimplentes.
-- Onboarding de Inquilinos & Cadastro em Nuxt 3 (Epros.App) (APP-TEN-002):
+- Onboarding de Inquilinos & Cadastro em Nuxt 3 (EprosApp) (APP-TEN-002):
   - Criada a página pública /cadastro com fluxo passo a passo (Wizard) em 3 etapas (Plano, Empresa, Administrador) e CNPJ dinâmico.
 - Integração OIDC Keycloak & Bearer Token Routing (APP-SEC-001):
   - Criado plugin global `plugins/api.ts` em Nuxt 3 interceptando requisições `$fetch` para injetar os cabeçalhos `Authorization: Bearer <token>` e `X-Tenant-Id: <tenant>`.
@@ -679,8 +679,8 @@ A solução backend compila 100% limpa (0 erros, 0 warnings) e passa 100 testes 
 - Implementação de um novo macrodomínio, por exemplo: PRO (Produção/MES/MRP/BOM) ou QUA (Qualidade) com suas respectivas entidades e views correspondentes.
 
 ### 5. Arquivos principais envolvidos
-- [api.ts](file:///Users/rafael/Documents/Codigos/EprosERP/Epros.App/plugins/api.ts)
-- [index.vue](file:///Users/rafael/Documents/Codigos/EprosERP/Epros.App/pages/index.vue)
+- [api.ts](file:///Users/rafael/Documents/Codigos/EprosERP/EprosApp/plugins/api.ts)
+- [index.vue](file:///Users/rafael/Documents/Codigos/EprosERP/EprosApp/pages/index.vue)
 - [docker-compose.yml](file:///Users/rafael/Documents/Codigos/EprosERP/docker-compose.yml)
 - [Program.cs](file:///Users/rafael/Documents/Codigos/EprosERP/src/API/Epros.API/Program.cs)
 

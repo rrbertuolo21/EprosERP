@@ -81,5 +81,17 @@ namespace Epros.API.Controllers
             var result = await _mediator.Send(new CancelarTmsTransporteCompraCommand(id), cancellationToken);
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
+
+        /// <summary>NF-04 — rateia o frete de entrada sobre os itens da compra, compondo o custo (motor D1).</summary>
+        [HttpPost("compras/{compraId:guid}/ratear-frete")]
+        [AbacAuthorize("EstoqueTms", "RatearFrete")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> RatearFrete(Guid compraId, [FromBody] RatearFreteCompraCommand body, CancellationToken cancellationToken)
+        {
+            var command = body with { CompraId = compraId };
+            var result = await _mediator.Send(command, cancellationToken);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
     }
 }

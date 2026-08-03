@@ -91,4 +91,7 @@ namespace Epros.Modules.Estoque.Application.Commands
         int? DiasIntervalo,
         List<ScPedidoCompraItemInput> Itens
     ) : ICommand;
+
+    /// <summary>CD2 — escolhe o fornecedor vencedor da cotação após o mapa comparativo (SRC-020/021).</summary>
+    public record SelecionarVencedorCotacaoCommand(Guid CotacaoId, Guid FornecedorId) : ICommand;
 }

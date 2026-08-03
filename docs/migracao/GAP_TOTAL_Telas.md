@@ -3,7 +3,7 @@
 **Data:** 2026-07-04
 **Auditor:** Agente de auditoria de migração
 **Legado:** `Epros/epros_erp_front-main/app/pages`
-**Novo:** `EprosERP/Epros.App/pages`
+**Novo:** `EprosERP/EprosApp/pages`
 **Método:** inventário exaustivo de arquivos `*.vue` (ignorando `._*`, `dev/`, `ui/`), normalização de convenções de nomes/rotas e diff comprovado por leitura de cada divergência. Nada especulado.
 
 ---

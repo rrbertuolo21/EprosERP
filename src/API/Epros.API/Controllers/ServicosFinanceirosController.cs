@@ -170,6 +170,23 @@ namespace Epros.API.Controllers
             return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
         }
 
+        // ----- CNAB: geração de arquivo de remessa e processamento de retorno -----
+        [HttpPost("remessas/arquivo-cnab")]
+        [AbacAuthorize("ServicosFinanceiros", "Criar")]
+        public async Task<ActionResult<CommandResult>> GerarArquivoRemessa([FromBody] GerarArquivoRemessaCommand command)
+        {
+            var r = await _mediator.Send(command);
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
+        [HttpPost("retornos/processar")]
+        [AbacAuthorize("ServicosFinanceiros", "Editar")]
+        public async Task<ActionResult<CommandResult>> ProcessarRetorno([FromBody] ProcessarRetornoBancarioCommand command)
+        {
+            var r = await _mediator.Send(command);
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
         // ----- Cobrança por e-mail -----
         [HttpGet("cobrancas-email")]
         [AbacAuthorize("ServicosFinanceiros", "Ler")]
@@ -189,6 +206,41 @@ namespace Epros.API.Controllers
         public async Task<ActionResult<CommandResult>> TransicionarCobrancaEmail(Guid id, [FromBody] TransicionarCobrancaEmailCommand command)
         {
             var r = await _mediator.Send(command with { Id = id });
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
+        // ----- Gateway de pagamento / webhook (baixa de fatura por webhook) -----
+        [HttpPost("gateways-pagamento")]
+        [AbacAuthorize("ServicosFinanceiros", "Criar")]
+        public async Task<ActionResult<CommandResult>> RegistrarGateway([FromBody] RegistrarGatewayPagamentoCommand command)
+        {
+            var r = await _mediator.Send(command);
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
+        [HttpPut("gateways-pagamento/{id:guid}")]
+        [AbacAuthorize("ServicosFinanceiros", "Editar")]
+        public async Task<ActionResult<CommandResult>> AlterarGateway(Guid id, [FromBody] AlterarGatewayPagamentoCommand command)
+        {
+            var r = await _mediator.Send(command with { Id = id });
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
+        [HttpPost("gateways-pagamento/{id:guid}/ativacao")]
+        [AbacAuthorize("ServicosFinanceiros", "Editar")]
+        public async Task<ActionResult<CommandResult>> AtivarGateway(Guid id, [FromQuery] bool ativar = true)
+        {
+            var r = await _mediator.Send(new AtivarGatewayPagamentoCommand(id, ativar));
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
+        // Endpoint de webhook: valida assinatura (HMAC), dedup por (gateway x evento) e baixa por nosso número.
+        // A confirmação junto ao provedor real (ex.: Mercado Pago) é // valida-ambiente — não chamamos o provedor daqui.
+        [HttpPost("gateways-pagamento/webhook")]
+        [AbacAuthorize("ServicosFinanceiros", "Editar")]
+        public async Task<ActionResult<CommandResult>> ProcessarWebhook([FromBody] ProcessarWebhookPagamentoCommand command)
+        {
+            var r = await _mediator.Send(command);
             return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
         }
     }

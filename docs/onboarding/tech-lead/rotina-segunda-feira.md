@@ -7,11 +7,11 @@ last_updated: "2026-07-20"
 
 **Frequência:** Toda segunda-feira, ou primeiro dia útil da semana, sem exceção.
 
-> **EprosERP:** ciclo Git em **um** repositório (`src/` + `Epros.App/`). Submódulo opcional: `Epros.Mobile`. Processo: [`docs/fabrica/`](../../fabrica/).
+> **EprosERP:** ciclo Git em **um** repositório (`src/` + `EprosApp/`). Submódulo opcional: `Epros.Mobile`. Processo: [`docs/fabrica/`](../../fabrica/).
 
 **Contexto:** cerimônia e status canônicos do Jira estão em [Fluxo de desenvolvimento — artigo 10](../10-fluxo-de-desenvolvimento.md) (pauta 75–90 min, blocos 0–5) e [Squads e cerimônias — artigo 07](../07-squads-cerimonias.md). Este documento é o **runbook pós-reunião** (Git, versões, Jira, release) e o detalhe operacional dos boards na reunião.
 
-**Repositório:** execute as Etapas 2–6 no clone **EprosERP** (`src/` + `Epros.App/`).
+**Repositório:** execute as Etapas 2–6 no clone **EprosERP** (`src/` + `EprosApp/`).
 
 **Serviços com versão independente** (só incremente o que mudou no ciclo):
 
@@ -434,7 +434,7 @@ git push origin HEAD
 
 (Ajuste a mensagem aos serviços realmente bumpados, ex.: `chore(release): incrementa versão da api`.)
 
-### 5.2 — Frontend (`Epros.App`) — nas duas cycle
+### 5.2 — Frontend (`EprosApp`) — nas duas cycle
 
 Em cada `cycle/…` do front que entra no ciclo:
 
@@ -499,10 +499,10 @@ Em seguida, na **`merge/YYYY-MM-DD-develop`**, normalize manifests para sufixo *
 
 ### 6.2 — Ordem dos PRs (não inverta)
 
-Substitua `YYYY-MM-DD` pela data do ciclo. Execute **em cada repo** (`EprosERP (`src/`)`, `Epros.App`) na ordem abaixo. Prefira **[GitHub CLI](https://cli.github.com/)** (`gh`) — mesmo fluxo da UI, com título padronizado e checagem de CI.
+Substitua `YYYY-MM-DD` pela data do ciclo. Execute **em cada repo** (`EprosERP (`src/`)`, `EprosApp`) na ordem abaixo. Prefira **[GitHub CLI](https://cli.github.com/)** (`gh`) — mesmo fluxo da UI, com título padronizado e checagem de CI.
 
 ```bash
-# No clone do repo (EprosERP (`src/`) ou Epros.App), com gh autenticado: gh auth status
+# No clone do repo (EprosERP (`src/`) ou EprosApp), com gh autenticado: gh auth status
 DATE=YYYY-MM-DD
 ```
 
@@ -557,7 +557,7 @@ gh pr checks --watch
 
 > **Proibido:** `git merge` local direto em `main` / `develop` / `homolog`. **`gh pr merge`** (ou botão no GitHub) após PR + checks verdes é o caminho correto.
 
-**Ordem:** se houve mudança de contrato de API, mergeie commits/PRs de **`src/`** antes de **`Epros.App/`**.
+**Ordem:** se houve mudança de contrato de API, mergeie commits/PRs de **`src/`** antes de **`EprosApp/`**.
 
 ## Etapa 7 — Atualizar Jira e ciclo de sprints
 
@@ -647,7 +647,7 @@ A rotina (`scripts/rotina-segunda-feira.mjs`, **Etapa 8**) tenta **Cursor CLI** 
 | Arquivo | Uso |
 | --- | --- |
 | `release-notes-pr-main-EprosERP (`src/`).md` | Corpo **técnico** do PR 1 (`cycle/…-homolog` → `main`) no **EprosERP (`src/`)** |
-| `release-notes-pr-main-Epros.App.md` | Corpo **técnico** do PR 1 no **Epros.App** |
+| `release-notes-pr-main-EprosApp.md` | Corpo **técnico** do PR 1 no **EprosApp** |
 | `release-notes-changelog.md` | Markdown público (cards) — base para `changelog/releases/YYYY-MM-DD.md` |
 
 **Entrada preferencial:** artefatos da Etapa 5 (`release-plan.json`, `release-notes-draft.md`, diffs, etc.). Opcional: URLs dos PRs → `main` (perguntadas no terminal) e export CSV da sprint (`sprint-export.csv` no workspace ou anexo no chat).
@@ -749,7 +749,7 @@ A **Etapa 10 (comunicar build)** foi **descontinuada**. O aviso ao time continua
 | Homolog | `[homolog] Deploy` | `homolog` | `#epros-produto` | `SLACK_WEBHOOK_EPROS_PRODUTO` |
 | Produção | `[main] Deploy` | `main` | `#releases` | `SLACK_WEBHOOK_RELEASES` |
 
-Repos: **EprosERP (`src/`)** e **Epros.App**. Contexto de negócio vem do changelog público (Etapa 8) e, se necessário, complemento manual na thread do Slack ([artigo 09](../09-slack-comunicacao-dia-a-dia.md)).
+Repos: **EprosERP (`src/`)** e **EprosApp**. Contexto de negócio vem do changelog público (Etapa 8) e, se necessário, complemento manual na thread do Slack ([artigo 09](../09-slack-comunicacao-dia-a-dia.md)).
 
 ## Resumo da Sequência
 
@@ -792,7 +792,7 @@ Marque ao **encerrar a segunda** (ou no início da terça, para itens que depend
 - [ ] **Etapa 8:** corpos PR → `main` colados · `changelog/releases/YYYY-MM-DD.md` publicado no [epros-changelog](https://github.com/SISER-PROSIS/epros-changelog) · URL/Pages: ___
 - [ ] **Etapa 9:** sprint ATIVA ordenada (API + IA ou heurística + Rank) · `ordem-sprint.json`
 
-> **Secrets (infra):** `SLACK_WEBHOOK_EPROS_PRODUTO` e `SLACK_WEBHOOK_RELEASES` nos repos **EprosERP (`src/`)** e **Epros.App**. Sem webhook, o script registra notice e não falha o pipeline.
+> **Secrets (infra):** `SLACK_WEBHOOK_EPROS_PRODUTO` e `SLACK_WEBHOOK_RELEASES` nos repos **EprosERP (`src/`)** e **EprosApp**. Sem webhook, o script registra notice e não falha o pipeline.
 
 ## O que pode dar errado (e vai)
 

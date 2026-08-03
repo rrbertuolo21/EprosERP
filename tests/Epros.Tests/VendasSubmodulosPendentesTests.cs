@@ -56,6 +56,55 @@ namespace Epros.Tests
             Assert.Equal(EGarantiaSituacaoCobertura.Vencida, c.Situacao);
         }
 
+        // ---- Correção INV-01: duas dimensões (tempo + uso), vence o que ocorrer primeiro ----
+
+        [Fact(DisplayName = "GarantiaPolitica | Política só por uso (sem tempo) é válida (GAR-003)")]
+        public void Garantia_SoUso_DeveSerValida()
+        {
+            var p = new GarantiaPolitica("100 mil km", null, 0, EGarantiaTipoDuracao.Meses, TenantId, UserId, 100000m, EGarantiaUnidadeUso.Km);
+            Assert.True(p.IsValid);
+            Assert.False(p.TemDimensaoTempo);
+            Assert.True(p.TemDimensaoUso);
+        }
+
+        [Fact(DisplayName = "GarantiaPolitica | Sem nenhuma dimensão (tempo=0, sem uso) é inválida (GAR-003)")]
+        public void Garantia_SemDimensao_DeveSerInvalida()
+        {
+            var p = new GarantiaPolitica("X", null, 0, EGarantiaTipoDuracao.Meses, TenantId, UserId, null, EGarantiaUnidadeUso.Nenhuma);
+            Assert.False(p.IsValid);
+        }
+
+        [Fact(DisplayName = "GarantiaCobertura | Uso na origem >= limite vence por uso mesmo com tempo vigente (GAR-016)")]
+        public void Cobertura_UsoAtingido_VencePorUso()
+        {
+            var origem = DateTime.UtcNow.Date.AddDays(-1); // tempo vigente
+            var c = new GarantiaCobertura(Guid.NewGuid(), null, null, null, null, null, origem, null, 12, EGarantiaTipoDuracao.Meses, TenantId, UserId,
+                usoOrigem: 90000m, limiteUsoPolitica: 10000m, unidadeUsoPolitica: EGarantiaUnidadeUso.Km);
+            Assert.Equal(100000m, c.UsoVencimento); // 90000 + 10000
+            c.RegistrarUso(100000m, UserId); // atingiu o limite
+            Assert.Equal(EGarantiaSituacaoCobertura.Vencida, c.Situacao);
+        }
+
+        [Fact(DisplayName = "GarantiaCobertura | Uso abaixo do limite e tempo vigente permanece Vigente (GAR-016)")]
+        public void Cobertura_UsoAbaixo_PermaneceVigente()
+        {
+            var origem = DateTime.UtcNow.Date.AddDays(-1);
+            var c = new GarantiaCobertura(Guid.NewGuid(), null, null, null, null, null, origem, null, 12, EGarantiaTipoDuracao.Meses, TenantId, UserId,
+                usoOrigem: 0m, limiteUsoPolitica: 100000m, unidadeUsoPolitica: EGarantiaUnidadeUso.Km);
+            c.RegistrarUso(5000m, UserId);
+            Assert.Equal(EGarantiaSituacaoCobertura.Vigente, c.Situacao);
+        }
+
+        [Fact(DisplayName = "GarantiaCobertura | Tempo vencido vence mesmo com uso disponível (o que vier primeiro) (GAR-016)")]
+        public void Cobertura_TempoVencido_VencePorTempo()
+        {
+            var origem = DateTime.UtcNow.Date.AddYears(-3); // tempo já vencido
+            var c = new GarantiaCobertura(Guid.NewGuid(), null, null, null, null, null, origem, null, 12, EGarantiaTipoDuracao.Meses, TenantId, UserId,
+                usoOrigem: 0m, limiteUsoPolitica: 100000m, unidadeUsoPolitica: EGarantiaUnidadeUso.Km);
+            c.RegistrarUso(10m, UserId); // uso baixíssimo, mas tempo venceu
+            Assert.Equal(EGarantiaSituacaoCobertura.Vencida, c.Situacao);
+        }
+
         // ==================== Planejamento de Demanda (VEN-PDM) ====================
 
         [Fact(DisplayName = "DemandaPrevisao | Início antes do fim é válida (§16)")]

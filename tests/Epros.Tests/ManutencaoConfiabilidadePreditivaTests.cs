@@ -189,6 +189,41 @@ namespace Epros.Tests
             Assert.True(result.Sucesso);
         }
 
+        [Fact(DisplayName = "MAN-PDT | Converter alarme sem OT externa cria a OS canonica (T5)")]
+        public async Task Pdt_ConverterAlarme_CriaOrdemCanonica()
+        {
+            using var ctx = NovoContexto(nameof(Pdt_ConverterAlarme_CriaOrdemCanonica));
+            var equip = Guid.NewGuid();
+            var m = new MonitoramentoPreditivo("PDT-CNV", "Mon", Guid.NewGuid(), equip, null, TenantId, UserId);
+            m.Submeter(UserId);
+            m.Aprovar(UserId);
+            var ponto = new PontoMedicao(m.Id, equip, "P5", "Vibracao", "mm/s", null, null, TenantId, UserId);
+            var regra = new RegraMonitoramento(ponto.Id, ETipoRegraMonitoramento.Limite, ">", null, 5m, null, "Alta", "Alerta", null, null, TenantId, UserId);
+            regra.Ativar(UserId);
+            ctx.MonitoramentosPreditivos.Add(m);
+            ctx.PontosMedicao.Add(ponto);
+            ctx.RegrasMonitoramento.Add(regra);
+            await ctx.SaveChangesAsync();
+
+            var disparo = new DispararAlarmePreditivoCommandHandler(ctx, new TP(TenantId), new CU(UserId));
+            await disparo.Handle(new DispararAlarmePreditivoCommand(m.Id, ponto.Id, regra.Id, null, "Alta", "Limite excedido"), CancellationToken.None);
+            var alarme = await ctx.AlarmesPreditivos.FirstAsync();
+
+            // T5 — converter SEM OrdemTrabalhoId externo deve criar a OS canonica interna.
+            var conv = new ConverterAlarmeEmOrdemCommandHandler(ctx, new TP(TenantId), new CU(UserId));
+            var result = await conv.Handle(new ConverterAlarmeEmOrdemCommand(alarme.Id, null, null, null), CancellationToken.None);
+            Assert.True(result.Sucesso);
+
+            var alarmeAtualizado = await ctx.AlarmesPreditivos.Include(a => a.Vinculos).FirstAsync();
+            Assert.Equal(EStatusAlarmePreditivo.ConvertidoEmOrdem, alarmeAtualizado.Status);
+            var vinculo = Assert.Single(alarmeAtualizado.Vinculos);
+
+            var os = await ctx.OrdensServico.SingleAsync(o => o.Id == vinculo.OrdemTrabalhoId);
+            Assert.Equal(EOrigemOrdemServico.Preditiva, os.OrigemTipo);
+            Assert.Equal(alarme.Id, os.OrigemId);
+            Assert.Null(os.PessoaId);
+        }
+
         [Fact(DisplayName = "MAN-PDT | Descartar alarme sem motivo deve falhar")]
         public void Pdt_DescartarAlarmeSemMotivo_DeveFalhar()
         {

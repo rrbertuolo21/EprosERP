@@ -83,5 +83,36 @@ namespace Epros.Modules.Projetos.Domain.Entities.Portfolio
             Ativo = false;
             MarcarAlterado(usuario);
         }
+
+        /// <summary>
+        /// DP-PRT-score — calcula e grava o Score do item por MÉDIA PONDERADA dos fatores presentes.
+        /// Benefícios (NPV, AlinhamentoEstratégico) contribuem positivamente; custos (Payback, Risco)
+        /// penalizam. Fatores nulos são ignorados (peso zero). Score = Σ(peso·fator·sinal)/Σpeso.
+        /// A orientação/escala esperada dos fatores é decisão de produto (parametrizável); os VALORES de
+        /// NPV/Payback são valida-contador (DP-PRT-006). Aqui só se aplica a agregação técnica.
+        /// </summary>
+        public decimal CalcularScore(PesosPortfolio pesos)
+        {
+            decimal somaPesos = 0m;
+            decimal somaPonderada = 0m;
+
+            void Acumular(decimal? fator, decimal peso, int sinal)
+            {
+                if (fator.HasValue && peso != 0m)
+                {
+                    somaPonderada += peso * fator.Value * sinal;
+                    somaPesos += peso;
+                }
+            }
+
+            Acumular(Npv, pesos.PesoNpv, +1);
+            Acumular(AlinhamentoEstrategico, pesos.PesoAlinhamento, +1);
+            Acumular(Payback, pesos.PesoPayback, -1);
+            Acumular(Risco, pesos.PesoRisco, -1);
+
+            var score = somaPesos != 0m ? System.Math.Round(somaPonderada / somaPesos, 4) : 0m;
+            Score = score;
+            return score;
+        }
     }
 }

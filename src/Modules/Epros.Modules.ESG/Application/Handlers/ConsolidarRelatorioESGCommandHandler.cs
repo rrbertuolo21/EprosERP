@@ -35,9 +35,11 @@ namespace Epros.Modules.ESG.Application.Handlers
                 return CommandResult.Falha($"Não foi encontrado rascunho de relatório ESG para o ano fiscal {request.AnoFiscal}. Crie um relatório primeiro.");
             }
 
-            // Soma emissões por escopo
+            // Soma emissões por escopo. Regra #0: emissoes "pendentes de fator" (sem fator oficial
+            // homologado) NAO entram na consolidacao — nao carregam numero real e nao podem contaminar
+            // o total reportavel. Ficam visiveis como pendencia ate a ingestao/homologacao do fator.
             var emissoes = await _context.EmissoesCarbono
-                .Where(e => e.DataTransacao.Year == request.AnoFiscal)
+                .Where(e => e.DataTransacao.Year == request.AnoFiscal && !e.FatorPendente)
                 .ToListAsync(cancellationToken);
 
             var totalEscopo1 = emissoes.Where(e => e.Escopo == 1).Sum(e => e.TotalCo2e);

@@ -25,6 +25,8 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
 
         // Estoque
         public DbSet<EstoqueProduto> EstoqueProdutos => Set<EstoqueProduto>();
+        // D2 — saldo no grão fino (Empresa+Produto+Local+Lote+Série), em paralelo ao agregado acima.
+        public DbSet<EstoqueSaldoLocal> EstoqueSaldosLocais => Set<EstoqueSaldoLocal>();
         public DbSet<ProdutoFichaEstoqueEntrada> ProdutoFichaEstoqueEntradas => Set<ProdutoFichaEstoqueEntrada>();
         public DbSet<ProdutoFichaEstoqueSaida> ProdutoFichaEstoqueSaidas => Set<ProdutoFichaEstoqueSaida>();
         public DbSet<FatoGeradorEstoque> FatosGeradoresEstoque => Set<FatoGeradorEstoque>();
@@ -42,6 +44,32 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
         public DbSet<SaldoInicialImportacao> SaldosIniciaisImportacoes => Set<SaldoInicialImportacao>();
         public DbSet<SaldoInicialItem> SaldosIniciaisItens => Set<SaldoInicialItem>();
         public DbSet<HistoricoEstoque> HistoricosEstoque => Set<HistoricoEstoque>();
+
+        // Inventário Físico e Contagem Cíclica (EST-INV) — EF §16
+        public DbSet<Inventario> Inventarios => Set<Inventario>();
+        public DbSet<InventarioItem> InventarioItens => Set<InventarioItem>();
+        public DbSet<InventarioMovimentoAjuste> InventarioMovimentoAjustes => Set<InventarioMovimentoAjuste>();
+        public DbSet<InventarioReajuste> InventarioReajustes => Set<InventarioReajuste>();
+        public DbSet<InventarioReajusteItem> InventarioReajusteItens => Set<InventarioReajusteItem>();
+
+        // Rastreabilidade de Lote e Serialização (EST-RLT) — EF §7
+        public DbSet<LoteEstoque> LotesEstoque => Set<LoteEstoque>();
+        public DbSet<NumeroSerial> NumerosSeriais => Set<NumeroSerial>();
+        public DbSet<BloqueioLote> BloqueiosLote => Set<BloqueioLote>();
+        public DbSet<RecallLote> RecallsLote => Set<RecallLote>();
+
+        // Análise e Planejamento de Estoque (EST-APE) — EF §16
+        public DbSet<AlertaEstoque> AlertasEstoque => Set<AlertaEstoque>();
+
+        // Portal do Fornecedor (EST-PFO) — EF §15
+        public DbSet<PfoConviteFornecedor> PfoConvitesFornecedor => Set<PfoConviteFornecedor>();
+        public DbSet<PfoUsuarioFornecedor> PfoUsuariosFornecedor => Set<PfoUsuarioFornecedor>();
+        public DbSet<PfoCotacaoPublicada> PfoCotacoesPublicadas => Set<PfoCotacaoPublicada>();
+        public DbSet<PfoRespostaCotacao> PfoRespostasCotacao => Set<PfoRespostaCotacao>();
+        public DbSet<PfoRespostaCotacaoItem> PfoRespostaCotacaoItens => Set<PfoRespostaCotacaoItem>();
+        public DbSet<PfoPreAvisoEmbarque> PfoPreAvisosEmbarque => Set<PfoPreAvisoEmbarque>();
+        public DbSet<PfoPreAvisoItem> PfoPreAvisoItens => Set<PfoPreAvisoItem>();
+        public DbSet<PfoDocumentoFornecedor> PfoDocumentosFornecedor => Set<PfoDocumentoFornecedor>();
 
         // Compras
         public DbSet<Compra> Compras => Set<Compra>();
@@ -111,6 +139,8 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
         // ============ GESTÃO DE ARMAZÉM WMS (EST-WMS) ============
         public DbSet<WmsArmazem> WmsArmazens => Set<WmsArmazem>();
         public DbSet<WmsEnderecoOperacional> WmsEnderecosOperacionais => Set<WmsEnderecoOperacional>();
+        // D5 — tarefa operacional de separação/conferência (move o grão fino EstoqueSaldoLocal).
+        public DbSet<WmsTarefaSeparacao> WmsTarefasSeparacao => Set<WmsTarefaSeparacao>();
 
         // ============ GESTÃO DE CONTRATOS DE COMPRA (EST-GCC) ============
         public DbSet<GccContratoCompra> GccContratosCompra => Set<GccContratoCompra>();
@@ -129,6 +159,18 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
         public DbSet<SubDocumentoFiscal> SubDocumentosFiscais => Set<SubDocumentoFiscal>();
         public DbSet<SubServicoCobranca> SubServicosCobranca => Set<SubServicoCobranca>();
         public DbSet<SubHistorico> SubHistoricos => Set<SubHistorico>();
+
+        // ============ ALÇADA DE APROVAÇÃO DE COMPRAS (CD3) ============
+        public DbSet<ComprasAlcadaRegra> ComprasAlcadaRegras => Set<ComprasAlcadaRegra>();
+        public DbSet<ComprasPedidoAprovacao> ComprasPedidosAprovacao => Set<ComprasPedidoAprovacao>();
+        public DbSet<ComprasPedidoAprovacaoNivel> ComprasPedidosAprovacaoNiveis => Set<ComprasPedidoAprovacaoNivel>();
+
+        // Devolução de Compra (CD4 / EF DEVOLUCAO_DE_COMPRA — submódulo próprio de COMPRAS).
+        public DbSet<DevolucaoCompra> DevolucoesCompra => Set<DevolucaoCompra>();
+        public DbSet<DevolucaoCompraItem> DevolucaoCompraItens => Set<DevolucaoCompraItem>();
+
+        // Comércio Exterior / Importação (CD1 / EF COMERCIO_EXTERIOR) — parâmetro de rateio landed.
+        public DbSet<ComprasImportacaoRateioConfig> ComprasImportacaoRateioConfigs => Set<ComprasImportacaoRateioConfig>();
 
         // Lookup somente leitura (dono: módulo Fiscal, schema plataforma).
         public DbSet<ServicoLookup> ServicosLookup => Set<ServicoLookup>();
@@ -342,6 +384,26 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
                       .HasForeignKey(e => e.ProdutoId)
                       .OnDelete(DeleteBehavior.Restrict);
                 entity.HasIndex(e => new { e.TenantId, e.EmpresaId, e.ProdutoId }).IsUnique();
+            });
+
+            // D2 — saldo por Local + Lote/Série (grão fino), paralelo ao agregado EstoqueProduto.
+            modelBuilder.Entity<EstoqueSaldoLocal>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.CodigoLote).HasMaxLength(60);
+                entity.Property(e => e.NumeroSerie).HasMaxLength(120);
+                entity.Property(e => e.QuantidadeSaldo).HasPrecision(18, 4);
+                entity.Property(e => e.QuantidadeReservada).HasPrecision(18, 4);
+                entity.Property(e => e.ValorSaldo).HasPrecision(18, 2);
+                entity.Property(e => e.ValorCustoMedio).HasPrecision(18, 2);
+                entity.HasOne(e => e.Produto)
+                      .WithMany()
+                      .HasForeignKey(e => e.ProdutoId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                // Unicidade do grão: uma linha por (tenant, empresa, produto, local, lote, série).
+                // Lote/Série normalizados a "" (nunca NULL) para a unicidade valer sob PostgreSQL.
+                entity.HasIndex(e => new { e.TenantId, e.EmpresaId, e.ProdutoId, e.LocalId, e.CodigoLote, e.NumeroSerie }).IsUnique();
+                entity.HasIndex(e => new { e.TenantId, e.ProdutoId, e.DataValidade }); // apoio ao FEFO
             });
 
             modelBuilder.Entity<FatoGeradorEstoque>(entity =>
@@ -561,6 +623,210 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
                 entity.HasIndex(h => h.SyncId).IsUnique();
             });
 
+            // ============ INVENTÁRIO FÍSICO E CONTAGEM CÍCLICA (EST-INV) — EF §16 ============
+
+            modelBuilder.Entity<Inventario>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.Acuracidade).HasPrecision(9, 4);
+                entity.Property(i => i.Observacao).HasMaxLength(1000);
+                entity.Property(i => i.MotivoCancelamento).HasMaxLength(1000);
+                entity.HasMany(i => i.Itens)
+                      .WithOne(it => it.Inventario)
+                      .HasForeignKey(it => it.InventarioId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(i => new { i.TenantId, i.Situacao });
+                entity.HasIndex(i => new { i.TenantId, i.EmpresaId });
+                entity.HasIndex(i => i.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<InventarioItem>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.QuantidadeSistema).HasPrecision(18, 4);
+                entity.Property(i => i.Contagem01).HasPrecision(18, 4);
+                entity.Property(i => i.Contagem02).HasPrecision(18, 4);
+                entity.Property(i => i.Contagem03).HasPrecision(18, 4);
+                entity.Property(i => i.QuantidadeContada).HasPrecision(18, 4);
+                entity.Property(i => i.Divergencia).HasPrecision(18, 4);
+                entity.Property(i => i.Lote).HasMaxLength(60);
+                entity.HasOne<Produto>()
+                      .WithMany()
+                      .HasForeignKey(i => i.ProdutoId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(i => new { i.TenantId, i.InventarioId });
+                entity.HasIndex(i => i.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<InventarioMovimentoAjuste>(entity =>
+            {
+                entity.HasKey(m => m.Id);
+                entity.Property(m => m.QuantidadeAplicada).HasPrecision(18, 4);
+                entity.HasIndex(m => new { m.TenantId, m.InventarioId });
+                entity.HasIndex(m => m.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<InventarioReajuste>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.Porcentagem).HasPrecision(9, 4);
+                entity.Property(r => r.TipoReajuste).HasMaxLength(60);
+                entity.HasMany(r => r.Itens)
+                      .WithOne(it => it.Reajuste)
+                      .HasForeignKey(it => it.ReajusteId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(r => new { r.TenantId, r.ColaboradorId });
+                entity.HasIndex(r => r.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<InventarioReajusteItem>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.ValorOriginal).HasPrecision(18, 4);
+                entity.Property(i => i.ValorReajuste).HasPrecision(18, 4);
+                entity.HasOne<Produto>()
+                      .WithMany()
+                      .HasForeignKey(i => i.ProdutoId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(i => new { i.TenantId, i.ReajusteId });
+                entity.HasIndex(i => i.SyncId).IsUnique();
+            });
+
+            // ============ RASTREABILIDADE DE LOTE E SERIALIZAÇÃO (EST-RLT) — EF §7 ============
+
+            modelBuilder.Entity<LoteEstoque>(entity =>
+            {
+                entity.HasKey(l => l.Id);
+                entity.Property(l => l.CodigoLote).HasMaxLength(60);
+                entity.Property(l => l.Observacao).HasMaxLength(1000);
+                entity.Property(l => l.QuantidadeRecebida).HasPrecision(18, 4);
+                entity.Property(l => l.QuantidadeDisponivel).HasPrecision(18, 4);
+                entity.Property(l => l.QuantidadeBloqueada).HasPrecision(18, 4);
+                entity.Property(l => l.QuantidadeConsumida).HasPrecision(18, 4);
+                entity.HasOne<Produto>().WithMany().HasForeignKey(l => l.ProdutoId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(l => new { l.TenantId, l.ProdutoId, l.CodigoLote });
+                entity.HasIndex(l => new { l.TenantId, l.Status });
+                entity.HasIndex(l => l.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<NumeroSerial>(entity =>
+            {
+                entity.HasKey(s => s.Id);
+                entity.Property(s => s.Numero).HasMaxLength(120);
+                entity.HasOne<Produto>().WithMany().HasForeignKey(s => s.ProdutoId).OnDelete(DeleteBehavior.Restrict);
+                // RLT-005: unicidade do serial no escopo produto/tenant.
+                entity.HasIndex(s => new { s.TenantId, s.ProdutoId, s.Numero }).IsUnique();
+                entity.HasIndex(s => new { s.TenantId, s.Status });
+                entity.HasIndex(s => s.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<BloqueioLote>(entity =>
+            {
+                entity.HasKey(b => b.Id);
+                entity.Property(b => b.Motivo).HasMaxLength(1000);
+                entity.Property(b => b.MotivoDesbloqueio).HasMaxLength(1000);
+                entity.HasIndex(b => new { b.TenantId, b.LoteId });
+                entity.HasIndex(b => b.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<RecallLote>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.CodigoRecall).HasMaxLength(60);
+                entity.Property(r => r.Motivo).HasMaxLength(1000);
+                entity.HasIndex(r => new { r.TenantId, r.LoteId });
+                entity.HasIndex(r => new { r.TenantId, r.Status });
+                entity.HasIndex(r => r.SyncId).IsUnique();
+            });
+
+            // ============ ANÁLISE E PLANEJAMENTO DE ESTOQUE (EST-APE) — EF §16 ============
+
+            modelBuilder.Entity<AlertaEstoque>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                entity.Property(a => a.QuantidadeReferencia).HasPrecision(18, 4);
+                entity.Property(a => a.QuantidadeAtual).HasPrecision(18, 4);
+                entity.Property(a => a.ResolvidoPor).HasMaxLength(200);
+                entity.HasIndex(a => new { a.TenantId, a.StatusAlerta });
+                entity.HasIndex(a => new { a.TenantId, a.PosicaoEstoqueId, a.TipoAlerta });
+                entity.HasIndex(a => a.SyncId).IsUnique();
+            });
+
+            // ============ PORTAL DO FORNECEDOR (EST-PFO) — EF §15 ============
+
+            modelBuilder.Entity<PfoConviteFornecedor>(entity =>
+            {
+                entity.HasKey(c => c.Id);
+                entity.Property(c => c.EmailConvite).HasMaxLength(200);
+                entity.HasIndex(c => new { c.TenantId, c.FornecedorId });
+                entity.HasIndex(c => new { c.TenantId, c.Status });
+                entity.HasIndex(c => c.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<PfoUsuarioFornecedor>(entity =>
+            {
+                entity.HasKey(u => u.Id);
+                entity.HasIndex(u => new { u.TenantId, u.FornecedorId });
+                entity.HasIndex(u => new { u.TenantId, u.UsuarioId });
+                entity.HasIndex(u => u.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<PfoCotacaoPublicada>(entity =>
+            {
+                entity.HasKey(c => c.Id);
+                entity.HasIndex(c => new { c.TenantId, c.FornecedorId });
+                entity.HasIndex(c => new { c.TenantId, c.CotacaoOrigemId });
+                entity.HasIndex(c => c.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<PfoRespostaCotacao>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.ValorTotal).HasPrecision(18, 2);
+                entity.Property(r => r.Observacao).HasMaxLength(2000);
+                entity.HasMany(r => r.Itens).WithOne(i => i.Resposta).HasForeignKey(i => i.RespostaCotacaoId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(r => new { r.TenantId, r.FornecedorId });
+                entity.HasIndex(r => new { r.TenantId, r.CotacaoPublicadaId });
+                entity.HasIndex(r => r.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<PfoRespostaCotacaoItem>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.Quantidade).HasPrecision(18, 4);
+                entity.Property(i => i.ValorUnitario).HasPrecision(18, 4);
+                entity.HasIndex(i => new { i.TenantId, i.RespostaCotacaoId });
+                entity.HasIndex(i => i.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<PfoPreAvisoEmbarque>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.Property(p => p.Observacao).HasMaxLength(2000);
+                entity.HasMany(p => p.Itens).WithOne(i => i.PreAviso).HasForeignKey(i => i.PreAvisoId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(p => new { p.TenantId, p.FornecedorId });
+                entity.HasIndex(p => new { p.TenantId, p.PedidoCompraId });
+                entity.HasIndex(p => p.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<PfoPreAvisoItem>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.QuantidadePrevista).HasPrecision(18, 4);
+                entity.Property(i => i.Lote).HasMaxLength(60);
+                entity.HasIndex(i => new { i.TenantId, i.PreAvisoId });
+                entity.HasIndex(i => i.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<PfoDocumentoFornecedor>(entity =>
+            {
+                entity.HasKey(d => d.Id);
+                entity.Property(d => d.TipoDocumento).HasMaxLength(60);
+                entity.HasIndex(d => new { d.TenantId, d.FornecedorId });
+                entity.HasIndex(d => new { d.TenantId, d.ReferenciaTipo, d.ReferenciaId });
+                entity.HasIndex(d => d.SyncId).IsUnique();
+            });
+
             // ============================ COMPRAS ============================
 
             modelBuilder.Entity<Compra>(entity =>
@@ -577,6 +843,9 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
                 entity.Property(c => c.InformacoesComplementares).HasMaxLength(5000);
                 entity.Property(c => c.InformacoesAdicionaisFisco).HasMaxLength(2000);
                 entity.Property(c => c.FormaPagamento).HasMaxLength(50);
+                // Comércio Exterior / Importação (CD1): incoterm (enum), moeda e câmbio factuais.
+                entity.Property(c => c.Moeda).HasMaxLength(3);
+                entity.Property(c => c.TaxaCambio).HasPrecision(18, 6);
 
                 entity.HasMany(c => c.Itens)
                       .WithOne(i => i.Compra)
@@ -1504,8 +1773,26 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
                 entity.Property(e => e.Rua).HasMaxLength(120);
                 entity.Property(e => e.Estante).HasMaxLength(60);
                 entity.Property(e => e.Caixa).HasMaxLength(60);
+                entity.Property(e => e.Zona).HasMaxLength(60);
+                entity.Property(e => e.Nivel).HasMaxLength(60);
+                entity.Property(e => e.Posicao).HasMaxLength(60);
+                entity.Property(e => e.CapacidadeMaxima).HasPrecision(18, 4);
                 entity.HasIndex(e => new { e.TenantId, e.ArmazemId });
                 entity.HasIndex(e => e.SyncId).IsUnique();
+            });
+
+            // D5 — tarefa de separação/conferência (move o grão fino).
+            modelBuilder.Entity<WmsTarefaSeparacao>(entity =>
+            {
+                entity.HasKey(t => t.Id);
+                entity.Property(t => t.CodigoLote).HasMaxLength(60);
+                entity.Property(t => t.NumeroSerie).HasMaxLength(120);
+                entity.Property(t => t.QuantidadeSolicitada).HasPrecision(18, 4);
+                entity.Property(t => t.QuantidadeConferida).HasPrecision(18, 4);
+                entity.Property(t => t.Observacao).HasMaxLength(1000);
+                entity.HasIndex(t => new { t.TenantId, t.ArmazemId, t.Status });
+                entity.HasIndex(t => new { t.TenantId, t.ProdutoId });
+                entity.HasIndex(t => t.SyncId).IsUnique();
             });
 
             // ============ GESTÃO DE CONTRATOS DE COMPRA (EST-GCC) ============
@@ -1669,6 +1956,88 @@ namespace Epros.Modules.Estoque.Infrastructure.Data
                 entity.Property(h => h.DadosNovos).HasMaxLength(4000);
                 entity.HasIndex(h => new { h.TenantId, h.OrdemId });
                 entity.HasIndex(h => h.SyncId).IsUnique();
+            });
+
+            // ============ ALÇADA DE APROVAÇÃO DE COMPRAS (CD3 / EF SOURCING §5.8) ============
+
+            modelBuilder.Entity<ComprasAlcadaRegra>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.ValorMinimo).HasPrecision(18, 2);
+                entity.Property(r => r.ValorMaximo).HasPrecision(18, 2);
+                entity.Property(r => r.CategoriaCompra).HasMaxLength(120);
+                entity.Property(r => r.PapelAprovador).HasMaxLength(120);
+                entity.HasIndex(r => new { r.TenantId, r.Nivel });
+                entity.HasIndex(r => new { r.TenantId, r.Ativo });
+                entity.HasIndex(r => r.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<ComprasPedidoAprovacao>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.Property(p => p.ValorTotal).HasPrecision(18, 2);
+                entity.Property(p => p.CategoriaCompra).HasMaxLength(120);
+                entity.HasMany(p => p.Niveis)
+                      .WithOne(n => n.Pedido)
+                      .HasForeignKey(n => n.PedidoAprovacaoId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(p => new { p.TenantId, p.Status });
+                entity.HasIndex(p => new { p.TenantId, p.OrigemTipo, p.OrigemId });
+                entity.HasIndex(p => p.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<ComprasPedidoAprovacaoNivel>(entity =>
+            {
+                entity.HasKey(n => n.Id);
+                entity.Property(n => n.ValorMinimo).HasPrecision(18, 2);
+                entity.Property(n => n.ValorMaximo).HasPrecision(18, 2);
+                entity.Property(n => n.PapelAprovador).HasMaxLength(120);
+                entity.Property(n => n.DecididoPor).HasMaxLength(120);
+                entity.Property(n => n.Justificativa).HasMaxLength(2000);
+                entity.HasIndex(n => new { n.TenantId, n.PedidoAprovacaoId });
+                entity.HasIndex(n => n.SyncId).IsUnique();
+            });
+
+            // ============ DEVOLUÇÃO DE COMPRA (CD4 / EF DEVOLUCAO_DE_COMPRA §6) ============
+
+            modelBuilder.Entity<DevolucaoCompra>(entity =>
+            {
+                entity.ToTable("com_devolucao_compra");
+                entity.HasKey(d => d.Id);
+                entity.Property(d => d.Numero).HasMaxLength(60).IsRequired();
+                entity.Property(d => d.Motivo).HasMaxLength(1000);
+                entity.Property(d => d.Cfop).HasMaxLength(10);
+                entity.Property(d => d.Total).HasPrecision(18, 2);
+                entity.HasMany(d => d.Itens)
+                      .WithOne(i => i.Devolucao)
+                      .HasForeignKey(i => i.DevolucaoId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(d => new { d.TenantId, d.Status });
+                entity.HasIndex(d => new { d.TenantId, d.CompraOrigemId });
+                entity.HasIndex(d => new { d.TenantId, d.Numero }).IsUnique();
+                entity.HasIndex(d => d.SyncId).IsUnique();
+            });
+
+            modelBuilder.Entity<DevolucaoCompraItem>(entity =>
+            {
+                entity.ToTable("com_devolucao_compra_item");
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.Quantidade).HasPrecision(18, 4);
+                entity.Property(i => i.ValorUnitario).HasPrecision(18, 4);
+                entity.Property(i => i.ValorTotal).HasPrecision(18, 2);
+                entity.HasIndex(i => new { i.TenantId, i.DevolucaoId });
+                entity.HasIndex(i => i.CompraItemOrigemId);
+                entity.HasIndex(i => i.SyncId).IsUnique();
+            });
+
+            // ============ COMÉRCIO EXTERIOR / IMPORTAÇÃO (CD1 / EF COMERCIO_EXTERIOR §5.3) ============
+
+            modelBuilder.Entity<ComprasImportacaoRateioConfig>(entity =>
+            {
+                entity.ToTable("com_importacao_rateio_config");
+                entity.HasKey(c => c.Id);
+                entity.HasIndex(c => new { c.TenantId, c.EmpresaId }).IsUnique();
+                entity.HasIndex(c => c.SyncId).IsUnique();
             });
 
             base.OnModelCreating(modelBuilder);

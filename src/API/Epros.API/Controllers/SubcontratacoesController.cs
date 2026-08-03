@@ -91,5 +91,29 @@ namespace Epros.API.Controllers
             var result = await _mediator.Send(new ListarSubSaldosTerceiroQuery(fornecedorId, produtoId), cancellationToken);
             return result.Sucesso ? Ok(result) : BadRequest(result);
         }
+
+        /// <summary>SUB-009 — cobra o serviço de beneficiamento; gera a compra do serviço (via evento).</summary>
+        [HttpPost("{id:guid}/servico-cobranca")]
+        [AbacAuthorize("EstoqueSub", "Cobrar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> RegistrarServicoCobranca(Guid id, [FromBody] RegistrarSubServicoCobrancaCommand body, CancellationToken cancellationToken)
+        {
+            var command = body with { OrdemId = id };
+            var result = await _mediator.Send(command, cancellationToken);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        /// <summary>SUB-008 — registra o documento fiscal de remessa/retorno; CFOP parametrizado (valida-contador).</summary>
+        [HttpPost("{id:guid}/documentos-fiscais")]
+        [AbacAuthorize("EstoqueSub", "Faturar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> RegistrarDocumentoFiscal(Guid id, [FromBody] RegistrarSubDocumentoFiscalCommand body, CancellationToken cancellationToken)
+        {
+            var command = body with { OrdemId = id };
+            var result = await _mediator.Send(command, cancellationToken);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
     }
 }

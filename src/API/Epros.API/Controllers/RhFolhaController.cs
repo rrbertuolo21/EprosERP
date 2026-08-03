@@ -63,5 +63,19 @@ namespace Epros.API.Controllers
             var result = await _mediator.Send(new FecharCompetenciaCommand(id));
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
+
+        /// <summary>
+        /// Apura a folha mensal pelo MOTOR LEGAL (INSS/IRRF/FGTS, tabelas 2026 versionadas).
+        /// Simulação: não persiste, devolve o holerite calculado. Substitui a regra manual inventada.
+        /// </summary>
+        [HttpPost("apurar")]
+        [AbacAuthorize("RhFolha", "Ler")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> ApurarFolhaLegal([FromBody] CalcularFolhaLegalCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
     }
 }

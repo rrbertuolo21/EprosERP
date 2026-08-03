@@ -53,10 +53,10 @@ namespace Epros.Modules.Projetos.Application.Handlers
                 return CommandResult.Falha(projeto.Notifications.Select(n => n.Message));
             }
 
-            // Ativa o projeto automaticamente se o progresso iniciar
-            if (oldProgress == 0 && newProgress > 0 && projeto.Status == "Planejado")
+            // Ativa o projeto automaticamente se o progresso iniciar (Rascunho -> Ativo). MM-a status canônico.
+            if (oldProgress == 0 && newProgress > 0 && projeto.Status == Epros.Modules.Projetos.Domain.Enums.EProjetoWorkflowStatus.Rascunho)
             {
-                projeto.IniciarProjeto(usuario);
+                projeto.Ativar(usuario);
             }
 
             // Verificar marcos de faturamento parciais (25%, 50%, 75%, 100%)

@@ -44,4 +44,7 @@ namespace Epros.Modules.Projetos.Application.Commands
     public record AprovarOrcamentoProjetoCommand(Guid OrcamentoProjetoId) : ICommand;
 
     public record SubmeterOrcamentoProjetoCommand(Guid OrcamentoProjetoId) : ICommand;
+
+    /// <summary>DP-ORC-002: congela uma baseline imutável (budget + marcos) do orçamento aprovado.</summary>
+    public record CongelarBaselineOrcamentoCommand(Guid OrcamentoProjetoId, string? Motivo) : ICommand;
 }

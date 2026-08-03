@@ -137,10 +137,11 @@ namespace Epros.Tests
         {
             // Arrange
             var dbName = "db_test_upgrade_flow_" + Guid.NewGuid();
-            var (provider, _, currentUser) = CreateServiceProvider(dbName);
+            var (provider, tenantProvider, currentUser) = CreateServiceProvider(dbName);
             var context = provider.GetRequiredService<ContextAplicativo>();
 
-            var handler = new ExecutarAtualizacaoCommandHandler(context, provider, currentUser);
+            // 1.11 fix #3 — o handler exige operador interno (tenant="system", default do provedor de teste).
+            var handler = new ExecutarAtualizacaoCommandHandler(context, provider, currentUser, tenantProvider);
             var command = new ExecutarAtualizacaoCommand("v2026.06.18.1");
 
             // Act

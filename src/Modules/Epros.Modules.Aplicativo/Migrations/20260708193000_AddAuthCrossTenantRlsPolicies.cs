@@ -1,10 +1,14 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Epros.Modules.Aplicativo.Infrastructure.Data;
 
 #nullable disable
 
 namespace Epros.Modules.Aplicativo.Migrations
 {
     /// <inheritdoc />
+    [DbContext(typeof(ContextAplicativo))]
+    [Migration("20260708193000_AddAuthCrossTenantRlsPolicies")]
     public partial class AddAuthCrossTenantRlsPolicies : Migration
     {
         /// <inheritdoc />

@@ -69,6 +69,31 @@ namespace Epros.Modules.Imobiliaria.Application.Handlers
         }
     }
 
+    public class AlterarContratoServicoCommandHandler : ICommandHandler<AlterarContratoServicoCommand>
+    {
+        private readonly ContextImobiliaria _context;
+        private readonly ICurrentUser _currentUser;
+
+        public AlterarContratoServicoCommandHandler(ContextImobiliaria context, ICurrentUser currentUser)
+        { _context = context; _currentUser = currentUser; }
+
+        public async Task<CommandResult> Handle(AlterarContratoServicoCommand request, CancellationToken cancellationToken)
+        {
+            var usuario = _currentUser.GetUserId() ?? "system";
+            var contrato = await _context.ContratosServico
+                .FirstOrDefaultAsync(c => c.Id == request.ContratoId, cancellationToken);
+            if (contrato is null)
+                return CommandResult.Falha("Contrato de servico nao encontrado.");
+
+            contrato.AtualizarDados(request.Descricao, request.VigenciaInicio, request.VigenciaFim, request.Remuneracao, usuario);
+            if (!contrato.IsValid)
+                return CommandResult.Falha(contrato.Notifications.Select(n => n.Message));
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Contrato de servico alterado com sucesso!", new { ContratoId = contrato.Id });
+        }
+    }
+
     public class ListarContratosServicoQueryHandler : IQueryHandler<ListarContratosServicoQuery, CommandResult>
     {
         private readonly ContextImobiliaria _context;

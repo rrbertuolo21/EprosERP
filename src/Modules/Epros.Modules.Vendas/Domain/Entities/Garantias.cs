@@ -6,18 +6,37 @@ using Flunt.Validations;
 namespace Epros.Modules.Vendas.Domain.Entities
 {
     /// <summary>
-    /// Política de garantia (ven_garantia_politica). Fonte: EF §10.1. Regras GAR-001..GAR-011.
-    /// GAR-002/GAR-003: duração e tipo de duração são obrigatórios. Nome/descrição existem no
-    /// modelo mas não são comprovados obrigatórios (GAR-004/GAR-005) → opcionais.
+    /// Política de garantia (ven_garantia_politica). Fonte: EF §0.1/§10.1. Regras GAR-001..GAR-011.
+    ///
+    /// CORREÇÃO INV-01 (EF §0.1, GAR-003/GAR-016): duas dimensões de vigência —
+    /// TEMPO (<see cref="Duracao"/> + <see cref="TipoDuracao"/> ∈ {Dias,Meses,Anos}) e
+    /// USO (<see cref="LimiteUso"/> + <see cref="UnidadeUso"/> ∈ {km,horas}). Ao menos uma
+    /// dimensão é obrigatória; quando ambas existem, o vencimento é o que ocorrer primeiro.
+    /// Nome/descrição opcionais (GAR-004/GAR-005 não comprovados obrigatórios).
     /// </summary>
     public class GarantiaPolitica : EntidadeSaaSBase
     {
+        /// <summary>Piso legal CDC art. 26 — MÍNIMO em dias. 30 (não durável) / 90 (durável). A política amplia, nunca reduz (NF-07, valida-jurídico).</summary>
+        public const int PisoCdcDiasNaoDuravel = 30;
+        public const int PisoCdcDiasDuravel = 90;
+
         public string? Nome { get; private set; }
         public string? Descricao { get; private set; }
+        /// <summary>Prazo da dimensão de TEMPO (0 = sem dimensão de tempo). GAR-003.</summary>
         public int Duracao { get; private set; }
+        /// <summary>Unidade da dimensão de tempo (unidade_tempo). GAR-007.</summary>
         public EGarantiaTipoDuracao TipoDuracao { get; private set; }
+        /// <summary>Limite da dimensão de USO (null/0 = sem dimensão de uso). Ex.: 100000 km, 500 horas. GAR-003/GAR-007.</summary>
+        public decimal? LimiteUso { get; private set; }
+        /// <summary>Unidade da dimensão de uso (unidade_uso). GAR-007.</summary>
+        public EGarantiaUnidadeUso UnidadeUso { get; private set; } = EGarantiaUnidadeUso.Nenhuma;
         public bool Ativo { get; private set; } = true;
         public long? SequenciaExibicao { get; private set; }
+
+        /// <summary>Verdadeiro se a política define prazo de tempo. GAR-003.</summary>
+        public bool TemDimensaoTempo => Duracao > 0;
+        /// <summary>Verdadeiro se a política define limite de uso. GAR-003.</summary>
+        public bool TemDimensaoUso => LimiteUso.HasValue && LimiteUso.Value > 0 && UnidadeUso != EGarantiaUnidadeUso.Nenhuma;
 
         protected GarantiaPolitica() { }
 
@@ -27,23 +46,30 @@ namespace Epros.Modules.Vendas.Domain.Entities
             int duracao,
             EGarantiaTipoDuracao tipoDuracao,
             string tenantId,
-            string criadoPor)
+            string criadoPor,
+            decimal? limiteUso = null,
+            EGarantiaUnidadeUso unidadeUso = EGarantiaUnidadeUso.Nenhuma)
             : base(tenantId, criadoPor)
         {
             Nome = nome;
             Descricao = descricao;
             Duracao = duracao;
             TipoDuracao = tipoDuracao;
+            LimiteUso = limiteUso;
+            UnidadeUso = unidadeUso;
             Ativo = true;
             Validar();
         }
 
-        public void Alterar(string? nome, string? descricao, int duracao, EGarantiaTipoDuracao tipoDuracao, string alteradoPor)
+        public void Alterar(string? nome, string? descricao, int duracao, EGarantiaTipoDuracao tipoDuracao, string alteradoPor,
+            decimal? limiteUso = null, EGarantiaUnidadeUso unidadeUso = EGarantiaUnidadeUso.Nenhuma)
         {
             Nome = nome;
             Descricao = descricao;
             Duracao = duracao;
             TipoDuracao = tipoDuracao;
+            LimiteUso = limiteUso;
+            UnidadeUso = unidadeUso;
             MarcarAlterado(alteradoPor);
             Validar();
         }
@@ -64,17 +90,27 @@ namespace Epros.Modules.Vendas.Domain.Entities
         public void Validar()
         {
             Clear();
-            // GAR-002 / GAR-006: duração obrigatória e inteiro positivo.
+            // GAR-003 (INV-01 corrigido): ao menos UMA dimensão de vigência (tempo e/ou uso).
             AddNotifications(new Contract<GarantiaPolitica>()
                 .Requires()
-                .IsGreaterThan(Duracao, 0, nameof(Duracao), "A duração da garantia deve ser maior que zero. [Origem: GarantiaPolitica]"));
+                .IsTrue(TemDimensaoTempo || TemDimensaoUso, nameof(Duracao),
+                    "A garantia deve ter ao menos uma dimensão de vigência: prazo de tempo (duração) e/ou limite de uso (km/horas). [Origem: GarantiaPolitica GAR-003]")
+                // GAR-006: se há dimensão de tempo, a duração é inteiro positivo.
+                .IsFalse(Duracao < 0, nameof(Duracao), "A duração da garantia não pode ser negativa. [Origem: GarantiaPolitica]")
+                // Se há dimensão de uso, o limite é positivo.
+                .IsFalse(LimiteUso.HasValue && LimiteUso.Value < 0, nameof(LimiteUso), "O limite de uso não pode ser negativo. [Origem: GarantiaPolitica]"));
         }
     }
 
     /// <summary>
-    /// Cobertura de garantia aplicada a venda/produto (ven_garantia_cobertura). Fonte: EF §10.2.
-    /// GAR-014/GAR-015: guarda referência da venda/linha e/ou do produto. GAR-016/GAR-017: calcula
-    /// vencimento quando há data de origem + duração; senão marca situação Indeterminada.
+    /// Cobertura de garantia aplicada a venda/produto (ven_garantia_cobertura). Fonte: EF §0.1/§10.2.
+    /// GAR-014/GAR-015: guarda referência da venda/linha e/ou do produto.
+    ///
+    /// CORREÇÃO INV-01/GAR-016 (duas dimensões): o vencimento é o que ocorrer PRIMEIRO entre
+    /// (a) vencimento por TEMPO = <see cref="DataOrigem"/> + duração/unidade_tempo e
+    /// (b) vencimento por USO = <see cref="UsoOrigem"/> + limite_uso/unidade_uso.
+    /// <see cref="DataOrigem"/> = data de ENTREGA (NF-07, evento VEN-EVT-003). Sem nenhuma
+    /// das origens → situação Indeterminada.
     /// </summary>
     public class GarantiaCobertura : EntidadeSaaSBase
     {
@@ -84,8 +120,15 @@ namespace Epros.Modules.Vendas.Domain.Entities
         public Guid? ProdutoId { get; private set; }
         public Guid? ClienteId { get; private set; }
         public string? NumeroSerieLote { get; private set; }
+        /// <summary>Data de entrega (NF-07); base do vencimento por tempo.</summary>
         public DateTime? DataOrigem { get; private set; }
         public DateTime? DataVencimento { get; private set; }
+        /// <summary>Leitura de uso (km/horas) na entrega; base do vencimento por uso. GAR-016.</summary>
+        public decimal? UsoOrigem { get; private set; }
+        /// <summary>Limite de uso final (uso_origem + limite_uso). GAR-016.</summary>
+        public decimal? UsoVencimento { get; private set; }
+        /// <summary>Unidade da dimensão de uso herdada da política (para exibição/apuração).</summary>
+        public EGarantiaUnidadeUso UnidadeUso { get; private set; } = EGarantiaUnidadeUso.Nenhuma;
         public EGarantiaSituacaoCobertura Situacao { get; private set; } = EGarantiaSituacaoCobertura.Indeterminada;
         public string? Observacao { get; private set; }
 
@@ -103,7 +146,10 @@ namespace Epros.Modules.Vendas.Domain.Entities
             int duracaoPolitica,
             EGarantiaTipoDuracao tipoDuracaoPolitica,
             string tenantId,
-            string criadoPor)
+            string criadoPor,
+            decimal? usoOrigem = null,
+            decimal? limiteUsoPolitica = null,
+            EGarantiaUnidadeUso unidadeUsoPolitica = EGarantiaUnidadeUso.Nenhuma)
             : base(tenantId, criadoPor)
         {
             GarantiaPoliticaId = garantiaPoliticaId;
@@ -113,35 +159,78 @@ namespace Epros.Modules.Vendas.Domain.Entities
             ClienteId = clienteId;
             NumeroSerieLote = numeroSerieLote;
             DataOrigem = dataOrigem;
+            UsoOrigem = usoOrigem;
+            UnidadeUso = unidadeUsoPolitica;
             Observacao = observacao;
-            CalcularVencimento(duracaoPolitica, tipoDuracaoPolitica);
+            CalcularVencimento(duracaoPolitica, tipoDuracaoPolitica, limiteUsoPolitica, unidadeUsoPolitica);
 
             AddNotifications(new Contract<GarantiaCobertura>()
                 .Requires()
                 .AreNotEquals(garantiaPoliticaId, Guid.Empty, nameof(GarantiaPoliticaId), "A política de garantia é obrigatória. [Origem: GarantiaCobertura]"));
         }
 
-        /// <summary>GAR-016/GAR-017: calcula vencimento; sem dados suficientes → Indeterminada.</summary>
-        public void CalcularVencimento(int duracao, EGarantiaTipoDuracao tipoDuracao)
+        /// <summary>
+        /// GAR-016/GAR-017: calcula o vencimento pelas duas dimensões e a situação corrente.
+        /// Vencimento por tempo → <see cref="DataVencimento"/>; por uso → <see cref="UsoVencimento"/>.
+        /// Sem nenhuma origem → Indeterminada. Vencida quando QUALQUER dimensão for atingida (o que vier primeiro).
+        /// </summary>
+        public void CalcularVencimento(int duracao, EGarantiaTipoDuracao tipoDuracao, decimal? limiteUso, EGarantiaUnidadeUso unidadeUso)
         {
-            if (DataOrigem == null || duracao <= 0)
+            UnidadeUso = unidadeUso;
+
+            // Dimensão TEMPO.
+            if (DataOrigem != null && duracao > 0)
+            {
+                var origem = DataOrigem.Value;
+                DataVencimento = tipoDuracao switch
+                {
+                    EGarantiaTipoDuracao.Dias => origem.AddDays(duracao),
+                    EGarantiaTipoDuracao.Meses => origem.AddMonths(duracao),
+                    EGarantiaTipoDuracao.Anos => origem.AddYears(duracao),
+                    _ => origem.AddDays(duracao)
+                };
+            }
+            else
             {
                 DataVencimento = null;
+            }
+
+            // Dimensão USO.
+            UsoVencimento = (UsoOrigem.HasValue && limiteUso.HasValue && limiteUso.Value > 0 && unidadeUso != EGarantiaUnidadeUso.Nenhuma)
+                ? UsoOrigem.Value + limiteUso.Value
+                : (decimal?)null;
+
+            RecalcularSituacao(UsoOrigem);
+        }
+
+        /// <summary>
+        /// GAR-016: apura a situação corrente. Se informada a leitura de uso atual, considera a dimensão de uso.
+        /// Vencida = o tempo expirou OU o uso atingiu o limite (o que vier primeiro).
+        /// </summary>
+        public void RecalcularSituacao(decimal? usoAtual)
+        {
+            var temTempo = DataVencimento.HasValue;
+            var temUso = UsoVencimento.HasValue;
+
+            if (!temTempo && !temUso)
+            {
                 Situacao = EGarantiaSituacaoCobertura.Indeterminada;
                 return;
             }
 
-            var origem = DataOrigem.Value;
-            DataVencimento = tipoDuracao switch
-            {
-                EGarantiaTipoDuracao.Dias => origem.AddDays(duracao),
-                EGarantiaTipoDuracao.Meses => origem.AddMonths(duracao),
-                EGarantiaTipoDuracao.Anos => origem.AddYears(duracao),
-                _ => origem.AddDays(duracao)
-            };
-            Situacao = DateTime.UtcNow.Date <= DataVencimento.Value.Date
-                ? EGarantiaSituacaoCobertura.Vigente
-                : EGarantiaSituacaoCobertura.Vencida;
+            var vencidaPorTempo = temTempo && DateTime.UtcNow.Date > DataVencimento!.Value.Date;
+            var vencidaPorUso = temUso && usoAtual.HasValue && usoAtual.Value >= UsoVencimento!.Value;
+
+            Situacao = (vencidaPorTempo || vencidaPorUso)
+                ? EGarantiaSituacaoCobertura.Vencida
+                : EGarantiaSituacaoCobertura.Vigente;
+        }
+
+        /// <summary>GAR-016: registra nova leitura de uso (km/horas) e reapura a situação (aciona vencimento por uso).</summary>
+        public void RegistrarUso(decimal usoAtual, string alteradoPor)
+        {
+            RecalcularSituacao(usoAtual);
+            MarcarAlterado(alteradoPor);
         }
     }
 

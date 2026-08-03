@@ -178,6 +178,12 @@ namespace Epros.Tests
 
             public Task<(bool Excedido, string Mensagem)> ValidarLimiteEmpresasAsync(string tenantId, CancellationToken cancellationToken = default)
                 => Task.FromResult((false, string.Empty));
+
+            public Task<(bool Excedido, string Mensagem)> ValidarLimiteClientesAsync(string tenantId, CancellationToken cancellationToken = default)
+                => Task.FromResult((false, string.Empty));
+
+            public Task<(bool Excedido, string Mensagem)> ValidarLimitePermissoesAsync(string tenantId, CancellationToken cancellationToken = default)
+                => Task.FromResult((false, string.Empty));
         }
 
         #endregion

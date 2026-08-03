@@ -18,4 +18,19 @@ namespace Epros.Modules.Imobiliaria.Application.Queries
 
     /// <summary>Produz o resumo do aluguel para localizar o recebivel (EF 7.4, RN-015/RN-022).</summary>
     public record ObterResumoAluguelQuery(Guid LocacaoId) : IQuery<CommandResult>;
+
+    /// <summary>Lista as cobrancas de aluguel de uma locacao (ID8/NF-01).</summary>
+    public record ListarCobrancasLocacaoQuery(Guid LocacaoId) : IQuery<CommandResult>;
+
+    /// <summary>Lista as garantias de uma locacao (ID6).</summary>
+    public record ListarGarantiasLocacaoQuery(Guid LocacaoId) : IQuery<CommandResult>;
+
+    /// <summary>Lista o historico de reajustes de uma locacao (ID7/NF-02).</summary>
+    public record ListarReajustesLocacaoQuery(Guid LocacaoId) : IQuery<CommandResult>;
+
+    /// <summary>Lista propostas, com filtro opcional por imovel (ID2).</summary>
+    public record ListarPropostasQuery(Guid? ImovelId) : IQuery<CommandResult>;
+
+    /// <summary>Consulta uma proposta e suas partes (ID2).</summary>
+    public record ObterPropostaQuery(Guid PropostaId) : IQuery<CommandResult>;
 }

@@ -43,5 +43,23 @@ namespace Epros.API.Controllers
         [HttpGet("contratos")]
         [AbacAuthorize("ConcessionariasDesenvolvimento", "Consultar")]
         public async Task<IActionResult> ListarContratos() => Ok(await _mediator.Send(new ObterContratosRedeQuery()));
+
+        // ----- Transições de contrato de rede (D-02) -----
+
+        [HttpPost("contratos/{id}/encerrar")]
+        [AbacAuthorize("ConcessionariasDesenvolvimento", "Editar")]
+        public async Task<ActionResult<CommandResult>> EncerrarContrato(System.Guid id)
+        {
+            var result = await _mediator.Send(new EncerrarContratoRedeCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("contratos/{id}/cancelar")]
+        [AbacAuthorize("ConcessionariasDesenvolvimento", "Editar")]
+        public async Task<ActionResult<CommandResult>> CancelarContrato(System.Guid id)
+        {
+            var result = await _mediator.Send(new CancelarContratoRedeCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
     }
 }

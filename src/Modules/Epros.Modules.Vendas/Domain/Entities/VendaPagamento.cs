@@ -56,13 +56,19 @@ namespace Epros.Modules.Vendas.Domain.Entities
             PreencherIndicadorPagamento();
         }
 
-        /// <summary>Porte fiel de VendaPagamento.Validar.</summary>
+        /// <summary>
+        /// Valida o pagamento. NOTA (T3): o porte legado invertia as duas asserções Flunt em relação à
+        /// mensagem — exigia ValorPagamento &lt;= 0 e código de autorização com length &gt;= 20 —, o que
+        /// reprovava TODO pagamento com dado válido (IsValid sempre false → <see cref="Venda.AdicionarPagamento"/>
+        /// descartava silenciosamente a forma de pagamento). Corrigido para a intenção das mensagens:
+        /// ValorPagamento &gt; 0 e código de autorização com no máximo 20 caracteres.
+        /// </summary>
         public void Validar()
         {
             AddNotifications(new Contract<Notification>()
                 .Requires()
-                .IsLowerOrEqualsThan(ValorPagamento, decimal.Zero, "ValorPagamento", "Valor Pagamento informado na venda inválido")
-                .IsLowerOrEqualsThan(20, (CartaoCodigoAutorizacaoOperacao ?? "").Length, "CartaoCodigoAutorizacaoOperacao", "Cartão Código Autorização Operação pode conter no max 20 caracteres")
+                .IsGreaterThan(ValorPagamento, decimal.Zero, "ValorPagamento", "Valor Pagamento informado na venda inválido")
+                .IsLowerOrEqualsThan((CartaoCodigoAutorizacaoOperacao ?? "").Length, 20, "CartaoCodigoAutorizacaoOperacao", "Cartão Código Autorização Operação pode conter no max 20 caracteres")
             );
 
             if (!Enum.IsDefined(typeof(ETipoPagamento), TipoPagamento))

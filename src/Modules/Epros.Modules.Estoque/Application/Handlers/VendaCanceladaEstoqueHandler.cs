@@ -1,7 +1,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Epros.Modules.Estoque.Application.Services;
 using Epros.Modules.Estoque.Domain.Entities;
+using Epros.Modules.Estoque.Domain.Enums;
 using Epros.Modules.Estoque.Infrastructure.Data;
 using Epros.Shared.Domain.Events;
 using MediatR;
@@ -21,6 +23,9 @@ namespace Epros.Modules.Estoque.Application.Handlers
 
         public async Task Handle(VendaCanceladaEventNotification notification, CancellationToken cancellationToken)
         {
+            // Restauração de estoque pelo MOTOR ÚNICO (kardex, D1) — entrada compensatória da devolução.
+            var motor = new MotorMovimentacaoEstoque(_context, notification.TenantId, notification.UserId);
+
             foreach (var item in notification.Itens)
             {
                 // 1. Validar idempotência antes de aplicar o estorno
@@ -44,8 +49,16 @@ namespace Epros.Modules.Estoque.Application.Handlers
 
                 if (produto != null)
                 {
-                    // Restaura a quantidade física de estoque
-                    produto.RestaurarEstoque(item.Quantidade, notification.UserId);
+                    // Restaura a quantidade física de estoque pelo kardex, reentrando ao custo médio vigente
+                    // (a média não se altera na devolução). Se não houver saldo prévio, usa o espelho do produto.
+                    var custoMedio = await _context.EstoqueProdutos
+                        .Where(e => e.EmpresaId == MotorMovimentacaoEstoque.EmpresaPadrao && e.ProdutoId == item.ProdutoId)
+                        .Select(e => (decimal?)e.ValorCustoMedio)
+                        .FirstOrDefaultAsync(cancellationToken) ?? produto.CustoMedio;
+
+                    var fato = new FatoGeradorEstoque(notification.VendaId, null, null, EOrigemFatoGeradorEstoque.EntradaFiscal, notification.TenantId, notification.UserId, referenciaExterna: historicoIdentificador);
+                    _context.FatosGeradoresEstoque.Add(fato);
+                    await motor.AplicarEntradaAsync(MotorMovimentacaoEstoque.EmpresaPadrao, item.ProdutoId, ETipoEstoque.Geral, item.Quantidade, custoMedio, fato.Id, null, null, null, ETipoCusteioEstoque.CustoMedio, cancellationToken);
 
                     // Cria o registro físico de movimentação de entrada/devolução
                     var movimento = new MovimentoEstoque(

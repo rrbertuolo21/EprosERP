@@ -39,4 +39,27 @@ namespace Epros.Modules.Estoque.Application.Commands
         Guid? DocumentoFiscalId = null,
         List<SubRetornoItemInput>? Itens = null
     ) : ICommand;
+
+    /// <summary>
+    /// SUB-009 — registra a cobrança do serviço de beneficiamento da ordem; publica evento para gerar a
+    /// COMPRA do serviço + contas a pagar (fato gerador único). Idempotente por cobrança.
+    /// </summary>
+    public record RegistrarSubServicoCobrancaCommand(
+        Guid OrdemId,
+        decimal ValorServico,
+        Guid? CompraId = null
+    ) : ICommand;
+
+    /// <summary>
+    /// SUB-008 — registra o documento fiscal de remessa/retorno da subcontratação com CFOP PARAMETRIZADO
+    /// (valida-contador — não é calculado no código). Vincula ao envio/retorno quando aplicável.
+    /// </summary>
+    public record RegistrarSubDocumentoFiscalCommand(
+        Guid OrdemId,
+        Guid? EnvioId = null,
+        Guid? RetornoId = null,
+        Guid? DocumentoFiscalId = null,
+        string? CfopRemessa = null,
+        string? CfopRetorno = null
+    ) : ICommand;
 }

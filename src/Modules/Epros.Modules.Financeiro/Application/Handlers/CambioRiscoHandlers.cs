@@ -1,11 +1,14 @@
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Epros.Modules.Financeiro.Application.Commands;
+using Epros.Modules.Financeiro.Application.Services;
 using Epros.Modules.Financeiro.Domain.Entities;
 using Epros.Modules.Financeiro.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
+using Epros.Shared.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -184,15 +187,28 @@ namespace Epros.Modules.Financeiro.Application.Handlers
     public class ContabilizarReavaliacaoTituloCommandHandler : IRequestHandler<ContabilizarReavaliacaoTituloCommand, CommandResult>
     {
         private readonly ContextFinanceiro _context;
+        private readonly ITenantProvider _tenant;
         private readonly ICurrentUser _user;
-        public ContabilizarReavaliacaoTituloCommandHandler(ContextFinanceiro context, ICurrentUser user) { _context = context; _user = user; }
+        public ContabilizarReavaliacaoTituloCommandHandler(ContextFinanceiro context, ITenantProvider tenant, ICurrentUser user)
+        { _context = context; _tenant = tenant; _user = user; }
 
         public async Task<CommandResult> Handle(ContabilizarReavaliacaoTituloCommand request, CancellationToken ct)
         {
+            var userId = _user.GetUserId() ?? "system";
             var reav = await _context.ReavaliacoesTitulo.FirstOrDefaultAsync(r => r.Id == request.Id, ct);
             if (reav == null) return CommandResult.Falha("Reavaliação não encontrada.");
-            reav.Contabilizar(_user.GetUserId() ?? "system");
+            reav.Contabilizar(userId);
             if (!reav.IsValid) return CommandResult.Falha(reav.Notifications.Select(n => n.Message));
+
+            // Wiring evento→ledger (TEC-8): variação cambial (ganho/perda) × título reavaliado
+            // (de-para = valida-contador). Só contabiliza quando há variação líquida.
+            var valorVariacao = Math.Abs(reav.TotalVariacao);
+            if (valorVariacao > 0m)
+                await ContabilizacaoEventoService.GerarLancamentoAsync(
+                    _context, _tenant.GetTenantId(), userId,
+                    CatalogoEventosIntegracao.Financeiro.VariacaoCambialContabilizada, reav.Id, valorVariacao,
+                    $"Variação cambial da reavaliação {reav.Id}", ct);
+
             await _context.SaveChangesAsync(ct);
             return CommandResult.Ok("Reavaliação contabilizada.", new { reav.Id });
         }

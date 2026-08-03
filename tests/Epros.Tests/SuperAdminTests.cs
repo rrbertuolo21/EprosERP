@@ -170,7 +170,7 @@ namespace Epros.Tests
             var assinaturaPendente = new AssinaturaCliente(
                 clienteId: clienteId,
                 planoId: planoId,
-                status: AssinaturaStatus.Aguardando,
+                status: AssinaturaStatus.AguardandoAprovacao,
                 dataInicio: DateTime.UtcNow.AddDays(-5),
                 dataFim: dataFimOriginal,
                 trialAte: null,
@@ -212,7 +212,7 @@ namespace Epros.Tests
             // Verifica se a assinatura foi ativada e teve as datas recalculadas
             var assinaturaAtualizada = await context.AssinaturasClientes.IgnoreQueryFilters().FirstOrDefaultAsync(a => a.Id == assinaturaId);
             Assert.NotNull(assinaturaAtualizada);
-            Assert.Equal(AssinaturaStatus.Aprovada, assinaturaAtualizada!.Status);
+            Assert.Equal(AssinaturaStatus.Ativa, assinaturaAtualizada!.Status);
             Assert.Equal("Operador Siser Alfa", assinaturaAtualizada.OperadorAprovacao);
             Assert.Equal("Justificativa para homologar cliente no ambiente.", assinaturaAtualizada.JustificativaAprovacao);
 

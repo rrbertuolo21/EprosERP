@@ -25,6 +25,8 @@ COPY src/Modules/Epros.Modules.GRC/Epros.Modules.GRC.csproj src/Modules/Epros.Mo
 COPY src/Modules/Epros.Modules.ESG/Epros.Modules.ESG.csproj src/Modules/Epros.Modules.ESG/
 COPY src/Modules/Epros.Modules.DMS/Epros.Modules.DMS.csproj src/Modules/Epros.Modules.DMS/
 COPY src/Modules/Epros.Modules.Imobiliaria/Epros.Modules.Imobiliaria.csproj src/Modules/Epros.Modules.Imobiliaria/
+COPY src/Modules/Epros.Modules.Agricultor/Epros.Modules.Agricultor.csproj src/Modules/Epros.Modules.Agricultor/
+COPY src/Modules/Epros.Modules.Relatorios/Epros.Modules.Relatorios.csproj src/Modules/Epros.Modules.Relatorios/
 
 RUN dotnet restore src/API/Epros.API/Epros.API.csproj
 

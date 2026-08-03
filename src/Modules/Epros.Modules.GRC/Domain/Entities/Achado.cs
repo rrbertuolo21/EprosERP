@@ -19,8 +19,26 @@ namespace Epros.Modules.GRC.Domain.Entities
         // Aberto, EmAnalise, EmRemediacao, Encerrado, Atrasado, Cancelado
         public string Status { get; private set; } = "Aberto";
         public string? MotivoEncerramento { get; private set; }
+        // D-CIA-02 / RN-CIA-013 — achado crítico exige aprovação antes do encerramento.
+        public bool Aprovado { get; private set; }
+        public Guid? AprovadorId { get; private set; }
 
         protected Achado() { } // EF Core
+
+        public bool EhCritico() => Severidade == "Critica";
+
+        /// <summary>RN-CIA-013 — aprovação (obrigatória para achado crítico antes de encerrar).</summary>
+        public void Aprovar(Guid aprovadorId, string usuario)
+        {
+            if (aprovadorId == Guid.Empty)
+            {
+                AddNotification(nameof(AprovadorId), "O aprovador do achado e obrigatorio.");
+                return;
+            }
+            Aprovado = true;
+            AprovadorId = aprovadorId;
+            MarcarAlterado(usuario);
+        }
 
         public Achado(
             Guid? testeControleId,
@@ -70,7 +88,11 @@ namespace Epros.Modules.GRC.Domain.Entities
             MarcarAlterado(usuario);
         }
 
-        public void Encerrar(string motivo, string usuario)
+        /// <summary>
+        /// RN-CIA-013/014 — encerramento: exige evidência (<paramref name="possuiEvidencia"/>) e,
+        /// para achado crítico, aprovação prévia (<see cref="Aprovado"/>).
+        /// </summary>
+        public void Encerrar(string motivo, bool possuiEvidencia, string usuario)
         {
             if (Status != "EmRemediacao" && Status != "Atrasado")
             {
@@ -80,6 +102,18 @@ namespace Epros.Modules.GRC.Domain.Entities
             if (string.IsNullOrWhiteSpace(motivo))
             {
                 AddNotification(nameof(MotivoEncerramento), "O motivo do encerramento do achado e obrigatorio.");
+                return;
+            }
+            // RN-CIA-014 — evidência obrigatória no encerramento.
+            if (!possuiEvidencia)
+            {
+                AddNotification(nameof(Status), "O encerramento do achado exige ao menos uma evidencia (RN-CIA-014).");
+                return;
+            }
+            // RN-CIA-013 — achado crítico exige aprovação antes de encerrar.
+            if (EhCritico() && !Aprovado)
+            {
+                AddNotification(nameof(Aprovado), "Achado critico exige aprovacao antes do encerramento (RN-CIA-013).");
                 return;
             }
             Status = "Encerrado";

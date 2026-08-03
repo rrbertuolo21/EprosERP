@@ -81,7 +81,7 @@ docker compose -f docker-compose.local.yml run --rm migrate
 dotnet watch run --project src/API/Epros.API/Epros.API.csproj --urls "http://localhost:8080"
 
 # front (outro terminal)
-cd Epros.App && npm install && npm run dev
+cd EprosApp && npm install && npm run dev
 ```
 
 Seed: `./scripts/seed-local.ps1` ou `./scripts/seed-local.sh` com a API local no ar.
@@ -103,7 +103,7 @@ Ou bash: `./scripts/seed-ambiente-demo.sh`
 | BuildKit timeout | `DOCKER_BUILDKIT=0` (ver [QUICKSTART-LOCAL.md](../QUICKSTART-LOCAL.md)) |
 | API não conecta no Postgres | `docker ps` — container `epros-novo-db` Up? Porta host **55432**? |
 | Migration falha | `scripts/fix-migrations-history.sql` ou reset: `docker compose -f docker-compose.local.yml down -v` |
-| Front tela branca em dev | Apague `Epros.App/.nuxt` e reinicie `npm run dev` |
+| Front tela branca em dev | Apague `EprosApp/.nuxt` e reinicie `npm run dev` |
 | Porta 8080/3000 em uso no fluxo dev | `docker compose -f docker-compose.local.yml stop api web` |
 | Rebuild só API/web (Docker) | `docker compose -f docker-compose.local.yml up -d --build --no-deps api web` |
 

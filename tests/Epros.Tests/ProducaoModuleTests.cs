@@ -190,7 +190,6 @@ namespace Epros.Tests
 
             // Cadastrar insumo no estoque com saldo 50 e custo médio 10
             var insumo = new Produto("INSUMO-1", "Materia Prima 1", 0m, "tenant-1", "user-1");
-            insumo.LancarEntradaEstoque(50m, 10m, "user-1");
             contextEstoque.Produtos.Add(insumo);
 
             // Cadastrar produto acabado no estoque com saldo 0
@@ -198,6 +197,7 @@ namespace Epros.Tests
             contextEstoque.Produtos.Add(produtoAcabado);
 
             await contextEstoque.SaveChangesAsync();
+            await EstoqueTestSeed.SemearSaldoAsync(contextEstoque, "tenant-1", "user-1", insumo.Id, 50m, 10m);
 
             var handler = new OrdemProducaoEncerradaEstoqueHandler(contextEstoque);
 
@@ -229,6 +229,112 @@ namespace Epros.Tests
             // Custo Total Consumido = 10 unidades * R$ 10 (custo do insumo) = R$ 100
             // Custo Unitário do Acabado = R$ 100 / 5 unidades = R$ 20
             Assert.Equal(20m, acabadoAtualizado.CustoMedio);
+        }
+
+        // ======================================================================
+        // T5 — MES MOVE ESTOQUE DE VERDADE: finalizar a ordem MES emite o evento
+        // canônico prd.ordem.concluida no Outbox e o consumidor do Estoque baixa os
+        // insumos e dá entrada do acabado pelo motor único (idempotente).
+        // ======================================================================
+        [Fact]
+        public async Task Finalizar_Mes_Deve_Emitir_Evento_prd_ordem_concluida_No_Outbox()
+        {
+            var options = new DbContextOptionsBuilder<ContextProducao>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            var tenantProvider = new TestTenantProvider("tenant-1");
+            var currentUser = new TestCurrentUser("user-1");
+            using var context = new ContextProducao(options, tenantProvider, currentUser);
+
+            var acabadoId = Guid.NewGuid();
+            var insumoId = Guid.NewGuid();
+            var estruturaId = Guid.NewGuid();
+
+            var ordemId = await MontarOrdemMesAtivaAsync(context, tenantProvider, currentUser, acabadoId, insumoId, estruturaId, quantidadeProduzida: 5m, quantidadeComponente: 10m);
+
+            var finalizar = new FinalizarMesOrdemCommandHandler(context, tenantProvider, currentUser);
+            var res = await finalizar.Handle(new FinalizarMesOrdemCommand(ordemId, DateTime.UtcNow, Guid.NewGuid(), 200m, 0m, null, null), CancellationToken.None);
+            Assert.True(res.Sucesso, string.Join(";", res.Erros));
+
+            var outbox = await context.OutboxMessages.FirstOrDefaultAsync(m => m.EventType == "prd.ordem.concluida");
+            Assert.NotNull(outbox);
+            Assert.Contains(insumoId.ToString(), outbox!.Payload);
+            Assert.Contains(acabadoId.ToString(), outbox.Payload);
+        }
+
+        [Fact]
+        public async Task Consumidor_Estoque_Deve_Baixar_Insumo_E_Entrar_Acabado_Ao_Concluir_Mes_De_Forma_Idempotente()
+        {
+            // --- Producao: monta e finaliza a ordem MES, gerando o evento no outbox ---
+            var optProd = new DbContextOptionsBuilder<ContextProducao>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+            var tenantProvider = new TestTenantProvider("tenant-1");
+            var currentUser = new TestCurrentUser("user-1");
+            using var contextProd = new ContextProducao(optProd, tenantProvider, currentUser);
+
+            // --- Estoque: insumo com saldo 50 @ custo 10; acabado com saldo 0 ---
+            var optEst = new DbContextOptionsBuilder<ContextEstoque>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
+            using var contextEst = new ContextEstoque(optEst, tenantProvider, currentUser);
+            var insumo = new Produto("MP-1", "Materia Prima 1", 0m, "tenant-1", "user-1");
+            var acabado = new Produto("PA-1", "Produto Acabado 1", 0m, "tenant-1", "user-1");
+            contextEst.Produtos.Add(insumo);
+            contextEst.Produtos.Add(acabado);
+            await contextEst.SaveChangesAsync();
+            await EstoqueTestSeed.SemearSaldoAsync(contextEst, "tenant-1", "user-1", insumo.Id, 50m, 10m);
+
+            var ordemId = await MontarOrdemMesAtivaAsync(contextProd, tenantProvider, currentUser, acabado.Id, insumo.Id, Guid.NewGuid(), quantidadeProduzida: 5m, quantidadeComponente: 10m);
+            var finalizar = new FinalizarMesOrdemCommandHandler(contextProd, tenantProvider, currentUser);
+            var res = await finalizar.Handle(new FinalizarMesOrdemCommand(ordemId, DateTime.UtcNow, Guid.NewGuid(), 200m, 0m, null, null), CancellationToken.None);
+            Assert.True(res.Sucesso, string.Join(";", res.Erros));
+            var outbox = await contextProd.OutboxMessages.FirstAsync(m => m.EventType == "prd.ordem.concluida");
+
+            // --- Consome o evento no Estoque (motor único) ---
+            var consumer = new Epros.Modules.Estoque.Application.Outbox.MesOrdemConcluidaEstoqueConsumer(contextEst);
+            await consumer.ConsumeAsync(outbox, CancellationToken.None);
+
+            var insumoDepois = await contextEst.Produtos.FirstAsync(p => p.Id == insumo.Id);
+            var acabadoDepois = await contextEst.Produtos.FirstAsync(p => p.Id == acabado.Id);
+            Assert.Equal(40m, insumoDepois.SaldoEstoque);   // 50 - 10
+            Assert.Equal(5m, acabadoDepois.SaldoEstoque);   // 5 fabricadas
+            Assert.Equal(20m, acabadoDepois.CustoMedio);    // 100 / 5
+
+            // --- ANTI-DUPLA-CONTAGEM: reprocessar a MESMA mensagem não move nada ---
+            await consumer.ConsumeAsync(outbox, CancellationToken.None);
+            var insumoRepetido = await contextEst.Produtos.FirstAsync(p => p.Id == insumo.Id);
+            var acabadoRepetido = await contextEst.Produtos.FirstAsync(p => p.Id == acabado.Id);
+            Assert.Equal(40m, insumoRepetido.SaldoEstoque); // permanece 40 (não baixou de novo)
+            Assert.Equal(5m, acabadoRepetido.SaldoEstoque); // permanece 5 (não entrou de novo)
+        }
+
+        /// <summary>Cria uma ordem MES no estado Ativo (Rascunho->EmAnalise->Ativo), com item produzido e
+        /// um componente de BOM apontando para o insumo — pronta para finalizar.</summary>
+        private static async Task<Guid> MontarOrdemMesAtivaAsync(
+            ContextProducao context, ITenantProvider tenantProvider, ICurrentUser currentUser,
+            Guid acabadoId, Guid insumoId, Guid estruturaId, decimal quantidadeProduzida, decimal quantidadeComponente)
+        {
+            var criar = new CriarMesOrdemCommandHandler(context, tenantProvider, currentUser);
+            var criarCmd = new CriarMesOrdemCommand(
+                Guid.NewGuid(), "REF-1", DateTime.UtcNow, DateTime.UtcNow.AddDays(1), estruturaId, acabadoId, null,
+                200m, null, null,
+                new List<CriarMesOrdemItemInput> { new(acabadoId, quantidadeProduzida, null, 0m) });
+            var criarRes = await criar.Handle(criarCmd, CancellationToken.None);
+            Assert.True(criarRes.Sucesso, string.Join(";", criarRes.Erros));
+
+            var ordem = await context.MesOrdens.Include(o => o.Itens).FirstAsync();
+
+            // Componente de BOM da estrutura ativa (o insumo a ser baixado).
+            context.BomComponentes.Add(new BomComponente(estruturaId, insumoId, quantidadeComponente, "tenant-1", "user-1"));
+            await context.SaveChangesAsync();
+
+            // Registra produção no item (quantidade efetiva do acabado).
+            var registrar = new RegistrarMesProducaoItemCommandHandler(context, currentUser);
+            var itemId = ordem.Itens.First().Id;
+            await registrar.Handle(new RegistrarMesProducaoItemCommand(itemId, quantidadeProduzida, quantidadeProduzida, 0m), CancellationToken.None);
+
+            // Rascunho -> EmAnalise -> Ativo.
+            await new SubmeterMesOrdemCommandHandler(context, tenantProvider, currentUser).Handle(new SubmeterMesOrdemCommand(ordem.Id), CancellationToken.None);
+            await new AprovarMesOrdemCommandHandler(context, tenantProvider, currentUser).Handle(new AprovarMesOrdemCommand(ordem.Id), CancellationToken.None);
+
+            return ordem.Id;
         }
 
         private class TestTenantProvider : ITenantProvider

@@ -52,6 +52,24 @@ namespace Epros.API.Controllers
             return Ok(result);
         }
 
+        [HttpPost("vendas/{id}/faturar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> FaturarVenda(Guid id)
+        {
+            var result = await _mediator.Send(new FaturarVendaVeiculoCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("vendas/{id}/entregar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> EntregarVenda(Guid id)
+        {
+            var result = await _mediator.Send(new EntregarVendaVeiculoCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
         [HttpPost("garantias/{id}/julgar")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]

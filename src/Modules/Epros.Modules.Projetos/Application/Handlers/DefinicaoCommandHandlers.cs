@@ -182,4 +182,75 @@ namespace Epros.Modules.Projetos.Application.Handlers
             return CommandResult.Ok("Projeto duplicado com sucesso!", new { ProjetoOrigemId = origem.Id, ProjetoDestinoId = copia.Id });
         }
     }
+
+    // ===== MM-d: workflow do mestre (Projeto) exposto =====
+
+    /// <summary>Base para transições de workflow do mestre. Carrega o projeto e o usuário corrente.</summary>
+    public abstract class ProjetoWorkflowHandlerBase
+    {
+        protected readonly ContextProjetos Context;
+        private readonly ICurrentUser _currentUser;
+        protected ProjetoWorkflowHandlerBase(ContextProjetos context, ICurrentUser currentUser) { Context = context; _currentUser = currentUser; }
+
+        protected async Task<(Projeto? projeto, string usuario)> CarregarAsync(Guid id, CancellationToken ct)
+        {
+            var usuario = _currentUser.GetUserId() ?? "system";
+            var projeto = await Context.Projetos.FirstOrDefaultAsync(p => p.Id == id, ct);
+            return (projeto, usuario);
+        }
+
+        protected async Task<CommandResult> ExecutarAsync(Guid id, Action<Projeto, string> transicao, string ok, CancellationToken ct)
+        {
+            var (projeto, usuario) = await CarregarAsync(id, ct);
+            if (projeto == null) return CommandResult.Falha("Projeto nao encontrado.");
+            transicao(projeto, usuario);
+            if (!projeto.IsValid) return CommandResult.Falha(projeto.Notifications.Select(n => n.Message));
+            await Context.SaveChangesAsync(ct);
+            return CommandResult.Ok(ok, new { projeto.Id, Status = projeto.Status.ToString(), Tipo = projeto.Tipo.ToString() });
+        }
+    }
+
+    public class SubmeterProjetoCommandHandler : ProjetoWorkflowHandlerBase, ICommandHandler<SubmeterProjetoCommand>
+    {
+        public SubmeterProjetoCommandHandler(ContextProjetos c, ICurrentUser u) : base(c, u) { }
+        public Task<CommandResult> Handle(SubmeterProjetoCommand r, CancellationToken ct) => ExecutarAsync(r.ProjetoId, (p, u) => p.Submeter(u), "Projeto submetido para analise.", ct);
+    }
+
+    public class AprovarProjetoCommandHandler : ProjetoWorkflowHandlerBase, ICommandHandler<AprovarProjetoCommand>
+    {
+        public AprovarProjetoCommandHandler(ContextProjetos c, ICurrentUser u) : base(c, u) { }
+        public Task<CommandResult> Handle(AprovarProjetoCommand r, CancellationToken ct) => ExecutarAsync(r.ProjetoId, (p, u) => p.Aprovar(u), "Projeto aprovado e ativado.", ct);
+    }
+
+    public class SuspenderProjetoCommandHandler : ProjetoWorkflowHandlerBase, ICommandHandler<SuspenderProjetoCommand>
+    {
+        public SuspenderProjetoCommandHandler(ContextProjetos c, ICurrentUser u) : base(c, u) { }
+        public Task<CommandResult> Handle(SuspenderProjetoCommand r, CancellationToken ct) => ExecutarAsync(r.ProjetoId, (p, u) => p.Suspender(u), "Projeto suspenso.", ct);
+    }
+
+    public class RetomarProjetoCommandHandler : ProjetoWorkflowHandlerBase, ICommandHandler<RetomarProjetoCommand>
+    {
+        public RetomarProjetoCommandHandler(ContextProjetos c, ICurrentUser u) : base(c, u) { }
+        public Task<CommandResult> Handle(RetomarProjetoCommand r, CancellationToken ct) => ExecutarAsync(r.ProjetoId, (p, u) => p.Retomar(u), "Projeto retomado.", ct);
+    }
+
+    public class EncerrarProjetoCommandHandler : ProjetoWorkflowHandlerBase, ICommandHandler<EncerrarProjetoCommand>
+    {
+        public EncerrarProjetoCommandHandler(ContextProjetos c, ICurrentUser u) : base(c, u) { }
+        public Task<CommandResult> Handle(EncerrarProjetoCommand r, CancellationToken ct) => ExecutarAsync(r.ProjetoId, (p, u) => p.Encerrar(r.Motivo, u), "Projeto encerrado.", ct);
+    }
+
+    public class InativarProjetoCommandHandler : ProjetoWorkflowHandlerBase, ICommandHandler<InativarProjetoCommand>
+    {
+        public InativarProjetoCommandHandler(ContextProjetos c, ICurrentUser u) : base(c, u) { }
+        public Task<CommandResult> Handle(InativarProjetoCommand r, CancellationToken ct) => ExecutarAsync(r.ProjetoId, (p, u) => p.Inativar(u), "Projeto inativado.", ct);
+    }
+
+    public class ConverterProjetoTemplateCommandHandler : ProjetoWorkflowHandlerBase, ICommandHandler<ConverterProjetoTemplateCommand>
+    {
+        public ConverterProjetoTemplateCommandHandler(ContextProjetos c, ICurrentUser u) : base(c, u) { }
+        public Task<CommandResult> Handle(ConverterProjetoTemplateCommand r, CancellationToken ct) =>
+            ExecutarAsync(r.ProjetoId, (p, u) => { if (r.ParaTemplate) p.ConverterParaTemplate(u); else p.DefinirComoNormal(u); },
+                r.ParaTemplate ? "Projeto convertido em template." : "Projeto definido como normal.", ct);
+    }
 }

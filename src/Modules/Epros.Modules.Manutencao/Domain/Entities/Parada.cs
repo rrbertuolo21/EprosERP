@@ -109,6 +109,22 @@ namespace Epros.Modules.Manutencao.Domain.Entities
             MarcarAlterado(usuario);
         }
 
+        // MAN-PAR D16: registra snapshot de indicador calculado pelo motor.
+        public void RegistrarIndicador(ParadaIndicador indicador, string usuario)
+        {
+            if (!indicador.IsValid) { AddNotifications(indicador.Notifications); return; }
+            Indicadores.Add(indicador);
+            MarcarAlterado(usuario);
+        }
+
+        // MAN-PAR D17: registra vinculo de OS (corretiva gerada ou vinculo manual) a parada.
+        public void AdicionarVinculoOs(ParadaVinculoOs vinculo, string usuario)
+        {
+            if (!vinculo.IsValid) { AddNotifications(vinculo.Notifications); return; }
+            VinculosOs.Add(vinculo);
+            MarcarAlterado(usuario);
+        }
+
         public void Validar()
         {
             Clear();

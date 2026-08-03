@@ -4,7 +4,16 @@ using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using Epros.API.Security;
 using Epros.Modules.Qualidade.Application.Commands;
+using Epros.Modules.Qualidade.Application.Commands.Acr;
+using Epros.Modules.Qualidade.Application.Commands.Ins;
+using Epros.Modules.Qualidade.Application.Commands.Ncr;
+using Epros.Modules.Qualidade.Application.Commands.Qps;
+using Epros.Modules.Qualidade.Application.Commands.Rst;
 using Epros.Modules.Qualidade.Application.Queries;
+using Epros.Modules.Qualidade.Application.Queries.Ins;
+using Epros.Modules.Qualidade.Application.Queries.Qps;
+using Epros.Modules.Qualidade.Application.Queries.Rst;
+using Epros.Modules.Qualidade.Domain.Services.Aql;
 using Epros.Shared.Application.Models;
 
 namespace Epros.API.Controllers
@@ -46,6 +55,76 @@ namespace Epros.API.Controllers
             var result = await _mediator.Send(command);
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
+
+        [HttpPost("causa-raiz")]
+        [AbacAuthorize("QualidadeNaoConformidades", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AdicionarCausaRaiz([FromBody] AdicionarCausaRaizNcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("capa")]
+        [AbacAuthorize("QualidadeNaoConformidades", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AdicionarAcaoCapa([FromBody] AdicionarAcaoCapaNcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("capa/concluir")]
+        [AbacAuthorize("QualidadeNaoConformidades", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> ConcluirAcaoCapa([FromBody] ConcluirAcaoCapaNcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("verificacao-eficacia")]
+        [AbacAuthorize("QualidadeNaoConformidades", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> RegistrarVerificacao([FromBody] RegistrarVerificacaoEficaciaNcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("avancar-etapa")]
+        [AbacAuthorize("QualidadeNaoConformidades", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AvancarEtapa([FromBody] AvancarEtapaNcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("encerrar")]
+        [AbacAuthorize("QualidadeNaoConformidades", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Encerrar([FromBody] EncerrarNcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("cancelar")]
+        [AbacAuthorize("QualidadeNaoConformidades", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Cancelar([FromBody] CancelarNcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
     }
 
     // ============================================================
@@ -73,6 +152,98 @@ namespace Epros.API.Controllers
             var result = await _mediator.Send(command);
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
+
+        // Simulador do motor AQL (ISO 2859-1 / NBR 5426): N + nivel + AQL -> n, Ac/Re, 100%.
+        [HttpGet("amostragem/calcular")]
+        [AbacAuthorize("QualidadePlanosInspecao", "Ler")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        public async Task<IActionResult> CalcularAmostragem(
+            [FromQuery] long tamanhoLote, [FromQuery] ENivelInspecao nivel, [FromQuery] decimal aql,
+            [FromQuery] ESeveridadeAql severidade = ESeveridadeAql.Normal)
+            => Ok(await _mediator.Send(new CalcularPlanoAmostragemQuery(tamanhoLote, nivel, aql, severidade)));
+
+        [HttpPost("caracteristicas")]
+        [AbacAuthorize("QualidadePlanosInspecao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AdicionarCaracteristica([FromBody] AdicionarCaracteristicaPlanoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("regras-amostragem")]
+        [AbacAuthorize("QualidadePlanosInspecao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AdicionarRegra([FromBody] AdicionarRegraAmostragemCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("ativar")]
+        [AbacAuthorize("QualidadePlanosInspecao", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Ativar([FromBody] AtivarPlanoInspecaoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("status")]
+        [AbacAuthorize("QualidadePlanosInspecao", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AlterarStatus([FromBody] AlterarStatusPlanoInspecaoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("executar")]
+        [AbacAuthorize("QualidadePlanosInspecao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Executar([FromBody] ExecutarInspecaoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        // Registra a medicao de uma caracteristica na execucao (secao 11.6).
+        [HttpPost("medicoes")]
+        [AbacAuthorize("QualidadePlanosInspecao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> RegistrarMedicao([FromBody] RegistrarMedicaoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        // Conclui a execucao: consolida o resultado e dispara ACR/NCR (secao 11.7).
+        [HttpPost("concluir")]
+        [AbacAuthorize("QualidadePlanosInspecao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Concluir([FromBody] ConcluirInspecaoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        // Comutacao de severidade PERSISTIDA por fornecedor x produto x AQL (NBR 5427).
+        [HttpPost("comutacao/lote")]
+        [AbacAuthorize("QualidadePlanosInspecao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> RegistrarLoteComutacao([FromBody] RegistrarLoteComutacaoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
     }
 
     // ============================================================
@@ -96,6 +267,48 @@ namespace Epros.API.Controllers
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<CommandResult>> Criar([FromBody] CriarAnaliseAcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("itens")]
+        [AbacAuthorize("QualidadeAceitacaoRejeicao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AdicionarItem([FromBody] AdicionarItemAcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("submeter")]
+        [AbacAuthorize("QualidadeAceitacaoRejeicao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Submeter([FromBody] SubmeterAcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        // Decisao de disposicao (aceite/rejeicao/quarentena) — emite intencao ao Estoque/NCR via Outbox.
+        [HttpPost("decidir")]
+        [AbacAuthorize("QualidadeAceitacaoRejeicao", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Decidir([FromBody] DecidirAnaliseAcrCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        // Decisao automatica por amostragem AQL (motor decide aceitar/rejeitar).
+        [HttpPost("avaliar-amostragem")]
+        [AbacAuthorize("QualidadeAceitacaoRejeicao", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AvaliarAmostragem([FromBody] AvaliarAcrPorAmostragemCommand command)
         {
             var result = await _mediator.Send(command);
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
@@ -150,6 +363,207 @@ namespace Epros.API.Controllers
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<CommandResult>> Criar([FromBody] CriarAtributoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+    }
+
+    // ============================================================
+    // QLD-QPS — Qualidade de Fornecedor (Parceiro de Suprimento)
+    // ============================================================
+    [ApiController]
+    [Route("api/v1/qualidade/fornecedores")]
+    public class QualidadeFornecedorController : ControllerBase
+    {
+        private readonly IMediator _mediator;
+        public QualidadeFornecedorController(IMediator mediator) => _mediator = mediator;
+
+        [HttpGet]
+        [AbacAuthorize("QualidadeFornecedor", "Ler")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Listar([FromQuery] string? statusHomologacao, [FromQuery] int pagina = 1, [FromQuery] int tamanhoPagina = 20)
+            => Ok(await _mediator.Send(new ListarQpsRegistrosQuery(statusHomologacao, pagina, tamanhoPagina)));
+
+        [HttpPost]
+        [AbacAuthorize("QualidadeFornecedor", "Criar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Criar([FromBody] CriarQpsRegistroCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("documentos")]
+        [AbacAuthorize("QualidadeFornecedor", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AdicionarDocumento([FromBody] AdicionarDocumentoQpsCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("homologar")]
+        [AbacAuthorize("QualidadeFornecedor", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Homologar([FromBody] HomologarFornecedorCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("bloquear")]
+        [AbacAuthorize("QualidadeFornecedor", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Bloquear([FromBody] BloquearFornecedorCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("desbloquear")]
+        [AbacAuthorize("QualidadeFornecedor", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Desbloquear([FromBody] DesbloquearFornecedorCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        // Scorecard: motor parametrizavel (formula/pesos = politica Siser, D14).
+        [HttpPost("score")]
+        [AbacAuthorize("QualidadeFornecedor", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> CalcularScore([FromBody] CalcularScoreFornecedorCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+    }
+
+    // ============================================================
+    // QLD-RST — Rastreabilidade e Recall
+    // ============================================================
+    [ApiController]
+    [Route("api/v1/qualidade/recall")]
+    public class QualidadeRecallController : ControllerBase
+    {
+        private readonly IMediator _mediator;
+        public QualidadeRecallController(IMediator mediator) => _mediator = mediator;
+
+        [HttpGet]
+        [AbacAuthorize("QualidadeRecall", "Ler")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Listar([FromQuery] string? etapa, [FromQuery] int pagina = 1, [FromQuery] int tamanhoPagina = 20)
+            => Ok(await _mediator.Send(new ListarCampanhasRecallQuery(etapa, pagina, tamanhoPagina)));
+
+        [HttpGet("{campanhaId:guid}/genealogia")]
+        [AbacAuthorize("QualidadeRecall", "Ler")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Genealogia([FromRoute] System.Guid campanhaId)
+            => Ok(await _mediator.Send(new ObterGenealogiaRecallQuery(campanhaId)));
+
+        [HttpPost]
+        [AbacAuthorize("QualidadeRecall", "Criar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Criar([FromBody] CriarCampanhaRecallCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("itens-afetados")]
+        [AbacAuthorize("QualidadeRecall", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AdicionarItemAfetado([FromBody] AdicionarItemAfetadoRecallCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("genealogia")]
+        [AbacAuthorize("QualidadeRecall", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> RegistrarGenealogia([FromBody] RegistrarGenealogiaNoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("bloquear")]
+        [AbacAuthorize("QualidadeRecall", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Bloquear([FromBody] SolicitarBloqueioRecallCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("comunicacao")]
+        [AbacAuthorize("QualidadeRecall", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Comunicacao([FromBody] RegistrarComunicacaoRecallCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("recolhimento")]
+        [AbacAuthorize("QualidadeRecall", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Recolhimento([FromBody] RegistrarRecolhimentoRecallCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("disposicao")]
+        [AbacAuthorize("QualidadeRecall", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Disposicao([FromBody] RegistrarDisposicaoRecallCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("avancar-etapa")]
+        [AbacAuthorize("QualidadeRecall", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AvancarEtapa([FromBody] AvancarEtapaRecallCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("encerrar")]
+        [AbacAuthorize("QualidadeRecall", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Encerrar([FromBody] EncerrarRecallCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("cancelar")]
+        [AbacAuthorize("QualidadeRecall", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Cancelar([FromBody] CancelarRecallCommand command)
         {
             var result = await _mediator.Send(command);
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);

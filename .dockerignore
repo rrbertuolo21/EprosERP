@@ -9,7 +9,7 @@
 **/dist
 **/.output
 **/.nuxt
-Epros.App/
+EprosApp/
 Epros.Mobile/
 pasta_old/
 tests/

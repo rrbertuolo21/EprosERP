@@ -51,5 +51,28 @@ namespace Epros.API.Controllers
             var result = await _mediator.Send(command, cancellationToken);
             return result.Sucesso ? Created(string.Empty, result) : UnprocessableEntity(result);
         }
+
+        /// <summary>CD2 — mapa comparativo (preço/prazo/condição) por produto, fornecedor a fornecedor.</summary>
+        [HttpGet("{id:guid}/mapa-comparativo")]
+        [AbacAuthorize("EstoqueSourcing", "Consultar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<CommandResult>> MapaComparativo(Guid id, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new MapaComparativoCotacaoQuery(id), cancellationToken);
+            return result.Sucesso ? Ok(result) : NotFound(result);
+        }
+
+        /// <summary>CD2 — escolhe o fornecedor vencedor após o mapa comparativo.</summary>
+        [HttpPost("{id:guid}/selecionar-vencedor")]
+        [AbacAuthorize("EstoqueSourcing", "Decidir")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> SelecionarVencedor(Guid id, [FromBody] SelecionarVencedorCotacaoCommand body, CancellationToken cancellationToken)
+        {
+            var command = body with { CotacaoId = id };
+            var result = await _mediator.Send(command, cancellationToken);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
     }
 }

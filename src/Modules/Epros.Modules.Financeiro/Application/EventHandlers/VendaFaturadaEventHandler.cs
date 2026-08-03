@@ -117,6 +117,16 @@ namespace Epros.Modules.Financeiro.Application.EventHandlers
                 return;
 
             _context.ContasAReceberAgregado.Add(conta);
+
+            // Wiring evento→ledger (TEC-8): gera o lançamento contábil automático (partida dobrada) via
+            // de-para RegraContabilizacao; default seguro em Rascunho contra conta transitória quando o
+            // contador ainda não configurou o de-para (// valida-contador).
+            await Services.ContabilizacaoEventoService.GerarLancamentoAsync(
+                _context, notification.TenantId, notification.UserId ?? "system_outbox",
+                Epros.Shared.Domain.Events.CatalogoEventosIntegracao.Vendas.VendaFaturada,
+                notification.VendaId, notification.Total,
+                $"Venda faturada {notification.VendaId.ToString().Substring(0, 8)}", cancellationToken);
+
             await _context.SaveChangesAsync(cancellationToken);
         }
     }

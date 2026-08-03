@@ -1,13 +1,16 @@
 using System;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Epros.Modules.Financeiro.Application.Commands;
 using Epros.Modules.Financeiro.Domain.Entities;
 using Epros.Modules.Financeiro.Domain.Enums;
+using Epros.Modules.Financeiro.Domain.Services;
 using Epros.Modules.Financeiro.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
+using Epros.Shared.Domain.Events;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -302,6 +305,147 @@ namespace Epros.Modules.Financeiro.Application.Handlers
             if (!e.IsValid) return CommandResult.Falha(e.Notifications.Select(n => n.Message));
             await _context.SaveChangesAsync(ct);
             return CommandResult.Ok("Cobrança por e-mail atualizada.", new { e.Id, e.Status });
+        }
+    }
+
+    // ===== Gateway de Pagamento =====
+    public class RegistrarGatewayPagamentoCommandHandler : IRequestHandler<RegistrarGatewayPagamentoCommand, CommandResult>
+    {
+        private readonly ContextFinanceiro _context; private readonly ITenantProvider _tenant; private readonly ICurrentUser _user;
+        public RegistrarGatewayPagamentoCommandHandler(ContextFinanceiro context, ITenantProvider tenant, ICurrentUser user) { _context = context; _tenant = tenant; _user = user; }
+        public async Task<CommandResult> Handle(RegistrarGatewayPagamentoCommand r, CancellationToken ct)
+        {
+            var e = new GatewayPagamento(r.Provedor, r.Nome, r.ChaveAssinatura, r.IdentificadorExterno, _tenant.GetTenantId(), _user.GetUserId() ?? "system");
+            if (!e.IsValid) return CommandResult.Falha(e.Notifications.Select(n => n.Message));
+            _context.GatewaysPagamento.Add(e);
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok("Gateway de pagamento registrado.", new { e.Id, Provedor = e.Provedor.ToString() });
+        }
+    }
+
+    public class AlterarGatewayPagamentoCommandHandler : IRequestHandler<AlterarGatewayPagamentoCommand, CommandResult>
+    {
+        private readonly ContextFinanceiro _context; private readonly ICurrentUser _user;
+        public AlterarGatewayPagamentoCommandHandler(ContextFinanceiro context, ICurrentUser user) { _context = context; _user = user; }
+        public async Task<CommandResult> Handle(AlterarGatewayPagamentoCommand r, CancellationToken ct)
+        {
+            var e = await _context.GatewaysPagamento.FirstOrDefaultAsync(x => x.Id == r.Id, ct);
+            if (e == null) return CommandResult.Falha("Gateway de pagamento não encontrado.");
+            e.Alterar(r.Nome, r.ChaveAssinatura, r.IdentificadorExterno, _user.GetUserId() ?? "system");
+            if (!e.IsValid) return CommandResult.Falha(e.Notifications.Select(n => n.Message));
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok("Gateway de pagamento atualizado.", new { e.Id });
+        }
+    }
+
+    public class AtivarGatewayPagamentoCommandHandler : IRequestHandler<AtivarGatewayPagamentoCommand, CommandResult>
+    {
+        private readonly ContextFinanceiro _context; private readonly ICurrentUser _user;
+        public AtivarGatewayPagamentoCommandHandler(ContextFinanceiro context, ICurrentUser user) { _context = context; _user = user; }
+        public async Task<CommandResult> Handle(AtivarGatewayPagamentoCommand r, CancellationToken ct)
+        {
+            var e = await _context.GatewaysPagamento.FirstOrDefaultAsync(x => x.Id == r.Id, ct);
+            if (e == null) return CommandResult.Falha("Gateway de pagamento não encontrado.");
+            if (r.Ativar) e.Ativar(_user.GetUserId() ?? "system"); else e.Desativar(_user.GetUserId() ?? "system");
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok(r.Ativar ? "Gateway ativado." : "Gateway desativado.", new { e.Id, e.Ativo });
+        }
+    }
+
+    // ===== Webhook de Pagamento (validação de assinatura + idempotência/dedup + baixa por nosso número) =====
+    public class ProcessarWebhookPagamentoCommandHandler : IRequestHandler<ProcessarWebhookPagamentoCommand, CommandResult>
+    {
+        private readonly ContextFinanceiro _context; private readonly ITenantProvider _tenant; private readonly ICurrentUser _user;
+        public ProcessarWebhookPagamentoCommandHandler(ContextFinanceiro context, ITenantProvider tenant, ICurrentUser user) { _context = context; _tenant = tenant; _user = user; }
+
+        public async Task<CommandResult> Handle(ProcessarWebhookPagamentoCommand r, CancellationToken ct)
+        {
+            var tenantId = _tenant.GetTenantId();
+            var userId = _user.GetUserId() ?? "system";
+
+            var gateway = await _context.GatewaysPagamento.FirstOrDefaultAsync(g => g.Id == r.GatewayPagamentoId, ct);
+            if (gateway == null) return CommandResult.Falha("Gateway de pagamento não encontrado.");
+            if (!gateway.Ativo) return CommandResult.Falha("Gateway de pagamento inativo.");
+
+            // Idempotência/dedup: mesmo (gateway x id de evento) não processa duas vezes (retorno idempotente).
+            var jaRecebido = await _context.WebhooksPagamento
+                .FirstOrDefaultAsync(w => w.GatewayPagamentoId == r.GatewayPagamentoId && w.EventoExternoId == r.EventoExternoId, ct);
+            if (jaRecebido != null)
+                return CommandResult.Ok("Webhook já processado (idempotente).", new
+                {
+                    jaRecebido.Id,
+                    Status = jaRecebido.Status.ToString(),
+                    Duplicado = true,
+                    jaRecebido.FaturaCobrancaId
+                });
+
+            var registro = new WebhookPagamentoRecebido(r.GatewayPagamentoId, r.EventoExternoId, r.TipoEvento,
+                r.NossoNumero, r.Valor, r.DataPagamento, tenantId, userId);
+            if (!registro.IsValid) return CommandResult.Falha(registro.Notifications.Select(n => n.Message));
+            _context.WebhooksPagamento.Add(registro);
+
+            // Validação de assinatura (HMAC-SHA256). Esquema exato do provedor real = // valida-ambiente.
+            if (!ValidadorAssinaturaWebhook.Conferir(r.PayloadRaw ?? string.Empty, gateway.ChaveAssinatura, r.Assinatura))
+            {
+                registro.MarcarFalha(EStatusWebhookPagamento.AssinaturaInvalida, "Assinatura HMAC não confere.", userId);
+                await _context.SaveChangesAsync(ct);
+                return CommandResult.Falha("Assinatura do webhook inválida.");
+            }
+
+            // Efeito: baixa da fatura pelo nosso número (RSF-007), mesmo caminho do retorno CNAB.
+            if (!r.NossoNumero.HasValue)
+            {
+                registro.MarcarFalha(EStatusWebhookPagamento.Ignorado, "Webhook sem nosso número — nada a baixar.", userId);
+                await _context.SaveChangesAsync(ct);
+                return CommandResult.Ok("Webhook recebido, sem nosso número para baixa.", new { registro.Id, Status = registro.Status.ToString() });
+            }
+
+            var fatura = await _context.FaturasCobranca.FirstOrDefaultAsync(f => f.NossoNumero == r.NossoNumero.Value, ct);
+            if (fatura == null)
+            {
+                registro.MarcarFalha(EStatusWebhookPagamento.FaturaNaoLocalizada, $"Fatura com nosso número {r.NossoNumero} não localizada.", userId);
+                await _context.SaveChangesAsync(ct);
+                return CommandResult.Falha($"Fatura com nosso número {r.NossoNumero} não localizada.");
+            }
+            if (fatura.Situacao == ESituacaoFaturaCobranca.Baixada)
+            {
+                // Já baixada (por CNAB ou webhook anterior): idempotente, não reprocessa a baixa.
+                registro.MarcarProcessado(fatura.Id, userId);
+                await _context.SaveChangesAsync(ct);
+                return CommandResult.Ok("Fatura já estava baixada (idempotente).", new { registro.Id, FaturaId = fatura.Id, Status = registro.Status.ToString() });
+            }
+
+            var valorRecebido = r.Valor ?? fatura.Valor;
+            fatura.Baixar(r.DataPagamento ?? DateTime.UtcNow, valorRecebido, userId);
+            if (!fatura.IsValid)
+            {
+                registro.MarcarFalha(EStatusWebhookPagamento.Ignorado, string.Join("; ", fatura.Notifications.Select(n => n.Message)), userId);
+                await _context.SaveChangesAsync(ct);
+                return CommandResult.Falha(fatura.Notifications.Select(n => n.Message));
+            }
+
+            registro.MarcarProcessado(fatura.Id, userId);
+            _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Financeiro.WebhookPagamentoProcessado,
+                JsonSerializer.Serialize(new
+                {
+                    webhookId = registro.Id,
+                    gatewayId = gateway.Id,
+                    provedor = gateway.Provedor.ToString(),
+                    faturaId = fatura.Id,
+                    nossoNumero = r.NossoNumero,
+                    valorRecebido,
+                    tenantId
+                })));
+
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok("Webhook processado; fatura baixada.", new
+            {
+                registro.Id,
+                FaturaId = fatura.Id,
+                NossoNumero = r.NossoNumero,
+                valorRecebido,
+                Status = registro.Status.ToString()
+            });
         }
     }
 }

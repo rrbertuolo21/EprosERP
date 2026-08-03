@@ -16,6 +16,14 @@ namespace Epros.Modules.Estoque.Domain.Entities
         public string Descricao { get; private set; } = string.Empty;
         public string Situacao { get; private set; } = string.Empty;
 
+        // CD2 — escolha do vencedor após o mapa comparativo. Fornecedor vencedor (cabeçalho) e data da
+        // decisão. Quando decidida, a cotação está apta a originar o pedido de compra (SOURCING → COMPRAS).
+        public Guid? FornecedorVencedorId { get; private set; }
+        public DateTime? DecididaEm { get; private set; }
+
+        /// <summary>Situação canônica de decisão (CD2): cotação com vencedor escolhido.</summary>
+        public const string SituacaoDecidida = "DECIDIDA";
+
         // Navegação intra-módulo
         public ICollection<ScCotacaoFornecedor> Fornecedores { get; private set; } = new List<ScCotacaoFornecedor>();
         public ICollection<ScCotacaoItem> Itens { get; private set; } = new List<ScCotacaoItem>();
@@ -42,6 +50,32 @@ namespace Epros.Modules.Estoque.Domain.Entities
 
         public void AdicionarFornecedor(ScCotacaoFornecedor fornecedor) => Fornecedores.Add(fornecedor);
         public void AdicionarItem(ScCotacaoItem item) => Itens.Add(item);
+
+        /// <summary>
+        /// CD2 — seleciona o fornecedor vencedor após o mapa comparativo. Exige que o fornecedor pertença à
+        /// cotação. Idempotente-seguro: não decide duas vezes. Marca a situação como DECIDIDA.
+        /// </summary>
+        public bool SelecionarVencedor(Guid fornecedorId, string usuario)
+        {
+            if (FornecedorVencedorId.HasValue)
+            {
+                AddNotification("FornecedorVencedorId", "Cotação já teve o vencedor escolhido [SRC-020] [Origem: ScCotacao]");
+                return false;
+            }
+            var pertence = false;
+            foreach (var f in Fornecedores)
+                if (f.FornecedorId == fornecedorId) { pertence = true; break; }
+            if (!pertence)
+            {
+                AddNotification("FornecedorVencedorId", "O fornecedor vencedor deve ser um dos participantes da cotação [SRC-021] [Origem: ScCotacao]");
+                return false;
+            }
+            FornecedorVencedorId = fornecedorId;
+            DecididaEm = DateTime.UtcNow;
+            Situacao = SituacaoDecidida;
+            MarcarAlterado(usuario);
+            return true;
+        }
 
         public void Validar()
         {

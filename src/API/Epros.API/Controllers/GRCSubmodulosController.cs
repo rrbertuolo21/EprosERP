@@ -165,6 +165,46 @@ namespace Epros.API.Controllers
         public async Task<IActionResult> ListarViolacoes()
             => Ok(await _mediator.Send(new ObterViolacoesSoDQuery()));
 
+        // ---- GRC-SOD avançado: bloqueio preventivo (D-SOD-03), exceção (D-SOD-02), bypass (D-SOD-04) ----
+        // Fiação da camada avançada antes inalcançável (T1/T2). O bloqueio SoD também roda automaticamente
+        // no caminho de concessão RBAC (ISoDAvaliadorConcessao); este endpoint permite avaliação sob demanda.
+
+        [HttpPost("sod/avaliar-concessao")]
+        [AbacAuthorize("SegregacaoFuncoes", "Avaliar")]
+        public async Task<ActionResult<CommandResult>> AvaliarConcessao([FromBody] AvaliarConcessaoSoDCommand command)
+            => Resultado(await _mediator.Send(command));
+
+        [HttpPost("sod/excecoes")]
+        [AbacAuthorize("SegregacaoFuncoes", "SolicitarExcecao")]
+        public async Task<ActionResult<CommandResult>> SolicitarExcecao([FromBody] SolicitarExcecaoSoDCommand command)
+            => Resultado(await _mediator.Send(command));
+
+        [HttpPost("sod/excecoes/{id:guid}/aprovar")]
+        [AbacAuthorize("SegregacaoFuncoes", "AprovarExcecao")]
+        public async Task<ActionResult<CommandResult>> AprovarExcecao(Guid id, [FromBody] AprovarExcecaoSoDCommand command)
+        {
+            if (id != command.ExcecaoId) return BadRequest(CommandResult.Falha("O ID da rota não corresponde ao corpo."));
+            return Resultado(await _mediator.Send(command));
+        }
+
+        [HttpPost("sod/excecoes/{id:guid}/renovar")]
+        [AbacAuthorize("SegregacaoFuncoes", "AprovarExcecao")]
+        public async Task<ActionResult<CommandResult>> RenovarExcecao(Guid id, [FromBody] RenovarExcecaoSoDCommand command)
+        {
+            if (id != command.ExcecaoId) return BadRequest(CommandResult.Falha("O ID da rota não corresponde ao corpo."));
+            return Resultado(await _mediator.Send(command));
+        }
+
+        [HttpPost("sod/excecoes/expirar-vencidas")]
+        [AbacAuthorize("SegregacaoFuncoes", "AprovarExcecao")]
+        public async Task<ActionResult<CommandResult>> ExpirarExcecoesVencidas()
+            => Resultado(await _mediator.Send(new ExpirarExcecoesVencidasSoDCommand()));
+
+        [HttpPost("sod/bypass")]
+        [AbacAuthorize("SegregacaoFuncoes", "RegistrarBypass")]
+        public async Task<ActionResult<CommandResult>> RegistrarBypass([FromBody] RegistrarBypassAdminSoDCommand command)
+            => Resultado(await _mediator.Send(command));
+
         // ===================== GRC-DEN (Investigacoes e Denuncias) =====================
         // Recurso ABAC "InvestigacoesDenuncias" nao e semeado: sobe DESABILITADO (nega por padrao).
 

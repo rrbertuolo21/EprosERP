@@ -72,4 +72,16 @@ namespace Epros.Modules.Aplicativo.Application.Dtos
         string TenantId,
         Guid SessaoImpersonacaoId
     );
+
+    /// <summary>Resultado do acesso de suporte da Siser a um tenant cliente (área Landlord).</summary>
+    public record AcessoSuporteResultDto(
+        string Token,
+        DateTime Expiracao,
+        Guid UsuarioAlvoId,
+        string NomeAlvo,
+        Guid? EmpresaId,
+        string TenantAlvo,
+        string PerfilSuporte,
+        Guid SessaoSuporteId
+    );
 }

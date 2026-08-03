@@ -63,7 +63,7 @@ namespace Epros.Tests
             Assert.True(result1.Sucesso);
             var assinaturas = await context.AssinaturasClientes.Where(a => a.ClienteId == cliente.Id).ToListAsync();
             Assert.Single(assinaturas);
-            Assert.Equal(AssinaturaStatus.Aprovada, assinaturas[0].Status);
+            Assert.Equal(AssinaturaStatus.Ativa, assinaturas[0].Status);
             Assert.NotNull(assinaturas[0].TrialAte);
             Assert.Equal(planoTrial.Id, cliente.PlanoId); // O cliente teve o plano atualizado para o plano trial contratado
 
@@ -110,7 +110,7 @@ namespace Epros.Tests
             var assinaturaAtiva = new AssinaturaCliente(
                 clienteId: cliente.Id,
                 planoId: planoAtivo.Id,
-                status: AssinaturaStatus.Aprovada,
+                status: AssinaturaStatus.Ativa,
                 dataInicio: dataInicioAtiva,
                 dataFim: dataFimAtiva,
                 trialAte: null,

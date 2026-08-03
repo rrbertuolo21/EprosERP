@@ -96,12 +96,13 @@ namespace Epros.Modules.Producao.Domain.Entities
             decimal? percentualDesperdicioLinha = null,
             Guid? grupoComponenteId = null,
             int? ordemMontagem = null,
-            decimal? custoUnitarioComImpostos = null)
+            decimal? custoUnitarioComImpostos = null,
+            ETipoComponenteBom tipoComponente = ETipoComponenteBom.Normal)
         {
             var componente = new BomComponente(
                 Id, variacaoComponenteId, quantidade, TenantId, alteradoPor,
                 subUnidadeId, multiplicadorUnidade, percentualDesperdicioLinha,
-                grupoComponenteId, ordemMontagem, custoUnitarioComImpostos);
+                grupoComponenteId, ordemMontagem, custoUnitarioComImpostos, tipoComponente);
 
             if (!componente.IsValid)
             {

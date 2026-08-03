@@ -12,7 +12,7 @@ Você já viu **quem faz o quê** no [artigo 07](07-squads-cerimonias.md). Este 
 
 Em caso de dúvida sobre nomenclatura, responsabilidades ou ciclo de entrega, consulte aqui primeiro.
 
-> **EprosERP:** o trabalho é no clone único **EprosERP** (`src/` + `Epros.App/`). Onde o texto citar back e front como repos separados, aplique no mesmo PR ou PRs sequenciais neste repositório.
+> **EprosERP:** o trabalho é no clone único **EprosERP** (`src/` + `EprosApp/`). Onde o texto citar back e front como repos separados, aplique no mesmo PR ou PRs sequenciais neste repositório.
 
 ---
 

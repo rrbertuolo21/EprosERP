@@ -38,7 +38,17 @@ namespace Epros.Modules.Financeiro.Application.EventHandlers
                 conta.Cancelar("Cancelamento da venda de origem no PDV/Faturamento.", notification.UserId);
 
                 if (conta.IsValid)
+                {
+                    // Wiring evento→ledger (TEC-8): estorno contábil do cancelamento da venda
+                    // (de-para = valida-contador). Idempotente por (evento + vendaId).
+                    await Services.ContabilizacaoEventoService.GerarLancamentoAsync(
+                        _context, notification.TenantId, "system",
+                        CatalogoEventosIntegracao.Financeiro.VendaCanceladaEstorno,
+                        notification.VendaId, conta.ValorTitulo,
+                        $"Estorno do cancelamento da venda {notification.VendaId}", cancellationToken);
+
                     await _context.SaveChangesAsync(cancellationToken);
+                }
             }
         }
     }

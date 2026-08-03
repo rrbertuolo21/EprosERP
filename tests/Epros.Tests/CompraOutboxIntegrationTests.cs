@@ -118,9 +118,9 @@ namespace Epros.Tests
             // Pre-seed a product in Estoque
             var prodSku = "SKU-COMPRA-456";
             var produto = new Produto(prodSku, "Produto Cancelar Teste", 10m, tenantId, userId);
-            produto.LancarEntradaEstoque(5, 10m, userId); // Initial: qty = 5, average cost = 10m
             estoqueContext.Produtos.Add(produto);
             await estoqueContext.SaveChangesAsync();
+            await EstoqueTestSeed.SemearSaldoAsync(estoqueContext, tenantId, userId, produto.Id, 5, 10m); // Initial: qty = 5, average cost = 10m
 
             // 1. Launch a purchase
             var lancarHandler = new LancarCompraCommandHandler(estoqueContext, tenantProvider, currentUser);

@@ -126,5 +126,43 @@ namespace Epros.API.Controllers
             var r = await _mediator.Send(new CancelarFaturaRecorrenteCommand(faturaId));
             return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
         }
+
+        // ----- Arrendamento mercantil (IFRS-16 / CPC 06 R2) -----
+        [HttpGet("arrendamentos")]
+        [AbacAuthorize("ContratosFinanceiros", "Ler")]
+        public async Task<IActionResult> ListarArrendamentos([FromQuery] int pagina = 1, [FromQuery] int tamanhoPagina = 20)
+            => Ok(await _mediator.Send(new ListarContratosArrendamentoQuery(pagina, tamanhoPagina)));
+
+        [HttpGet("arrendamentos/{id:guid}")]
+        [AbacAuthorize("ContratosFinanceiros", "Ler")]
+        public async Task<IActionResult> ObterArrendamento(Guid id)
+        {
+            var r = await _mediator.Send(new ObterContratoArrendamentoPorIdQuery(id));
+            return r.Sucesso ? Ok(r) : NotFound(r);
+        }
+
+        [HttpGet("arrendamentos/{id:guid}/cronograma")]
+        [AbacAuthorize("ContratosFinanceiros", "Ler")]
+        public async Task<IActionResult> ObterCronogramaArrendamento(Guid id)
+        {
+            var r = await _mediator.Send(new ObterCronogramaArrendamentoQuery(id));
+            return r.Sucesso ? Ok(r) : NotFound(r);
+        }
+
+        [HttpPost("arrendamentos")]
+        [AbacAuthorize("ContratosFinanceiros", "Criar")]
+        public async Task<ActionResult<CommandResult>> CriarArrendamento([FromBody] CriarContratoArrendamentoCommand command)
+        {
+            var r = await _mediator.Send(command);
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
+
+        [HttpPost("arrendamentos/{id:guid}/encerrar")]
+        [AbacAuthorize("ContratosFinanceiros", "Editar")]
+        public async Task<ActionResult<CommandResult>> EncerrarArrendamento(Guid id, [FromBody] EncerrarContratoArrendamentoCommand command)
+        {
+            var r = await _mediator.Send(command with { Id = id });
+            return r.Sucesso ? Ok(r) : UnprocessableEntity(r);
+        }
     }
 }

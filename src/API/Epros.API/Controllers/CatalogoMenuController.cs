@@ -1,7 +1,9 @@
 using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Epros.Modules.GestaoClientes.Application.Commands;
 using Epros.Modules.GestaoClientes.Application.Queries;
+using Epros.Modules.Aplicativo.Application.Queries;
 using Epros.Shared.Application.Models;
 using Epros.API.Security;
 using MediatR;
@@ -22,14 +24,28 @@ namespace Epros.API.Controllers
         private IActionResult Resolver(CommandResult result) =>
             result.Sucesso ? Ok(result) : (result.Mensagem == "Erro de validação" ? UnprocessableEntity(result) : BadRequest(result));
 
-        // ===== Endpoint de acessos (AcessosResponse) =====
+        // ===== Endpoint de acessos (menu do usuário) =====
+        // 1.10: FURO FECHADO. Antes recebia IsAdmin/PerfilAcessoId do CORPO (caller-supplied → escalonamento).
+        // Agora IGNORA o corpo: identidade e empresa vêm SEMPRE do token, e o menu é a MESMA projeção por
+        // capacidade do GET /api/v1/menu (fonte única). "Admin" deixa de ser afirmável pelo chamador — é
+        // derivado do RBAC. Consolida as duas árvores server-side numa só (LC-1/LC-2; dúvida #4 da verificação).
         [HttpPost("acessos")]
         [AbacAuthorize("Acessos", "Ler")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
-        public async Task<IActionResult> ObterAcessos([FromBody] ObterAcessosUsuarioQuery query)
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> ObterAcessos()
         {
-            var result = await _mediator.Send(query);
-            return result.Sucesso ? Ok(result) : BadRequest(result);
+            var uid = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                      ?? User.FindFirst("nameid")?.Value
+                      ?? User.FindFirst("sub")?.Value;
+            if (!Guid.TryParse(uid, out var usuarioId))
+                return Unauthorized(new { error = "Token sem identidade de usuário válida." });
+
+            if (!Guid.TryParse(User.FindFirst("empresaId")?.Value, out var empresaId))
+                return Unauthorized(new { error = "Selecione uma empresa (token sem empresa corrente)." });
+
+            var result = await _mediator.Send(new ObterMenuDoUsuarioQuery(usuarioId, empresaId));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
 
         // ===== Menu principal =====

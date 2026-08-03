@@ -206,7 +206,7 @@ namespace Epros.Tests
             var usuarioAlvo = new Usuario("tenant-alvo", "Usuário Alvo", "alvo@epros.com", "senha", UsuarioTipo.Company, "system");
             contextApp.Usuarios.Add(usuarioAlvo);
 
-            var vinculo = new UsuarioEmpresa("tenant-alvo", usuarioAlvo.Id, Guid.NewGuid(), null, true, "system");
+            var vinculo = new UsuarioEmpresa("tenant-alvo", usuarioAlvo.Id, Guid.NewGuid(), null, false, "system"); // não-admin (admin é bloqueado pela salvaguarda)
             contextApp.UsuariosEmpresas.Add(vinculo);
             await contextApp.SaveChangesAsync();
 
@@ -311,6 +311,8 @@ namespace Epros.Tests
             public Task<bool> PossuiFolgaEmpresasAsync(string tenantId, CancellationToken cancellationToken = default) => Task.FromResult(true);
             public Task<(bool Excedido, string Mensagem)> ValidarLimiteUsuariosAsync(string tenantId, CancellationToken cancellationToken = default) => Task.FromResult((false, string.Empty));
             public Task<(bool Excedido, string Mensagem)> ValidarLimiteEmpresasAsync(string tenantId, CancellationToken cancellationToken = default) => Task.FromResult((false, string.Empty));
+            public Task<(bool Excedido, string Mensagem)> ValidarLimiteClientesAsync(string tenantId, CancellationToken cancellationToken = default) => Task.FromResult((false, string.Empty));
+            public Task<(bool Excedido, string Mensagem)> ValidarLimitePermissoesAsync(string tenantId, CancellationToken cancellationToken = default) => Task.FromResult((false, string.Empty));
         }
 
         public class TestTenantProvider : ITenantProvider

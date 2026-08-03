@@ -6,10 +6,10 @@
 ## O produto em uma frase
 ERP SaaS multi-tenant. **Monólito modular** .NET 8 (Clean Arch por módulo, **CQRS/MediatR**,
 **PostgreSQL + EF Core**, RLS multi-tenant, Outbox, **ABAC** `[AbacAuthorize]`, Flunt) + front
-**Nuxt 3 + TypeScript** (`Epros.App`, IO só via `useApi`/`useApiList`). Mobile React Native (submódulo).
+**Nuxt 3 + TypeScript** (`EprosApp`, IO só via `useApi`/`useApiList`). Mobile React Native (submódulo).
 
 ## Estrutura (achatada, deploy-ready)
-`src/` backend · `Epros.App/` front · `scripts/` · `infra/` · `docs/` (incl. `fabrica/`) ·
+`src/` backend · `EprosApp/` front · `scripts/` · `infra/` · `docs/` (incl. `fabrica/`) ·
 `docker-compose.{local,prod}.yml` · `tests/` · `Epros.sln`. Módulos em `src/Modules/Epros.Modules.<X>/`.
 Diário: `HISTORICO-DESENVOLVIMENTO-IA.md`.
 

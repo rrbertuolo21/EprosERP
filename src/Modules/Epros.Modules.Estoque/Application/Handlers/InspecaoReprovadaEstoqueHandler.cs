@@ -1,6 +1,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Epros.Modules.Estoque.Application.Services;
+using Epros.Modules.Estoque.Domain.Entities;
+using Epros.Modules.Estoque.Domain.Enums;
 using Epros.Modules.Estoque.Infrastructure.Data;
 using Epros.Shared.Domain.Events;
 using MediatR;
@@ -32,14 +35,16 @@ namespace Epros.Modules.Estoque.Application.Handlers
                 return;
             }
 
-            // Realiza a saída física do lote reprovado do estoque disponível
-            // Se o saldo for menor que a quantidade, a lógica interna do Produto adicionará a notificação de erro,
-            // que deve ser tratada ou logada.
-            produto.LancarSaidaEstoque(notification.QuantidadeLote, "system_quality");
+            // Realiza a saída física do lote reprovado pelo MOTOR ÚNICO (kardex, D1). Se o saldo bloquear a
+            // baixa (D8: default), a saída não é aplicada (paridade com o comportamento anterior, que
+            // silenciosamente não persistia quando o saldo era insuficiente).
+            var motor = new MotorMovimentacaoEstoque(_context, notification.TenantId, "system_quality");
+            var fato = new FatoGeradorEstoque(null, null, null, EOrigemFatoGeradorEstoque.Avaria, notification.TenantId, "system_quality", referenciaExterna: $"Inspeção reprovada {notification.InspecaoLoteId}");
+            _context.FatosGeradoresEstoque.Add(fato);
 
-            if (produto.IsValid)
+            var resSaida = await motor.AplicarSaidaAsync(MotorMovimentacaoEstoque.EmpresaPadrao, produto.Id, notification.QuantidadeLote, fato.Id, null, cancellationToken);
+            if (resSaida.Sucesso)
             {
-                _context.Produtos.Update(produto);
                 await _context.SaveChangesAsync(cancellationToken);
             }
         }

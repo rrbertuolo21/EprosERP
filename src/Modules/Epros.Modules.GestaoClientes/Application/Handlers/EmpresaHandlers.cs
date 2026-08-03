@@ -28,8 +28,12 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
         {
             var tenantId = _tenantProvider.GetTenantId();
             var empresas = await _context.Empresas
+                .AsNoTracking()
                 .Where(e => e.TenantId == tenantId)
                 .ToListAsync(cancellationToken);
+
+            // T-01/P1-2: nunca devolver o segredo (ciphertext) na resposta — apenas a máscara.
+            foreach (var e in empresas) e.MascararTokenPixParaLeitura();
 
             return CommandResult.Ok("Empresas listadas com sucesso.", empresas);
         }
@@ -51,11 +55,13 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
         {
             var tenantId = _tenantProvider.GetTenantId();
             var empresa = await _context.Empresas
+                .AsNoTracking()
                 .FirstOrDefaultAsync(e => e.Id == request.Id && e.TenantId == tenantId, cancellationToken);
 
             if (empresa == null)
                 return CommandResult.Falha(new[] { "Empresa não encontrada" });
 
+            empresa.MascararTokenPixParaLeitura(); // T-01/P1-2: nunca devolver o segredo cifrado.
             return CommandResult.Ok("Empresa obtida com sucesso.", empresa);
         }
     }
@@ -76,11 +82,13 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
         {
             var tenantId = _tenantProvider.GetTenantId();
             var empresa = await _context.Empresas
+                .AsNoTracking()
                 .FirstOrDefaultAsync(e => e.Cnpj == request.Cnpj && e.TenantId == tenantId, cancellationToken);
 
             if (empresa == null)
                 return CommandResult.Falha(new[] { "Empresa não encontrada" });
 
+            empresa.MascararTokenPixParaLeitura(); // T-01/P1-2: nunca devolver o segredo cifrado.
             return CommandResult.Ok("Empresa obtida com sucesso.", empresa);
         }
     }
@@ -102,11 +110,13 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             var tenantId = _tenantProvider.GetTenantId();
             // Mantém o comportamento legado (busca por Cnpj com o valor informado).
             var empresa = await _context.Empresas
+                .AsNoTracking()
                 .FirstOrDefaultAsync(e => e.Cnpj == request.Cpf && e.TenantId == tenantId, cancellationToken);
 
             if (empresa == null)
                 return CommandResult.Falha(new[] { "Empresa não encontrada" });
 
+            empresa.MascararTokenPixParaLeitura(); // T-01/P1-2: nunca devolver o segredo cifrado.
             return CommandResult.Ok("Empresa obtida com sucesso.", empresa);
         }
     }

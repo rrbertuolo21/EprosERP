@@ -18,16 +18,22 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
         private readonly ContextGestaoClientes _context;
         private readonly ITenantProvider _tenantProvider;
         private readonly ICurrentUser _currentUser;
+        private readonly IValidadorLimitesSaaS _validadorLimites;
 
-        public CriarPapelCommandHandler(ContextGestaoClientes context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        public CriarPapelCommandHandler(ContextGestaoClientes context, ITenantProvider tenantProvider, ICurrentUser currentUser, IValidadorLimitesSaaS validadorLimites)
         {
-            _context = context; _tenantProvider = tenantProvider; _currentUser = currentUser;
+            _context = context; _tenantProvider = tenantProvider; _currentUser = currentUser; _validadorLimites = validadorLimites;
         }
 
         public async Task<CommandResult> Handle(CriarPapelCommand request, CancellationToken cancellationToken)
         {
             var tenantId = _tenantProvider.GetTenantId();
             var userId = _currentUser.GetUserId() ?? "system";
+
+            // 1.06 — enforcement do limite de PERMISSÕES/PAPÉIS (RBAC), liga a cota CotaPermissoes.
+            var (excedeuLimite, msgLimite) = await _validadorLimites.ValidarLimitePermissoesAsync(tenantId, cancellationToken);
+            if (excedeuLimite)
+                return CommandResult.Falha(new[] { msgLimite }, "Limite de papéis/permissões excedido");
 
             var duplicado = await _context.Papeis.AnyAsync(p => p.Name == request.Name && p.TenantId == tenantId, cancellationToken);
             if (duplicado)
@@ -219,10 +225,14 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
         private readonly ContextGestaoClientes _context;
         private readonly ITenantProvider _tenantProvider;
         private readonly ICurrentUser _currentUser;
+        private readonly ISoDAvaliadorConcessao? _sodAvaliador;
 
-        public AtribuirPapelUsuarioCommandHandler(ContextGestaoClientes context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        // O avaliador SoD é opcional: em produção é injetado por DI (torna o bloqueio SoD efetivo em
+        // runtime — D-SOD-03); em testes de unidade que constroem o handler diretamente, fica null e a
+        // checagem é ignorada (comportamento legado preservado).
+        public AtribuirPapelUsuarioCommandHandler(ContextGestaoClientes context, ITenantProvider tenantProvider, ICurrentUser currentUser, ISoDAvaliadorConcessao? sodAvaliador = null)
         {
-            _context = context; _tenantProvider = tenantProvider; _currentUser = currentUser;
+            _context = context; _tenantProvider = tenantProvider; _currentUser = currentUser; _sodAvaliador = sodAvaliador;
         }
 
         public async Task<CommandResult> Handle(AtribuirPapelUsuarioCommand request, CancellationToken cancellationToken)
@@ -234,11 +244,28 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             if (!papelExiste)
                 return CommandResult.Falha(new[] { "Papel não encontrado para o inquilino atual." });
 
-            var jaAtribuido = await _context.UsuariosPapeis.AnyAsync(up => up.UsuarioId == request.UsuarioId && up.PapelId == request.PapelId && up.TenantId == tenantId, cancellationToken);
+            var jaAtribuido = await _context.UsuariosPapeis.AnyAsync(up => up.UsuarioId == request.UsuarioId && up.PapelId == request.PapelId && up.EmpresaId == request.EmpresaId && up.TenantId == tenantId, cancellationToken);
             if (jaAtribuido)
                 return CommandResult.Falha(new[] { "Papel já atribuído a este usuário." }, "Erro de validação");
 
-            var vinculo = new UsuarioPapel(request.UsuarioId, request.PapelId, request.ModelType, tenantId, userId);
+            // D-SOD-03: avaliação preventiva de Segregação de Funções ANTES de gravar a concessão.
+            // As "funções" SoD são identificadas pelo PapelId. Se uma regra de modo "Bloqueia" for
+            // violada pela nova concessão, a atribuição é NEGADA (bloqueio efetivo em runtime).
+            if (_sodAvaliador != null)
+            {
+                var funcoesAtuais = await _context.UsuariosPapeis
+                    .Where(up => up.UsuarioId == request.UsuarioId && up.TenantId == tenantId && up.DeletadoEm == null)
+                    .Select(up => up.PapelId)
+                    .ToListAsync(cancellationToken);
+
+                var sod = await _sodAvaliador.AvaliarConcessaoAsync(request.UsuarioId, funcoesAtuais, new[] { request.PapelId }, cancellationToken);
+                if (sod.Bloqueado)
+                    return CommandResult.Falha(
+                        $"Concessão bloqueada por Segregação de Funções: {sod.RegrasBloqueantes.Count} regra(s) incompatível(is) [D-SOD-03].",
+                        mensagem: "Concessão negada por segregação de funções.", block: true);
+            }
+
+            var vinculo = new UsuarioPapel(request.UsuarioId, request.PapelId, request.ModelType, tenantId, userId, request.EmpresaId);
             if (!vinculo.IsValid)
                 return CommandResult.Falha(vinculo.Notifications.Select(n => n.Message).Distinct(), "Invariantes de domínio do vínculo UsuarioPapel não foram atendidas.");
 

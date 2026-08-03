@@ -1,6 +1,6 @@
 # 08 — Qualidade (código comentado, documentado, testado e manutenível)
 
-> Auditoria READ-ONLY — 2026-07-05. Alvo: `EprosERP` backend (`src/`, `tests/`) + frontend `Epros.App`.
+> Auditoria READ-ONLY — 2026-07-05. Alvo: `EprosERP` backend (`src/`, `tests/`) + frontend `EprosApp`.
 > Build: **0 erros / 467 avisos**. Testes: **327 métodos `[Fact]`/`[Theory]` em 71 arquivos**.
 
 ---
@@ -75,7 +75,7 @@ Cauda longa preocupante: 12 arquivos têm só **1–2 casos** (VendasTests=1, Ve
 5. **`VendaFiscalHandlers.cs` — 852 linhas**: lógica fiscal-na-venda densa, sem teste próprio e sem doc.
 6. **`MontaImpostoHercules.cs` — 661 linhas** + `GeraXmlDfe.cs` (886): cálculo/serialização XML legado, alta complexidade, nomes obscuros ("Hercules").
 7. **XML-doc quase ausente**: 168/192 handlers e 85/90 controllers sem summary → onboarding e manutenção caros.
-8. **0 README por módulo** (14 módulos backend + Epros.App): nenhum ponto de entrada de arquitetura por domínio.
+8. **0 README por módulo** (14 módulos backend + EprosApp): nenhum ponto de entrada de arquitetura por domínio.
 9. **Smoke tests disfarçados de cobertura**: 12 arquivos de teste com 1–2 casos dão falsa sensação de verde no CQRS de Vendas/Produto/Compra.
 10. **10 TODO/HACK no motor fiscal** (CT-e/MDF-e/NFS-e/DANFE/MinIO/EmitenteProvider) — pendências reais de emissão marcadas em `MotorLegadoFiscalService.cs` e serviços `*NaoConfigurado.cs`.
 
@@ -116,8 +116,8 @@ Cauda longa preocupante: 12 arquivos têm só **1–2 casos** (VendasTests=1, Ve
 | Handlers Fiscal | 33 arquivos | 28/33 sem doc (paradoxal: domínio mais crítico) | **Alta** |
 | Handlers DMS/Manutencao/Producao/Projetos/Qualidade/RH | 30 arquivos | 100% sem doc cada | Média |
 | README por módulo (backend) | `src/Modules/*` | **0 READMEs** em 14 módulos | Média |
-| README frontend | `Epros.App` | **0 README** (existe MAPA_FRONTEND.md na raiz, mas não por pasta) | Média |
-| Composables front | `Epros.App/composables` (39) | Todos têm ≥1 comentário — **OK** (não há composable "mudo") | Baixa |
+| README frontend | `EprosApp` | **0 README** (existe MAPA_FRONTEND.md na raiz, mas não por pasta) | Média |
+| Composables front | `EprosApp/composables` (39) | Todos têm ≥1 comentário — **OK** (não há composable "mudo") | Baixa |
 
 **Nota positiva:** os poucos handlers/serviços fiscais que TÊM doc são exemplares (contratos "honestos" explicando o legado — ver `ICteMdfeFiscalService.cs`, `CteMdfeFiscalServiceNaoConfigurado.cs`). O padrão existe; falta aplicá-lo em massa. Handlers com doc: ESG 2/6, Estoque 8/22, Financeiro 6/11, Fiscal 5/33, Vendas 2/7.
 

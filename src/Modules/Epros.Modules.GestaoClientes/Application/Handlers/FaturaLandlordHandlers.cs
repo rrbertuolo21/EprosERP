@@ -7,6 +7,7 @@ using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
 using Epros.Modules.GestaoClientes.Application.Commands;
 using Epros.Modules.GestaoClientes.Application.Queries;
+using Epros.Modules.GestaoClientes.Application.Security;
 using Epros.Modules.GestaoClientes.Domain.Entities;
 using Epros.Modules.GestaoClientes.Infrastructure.Data;
 
@@ -19,15 +20,21 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
     {
         private readonly ContextGestaoClientes _context;
         private readonly ICurrentUser _currentUser;
+        private readonly ITenantProvider _tenantProvider;
 
-        public AlterarFaturaCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser)
+        public AlterarFaturaCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser, ITenantProvider tenantProvider)
         {
             _context = context;
             _currentUser = currentUser;
+            _tenantProvider = tenantProvider;
         }
 
         public async Task<CommandResult> Handle(AlterarFaturaCommand request, CancellationToken cancellationToken)
         {
+            // 1.11 fix #2 — fatura landlord (cobrança da Siser) exige operador interno.
+            var guarda = GuardaOperadorInterno.Exigir(_tenantProvider);
+            if (guarda != null) return guarda;
+
             var alteradoPor = _currentUser.GetUserId() ?? "system";
 
             var fatura = await _context.Faturas.FirstOrDefaultAsync(f => f.Id == request.Id, cancellationToken);
@@ -60,15 +67,21 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
     {
         private readonly ContextGestaoClientes _context;
         private readonly ICurrentUser _currentUser;
+        private readonly ITenantProvider _tenantProvider;
 
-        public BaixarFaturaManualCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser)
+        public BaixarFaturaManualCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser, ITenantProvider tenantProvider)
         {
             _context = context;
             _currentUser = currentUser;
+            _tenantProvider = tenantProvider;
         }
 
         public async Task<CommandResult> Handle(BaixarFaturaManualCommand request, CancellationToken cancellationToken)
         {
+            // 1.11 fix #2 — baixa manual de fatura landlord exige operador interno.
+            var guarda = GuardaOperadorInterno.Exigir(_tenantProvider);
+            if (guarda != null) return guarda;
+
             var alteradoPor = _currentUser.GetUserId() ?? "system";
 
             var fatura = await _context.Faturas.FirstOrDefaultAsync(f => f.Id == request.FaturaId, cancellationToken);
@@ -144,15 +157,21 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
     {
         private readonly ContextGestaoClientes _context;
         private readonly ICurrentUser _currentUser;
+        private readonly ITenantProvider _tenantProvider;
 
-        public ExcluirFaturaCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser)
+        public ExcluirFaturaCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser, ITenantProvider tenantProvider)
         {
             _context = context;
             _currentUser = currentUser;
+            _tenantProvider = tenantProvider;
         }
 
         public async Task<CommandResult> Handle(ExcluirFaturaCommand request, CancellationToken cancellationToken)
         {
+            // 1.11 fix #2 — excluir fatura landlord exige operador interno.
+            var guarda = GuardaOperadorInterno.Exigir(_tenantProvider);
+            if (guarda != null) return guarda;
+
             var deletadoPor = _currentUser.GetUserId() ?? "system";
 
             var fatura = await _context.Faturas.FirstOrDefaultAsync(f => f.Id == request.Id, cancellationToken);
@@ -257,6 +276,11 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 })
                 .ToListAsync(cancellationToken);
 
+            var itens = await _context.Set<FaturaItem>()
+                .Where(i => i.FaturaId == f.Id)
+                .Select(i => new FaturaItemDto { Id = i.Id, Descricao = i.Descricao, Valor = i.Valor })
+                .ToListAsync(cancellationToken);
+
             return new FaturaDetalhadaDto
             {
                 Id = f.Id,
@@ -270,8 +294,46 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 PercentualComissaoVendedor = f.PercentualComissaoVendedor,
                 ValorComissaoRevenda = f.ValorComissaoRevenda,
                 ValorComissaoVendedor = f.ValorComissaoVendedor,
+                Quitada = f.Quitada,
+                ValorPago = f.ValorPago ?? 0m,
+                Numero = f.Numero,
+                Observacoes = f.Observacoes,
                 CriadoEm = f.CriadoEm,
+                Itens = itens,
                 Pagamentos = pagamentos
+            };
+        }
+    }
+
+    /// <summary>1.08A — Obtém o recibo mais recente de uma fatura (para download pelo cliente).</summary>
+    public class ObterReciboPorFaturaQueryHandler : IQueryHandler<ObterReciboPorFaturaQuery, ReciboPagamentoDto?>
+    {
+        private readonly ContextGestaoClientes _context;
+
+        public ObterReciboPorFaturaQueryHandler(ContextGestaoClientes context)
+        {
+            _context = context;
+        }
+
+        public async Task<ReciboPagamentoDto?> Handle(ObterReciboPorFaturaQuery request, CancellationToken cancellationToken)
+        {
+            var r = await _context.RecibosPagamento
+                .Where(x => x.FaturaId == request.FaturaId)
+                .OrderByDescending(x => x.CriadoEm)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (r == null) return null;
+
+            return new ReciboPagamentoDto
+            {
+                Id = r.Id,
+                Numero = r.Numero,
+                FaturaId = r.FaturaId,
+                ClienteId = r.ClienteId,
+                Valor = r.Valor,
+                DataPagamento = r.DataPagamento,
+                MeioPagamento = r.MeioPagamento,
+                PagadorNome = r.PagadorNome,
+                PagadorDocumento = r.PagadorDocumento
             };
         }
     }

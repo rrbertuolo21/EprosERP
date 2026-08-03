@@ -32,7 +32,7 @@ Pronto:
 | Login **admin** | `admin@epros.local` / `Admin@12345` → painel Landlord |
 | Login **cliente** | `cliente@demo.local` / `Cliente@12345` → ERP |
 
-> ⚠️ A pasta se chama `Epros.App` — o Finder do macOS a trata como aplicativo. Abra pelo **editor** ou
+> ⚠️ A pasta se chama `EprosApp` — o Finder do macOS a trata como aplicativo. Abra pelo **editor** ou
 > **terminal** (ou botão direito → "Mostrar Conteúdo do Pacote").
 
 ## 3. Configurar o Cursor (o processo na sua máquina)

@@ -23,7 +23,7 @@
 **F4 NÃO entrou** (loaders NCM/CFOP/serviço/FCP/IBPT `atualizar` por arquivo; resolução CST por NCM+modelo `obter-por-cst`/`obter-ncm-classificados`; DELETE em CFOP/TipoOperacaoFiscal/CodigoBeneficioFiscal) → **ajuste fino pós-validação** (loaders ligam ao carregamento NCM/CEST que é ambiente; emissão real via Hercules não depende deles).
 
 **✅ FRONTEND FECHADO + DEPLOY-READY (07-jul):** F2 pousou. Achado raiz: `app.vue` chamava `<NuxtPage/>` SEM `<NuxtLayout>` → sidebar/header NUNCA montavam (metade dos "AUSENTE" do audit era isso). Corrigido + 8 páginas self-contained com `layout:false`. Componentes Material claro (DataTable/modais/botões navy sólidos), ícones Tabler SVG (fim dos emojis), CFOP 7→19 colunas, NF-e entrada (pagamentos/transporte cards), perfis-detalhe consertado (PUT faltava `/{id}` + estados loading), PDV teclas F. `typecheck` 0, `npm run build` limpo, console SEM erros, login renderiza no visual claro/navy.
-**GOTCHA (importante):** tela-em-branco no preview era **cache `.nuxt` corrompido** após sessão gigante de HMR (erro `Error matching route rules ... reading 'entries'` no radix3) — NÃO é bug. Fix: parar dev + `rm -rf Epros.App/.nuxt` + reiniciar. Produção (`npm run build`) gera do zero, não afetada.
+**GOTCHA (importante):** tela-em-branco no preview era **cache `.nuxt` corrompido** após sessão gigante de HMR (erro `Error matching route rules ... reading 'entries'` no radix3) — NÃO é bug. Fix: parar dev + `rm -rf EprosApp/.nuxt` + reiniciar. Produção (`npm run build`) gera do zero, não afetada.
 
 **🏁 FECHAMENTO COMPLETO (07-jul) — F1..F9 TODOS ✅.** O usuário mandou finalizar F4/F5/F8/F9 (não adiar). Feito por 4 agentes disjuntos + gate do lead:
 - **F4 Fiscal:** loaders `POST .../atualizar` (NCM/CFOP-padrão/CódServiçoSefaz/FCP/IBPT, IFormFile), resolução CST/cClassTrib por NCM+modelo (novo controller `classificacoes-tributarias`: obter-por-cst/{cst}/{modelo}, obter-por-ncm-lst, obter-ncm-classificados), DELETE em CFOP/TipoOperacaoFiscal/CodigoBeneficioFiscal. +25 testes. Sem migration (reusa entidades).
@@ -31,7 +31,7 @@
 - **F8 Qualidade:** **warnings 467→0** na solução inteira (DfeCalculos 396→0, o maior foco; via `= null!`/guards/`?`, sem #pragma em massa, sem introduzir NRE). `LandingPageSettingsHandlers` 1759→121 linhas (código morto). **+72 testes** (total 453), XML-doc + README em todos os módulos.
 - **F9 GATE FINAL (lead verificou):** `dotnet build Epros.sln` = **0 erros / 0 avisos**; `dotnet test` = **453 aprovados / 0 falhas**; `has-pending-model-changes` = "No changes" em Fiscal/GestaoClientes/Estoque/Vendas (schema em sincronia). Migrations já aplicadas no Postgres.
 
-**FALTA SÓ A PARTE HUMANA:** 1) usuário SOBE (build limpo + API .NET de pé — gotcha: `rm -rf Epros.App/.nuxt` se der tela branca em dev). 2) negócio valida 1 semana. 3) **ETL do cutover** (long→Guid, SQL Server→PostgreSQL, loader NCM/CEST alimenta as tabelas via os loaders da F4) — roda NA VIRADA com dados de produção. Homologação SEFAZ + certificado + NFS-e transmissão real = ambiente. Checklist em `DEPLOY_READINESS.md`.
+**FALTA SÓ A PARTE HUMANA:** 1) usuário SOBE (build limpo + API .NET de pé — gotcha: `rm -rf EprosApp/.nuxt` se der tela branca em dev). 2) negócio valida 1 semana. 3) **ETL do cutover** (long→Guid, SQL Server→PostgreSQL, loader NCM/CEST alimenta as tabelas via os loaders da F4) — roda NA VIRADA com dados de produção. Homologação SEFAZ + certificado + NFS-e transmissão real = ambiente. Checklist em `DEPLOY_READINESS.md`.
 
 **FALTA do PLANO_FECHAMENTO (próximas rodadas, usuário quer ASAP):** F4 endpoints (loaders NCM/CFOP/serviço/FCP/IBPT import + resolução CST por NCM+modelo + DELETEs + shape totalRegistros) · F8 qualidade (warnings→0 começando por External.DfeCalculos 766; testes NFS-e/CT-e/MDF-e/venda; XML-doc; READMEs) · D2/D3 (agregados Compra, endereços dissolvidos) · F9 gate final + E2E + ETL. Depois do gate rodada-1: disparar F4+F8 (backend).
 
@@ -66,13 +66,13 @@
 
 ## 1. Identidade e caminhos
 - **Legado (fonte da verdade):** `../Epros/epros_erp-main` (backend .NET 8/SQL Server), `../Epros/epros_erp_front-main` (front Nuxt3+Vuetify).
-- **Novo (destino):** `EprosERP/` — backend .NET 8 modular (CQRS/MediatR/EF Core/PostgreSQL), frontend `Epros.App/` (Nuxt 3 SPA, CSS custom **sem Vuetify**), motor fiscal legado copiado em `src/External/` (Epros.ERP.DfeCalculos + Epros.ERP.Shared).
+- **Novo (destino):** `EprosERP/` — backend .NET 8 modular (CQRS/MediatR/EF Core/PostgreSQL), frontend `EprosApp/` (Nuxt 3 SPA, CSS custom **sem Vuetify**), motor fiscal legado copiado em `src/External/` (Epros.ERP.DfeCalculos + Epros.ERP.Shared).
 - **Solução:** `Epros.sln` (raiz). Banco dev: PostgreSQL em Docker (container `epros-postgres`, db/user/pass `epros`/`epros`/`epros_dev_password`, localhost:5432).
 
 ## 2. Estado ATUAL verificado
 - `dotnet build Epros.sln` = **0 erros** · `dotnet test` = **367 testes verdes** (0 falhas).
 - **Schema ↔ código reconciliados** (Fase D concluída): 6 migrations `PortEqualizacao*` aplicaram limpo em banco zerado; `has-pending-model-changes` = "No changes". 228 tabelas (plataforma 99/estoque 53/vendas 38/financas 15/aplicativo 23).
-- **Frontend** `Epros.App`: 63 telas, `nuxi typecheck` 0, `npm run build` ✨ ok. Tema claro/escuro com toggle (sol/lua) + login estilo legado (split-screen) implementados.
+- **Frontend** `EprosApp`: 63 telas, `nuxi typecheck` 0, `npm run build` ✨ ok. Tema claro/escuro com toggle (sol/lua) + login estilo legado (split-screen) implementados.
 - Paridade: domínio ~98%, ponderada **~88-90%**.
 
 ## 3. ✅ Fixes críticos desta sessão — CONCLUÍDOS E VERIFICADOS
@@ -129,6 +129,6 @@ Se algo estiver vermelho: são erros barulhentos de integração (padrão da ses
 ```bash
 # subir só o postgres:      docker compose up -d postgres
 # aplicar migrations:       dotnet ef database update --project src/Modules/Epros.Modules.<M> --startup-project src/API/Epros.API --context Context<M> --connection "Host=localhost;Port=5432;Database=epros;Username=epros;Password=epros_dev_password"
-# rodar frontend:           cd Epros.App && npm run dev
+# rodar frontend:           cd EprosApp && npm run dev
 # contagem tabelas:         docker exec epros-postgres psql -U epros -d epros -c "SELECT table_schema,count(*) FROM information_schema.tables WHERE table_schema IN ('plataforma','estoque','vendas','financas','aplicativo') AND table_type='BASE TABLE' GROUP BY 1;"
 ```

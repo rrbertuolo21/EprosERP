@@ -1,12 +1,15 @@
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Epros.Modules.Imobiliaria.Application.Commands;
 using Epros.Modules.Imobiliaria.Application.Queries;
 using Epros.Modules.Imobiliaria.Domain.Entities;
+using Epros.Modules.Imobiliaria.Domain.Enums;
 using Epros.Modules.Imobiliaria.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
+using Epros.Shared.Domain.Events;
 using Microsoft.EntityFrameworkCore;
 
 namespace Epros.Modules.Imobiliaria.Application.Handlers
@@ -97,6 +100,177 @@ namespace Epros.Modules.Imobiliaria.Application.Handlers
                 .ToListAsync(cancellationToken);
 
             return CommandResult.Ok("Locacoes listadas com sucesso!", locacoes);
+        }
+    }
+
+    public class AlterarLocacaoCommandHandler : ICommandHandler<AlterarLocacaoCommand>
+    {
+        private readonly ContextImobiliaria _context;
+        private readonly ICurrentUser _currentUser;
+
+        public AlterarLocacaoCommandHandler(ContextImobiliaria context, ICurrentUser currentUser)
+        { _context = context; _currentUser = currentUser; }
+
+        public async Task<CommandResult> Handle(AlterarLocacaoCommand request, CancellationToken cancellationToken)
+        {
+            var usuario = _currentUser.GetUserId() ?? "system";
+            var locacao = await _context.Locacoes.FirstOrDefaultAsync(l => l.Id == request.LocacaoId, cancellationToken);
+            if (locacao is null)
+                return CommandResult.Falha("Locacao nao encontrada.");
+
+            locacao.AtualizarDados(request.ImovelId, request.PeriodoInicial, request.PeriodoFinal,
+                request.Valor, request.Vencimento, usuario);
+            if (!locacao.IsValid)
+                return CommandResult.Falha(locacao.Notifications.Select(n => n.Message));
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Locacao alterada com sucesso!", new { LocacaoId = locacao.Id });
+        }
+    }
+
+    /// <summary>
+    /// Formaliza a locacao e aplica o efeito colateral no imovel (Disponivel → Locado), publicando
+    /// o evento imo.locacao.formalizada no Outbox (T2). Tudo em uma unica transacao (TEC-05).
+    /// </summary>
+    public class FormalizarLocacaoCommandHandler : ICommandHandler<FormalizarLocacaoCommand>
+    {
+        private readonly ContextImobiliaria _context;
+        private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
+
+        public FormalizarLocacaoCommandHandler(ContextImobiliaria context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        { _context = context; _tenantProvider = tenantProvider; _currentUser = currentUser; }
+
+        public async Task<CommandResult> Handle(FormalizarLocacaoCommand request, CancellationToken cancellationToken)
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var usuario = _currentUser.GetUserId() ?? "system";
+
+            var locacao = await _context.Locacoes.Include(l => l.Partes)
+                .FirstOrDefaultAsync(l => l.Id == request.LocacaoId, cancellationToken);
+            if (locacao is null)
+                return CommandResult.Falha("Locacao nao encontrada.");
+
+            locacao.Formalizar(usuario);
+            if (!locacao.IsValid)
+                return CommandResult.Falha(locacao.Notifications.Select(n => n.Message));
+
+            // Efeito colateral (ID1): imovel vinculado passa a Locado.
+            if (locacao.ImovelId.HasValue)
+            {
+                var imovel = await _context.Imoveis.FirstOrDefaultAsync(i => i.Id == locacao.ImovelId.Value, cancellationToken);
+                if (imovel is not null)
+                {
+                    imovel.MarcarLocado(usuario);
+                    if (!imovel.IsValid)
+                        return CommandResult.Falha(imovel.Notifications.Select(n => n.Message));
+                }
+            }
+
+            _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Imobiliaria.LocacaoFormalizada,
+                JsonSerializer.Serialize(new { locacaoId = locacao.Id, imovelId = locacao.ImovelId, locacao.Valor, locacao.Vencimento, tenantId })));
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Locacao formalizada com sucesso!", new { LocacaoId = locacao.Id, Status = locacao.Status.ToString() });
+        }
+    }
+
+    public class EncerrarLocacaoCommandHandler : ICommandHandler<EncerrarLocacaoCommand>
+    {
+        private readonly ContextImobiliaria _context;
+        private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
+
+        public EncerrarLocacaoCommandHandler(ContextImobiliaria context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        { _context = context; _tenantProvider = tenantProvider; _currentUser = currentUser; }
+
+        public async Task<CommandResult> Handle(EncerrarLocacaoCommand request, CancellationToken cancellationToken)
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var usuario = _currentUser.GetUserId() ?? "system";
+
+            var locacao = await _context.Locacoes.FirstOrDefaultAsync(l => l.Id == request.LocacaoId, cancellationToken);
+            if (locacao is null)
+                return CommandResult.Falha("Locacao nao encontrada.");
+
+            locacao.Encerrar(usuario);
+            if (!locacao.IsValid)
+                return CommandResult.Falha(locacao.Notifications.Select(n => n.Message));
+
+            await LiberarImovelSeVinculado(locacao, usuario, cancellationToken);
+
+            _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Imobiliaria.LocacaoEncerrada,
+                JsonSerializer.Serialize(new { locacaoId = locacao.Id, imovelId = locacao.ImovelId, tenantId })));
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Locacao encerrada com sucesso!", new { LocacaoId = locacao.Id, Status = locacao.Status.ToString() });
+        }
+
+        private async Task LiberarImovelSeVinculado(Locacao locacao, string usuario, CancellationToken ct)
+        {
+            if (!locacao.ImovelId.HasValue) return;
+            var imovel = await _context.Imoveis.FirstOrDefaultAsync(i => i.Id == locacao.ImovelId.Value, ct);
+            imovel?.LiberarLocacao(usuario);
+        }
+    }
+
+    public class CancelarLocacaoCommandHandler : ICommandHandler<CancelarLocacaoCommand>
+    {
+        private readonly ContextImobiliaria _context;
+        private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
+
+        public CancelarLocacaoCommandHandler(ContextImobiliaria context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        { _context = context; _tenantProvider = tenantProvider; _currentUser = currentUser; }
+
+        public async Task<CommandResult> Handle(CancelarLocacaoCommand request, CancellationToken cancellationToken)
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var usuario = _currentUser.GetUserId() ?? "system";
+
+            var locacao = await _context.Locacoes.FirstOrDefaultAsync(l => l.Id == request.LocacaoId, cancellationToken);
+            if (locacao is null)
+                return CommandResult.Falha("Locacao nao encontrada.");
+
+            locacao.Cancelar(usuario);
+            if (!locacao.IsValid)
+                return CommandResult.Falha(locacao.Notifications.Select(n => n.Message));
+
+            if (locacao.ImovelId.HasValue)
+            {
+                var imovel = await _context.Imoveis.FirstOrDefaultAsync(i => i.Id == locacao.ImovelId.Value, cancellationToken);
+                imovel?.LiberarLocacao(usuario);
+            }
+
+            _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Imobiliaria.LocacaoCancelada,
+                JsonSerializer.Serialize(new { locacaoId = locacao.Id, imovelId = locacao.ImovelId, tenantId })));
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Locacao cancelada com sucesso!", new { LocacaoId = locacao.Id, Status = locacao.Status.ToString() });
+        }
+    }
+
+    public class RenovarLocacaoCommandHandler : ICommandHandler<RenovarLocacaoCommand>
+    {
+        private readonly ContextImobiliaria _context;
+        private readonly ICurrentUser _currentUser;
+
+        public RenovarLocacaoCommandHandler(ContextImobiliaria context, ICurrentUser currentUser)
+        { _context = context; _currentUser = currentUser; }
+
+        public async Task<CommandResult> Handle(RenovarLocacaoCommand request, CancellationToken cancellationToken)
+        {
+            var usuario = _currentUser.GetUserId() ?? "system";
+            var locacao = await _context.Locacoes.FirstOrDefaultAsync(l => l.Id == request.LocacaoId, cancellationToken);
+            if (locacao is null)
+                return CommandResult.Falha("Locacao nao encontrada.");
+
+            locacao.Renovar(request.NovoPeriodoFinal, usuario);
+            if (!locacao.IsValid)
+                return CommandResult.Falha(locacao.Notifications.Select(n => n.Message));
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Locacao renovada com sucesso!", new { LocacaoId = locacao.Id, locacao.PeriodoFinal });
         }
     }
 

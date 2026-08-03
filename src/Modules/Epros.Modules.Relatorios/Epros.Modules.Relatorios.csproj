@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!--
+    Modulo RELATORIOS & BI (RPT). Read-side / query-side puro (CQRS).
+    Nao possui DbContext nem tabelas proprias: consome os DbContexts dos modulos
+    de origem (Estoque, Vendas, Financeiro) apenas para LEITURA/agregacao.
+    Nao referencia nenhum estado de escrita; nao altera entidades de outros modulos.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Epros.Shared\Epros.Shared.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\Epros.Infrastructure\Epros.Infrastructure.csproj" />
+    <ProjectReference Include="..\Epros.Modules.Estoque\Epros.Modules.Estoque.csproj" />
+    <ProjectReference Include="..\Epros.Modules.Vendas\Epros.Modules.Vendas.csproj" />
+    <ProjectReference Include="..\Epros.Modules.Financeiro\Epros.Modules.Financeiro.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

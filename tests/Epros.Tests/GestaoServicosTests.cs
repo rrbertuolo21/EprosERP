@@ -177,10 +177,10 @@ namespace Epros.Tests
             Assert.Contains(refs, r => r.TipoLancamento == ETipoLancamentoServicoFinanceiro.ContaPagamentoDebito);
         }
 
-        [Fact(DisplayName = "Cancelar fatura faturada estorna referências financeiras (EF §13.5)")]
-        public async Task Cancelar_FaturaFaturada_EstornaReferencias()
+        [Fact(DisplayName = "Estornar fatura faturada estorna referências financeiras; Cancelar a rejeita (EC-08/EF §13.5)")]
+        public async Task Estornar_FaturaFaturada_EstornaReferencias()
         {
-            var context = CreateContext(nameof(Cancelar_FaturaFaturada_EstornaReferencias));
+            var context = CreateContext(nameof(Estornar_FaturaFaturada_EstornaReferencias));
             var tp = new TestTenantProvider(TenantId);
             var cu = new TestCurrentUser(UserId);
 
@@ -193,12 +193,43 @@ namespace Epros.Tests
             var fatura = await context.ServicoFaturas.FirstAsync();
             await new ConfirmarServicoFaturaCommandHandler(context, tp, cu).Handle(new ConfirmarServicoFaturaCommand(fatura.Id), CancellationToken.None);
             await new FaturarServicoFaturaCommandHandler(context, tp, cu).Handle(new FaturarServicoFaturaCommand(fatura.Id), CancellationToken.None);
-            await new CancelarServicoFaturaCommandHandler(context, tp, cu).Handle(new CancelarServicoFaturaCommand(fatura.Id), CancellationToken.None);
 
-            var faturaCancelada = await context.ServicoFaturas.FirstAsync(f => f.Id == fatura.Id);
-            Assert.Equal(EServicoFaturaStatus.Estornado, faturaCancelada.Status);
+            // EC-08: Cancelar não vale para faturada.
+            var cancelada = await new CancelarServicoFaturaCommandHandler(context, tp, cu).Handle(new CancelarServicoFaturaCommand(fatura.Id), CancellationToken.None);
+            Assert.False(cancelada.Sucesso);
+
+            // EC-08: Estornar é a transição correta e reverte os lançamentos.
+            await new EstornarServicoFaturaCommandHandler(context, tp, cu).Handle(new EstornarServicoFaturaCommand(fatura.Id), CancellationToken.None);
+
+            var faturaEstornada = await context.ServicoFaturas.FirstAsync(f => f.Id == fatura.Id);
+            Assert.Equal(EServicoFaturaStatus.Estornado, faturaEstornada.Status);
             var refs = await context.ServicoLancamentoFinanceiroRefs.Where(r => r.FaturaId == fatura.Id).ToListAsync();
             Assert.All(refs, r => Assert.Equal(EStatusIntegracaoServico.Estornado, r.StatusIntegracao));
+        }
+
+        [Fact(DisplayName = "ISS | Alíquota entra como parâmetro (valida-contador); sem parâmetro = stub 0% (NF-03/INV-02)")]
+        public async Task Iss_Parametro_AplicaAliquota_SemParametro_Zero()
+        {
+            var context = CreateContext(nameof(Iss_Parametro_AplicaAliquota_SemParametro_Zero));
+            var tp = new TestTenantProvider(TenantId);
+            var cu = new TestCurrentUser(UserId);
+
+            // Sem parâmetro de ISS → 0% (stub, não inventa alíquota).
+            await new CriarServicoFaturaCommandHandler(context, tp, cu).Handle(new CriarServicoFaturaCommand(
+                Guid.NewGuid(), Guid.NewGuid(), null, Guid.NewGuid(), null, null, 0m, 0m, 0m, null,
+                new List<ServicoFaturaLinhaInput> { new(Guid.NewGuid(), "Serviço A", null, 1m, 1000m, 0m) }),
+                CancellationToken.None);
+            var semIss = await context.ServicoFaturas.FirstAsync();
+            Assert.Equal(0m, semIss.ValorImposto);
+
+            // Com parâmetro de ISS (ex.: 5% por município/atividade) → aplica.
+            await new CriarServicoFaturaCommandHandler(context, tp, cu).Handle(new CriarServicoFaturaCommand(
+                Guid.NewGuid(), Guid.NewGuid(), null, Guid.NewGuid(), null, null, 0m, 0m, 0m, null,
+                new List<ServicoFaturaLinhaInput> { new(Guid.NewGuid(), "Serviço B", null, 1m, 1000m, 0m) },
+                AliquotaIssPercentual: 5m, TipoImpostoIss: ETipoImpostoServico.Exclusivo),
+                CancellationToken.None);
+            var comIss = await context.ServicoFaturas.FirstAsync(f => f.ValorImposto == 50m); // 5% de 1000
+            Assert.Equal(50m, comIss.ValorImposto);
         }
 
         // ---------- Helpers ----------

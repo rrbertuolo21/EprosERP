@@ -6,12 +6,19 @@ using MediatR;
 using Epros.Modules.GestaoClientes.Application.Commands;
 using Epros.Modules.GestaoClientes.Application.Queries;
 using Epros.Shared.Application.Models;
+using Epros.API.Security;
 
 namespace Epros.API.Controllers
 {
     [ApiController]
     [Route("api/v1/cadastros/[controller]")]
     [Produces("application/json")]
+    // Dados geográficos são REFERÊNCIA global (países, municípios, CEP, zonas). As LEITURAS
+    // (GET) precisam estar disponíveis a qualquer usuário autenticado do tenant, senão os
+    // formulários de endereço (parceiro, produto, empresa…) quebram com 403 (bug Classe C).
+    // Por isso o gate SuperAdmin/Configurar foi movido do controller para cada endpoint de
+    // ESCRITA (POST/PUT/PATCH). As leituras ficam protegidas apenas pela FallbackPolicy
+    // (usuário autenticado), no mesmo padrão de Marcas/NCM/CEST.
     public class GeografiaController : ControllerBase
     {
         private readonly IMediator _mediator;
@@ -42,6 +49,7 @@ namespace Epros.API.Controllers
             return Ok(result);
         }
 
+        [AbacAuthorize("SuperAdmin", "Configurar")]
         [HttpPost("paises")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
@@ -68,6 +76,7 @@ namespace Epros.API.Controllers
             return Ok(result);
         }
 
+        [AbacAuthorize("SuperAdmin", "Configurar")]
         [HttpPost("municipios")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
@@ -110,6 +119,7 @@ namespace Epros.API.Controllers
             return Ok(result);
         }
 
+        [AbacAuthorize("SuperAdmin", "Configurar")]
         [HttpPost("municipios/sincronizar")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
@@ -131,6 +141,7 @@ namespace Epros.API.Controllers
             return Ok(result);
         }
 
+        [AbacAuthorize("SuperAdmin", "Configurar")]
         [HttpPost("zonas-entrega")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
@@ -152,6 +163,7 @@ namespace Epros.API.Controllers
             return Ok(result);
         }
 
+        [AbacAuthorize("SuperAdmin", "Configurar")]
         [HttpPost("cep/{cep}/reprocessar")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
@@ -165,6 +177,7 @@ namespace Epros.API.Controllers
             return Ok(result);
         }
 
+        [AbacAuthorize("SuperAdmin", "Configurar")]
         [HttpPut("cep/manual")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
@@ -176,6 +189,23 @@ namespace Epros.API.Controllers
                 return UnprocessableEntity(result);
             }
             return Ok(result);
+        }
+
+        // 1.02 — Países: atualização e inativação (REG-006)
+        [AbacAuthorize("SuperAdmin", "Configurar")]
+        [HttpPut("paises/{id:guid}")]
+        public async Task<ActionResult<CommandResult>> AtualizarPais(Guid id, [FromBody] AtualizarPaisCommand command)
+        {
+            var result = await _mediator.Send(command with { Id = id });
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [AbacAuthorize("SuperAdmin", "Configurar")]
+        [HttpPatch("paises/{id:guid}/ativo")]
+        public async Task<ActionResult<CommandResult>> AtivarInativarPais(Guid id, [FromQuery] bool ativo)
+        {
+            var result = await _mediator.Send(new InativarPaisCommand(id, ativo));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
     }
 }

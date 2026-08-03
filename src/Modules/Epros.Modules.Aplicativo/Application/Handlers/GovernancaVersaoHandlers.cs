@@ -26,18 +26,30 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
         private readonly ContextAplicativo _context;
         private readonly ICurrentUser _currentUser;
         private readonly IServiceProvider _serviceProvider;
+        private readonly ITenantProvider _tenantProvider;
 
-        public GovernancaVersaoHandlers(ContextAplicativo context, ICurrentUser currentUser, IServiceProvider serviceProvider)
+        public GovernancaVersaoHandlers(ContextAplicativo context, ICurrentUser currentUser, IServiceProvider serviceProvider, ITenantProvider tenantProvider)
         {
             _context = context;
             _currentUser = currentUser;
             _serviceProvider = serviceProvider;
+            _tenantProvider = tenantProvider;
         }
 
         private string User() => _currentUser.GetUserId() ?? "system";
 
+        // 1.11 fix #3 — defense-in-depth: solicitar/aprovar/rejeitar/executar/rollback de upgrade
+        // roda MigrateAsync em todos os contextos. Exige operador interno (tenant="system"), fail-closed.
+        private CommandResult? GuardaInterno()
+            => string.Equals(_tenantProvider.GetTenantId(), "system", StringComparison.OrdinalIgnoreCase)
+                ? null
+                : CommandResult.Falha(new[] { "Acesso Proibido: governança de versão é restrita ao operador interno da Siser." });
+
         public async Task<CommandResult> Handle(SolicitarUpgradeVersaoCommand request, CancellationToken ct)
         {
+            var guarda = GuardaInterno();
+            if (guarda != null) return guarda;
+
             var user = User();
 
             // Bloqueia nova solicitação enquanto houver upgrade não finalizado.
@@ -62,6 +74,9 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
 
         public async Task<CommandResult> Handle(AprovarUpgradeVersaoCommand request, CancellationToken ct)
         {
+            var guarda = GuardaInterno();
+            if (guarda != null) return guarda;
+
             var user = User();
             var solicitacao = await _context.SolicitacoesUpgradeVersao.IgnoreQueryFilters().FirstOrDefaultAsync(s => s.Id == request.SolicitacaoId && s.DeletadoEm == null, ct);
             if (solicitacao == null) return CommandResult.Falha("Solicitação de upgrade não encontrada.");
@@ -75,6 +90,9 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
 
         public async Task<CommandResult> Handle(RejeitarUpgradeVersaoCommand request, CancellationToken ct)
         {
+            var guarda = GuardaInterno();
+            if (guarda != null) return guarda;
+
             var user = User();
             var solicitacao = await _context.SolicitacoesUpgradeVersao.IgnoreQueryFilters().FirstOrDefaultAsync(s => s.Id == request.SolicitacaoId && s.DeletadoEm == null, ct);
             if (solicitacao == null) return CommandResult.Falha("Solicitação de upgrade não encontrada.");
@@ -88,6 +106,9 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
 
         public async Task<CommandResult> Handle(ExecutarUpgradeVersaoCommand request, CancellationToken ct)
         {
+            var guarda = GuardaInterno();
+            if (guarda != null) return guarda;
+
             var user = User();
             var solicitacao = await _context.SolicitacoesUpgradeVersao.IgnoreQueryFilters().FirstOrDefaultAsync(s => s.Id == request.SolicitacaoId && s.DeletadoEm == null, ct);
             if (solicitacao == null) return CommandResult.Falha("Solicitação de upgrade não encontrada.");
@@ -130,6 +151,9 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
 
         public async Task<CommandResult> Handle(AplicarRollbackUpgradeCommand request, CancellationToken ct)
         {
+            var guarda = GuardaInterno();
+            if (guarda != null) return guarda;
+
             var user = User();
             var solicitacao = await _context.SolicitacoesUpgradeVersao.IgnoreQueryFilters().FirstOrDefaultAsync(s => s.Id == request.SolicitacaoId && s.DeletadoEm == null, ct);
             if (solicitacao == null) return CommandResult.Falha("Solicitação de upgrade não encontrada.");

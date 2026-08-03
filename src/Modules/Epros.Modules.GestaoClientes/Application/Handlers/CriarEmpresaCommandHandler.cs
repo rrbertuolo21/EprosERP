@@ -2,9 +2,11 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
+using Epros.Shared.Domain.Events;
 using Epros.Modules.GestaoClientes.Application.Commands;
 using Epros.Modules.GestaoClientes.Domain.Entities;
 using Epros.Modules.GestaoClientes.Domain.ValueObjects;
@@ -19,17 +21,20 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
         private readonly ITenantProvider _tenantProvider;
         private readonly ICurrentUser _currentUser;
         private readonly IValidadorLimitesSaaS _validadorLimites;
+        private readonly ISegredoCofreService _cofreService;
 
         public CriarEmpresaCommandHandler(
             ContextGestaoClientes context,
             ITenantProvider tenantProvider,
             ICurrentUser currentUser,
-            IValidadorLimitesSaaS validadorLimites)
+            IValidadorLimitesSaaS validadorLimites,
+            ISegredoCofreService cofreService)
         {
             _context = context;
             _tenantProvider = tenantProvider;
             _currentUser = currentUser;
             _validadorLimites = validadorLimites;
+            _cofreService = cofreService;
         }
 
         public async Task<CommandResult> Handle(CriarEmpresaCommand request, CancellationToken cancellationToken)
@@ -71,6 +76,13 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 request.Endereco.Estado
             );
 
+            // T-01/P1-2: o TokenMercadoPagoPix nunca é persistido em claro. Se veio um valor (não vazio e
+            // diferente da máscara), cifra via cofre; senão persiste nulo.
+            var tokenInformado = !string.IsNullOrEmpty(request.TokenMercadoPagoPix) && request.TokenMercadoPagoPix != Empresa.MascaraTokenPix;
+            var tokenParaPersistir = tokenInformado
+                ? await _cofreService.CriptografarAsync(request.TokenMercadoPagoPix!)
+                : null;
+
             // Instancia Empresa
             var empresa = new Empresa(
                 request.RazaoSocial,
@@ -90,7 +102,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 request.CertificadoDigitalId,
                 request.EmpresaParametrosDfeId,
                 request.LinkWebApiAppVendas,
-                request.TokenMercadoPagoPix,
+                tokenParaPersistir,
                 request.Logo,
                 endereco,
                 tenantId,
@@ -108,6 +120,13 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 return CommandResult.Falha(erros, "Invariantes de domínio da Empresa não foram atendidas.");
             }
 
+            // T-03: contrato de evento CAD-* empresa.criada, publicado via Outbox no mesmo commit.
+            var eventoEmpresaCriada = new OutboxMessage(
+                tenantId,
+                "empresa.criada",
+                JsonSerializer.Serialize(new EmpresaCriadaEventNotification(
+                    empresa.Id, tenantId, tempCnpj.Valor, request.RazaoSocial ?? string.Empty, DateTime.UtcNow, criadoPor)));
+
             var existeEmpresas = await _context.Empresas.AnyAsync(e => e.TenantId == tenantId, cancellationToken);
             if (!existeEmpresas)
             {
@@ -115,6 +134,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 try
                 {
                     _context.Empresas.Add(empresa);
+                    _context.OutboxMessages.Add(eventoEmpresaCriada);
                     await _context.SaveChangesAsync(cancellationToken);
 
                     // Criar Plano Inicial (pega o primeiro plano ativo do Siser super admin, que tem tenant_id = "system")
@@ -165,6 +185,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             else
             {
                 _context.Empresas.Add(empresa);
+                _context.OutboxMessages.Add(eventoEmpresaCriada);
                 await _context.SaveChangesAsync(cancellationToken);
             }
 

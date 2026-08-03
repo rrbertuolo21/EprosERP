@@ -128,6 +128,20 @@ namespace Epros.Modules.Qualidade.Domain.Entities
             DataInicio = DateTime.UtcNow;
         }
 
+        /// <summary>Define o tamanho da amostra calculado pelo motor AQL (ou outro tipo de amostragem).</summary>
+        public void DefinirAmostraCalculada(int tamanhoAmostra, string usuario)
+        {
+            if (tamanhoAmostra < 0)
+            {
+                AddNotification(nameof(TamanhoAmostraCalculado), "O tamanho da amostra nao pode ser negativo [Origem: ExecucaoInspecao]");
+                return;
+            }
+            TamanhoAmostraCalculado = tamanhoAmostra;
+            if (Status == EStatusExecucaoInspecao.Aberta)
+                Status = EStatusExecucaoInspecao.EmColeta;
+            MarcarAlterado(usuario);
+        }
+
         public void Concluir(EResultadoPreliminar resultadoPreliminar, string? observacao, string usuario)
         {
             if (Status == EStatusExecucaoInspecao.Concluida || Status == EStatusExecucaoInspecao.Cancelada)

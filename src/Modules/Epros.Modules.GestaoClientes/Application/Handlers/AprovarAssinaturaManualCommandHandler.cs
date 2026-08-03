@@ -110,7 +110,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             // REG-007 & REG-008: Atualiza qualquer assinatura em status Aguardando
             var assinatura = await _context.AssinaturasClientes
                 .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(a => a.ClienteId == request.ClienteId && a.Status == AssinaturaStatus.Aguardando && a.DeletadoEm == null, cancellationToken);
+                .FirstOrDefaultAsync(a => a.ClienteId == request.ClienteId && a.Status == AssinaturaStatus.AguardandoAprovacao && a.DeletadoEm == null, cancellationToken);
 
             if (assinatura != null)
             {

@@ -7,12 +7,13 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
     public class Moeda : EntidadeSaaSBase, IGlobalEntity
     {
         public string CodigoISO { get; private set; } = string.Empty;
+        public string Nome { get; private set; } = string.Empty;
         public string Simbolo { get; private set; } = string.Empty;
         public int CasasDecimais { get; private set; }
 
         protected Moeda() { } // EF Core
 
-        public Moeda(string codigoISO, string simbolo, int casasDecimais, string criadoPor)
+        public Moeda(string codigoISO, string simbolo, int casasDecimais, string criadoPor, string nome = "")
             : base("system", criadoPor)
         {
             AddNotifications(new Contract<Moeda>()
@@ -25,11 +26,12 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             );
 
             CodigoISO = codigoISO.ToUpperInvariant();
+            Nome = string.IsNullOrWhiteSpace(nome) ? codigoISO.ToUpperInvariant() : nome;
             Simbolo = simbolo;
             CasasDecimais = casasDecimais;
         }
 
-        public void Atualizar(string codigoISO, string simbolo, int casasDecimais, string alteradoPor)
+        public void Atualizar(string codigoISO, string simbolo, int casasDecimais, string alteradoPor, string nome = "")
         {
             AddNotifications(new Contract<Moeda>()
                 .Requires()
@@ -43,6 +45,7 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             if (IsValid)
             {
                 CodigoISO = codigoISO.ToUpperInvariant();
+                if (!string.IsNullOrWhiteSpace(nome)) Nome = nome;
                 Simbolo = simbolo;
                 CasasDecimais = casasDecimais;
                 MarcarAlterado(alteradoPor);

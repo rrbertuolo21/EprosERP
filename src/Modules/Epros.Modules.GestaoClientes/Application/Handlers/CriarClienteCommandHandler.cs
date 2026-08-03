@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
 using Epros.Modules.GestaoClientes.Application.Commands;
+using Epros.Modules.GestaoClientes.Application.Security;
 using Epros.Modules.GestaoClientes.Domain.Entities;
 using Epros.Modules.GestaoClientes.Infrastructure.Data;
 
@@ -28,6 +29,10 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
 
         public async Task<CommandResult> Handle(CriarClienteCommand request, CancellationToken cancellationToken)
         {
+            // 1.11 fix #2 — defense-in-depth: criar tenant é operação landlord (só operador interno).
+            var guarda = GuardaOperadorInterno.Exigir(_tenantProvider);
+            if (guarda != null) return guarda;
+
             var tenantId = _tenantProvider.GetTenantId();
             var criadoPor = _currentUser.GetUserId() ?? "system";
 
@@ -40,7 +45,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 null, // RevendaId
                 null, // VendedorId
                 10, // DiaVencimento
-                "Active", // StatusSaaS
+                StatusSaaS.Ativo, // StatusSaaS
                 tenantId,
                 criadoPor,
                 request.Telefone,

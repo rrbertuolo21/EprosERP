@@ -49,4 +49,25 @@ namespace Epros.Modules.Financeiro.Domain.Enums
         [Description("Contas a Pagar")] CP = 0,
         [Description("Contas a Receber")] CR = 1
     }
+
+    /// <summary>Provedor de pagamento/cobrança registrado como gateway (EF FIN-SF — webhook de baixa).</summary>
+    public enum EProvedorPagamento
+    {
+        [Description("Mercado Pago")] MercadoPago = 0,
+        [Description("Genérico")] Generico = 1,
+        [Description("Outro")] Outro = 2
+    }
+
+    /// <summary>
+    /// Situação do processamento de um webhook de pagamento recebido (idempotência/dedup + auditoria).
+    /// </summary>
+    public enum EStatusWebhookPagamento
+    {
+        [Description("Recebido")] Recebido = 0,
+        [Description("Processado")] Processado = 1,
+        [Description("Duplicado")] Duplicado = 2,
+        [Description("Assinatura inválida")] AssinaturaInvalida = 3,
+        [Description("Fatura não localizada")] FaturaNaoLocalizada = 4,
+        [Description("Ignorado")] Ignorado = 5
+    }
 }

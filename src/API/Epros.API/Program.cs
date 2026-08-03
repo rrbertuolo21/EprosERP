@@ -24,20 +24,19 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Epros.Modules.Financeiro.Infrastructure.Jobs;
 using Epros.Modules.Vendas.Infrastructure.Jobs;
 using Epros.Modules.Qualidade.Infrastructure.Data;
-using Epros.Modules.Qualidade.Infrastructure.Jobs;
 using Epros.Modules.Aplicativo.Infrastructure.Jobs;
 using Epros.Modules.Producao.Infrastructure.Data;
 using Epros.Modules.Producao.Infrastructure.Jobs;
 using Epros.Modules.RH.Infrastructure.Data;
 using Epros.Modules.RH.Infrastructure.Jobs;
 using Epros.Modules.Projetos.Infrastructure.Data;
-using Epros.Modules.Projetos.Infrastructure.Jobs;
 using Epros.Modules.Manutencao.Infrastructure.Data;
 using Epros.Modules.Manutencao.Infrastructure.Jobs;
 using Epros.Modules.GRC.Infrastructure.Data;
 using Epros.Modules.GRC.Infrastructure.Jobs;
 using Epros.Modules.ESG.Infrastructure.Data;
 using Epros.Modules.Imobiliaria.Infrastructure.Data;
+using Epros.Modules.Agricultor.Infrastructure.Data;
 using Epros.Modules.DMS.Infrastructure.Data;
 
 // Inicializa o logger Serilog antes do bootstrap da aplicação
@@ -51,6 +50,11 @@ try
     Log.Information("Iniciando o Epros API Gateway...");
 
     var builder = WebApplication.CreateBuilder(args);
+
+    // Npgsql: aceita DateTime com Kind=Unspecified/Local em colunas 'timestamp with time zone'
+    // (comportamento legado). Sem isso, qualquer DateTime não-UTC gravado/consultado em timestamptz
+    // lança ArgumentException em runtime (derrubava dashboard, relatórios BI, fluxo-caixa, garantias).
+    AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
     // Configura Serilog como o logger padrão
     builder.Host.UseSerilog();
@@ -93,18 +97,77 @@ try
     });
     builder.Services.AddHttpContextAccessor();
 
+    // Host-guard do Landlord (1.04): hostnames do painel Siser vs cliente. Seção "Hosts".
+    // Vazio => guard inativo (fail-safe dev/test). Em produção Hosts:Landlord DEVE ser configurado.
+    builder.Services.Configure<Epros.API.Middlewares.HostGuardOptions>(
+        builder.Configuration.GetSection(Epros.API.Middlewares.HostGuardOptions.SecaoConfig));
+
     // Registra os provedores de contexto de Tenant e Usuário
     builder.Services.AddScoped<ITenantProvider, TenantProvider>();
     builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 
+    // TRANSVERSAL T1 — Dispatcher central de Outbox + consumidores in-process.
+    // O OutboxDispatcher resolve TODOS os IOutboxConsumer registrados e roteia por EventType do catálogo;
+    // o fallback (pendência de regra) trata eventos conhecidos ainda sem consumidor de efeito.
+    builder.Services.AddScoped<Epros.Infrastructure.Outbox.OutboxDispatcher>();
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxFallbackConsumer, Epros.Infrastructure.Outbox.PendingRuleFallbackConsumer>();
+    // Consumidor REAL: imo.aluguel.cobranca_gerada -> título em Contas a Receber (Financeiro).
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Financeiro.Application.EventHandlers.AluguelCobrancaGeradaConsumer>();
+    // Consumidores REAIS dos Outboxes de QUALIDADE e MANUTENÇÃO (roteados pelos dispatchers por schema):
+    //  - InspecaoReprovada / OrdemManutencaoConcluida -> baixa no Estoque pelo motor único;
+    //  - qld.acr.lote_bloqueado/quarentena e qld.rst.bloqueio_solicitado -> contenção do lote no Estoque;
+    //  - qld.acr.lote_liberado -> desbloqueio do lote. Todos idempotentes e tenant-explícitos.
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.InspecaoReprovadaEstoqueConsumer>();
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.OrdemManutencaoConcluidaEstoqueConsumer>();
+    // T5 — devolução de peça (estorno simétrico à baixa): entrada compensatória pelo motor único.
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.DevolucaoPecaManutencaoEstoqueConsumer>();
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.QualidadeLoteBloqueadoConsumer>();
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.QualidadeLoteQuarentenaConsumer>();
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.QualidadeRstBloqueioSolicitadoConsumer>();
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.QualidadeLoteLiberadoConsumer>();
+    // T5 — prd.ordem.concluida (MES) -> baixa de insumos + entrada do acabado no Estoque pelo motor único.
+    // Roteado pelo ProducaoOutboxProcessorJob (mesma fila do evento legado OrdemProducaoEncerrada). Idempotente.
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Estoque.Application.Outbox.MesOrdemConcluidaEstoqueConsumer>();
+    // T1 — Outbox de PROJETOS migrado do job por-módulo para o dispatcher central: "ProjetoFaturado" -> título
+    // em Contas a Receber (via MediatR, preservando o efeito legado); prj.orcamento.baseline_congelada -> fallback.
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Projetos.Application.Outbox.ProjetoFaturadoConsumer>();
+    // T1 — Outbox de VENDAS migrado do job por-módulo para o dispatcher central: VendaFaturada/VendaCancelada ->
+    // efeito preservado 1:1 (fan-out Financeiro/Fiscal + baixa/estorno de estoque via MediatR); PedidoEcommerceParaVenda,
+    // DemandaPlanejadaPublicada e ven.ExpedicaoConfirmada -> fallback (pendência de regra; expedição NÃO recontam saída).
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Vendas.Application.Outbox.VendaFaturadaConsumer>();
+    builder.Services.AddScoped<Epros.Shared.Application.Outbox.IOutboxConsumer, Epros.Modules.Vendas.Application.Outbox.VendaCanceladaConsumer>();
+
     // Registra o serviço de hashing de senhas (PBKDF2 / HMAC-SHA256). Sem estado -> Singleton.
     builder.Services.AddSingleton<IPasswordHasher, Epros.Infrastructure.Services.Pbkdf2PasswordHasher>();
     builder.Services.AddScoped<IValidadorLimitesSaaS, Epros.Modules.Aplicativo.Application.Services.ValidadorLimitesSaaS>();
+    // 1.10 (PERMISSOES_DE_MENU) — fonte única das capacidades efetivas do RBAC. Scoped: vive por request
+    // (memoiza por usuário/empresa — REG-070/item 6), compartilhada entre o AbacFilter (gate) e a projeção
+    // de menu (GET /menu), garantindo "item visível ⇔ endpoint autoriza" (LC-1/LC-2).
+    builder.Services.AddScoped<Epros.Modules.GestaoClientes.Application.Services.ICapacidadesEfetivasService, Epros.Modules.GestaoClientes.Application.Services.CapacidadesEfetivasService>();
     // Serviço de cálculo de próximas execuções de agendamentos de workflow (PLT-WF §7.4.3).
     builder.Services.AddScoped<Epros.Modules.Aplicativo.Application.Services.IAgendaIntervalarService, Epros.Modules.Aplicativo.Application.Services.AgendaIntervalarService>();
 
     // Registra o Cofre de Segredos (Vault)
     builder.Services.AddHttpClient<ISegredoCofreService, Epros.Infrastructure.Services.VaultEncryptionService>();
+    // T5 — rotação de segredos: mesma instância concreta do cofre (VaultEncryptionService) exposta
+    // também como ISegredoRotacaoService (resolve o registro tipado acima; não recria HttpClient).
+    builder.Services.AddScoped<Epros.Shared.Application.Contracts.ISegredoRotacaoService>(sp =>
+        (Epros.Infrastructure.Services.VaultEncryptionService)sp.GetRequiredService<ISegredoCofreService>());
+
+    // ===== TRANSVERSAIS COMPARTILHADAS (kernel) — serviços centrais =====
+    // T9 numeração central · T8 auditoria imutável · T10 assinatura ICP (default fail-safe).
+    builder.Services.AddScoped<Epros.Shared.Application.Contracts.INumeracaoService, Epros.Modules.Aplicativo.Infrastructure.Services.NumeracaoService>();
+    builder.Services.AddScoped<Epros.Shared.Application.Contracts.IRegistroAuditoriaService, Epros.Modules.Aplicativo.Infrastructure.Services.RegistroAuditoriaService>();
+    builder.Services.AddScoped<Epros.Shared.Application.Contracts.IAssinaturaDigitalService, Epros.Modules.Aplicativo.Infrastructure.Services.AssinaturaDigitalPendenteService>();
+    // GRC · D-SOD-03 — avaliador preventivo de Segregação de Funções ligado ao caminho de concessão
+    // RBAC (GestaoClientes). Torna o bloqueio SoD EFETIVO em runtime (antes o handler existia sem caller).
+    builder.Services.AddScoped<Epros.Shared.Application.Contracts.ISoDAvaliadorConcessao, Epros.Modules.GRC.Application.Services.SoDAvaliadorConcessaoService>();
+    // PLT · GED (T10) — storage documental atrás de abstração. Provider real (MinIO/S3/servidor de
+    // storage) entra por ambiente; sem ele, usa a implementação "não configurada" (// valida-ambiente).
+    builder.Services.AddScoped<Epros.Modules.Aplicativo.Application.Contracts.IArmazenamentoDocumentoService, Epros.Modules.Aplicativo.Infrastructure.Services.ArmazenamentoLocalNaoConfiguradoService>();
+    // PLT · CONECTORES (ED-08) — dispatcher de webhook atrás de abstração. HTTP real ao endpoint
+    // externo = ambiente; sem ele, a entrega fica pendente (// valida-ambiente).
+    builder.Services.AddScoped<Epros.Modules.Aplicativo.Application.Contracts.IWebhookDispatchService, Epros.Modules.Aplicativo.Infrastructure.Services.WebhookDispatchNaoConfiguradoService>();
 
     // Gateway de pagamento (outbound) — Mercado Pago. HttpClient nomeado + implementação.
     builder.Services.AddHttpClient(Epros.Modules.GestaoClientes.Infrastructure.Gateways.MercadoPagoGateway.HttpClientName, client =>
@@ -114,6 +177,17 @@ try
     });
     builder.Services.AddScoped<Epros.Modules.GestaoClientes.Application.Interfaces.IPaymentGateway, Epros.Modules.GestaoClientes.Infrastructure.Gateways.MercadoPagoGateway>();
 
+    // 1.08B — Serviço de liquidação de fatura compartilhado (webhook PIX/boleto/checkout + cartão recorrente).
+    builder.Services.AddScoped<Epros.Modules.GestaoClientes.Application.Services.FaturaLiquidacaoService>();
+
+    // 1.08F — Renderizador de documentos financeiros (PDF real via QuestPDF, licença Community).
+    builder.Services.AddScoped<Epros.Modules.GestaoClientes.Application.Documentos.IDocumentoFinanceiroRenderer,
+        Epros.Modules.GestaoClientes.Infrastructure.Documentos.QuestPdfDocumentoFinanceiroRenderer>();
+
+    // 1.08B — Cobrança recorrente por cartão-on-file: implementação CONCRETA (Mercado Pago Customers/Cards).
+    // Substitui o no-op da passada A. ⛔ PCI: só o token do MP toca o backend, nunca PAN/CVV.
+    builder.Services.AddScoped<Epros.Modules.GestaoClientes.Application.Interfaces.ICobrancaRecorrenteGateway, Epros.Modules.GestaoClientes.Infrastructure.Gateways.CobrancaRecorrenteGatewayMercadoPago>();
+
     // Registra o serviço de notificações (Mock para homologação local) (REG-020)
     builder.Services.AddScoped<INotificacaoService, Epros.Infrastructure.Services.MockNotificacaoService>();
 
@@ -121,6 +195,17 @@ try
     builder.Services.AddMemoryCache();
     builder.Services.AddSingleton<IPermissaoCacheManager, Epros.Modules.Aplicativo.Application.Services.PermissaoCacheManager>();
     builder.Services.AddSingleton<Epros.Modules.GestaoClientes.Application.Contracts.IConfiguracaoGlobalCache, Epros.Modules.GestaoClientes.Infrastructure.Services.ConfiguracaoGlobalCache>();
+
+    // Login social (1.04 PASS 3): OAuth 2.0 / OIDC (Google + Microsoft). Config por IConfiguration
+    // (Autenticacao:Social:{Google|Microsoft}) — segredos via env/secret; sem hardcode. HttpClient
+    // nomeado para discovery/token/JWKS + cliente OIDC (valida id_token contra o JWKS do provedor).
+    builder.Services.Configure<Epros.Modules.Aplicativo.Application.Services.AutenticacaoSocialOptions>(
+        builder.Configuration.GetSection(Epros.Modules.Aplicativo.Application.Services.AutenticacaoSocialOptions.SecaoConfig));
+    builder.Services.AddHttpClient(Epros.Modules.Aplicativo.Infrastructure.Services.OidcSocialClient.HttpClientName, client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(15);
+    });
+    builder.Services.AddScoped<Epros.Modules.Aplicativo.Infrastructure.Services.IOidcSocialClient, Epros.Modules.Aplicativo.Infrastructure.Services.OidcSocialClient>();
 
     // Registra o interceptor de RLS
     builder.Services.AddScoped<TenantRlsInterceptor>();
@@ -215,6 +300,16 @@ try
                .AddInterceptors(serviceProvider.GetRequiredService<TenantRlsInterceptor>())
                .ReplaceService<IMigrationsSqlGenerator, EprosMigrationsSqlGenerator>());
 
+    // Registra o DbContext do módulo Agricultor (Painel do Produtor + LCDPR; PostgreSQL e RLS)
+    builder.Services.AddDbContext<ContextAgricultor>((serviceProvider, options) =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+               .AddInterceptors(serviceProvider.GetRequiredService<TenantRlsInterceptor>())
+               .ReplaceService<IMigrationsSqlGenerator, EprosMigrationsSqlGenerator>());
+
+    // Serviços de domínio do LCDPR (gerador do arquivo + validador próprio; sem estado — AGR-D13/D20).
+    builder.Services.AddSingleton<Epros.Modules.Agricultor.Domain.Services.GeradorArquivoLcdprService>();
+    builder.Services.AddSingleton<Epros.Modules.Agricultor.Domain.Services.ValidadorLcdprService>();
+
     // Registra serviços do módulo Fiscal
     // Motor de CÁLCULO fiscal (envelopa Epros.ERP.DfeCalculos)
     builder.Services.AddScoped<ICalculoFiscalService, MotorLegadoCalculoFiscalService>();
@@ -250,9 +345,19 @@ try
     builder.Services.AddScoped<IMdfeFiscalService, MdfeFiscalServiceNaoConfigurado>();
 
     // Registra o MediatR para o processamento de Commands/Queries nos módulos
+    // Motores de dominio do modulo Qualidade (sem estado; QLD-INS amostragem AQL / comutacao).
+    builder.Services.AddSingleton<Epros.Modules.Qualidade.Domain.Services.Aql.MotorAql>();
+    builder.Services.AddSingleton<Epros.Modules.Qualidade.Domain.Services.Aql.MotorComutacao>();
+    builder.Services.AddSingleton<Epros.Modules.Qualidade.Domain.Services.Qps.MotorScoreFornecedor>();
+    builder.Services.AddSingleton<Epros.Modules.Qualidade.Domain.Services.Rst.MotorGenealogia>();
+
     builder.Services.AddMediatR(cfg =>
     {
         cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
+        // Modulo RELATORIOS & BI (RPT): read-side puro, sem DbContext proprio, portanto seu
+        // assembly nao e carregado por AddDbContext. Registro explicito garante a descoberta dos
+        // query handlers (RPT-OPB/RPT-ONM) independentemente da ordem de carga de assemblies.
+        cfg.RegisterServicesFromAssembly(typeof(Epros.Modules.Relatorios.Application.Queries.KpiFaturamentoQuery).Assembly);
         // Também registrará os Handlers dos módulos adicionados como referências de projeto
         cfg.RegisterServicesFromAssemblies(AppDomain.CurrentDomain.GetAssemblies());
         cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(Epros.Modules.Aplicativo.Infrastructure.Behaviors.MakerCheckerPipelineBehavior<,>));
@@ -297,6 +402,24 @@ try
             // Cron expression para rodar mensalmente no dia 1 às 00:30
             .WithCronSchedule("0 30 0 1 * ?"));
 
+        // 1.08A — Encerra trials expirados (gera 1ª fatura + dispara cobrança). Diário às 00:20.
+        var encerrarTrialsJobKey = new JobKey("EncerrarTrialsExpiradosJob");
+        q.AddJob<Epros.Modules.GestaoClientes.Infrastructure.Jobs.EncerrarTrialsExpiradosJob>(opts => opts.WithIdentity(encerrarTrialsJobKey));
+
+        q.AddTrigger(opts => opts
+            .ForJob(encerrarTrialsJobKey)
+            .WithIdentity("EncerrarTrialsExpiradosJob-trigger")
+            .WithCronSchedule("0 20 0 * * ?"));
+
+        // 1.08B — Renova assinaturas por ciclo (mensal/anual; vitalícia não renova). Diário às 00:25.
+        var renovacaoJobKey = new JobKey("ProcessarRenovacaoAssinaturasJob");
+        q.AddJob<Epros.Modules.GestaoClientes.Infrastructure.Jobs.ProcessarRenovacaoAssinaturasJob>(opts => opts.WithIdentity(renovacaoJobKey));
+
+        q.AddTrigger(opts => opts
+            .ForJob(renovacaoJobKey)
+            .WithIdentity("ProcessarRenovacaoAssinaturasJob-trigger")
+            .WithCronSchedule("0 25 0 * * ?"));
+
         var outboxJobKey = new JobKey("OutboxProcessorJob");
         q.AddJob<OutboxProcessorJob>(opts => opts.WithIdentity(outboxJobKey));
 
@@ -305,12 +428,17 @@ try
             .WithIdentity("OutboxProcessorJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
 
-        var vendasOutboxJobKey = new JobKey("VendasOutboxProcessorJob");
-        q.AddJob<VendasOutboxProcessorJob>(opts => opts.WithIdentity(vendasOutboxJobKey));
+        // TRANSVERSAL T1 — Outbox de VENDAS migrado do job por-módulo (que drenava só VendaFaturada/VendaCancelada
+        // e deixava PedidoEcommerceParaVenda/DemandaPlanejadaPublicada/ven.ExpedicaoConfirmada morrerem na fila)
+        // para o DISPATCHER CENTRAL: um único drenador do schema "vendas". VendaFaturada/VendaCancelada mantêm o
+        // efeito legado (consumidores reais via MediatR); os demais eventos conhecidos caem no fallback.
+        var vendasOutboxJobKey = new JobKey("VendasOutboxDispatcherJob");
+        q.AddJob<Epros.Infrastructure.Outbox.OutboxDispatcherJob<Epros.Modules.Vendas.Infrastructure.Data.ContextVendas>>(
+            opts => opts.WithIdentity(vendasOutboxJobKey));
 
         q.AddTrigger(opts => opts
             .ForJob(vendasOutboxJobKey)
-            .WithIdentity("VendasOutboxProcessorJob-trigger")
+            .WithIdentity("VendasOutboxDispatcherJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
 
         var aplicativoOutboxJobKey = new JobKey("AplicativoOutboxProcessorJob");
@@ -321,12 +449,29 @@ try
             .WithIdentity("AplicativoOutboxProcessorJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
 
-        var qualidadeOutboxJobKey = new JobKey("QualidadeOutboxProcessorJob");
-        q.AddJob<QualidadeOutboxProcessorJob>(opts => opts.WithIdentity(qualidadeOutboxJobKey));
+        // 1.08C — Processador de Outbox do GestaoClientes: ENTREGA os alertas da régua de cobrança
+        // (FaturaAlertaCobrancaEvent), fim de trial (TrialEncerradoEvent) e recibo (ReciboEmitidoEvent),
+        // que antes eram enfileirados e nunca consumidos.
+        var gestaoClientesOutboxJobKey = new JobKey("GestaoClientesOutboxProcessorJob");
+        q.AddJob<Epros.Modules.GestaoClientes.Infrastructure.Jobs.GestaoClientesOutboxProcessorJob>(opts => opts.WithIdentity(gestaoClientesOutboxJobKey));
+
+        q.AddTrigger(opts => opts
+            .ForJob(gestaoClientesOutboxJobKey)
+            .WithIdentity("GestaoClientesOutboxProcessorJob-trigger")
+            .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
+
+        // TRANSVERSAL T1 — Outbox de QUALIDADE migrado do job por-módulo (que só tratava
+        // "InspecaoReprovada" e deixava qld.acr.lote_bloqueado/quarentena/liberado e
+        // qld.rst.bloqueio_solicitado "morrerem") para o DISPATCHER CENTRAL, que roteia por EventType
+        // para os consumidores REAIS (baixa/contenção de lote no Estoque) e cai no fallback (pendência
+        // de regra) para os demais eventos conhecidos. Um único leitor por schema (sem duplicar).
+        var qualidadeOutboxJobKey = new JobKey("QualidadeOutboxDispatcherJob");
+        q.AddJob<Epros.Infrastructure.Outbox.OutboxDispatcherJob<Epros.Modules.Qualidade.Infrastructure.Data.ContextQualidade>>(
+            opts => opts.WithIdentity(qualidadeOutboxJobKey));
 
         q.AddTrigger(opts => opts
             .ForJob(qualidadeOutboxJobKey)
-            .WithIdentity("QualidadeOutboxProcessorJob-trigger")
+            .WithIdentity("QualidadeOutboxDispatcherJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
 
         var producaoOutboxJobKey = new JobKey("ProducaoOutboxProcessorJob");
@@ -345,21 +490,38 @@ try
             .WithIdentity("RHOutboxProcessorJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
 
-        var projetosOutboxJobKey = new JobKey("ProjetosOutboxProcessorJob");
-        q.AddJob<ProjetosOutboxProcessorJob>(opts => opts.WithIdentity(projetosOutboxJobKey));
+        // TRANSVERSAL T1 — Outbox de PROJETOS migrado do job por-módulo (que só drenava "ProjetoFaturado"
+        // e deixava prj.orcamento.baseline_congelada morrer na fila) para o DISPATCHER CENTRAL: um único
+        // drenador do schema "projetos", roteando "ProjetoFaturado" para o consumidor REAL (Contas a Receber)
+        // e os demais eventos conhecidos do catálogo (ex.: prj.orcamento.baseline_congelada) para o fallback.
+        var projetosOutboxJobKey = new JobKey("ProjetosOutboxDispatcherJob");
+        q.AddJob<Epros.Infrastructure.Outbox.OutboxDispatcherJob<Epros.Modules.Projetos.Infrastructure.Data.ContextProjetos>>(
+            opts => opts.WithIdentity(projetosOutboxJobKey));
 
         q.AddTrigger(opts => opts
             .ForJob(projetosOutboxJobKey)
-            .WithIdentity("ProjetosOutboxProcessorJob-trigger")
+            .WithIdentity("ProjetosOutboxDispatcherJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
 
-        var manutencaoOutboxJobKey = new JobKey("ManutencaoOutboxProcessorJob");
-        q.AddJob<ManutencaoOutboxProcessorJob>(opts => opts.WithIdentity(manutencaoOutboxJobKey));
+        // TRANSVERSAL T1 — Outbox de MANUTENÇÃO migrado do job por-módulo ("OrdemManutencaoConcluida")
+        // para o DISPATCHER CENTRAL: o consumidor real baixa as peças no Estoque pelo motor único.
+        var manutencaoOutboxJobKey = new JobKey("ManutencaoOutboxDispatcherJob");
+        q.AddJob<Epros.Infrastructure.Outbox.OutboxDispatcherJob<Epros.Modules.Manutencao.Infrastructure.Data.ContextManutencao>>(
+            opts => opts.WithIdentity(manutencaoOutboxJobKey));
 
         q.AddTrigger(opts => opts
             .ForJob(manutencaoOutboxJobKey)
-            .WithIdentity("ManutencaoOutboxProcessorJob-trigger")
+            .WithIdentity("ManutencaoOutboxDispatcherJob-trigger")
             .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
+
+        // MAN-PRV D7 — scheduler de vencimento da preventiva (calendario/contador).
+        var preventivaSchedulerJobKey = new JobKey("PreventivaSchedulerJob");
+        q.AddJob<PreventivaSchedulerJob>(opts => opts.WithIdentity(preventivaSchedulerJobKey));
+
+        q.AddTrigger(opts => opts
+            .ForJob(preventivaSchedulerJobKey)
+            .WithIdentity("PreventivaSchedulerJob-trigger")
+            .WithSimpleSchedule(x => x.WithIntervalInMinutes(30).RepeatForever()));
 
         var grcOutboxJobKey = new JobKey("GRCOutboxProcessorJob");
         q.AddJob<GRCOutboxProcessorJob>(opts => opts.WithIdentity(grcOutboxJobKey));
@@ -401,35 +563,56 @@ try
             .ForJob(sincronizarGeografiaJobKey)
             .WithIdentity("SincronizarGeografiaJob-trigger")
             .WithCronSchedule("0 0 1 * * ?"));
+
+        // TRANSVERSAL T1 — DISPATCHERS CENTRAIS DE OUTBOX.
+        // Jobs genéricos (OutboxDispatcherJob<TContext>) que roteiam por EventType do catálogo os
+        // eventos de schemas que NÃO tinham processador (antes "morriam na fila"). Registrados apenas
+        // onde não há job legado, para não colidir no flag de processado da mesma tabela física:
+        //   - Imobiliária (schema "imobiliaria"): imo.aluguel.cobranca_gerada -> Contas a Receber (consumidor REAL),
+        //     demais imo.* -> fallback (pendente de regra).
+        //   - Concessionárias/DMS (schema "concessionarias"): con.* -> fallback (pendente de regra) até ganharem consumidor.
+        var imobiliariaOutboxJobKey = new JobKey("ImobiliariaOutboxDispatcherJob");
+        q.AddJob<Epros.Infrastructure.Outbox.OutboxDispatcherJob<Epros.Modules.Imobiliaria.Infrastructure.Data.ContextImobiliaria>>(
+            opts => opts.WithIdentity(imobiliariaOutboxJobKey));
+        q.AddTrigger(opts => opts
+            .ForJob(imobiliariaOutboxJobKey)
+            .WithIdentity("ImobiliariaOutboxDispatcherJob-trigger")
+            .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
+
+        var dmsOutboxJobKey = new JobKey("DmsOutboxDispatcherJob");
+        q.AddJob<Epros.Infrastructure.Outbox.OutboxDispatcherJob<Epros.Modules.DMS.Infrastructure.Data.ContextDMS>>(
+            opts => opts.WithIdentity(dmsOutboxJobKey));
+        q.AddTrigger(opts => opts
+            .ForJob(dmsOutboxJobKey)
+            .WithIdentity("DmsOutboxDispatcherJob-trigger")
+            .WithSimpleSchedule(x => x.WithIntervalInSeconds(10).RepeatForever()));
     });
     builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
     // AUTENTICAÇÃO
     // Esquema nativo do EprosERP (EprosToken): valida os JWTs assinados (HS256, com expiração)
     // emitidos pelo login via IEprosTokenService e materializa o ClaimsPrincipal autenticado.
-    // Em Development/Testing também aceita os headers X-Tenant-Id/X-User-Id (dev local e testes).
+    // SEGURANÇA (fechamento do "gato"): NÃO existe mais autenticação por header no runtime — o
+    // handler aceita apenas o token assinado. Testes injetam identidade pelo host de teste.
     // Mantém o JWT Bearer do Keycloak registrado (como esquema adicional) para migração futura,
     // mas o esquema PADRÃO é o EprosToken — é ele quem impõe a autenticação hoje.
-    var permiteHeadersAuth = builder.Environment.IsDevelopment()
-        || builder.Environment.EnvironmentName == "Testing";
-    builder.Services.AddSingleton<Epros.API.Security.IHostEnvironmentFlags>(
-        new Epros.API.Security.HostEnvironmentFlags(permiteHeadersAuth));
 
     // Serviço central do token nativo (JWT HS256 assinado). Substitui o antigo token em texto
-    // plano forjável. A chave vem de configuração (env/secret em produção). Fail-closed: fora de
-    // Development, chave ausente/curta aborta o startup em vez de operar com token inseguro.
+    // plano forjável. A chave vem de configuração (env/secret). Fail-closed: em QUALQUER ambiente
+    // deployado (Production/Staging/Testing, ou Development em contêiner/CI) a chave é obrigatória
+    // e sua ausência aborta o startup. Só desenvolvimento local puro cai na chave fixa de dev.
+    var permiteFallbackDevLocal = Epros.Shared.Security.AmbienteImplantacao
+        .EhDesenvolvimentoLocal(builder.Environment.EnvironmentName);
     var jwtSigningKey = builder.Configuration["Seguranca:JwtSigningKey"];
     if (string.IsNullOrWhiteSpace(jwtSigningKey))
     {
-        // Fail-closed: em produção/staging a chave é obrigatória (env/secret). Só Development e
-        // Testing (mesmos ambientes que permitem o atalho de headers) caem na chave fixa de dev.
-        if (!permiteHeadersAuth)
+        if (!permiteFallbackDevLocal)
         {
             throw new InvalidOperationException(
-                "Seguranca:JwtSigningKey não configurada. Defina a chave de assinatura do token (env/secret) antes de iniciar em ambiente produtivo.");
+                "Seguranca:JwtSigningKey não configurada. Defina a chave de assinatura do token (env/secret) antes de iniciar fora de desenvolvimento local.");
         }
 
-        // Chave fixa de desenvolvimento (>= 32 chars) — apenas para dev local/testes.
+        // Chave fixa de desenvolvimento (>= 32 chars) — apenas para dev local puro.
         jwtSigningKey = "epros-dev-signing-key-please-change-0123456789";
     }
     builder.Services.AddSingleton<Epros.Shared.Security.IEprosTokenService>(
@@ -469,6 +652,34 @@ try
     }
 
     var app = builder.Build();
+
+    // Barreira de boot (REG-001): falha o startup se alguma entidade mapeada não estiver
+    // classificada quanto ao tenant (não herda EntidadeSaaSBase nem é IGlobalEntity). Fecha o
+    // vazamento silencioso de uma entidade nova criada fora do padrão de isolamento.
+    using (var guardScope = app.Services.CreateScope())
+    {
+        var sp = guardScope.ServiceProvider;
+        var contextosParaValidar = new Microsoft.EntityFrameworkCore.DbContext[]
+        {
+            sp.GetRequiredService<ContextGestaoClientes>(),
+            sp.GetRequiredService<Epros.Modules.Aplicativo.Infrastructure.Data.ContextAplicativo>(),
+            sp.GetRequiredService<ContextEstoque>(),
+            sp.GetRequiredService<ContextFiscal>(),
+            sp.GetRequiredService<ContextFinanceiro>(),
+            sp.GetRequiredService<ContextVendas>(),
+            sp.GetRequiredService<ContextQualidade>(),
+            sp.GetRequiredService<ContextProducao>(),
+            sp.GetRequiredService<ContextRH>(),
+            sp.GetRequiredService<ContextProjetos>(),
+            sp.GetRequiredService<ContextManutencao>(),
+            sp.GetRequiredService<ContextGRC>(),
+            sp.GetRequiredService<ContextESG>(),
+            sp.GetRequiredService<ContextDMS>(),
+            sp.GetRequiredService<ContextImobiliaria>(),
+            sp.GetRequiredService<ContextAgricultor>(),
+        };
+        Epros.Infrastructure.Data.GuardaEntidadeOrfa.ValidarModelos(contextosParaValidar);
+    }
 
     if (args.Contains("--seed-fiscal"))
     {
@@ -548,6 +759,10 @@ try
                 var dbImobiliaria = services.GetRequiredService<ContextImobiliaria>();
                 dbImobiliaria.Database.Migrate();
 
+                Log.Information("Aplicando migrations pendentes para ContextAgricultor...");
+                var dbAgricultor = services.GetRequiredService<ContextAgricultor>();
+                dbAgricultor.Database.Migrate();
+
                 Log.Information("Todas as migrations de módulos foram aplicadas com sucesso no PostgreSQL!");
 
                 // Semeia os catálogos fiscais nacionais (CFOP + CST IBS/CBS) — pré-requisito para emitir nota.
@@ -555,10 +770,49 @@ try
                 Log.Information("Semeando catálogos fiscais (CFOP/CST IBS-CBS)...");
                 await Epros.Modules.Fiscal.Infrastructure.Data.CatalogoFiscalSeeder.SeedAsync(dbFiscal);
                 Log.Information("Catálogos fiscais semeados.");
+
+                // 1.09 — catálogo AUTORITATIVO de permissões RBAC: descobre os [AbacAuthorize] dos controllers
+                // e materializa as Capacidades (system) + papel de sistema Administrador (todas as caps).
+                // Idempotente. É a fonte que o AbacFilter cobra (LC-2) e conserta o admin travado (LC-1).
+                Log.Information("Semeando catálogo de permissões RBAC (Capacidade/Papel Administrador)...");
+                await Epros.API.Seed.CapacidadeCatalogoSeeder.SeedAsync(dbClientes);
+                Log.Information("Catálogo de permissões RBAC semeado.");
+
+                // 1.10 — catálogo de MENU real com CapacidadeRequerida amarrada às capacidades descobertas,
+                // para que GET /api/v1/menu projete o menu dinâmico (em vez do fallback estático). Idempotente.
+                Log.Information("Semeando catálogo de MENU (capacidades por item)...");
+                await Epros.API.Seed.MenuCatalogoSeeder.SeedAsync(dbClientes);
+                Log.Information("Catálogo de MENU semeado.");
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Falha crítica ao aplicar migrations na inicialização.");
+            }
+        }
+    }
+
+    // Seed de VALIDAÇÃO ponta a ponta (multi-tenant / contador parceiro + isolamento).
+    // Gating DURO:
+    //  - Roda SÓ em Development/Staging; FAIL-CLOSED em Production (e em qualquer outro ambiente,
+    //    inclusive "Testing" do host de testes) — a condição exige explicitamente Dev OU Staging.
+    //  - Guardado atrás da config "Seed:Validacao": default LIGADO em Development, DESLIGADO caso
+    //    contrário (em Staging é preciso setar Seed:Validacao=true para ligar). Setar =false desliga.
+    //  - Executa DEPOIS das migrations e do CatalogoFiscalSeeder, no mesmo ponto de bootstrap.
+    //  - Idempotente e envolto em try/catch: nunca derruba o boot.
+    {
+        var ambienteElegivel = app.Environment.IsDevelopment() || app.Environment.IsStaging();
+        var seedValidacaoLigado = app.Configuration.GetValue<bool?>("Seed:Validacao") ?? app.Environment.IsDevelopment();
+
+        if (ambienteElegivel && !app.Environment.IsProduction() && seedValidacaoLigado)
+        {
+            using var scope = app.Services.CreateScope();
+            try
+            {
+                await Epros.API.Seed.SeedValidacaoSeeder.SeedAsync(scope.ServiceProvider, app.Environment.EnvironmentName);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Falha ao executar o seed de validação no bootstrap (boot continua).");
             }
         }
     }
@@ -589,13 +843,17 @@ try
     }
 
     // ORDEM OBRIGATÓRIA DO PIPELINE HTTP:
-    // UseAuthentication -> ExcecaoGlobalMiddleware -> InquilinoSaaSMiddleware -> ModuloTenantMiddleware -> DataMaskingMiddleware -> AuditMiddleware -> Controllers
+    // UseAuthentication -> ExcecaoGlobalMiddleware -> HostGuardMiddleware -> InquilinoSaaSMiddleware -> ModuloTenantMiddleware -> DataMaskingMiddleware -> AuditMiddleware -> Controllers
 
     app.UseCors(app.Environment.IsDevelopment() ? "DevCorsPolicy" : "ProdCorsPolicy");
     app.UseAuthentication();
     app.UseAuthorization();
 
     app.UseMiddleware<ExcecaoGlobalMiddleware>();
+    // Host-guard do Landlord (defesa em profundidade sobre o gate 1.11): rotas do painel Siser só
+    // respondem no host do Landlord; num host de cliente devolvem 404. Fail-safe se Hosts:Landlord
+    // não estiver configurado (dev/test). DEPOIS do roteamento, ANTES dos controllers.
+    app.UseMiddleware<HostGuardMiddleware>();
     app.UseMiddleware<ApiKeyMiddleware>();
     app.UseMiddleware<InquilinoSaaSMiddleware>();
     app.UseMiddleware<BloqueioInadimplenciaMiddleware>();

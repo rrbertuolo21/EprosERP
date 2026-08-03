@@ -11,8 +11,11 @@ using Microsoft.EntityFrameworkCore;
 namespace Epros.Modules.GestaoClientes.Application.Queries
 {
     /// <summary>
-    /// APP-TEN-008 (account/obter-acessos): monta a árvore de menu permitida (AcessosResponse)
-    /// para a empresa selecionada, aplicando a matriz do perfil ou bypass de administrador.
+    /// LEGADO (matriz PerfilAcessoMenu). Monta a árvore de menu pela matriz do perfil / bypass de admin.
+    /// ⚠️ 1.10: NÃO é mais exposto via corpo de requisição. O endpoint <c>catalogo-menus/acessos</c> foi
+    /// repontado para a projeção por CAPACIDADE (ObterMenuDoUsuarioQuery), derivando identidade/empresa do
+    /// token — fechando o furo do <see cref="IsAdmin"/> caller-supplied. Mantido apenas para os testes de
+    /// handler existentes; qualquer construção deste query com IsAdmin vem de origem confiável (não do body).
     /// </summary>
     public record ObterAcessosUsuarioQuery(
         Guid? PerfilAcessoId,

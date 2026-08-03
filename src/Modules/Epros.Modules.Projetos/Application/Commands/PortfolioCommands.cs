@@ -72,4 +72,36 @@ namespace Epros.Modules.Projetos.Application.Commands
     public record InativarPortfolioCommand(Guid PortfolioId, Guid UsuarioId) : ICommand;
 
     public record ReativarPortfolioCommand(Guid PortfolioId, Guid UsuarioId) : ICommand;
+
+    /// <summary>DP-PRT-score: recalcula o score de cada item por média ponderada (pesos parametrizáveis) e consolida o ScoreTotal.</summary>
+    public record RecalcularScorePortfolioCommand(
+        Guid PortfolioId,
+        decimal? PesoNpv,
+        decimal? PesoPayback,
+        decimal? PesoAlinhamento,
+        decimal? PesoRisco
+    ) : ICommand;
+
+    // ===== T-PRG (Programa — hierarquia Portfólio > Programa > Projeto) =====
+
+    public record CriarProgramaCommand(
+        string Codigo,
+        string Nome,
+        string? Descricao,
+        Guid ResponsavelId,
+        Guid? PortfolioId
+    ) : ICommand;
+
+    public class CriarProgramaCommandValidator : AbstractValidator<CriarProgramaCommand>
+    {
+        public CriarProgramaCommandValidator()
+        {
+            RuleFor(c => c.Codigo).NotEmpty().MaximumLength(30).WithMessage("O codigo do programa e obrigatorio (max 30).");
+            RuleFor(c => c.Nome).NotEmpty().WithMessage("O nome do programa e obrigatorio.");
+            RuleFor(c => c.ResponsavelId).NotEmpty().WithMessage("O responsavel do programa e obrigatorio.");
+        }
+    }
+
+    public record AtivarProgramaCommand(Guid ProgramaId) : ICommand;
+    public record EncerrarProgramaCommand(Guid ProgramaId) : ICommand;
 }

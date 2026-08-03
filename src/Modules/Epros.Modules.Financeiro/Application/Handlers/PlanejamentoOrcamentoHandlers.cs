@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -155,12 +156,25 @@ namespace Epros.Modules.Financeiro.Application.Handlers
         public EncerrarPeriodoOrcamentarioCommandHandler(ContextFinanceiro context, ICurrentUser user) { _context = context; _user = user; }
         public async Task<CommandResult> Handle(EncerrarPeriodoOrcamentarioCommand request, CancellationToken ct)
         {
+            var usuario = _user.GetUserId() ?? "system";
             var p = await _context.PeriodosOrcamentarios.FirstOrDefaultAsync(x => x.Id == request.Id, ct);
             if (p == null) return CommandResult.Falha("Período orçamentário não encontrado.");
-            p.Encerrar(_user.GetUserId() ?? "system");
+            p.Encerrar(usuario);
             if (!p.IsValid) return CommandResult.Falha(p.Notifications.Select(n => n.Message));
+
+            // EF FIN-PO §6.4/§15: encerrar período encerra em cascata os budgets filhos ativos.
+            var budgetsAtivos = await _context.Budgets
+                .Where(b => b.PeriodoId == p.Id && b.Status == Domain.Enums.EStatusOrcamento.Ativo)
+                .ToListAsync(ct);
+            var encerrados = 0;
+            foreach (var b in budgetsAtivos)
+            {
+                b.Encerrar(usuario);
+                if (b.IsValid) encerrados++;
+            }
+
             await _context.SaveChangesAsync(ct);
-            return CommandResult.Ok("Período encerrado.", new { p.Id });
+            return CommandResult.Ok("Período encerrado.", new { p.Id, budgetsEncerrados = encerrados });
         }
     }
 
@@ -197,6 +211,54 @@ namespace Epros.Modules.Financeiro.Application.Handlers
             if (!b.IsValid) return CommandResult.Falha(b.Notifications.Select(n => n.Message));
             await _context.SaveChangesAsync(ct);
             return CommandResult.Ok("Budget aprovado.", new { b.Id });
+        }
+    }
+
+    public class AtivarBudgetCommandHandler : IRequestHandler<AtivarBudgetCommand, CommandResult>
+    {
+        private readonly ContextFinanceiro _context;
+        private readonly ICurrentUser _user;
+        public AtivarBudgetCommandHandler(ContextFinanceiro context, ICurrentUser user) { _context = context; _user = user; }
+        public async Task<CommandResult> Handle(AtivarBudgetCommand request, CancellationToken ct)
+        {
+            var b = await _context.Budgets.FirstOrDefaultAsync(x => x.Id == request.Id, ct);
+            if (b == null) return CommandResult.Falha("Budget não encontrado.");
+            b.Ativar(_user.GetUserId() ?? "system");
+            if (!b.IsValid) return CommandResult.Falha(b.Notifications.Select(n => n.Message));
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok("Budget ativado.", new { b.Id });
+        }
+    }
+
+    public class EncerrarBudgetCommandHandler : IRequestHandler<EncerrarBudgetCommand, CommandResult>
+    {
+        private readonly ContextFinanceiro _context;
+        private readonly ICurrentUser _user;
+        public EncerrarBudgetCommandHandler(ContextFinanceiro context, ICurrentUser user) { _context = context; _user = user; }
+        public async Task<CommandResult> Handle(EncerrarBudgetCommand request, CancellationToken ct)
+        {
+            var b = await _context.Budgets.FirstOrDefaultAsync(x => x.Id == request.Id, ct);
+            if (b == null) return CommandResult.Falha("Budget não encontrado.");
+            b.Encerrar(_user.GetUserId() ?? "system");
+            if (!b.IsValid) return CommandResult.Falha(b.Notifications.Select(n => n.Message));
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok("Budget encerrado.", new { b.Id });
+        }
+    }
+
+    public class ExcluirBudgetCommandHandler : IRequestHandler<ExcluirBudgetCommand, CommandResult>
+    {
+        private readonly ContextFinanceiro _context;
+        private readonly ICurrentUser _user;
+        public ExcluirBudgetCommandHandler(ContextFinanceiro context, ICurrentUser user) { _context = context; _user = user; }
+        public async Task<CommandResult> Handle(ExcluirBudgetCommand request, CancellationToken ct)
+        {
+            var b = await _context.Budgets.FirstOrDefaultAsync(x => x.Id == request.Id, ct);
+            if (b == null) return CommandResult.Falha("Budget não encontrado.");
+            b.Excluir(_user.GetUserId() ?? "system");
+            if (!b.IsValid) return CommandResult.Falha(b.Notifications.Select(n => n.Message));
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok("Budget excluído.", new { b.Id });
         }
     }
 
@@ -312,6 +374,127 @@ namespace Epros.Modules.Financeiro.Application.Handlers
             _context.MetaTrackings.Add(tracking);
             await _context.SaveChangesAsync(ct);
             return CommandResult.Ok("Tracking registrado.", new { tracking.Id });
+        }
+    }
+
+    // ===== Milestones de meta (EF FIN-PO §6.7/§8.6) =====
+    public class CriarMilestoneMetaCommandHandler : IRequestHandler<CriarMilestoneMetaCommand, CommandResult>
+    {
+        private readonly ContextFinanceiro _context;
+        private readonly ITenantProvider _tenant;
+        private readonly ICurrentUser _user;
+        public CriarMilestoneMetaCommandHandler(ContextFinanceiro context, ITenantProvider tenant, ICurrentUser user)
+        { _context = context; _tenant = tenant; _user = user; }
+        public async Task<CommandResult> Handle(CriarMilestoneMetaCommand request, CancellationToken ct)
+        {
+            var tenantId = _tenant.GetTenantId();
+            var userId = _user.GetUserId() ?? "system";
+            var meta = await _context.Metas.FirstOrDefaultAsync(m => m.Id == request.MetaId, ct);
+            if (meta == null) return CommandResult.Falha("Meta não encontrada.");
+            // §6.6: milestones só em metas ativas.
+            if (meta.Status != Domain.Enums.EStatusMeta.Ativa) return CommandResult.Falha("Somente meta ativa aceita milestones.");
+            var milestone = meta.AdicionarMilestone(request.Descricao, tenantId, userId);
+            _context.MetaMilestones.Add(milestone);
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok("Milestone criado (pendente).", new { milestone.Id });
+        }
+    }
+
+    public class ConcluirMilestoneMetaCommandHandler : IRequestHandler<ConcluirMilestoneMetaCommand, CommandResult>
+    {
+        private readonly ContextFinanceiro _context;
+        private readonly ICurrentUser _user;
+        public ConcluirMilestoneMetaCommandHandler(ContextFinanceiro context, ICurrentUser user) { _context = context; _user = user; }
+        public async Task<CommandResult> Handle(ConcluirMilestoneMetaCommand request, CancellationToken ct)
+        {
+            var milestone = await _context.MetaMilestones.FirstOrDefaultAsync(m => m.Id == request.MilestoneId, ct);
+            if (milestone == null) return CommandResult.Falha("Milestone não encontrado.");
+            milestone.Concluir(_user.GetUserId() ?? "system");
+            if (!milestone.IsValid) return CommandResult.Falha(milestone.Notifications.Select(n => n.Message));
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok("Milestone concluído.", new { milestone.Id });
+        }
+    }
+
+    // ===== Orçamento comercial (EF FIN-PO §6.2/§8.2/§12.3-12.4) =====
+    public class CriarOrcamentoComercialCommandHandler : IRequestHandler<CriarOrcamentoComercialCommand, CommandResult>
+    {
+        private readonly ContextFinanceiro _context;
+        private readonly ITenantProvider _tenant;
+        private readonly ICurrentUser _user;
+        public CriarOrcamentoComercialCommandHandler(ContextFinanceiro context, ITenantProvider tenant, ICurrentUser user)
+        { _context = context; _tenant = tenant; _user = user; }
+        public async Task<CommandResult> Handle(CriarOrcamentoComercialCommand request, CancellationToken ct)
+        {
+            var tenantId = _tenant.GetTenantId();
+            var userId = _user.GetUserId() ?? "system";
+            var orc = new OrcamentoComercial(
+                request.VendedorId, request.TransportadoraId, request.ClienteId, request.CondicaoPagamentoId,
+                request.Tipo, request.Codigo, request.TipoFrete, request.Observacao, request.StatusPedido,
+                request.DataCadastro, request.DataEntrega, request.Validade,
+                request.ValorFrete, request.TaxaComissao, request.TaxaDesconto, tenantId, userId);
+            foreach (var i in request.Itens ?? new List<OrcamentoComercialItemInput>())
+                orc.AdicionarItem(i.ProdutoId, i.Quantidade, i.ValorUnitario, i.TaxaDesconto, tenantId, userId);
+            orc.CalcularTotais();
+            orc.Validar();
+            if (!orc.IsValid) return CommandResult.Falha(orc.Notifications.Select(n => n.Message));
+            _context.OrcamentosComerciais.Add(orc);
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok("Orçamento comercial criado.", new { orc.Id, orc.ValorSubtotal, orc.ValorTotal });
+        }
+    }
+
+    public class AlterarOrcamentoComercialCommandHandler : IRequestHandler<AlterarOrcamentoComercialCommand, CommandResult>
+    {
+        private readonly ContextFinanceiro _context;
+        private readonly ITenantProvider _tenant;
+        private readonly ICurrentUser _user;
+        public AlterarOrcamentoComercialCommandHandler(ContextFinanceiro context, ITenantProvider tenant, ICurrentUser user)
+        { _context = context; _tenant = tenant; _user = user; }
+        public async Task<CommandResult> Handle(AlterarOrcamentoComercialCommand request, CancellationToken ct)
+        {
+            var tenantId = _tenant.GetTenantId();
+            var userId = _user.GetUserId() ?? "system";
+            var orc = await _context.OrcamentosComerciais.Include(o => o.Itens).FirstOrDefaultAsync(o => o.Id == request.Id, ct);
+            if (orc == null) return CommandResult.Falha("Orçamento comercial não encontrado.");
+            orc.AlterarCabecalho(
+                request.VendedorId, request.TransportadoraId, request.ClienteId, request.CondicaoPagamentoId,
+                request.Tipo, request.Codigo, request.TipoFrete, request.Observacao, request.StatusPedido,
+                request.DataEntrega, request.Validade,
+                request.ValorFrete, request.TaxaComissao, request.TaxaDesconto, userId);
+            // Substitui os itens: remove os antigos explicitamente e recria a partir do input.
+            // Como o cabeçalho já existe (grafo rastreado), os novos itens precisam ser marcados
+            // como Added explicitamente — senão, por terem PK Guid já preenchida, o EF os trata como
+            // Modified e tenta UPDATE de linhas inexistentes.
+            _context.OrcamentoComercialItens.RemoveRange(orc.Itens.ToList());
+            orc.LimparItens();
+            foreach (var i in request.Itens ?? new List<OrcamentoComercialItemInput>())
+            {
+                var item = orc.AdicionarItem(i.ProdutoId, i.Quantidade, i.ValorUnitario, i.TaxaDesconto, tenantId, userId);
+                _context.OrcamentoComercialItens.Add(item);
+            }
+            orc.CalcularTotais();
+            orc.Validar();
+            if (!orc.IsValid) return CommandResult.Falha(orc.Notifications.Select(n => n.Message));
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok("Orçamento comercial alterado.", new { orc.Id, orc.ValorSubtotal, orc.ValorTotal });
+        }
+    }
+
+    public class ExcluirOrcamentoComercialCommandHandler : IRequestHandler<ExcluirOrcamentoComercialCommand, CommandResult>
+    {
+        private readonly ContextFinanceiro _context;
+        private readonly ICurrentUser _user;
+        public ExcluirOrcamentoComercialCommandHandler(ContextFinanceiro context, ICurrentUser user) { _context = context; _user = user; }
+        public async Task<CommandResult> Handle(ExcluirOrcamentoComercialCommand request, CancellationToken ct)
+        {
+            var userId = _user.GetUserId() ?? "system";
+            var orc = await _context.OrcamentosComerciais.Include(o => o.Itens).FirstOrDefaultAsync(o => o.Id == request.Id, ct);
+            if (orc == null) return CommandResult.Falha("Orçamento comercial não encontrado.");
+            foreach (var item in orc.Itens) item.Deletar(userId);
+            orc.Deletar(userId);
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok("Orçamento comercial excluído.", new { orc.Id });
         }
     }
 }

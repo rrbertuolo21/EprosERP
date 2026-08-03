@@ -85,7 +85,8 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 token = request.Token,
                 empresas = empresasDto,
                 tenantId = request.TenantId,
-                login = usuario.Email,
+                // REG/MC: transporta o login REAL (Usuario.Login); cai para o e-mail só quando não há login definido.
+                login = usuario.Login ?? usuario.Email,
                 block = block
             };
 

@@ -37,12 +37,23 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Jobs
         {
             var agora = DateTime.UtcNow;
 
-            var tenants = await _context.WfAgendamentos
-                .IgnoreQueryFilters()
-                .Where(a => a.DeletadoEm == null && a.Ativo && a.ProximaExecucaoEm != null && a.ProximaExecucaoEm <= agora)
-                .Select(a => a.TenantId)
-                .Distinct()
-                .ToListAsync();
+            System.Collections.Generic.List<string> tenants;
+            try
+            {
+                tenants = await _context.WfAgendamentos
+                    .IgnoreQueryFilters()
+                    .Where(a => a.DeletadoEm == null && a.Ativo && a.ProximaExecucaoEm != null && a.ProximaExecucaoEm <= agora)
+                    .Select(a => a.TenantId)
+                    .Distinct()
+                    .ToListAsync();
+            }
+            catch (System.Data.Common.DbException ex) when (ex.SqlState == "42P01")
+            {
+                // Tabelas do subsistema de Workflow (wf_*) ainda não provisionadas no banco
+                // (drift: entidades no modelo sem CreateTable — corrigir com migration própria).
+                // Sem elas não há agenda a processar: pula esta execução em vez de estourar em loop.
+                return;
+            }
 
             foreach (var tenantId in tenants)
             {

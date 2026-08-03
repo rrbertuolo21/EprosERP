@@ -10,10 +10,10 @@ ERP SaaS multi-tenant, **monólito modular** em **.NET 8**, Clean Architecture (
 Infrastructure/Migrations por módulo), **CQRS com MediatR**, **PostgreSQL + EF Core**, isolamento
 multi-tenant por **RLS** (`TenantRlsInterceptor` + `current_setting`), padrão **Outbox**, autorização
 **ABAC** (`[AbacAuthorize(recurso, acao)]`), validação **Flunt**. Front **Nuxt 3 + TypeScript** (SPA,
-`Epros.App`), IO 100% via `useApi`/`useApiList` (base do `runtimeConfig`, token/tenant automáticos).
+`EprosApp`), IO 100% via `useApi`/`useApiList` (base do `runtimeConfig`, token/tenant automáticos).
 Mobile: **React Native** (submódulo `Epros.Mobile`).
 
-**Estrutura do repo (achatada, deploy-ready):** `src/` (backend), `Epros.App/` (front), `scripts/`,
+**Estrutura do repo (achatada, deploy-ready):** `src/` (backend), `EprosApp/` (front), `scripts/`,
 `infra/`, `docker-compose.prod.yml`, `tests/`, `Epros.sln` na raiz.
 
 ## 2. Números atuais (verificados no banco/git vivos)
@@ -64,6 +64,23 @@ Mobile: **React Native** (submódulo `Epros.Mobile`).
   `POST /v1/payments`, consultar, testar-conexão), CRUD de gateways (token mascarado), endpoint
   `gerar-cobranca-pix` na fatura, tela **Integrações/Gateways** + botão "Gerar Pix" (QR+copia-e-cola).
   Migration `AddGatewayPagamentoConfig`. Validado: adaptador alcança a `api.mercadopago.com` real.
+- **Bloco 13 — Fundação da camada TRANSVERSAL compartilhada (kernel):** consolidados/construídos como
+  componente central ÚNICO os transversais que os 16 módulos vão reusar, todos em `Epros.Shared`
+  (+ implementações no Aplicativo/casa-de-plataforma). **Já existiam (confirmados):** cofre fail-closed
+  (`VaultEncryptionService`/`ISegredoCofreService`), RBAC Papel+Capacidade unificado (dono único
+  GestaoClientes: `Papel`/`Capacidade`/`PapelCapacidade`/`UsuarioCapacidade`/`CapacidadesEfetivasService`/
+  `AbacFilter`), Outbox + dedupe (`OutboxMessage` + `WebhookEventoProcessado`), lock otimista `xmin`→409
+  (REG-017 em `ContextBase`). **Construídos (novos):** T3 status canônico único (`ESituacaoCanonica` +
+  `MaquinaSituacaoCanonica`, máquina de estados reutilizável); T2 catálogo único de eventos
+  (`CatalogoEventosIntegracao` c/ 49 tipos + `EnvelopeEvento`); T9 numeração central atômica/gapless por
+  (tenant,tipo) via UPSERT `ON CONFLICT ... RETURNING` (`INumeracaoService`/`NumeracaoService` +
+  `SequenciaNumeracao`) — substitui o `CountAsync` que dá corrida; T8 trilha de auditoria imutável central
+  append-only (`RegistroAuditoria` POCO sem mutadores + `IRegistroAuditoriaService`); T10 GED canônico
+  (`DocumentoGed` metadados+versão+estado de assinatura) + assinatura ICP atrás de abstração
+  (`IAssinaturaDigitalService`, default fail-safe = "pendente de provedor", nunca forja validade jurídica);
+  T5 rotação do cofre (`ISegredoRotacaoService` = rewrap Vault / re-encrypt local, sem expor texto plano).
+  Migration `Implanta_Transversais_Compartilhadas` (3 tabelas no schema `aplicativo`, RLS automática).
+  Portão: build verde, **1055 testes** (10 novos em `TransversaisCompartilhadasTests`).
 
 ## 4. Como rodar (local)
 
@@ -104,3 +121,29 @@ ABAC por plano; validação fiscal humana; CI com serviço PostgreSQL. Detalhe e
 - **Mercado Pago:** cadastrar o access token (sandbox/produção) em **Operação → Integrações / Gateways**,
   testar conexão e então "Gerar Pix" na fatura emite QR real.
 - **Deploy:** `.env.production` com `POSTGRES_PASSWORD`, `COFRE_KEK_LOCAL`, `MINIO_*`, `DOMAIN_*`.
+
+## 8. Módulo COMPRAS — construção (2026-08)
+
+Construído/aprofundado sobre os clusters reais do módulo Estoque (schema `estoque`, código-é-verdade),
+honrando COMPRAS logicamente (rotas/namespaces `compras-*`). Base: `especificacoes/COMPRAS/` (CD1–CD7).
+Sequência de commits (branch `pente-fino/aplicativo`):
+
+| Submódulo | Decisão | Entregue | Commit |
+|---|---|---|---|
+| Alçada + aprovação multinível | CD3 | (rodada anterior) escalonamento cumulativo | `6e363d3` |
+| DEVOLUCAO_DE_COMPRA | CD4 | submódulo próprio; saída via evento (motor D1) + estorno idempotente; CFOP parametrizado | `b2aa2ff` |
+| COMERCIO_EXTERIOR | CD1 | incoterm/moeda/câmbio na Compra; rateio landed parametrizável (default off); nacionalização | `d48fa77` |
+| SOURCING | CD2 | mapa comparativo multi-fornecedor + escolha do vencedor | `5524b30` |
+| CONTRATOS_GCC | CD5 | aditivo (preço/qtd/vigência/condições) + performance/aderência | `e392d83` |
+| SUBCONTRATACAO | — | cobrança de serviço (gera compra) + doc fiscal CFOP parametrizado | `2a8045d` |
+| TMS_TRANSPORTE | NF-04 | frete de entrada rateado no custo (motor D1) | `a125e92` |
+| COM-GC relatórios | CD7 | curva ABC fornecedor, savings cotação, lead time, aderência de alçada | `04238bf` |
+
+**Padrões seguidos:** DDD (invariantes na entidade), CQRS/MediatR, ABAC (`[AbacAuthorize]`, nega por
+padrão), efeitos por **Outbox** idempotente (eventos `com.*`/`est.*` no `CatalogoEventosIntegracao`),
+tenant+soft-delete pelo filtro global do `ContextBase`. Migrations: `AddComprasAlcadaAprovacao`,
+`AddDevolucaoCompra`, `AddComercioExteriorImportacao`, `AddCotacaoVencedorSourcing` (GCC/Sub/TMS/CD7 sem
+schema novo). **Suíte: 1127 testes verdes, build 0 erros.**
+
+**Fora de escopo por decisão:** COM-FCI (superado por COMEX+DEVOLUCAO — ver `DECISOES-PENDENTES-RAFAEL.md`).
+**Fiscais valida-contador** e **refactor TEC-05 (extrair `Epros.Modules.Compras`)**: ver `DECISOES-PENDENTES-RAFAEL.md`.
