@@ -51,6 +51,11 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
+    // Npgsql: aceita DateTime com Kind=Unspecified/Local em colunas 'timestamp with time zone'
+    // (comportamento legado). Sem isso, qualquer DateTime não-UTC gravado/consultado em timestamptz
+    // lança ArgumentException em runtime (derrubava dashboard, relatórios BI, fluxo-caixa, garantias).
+    AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
     // Configura Serilog como o logger padrão
     builder.Host.UseSerilog();
 
