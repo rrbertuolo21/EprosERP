@@ -120,6 +120,12 @@ async function carregarEmpresa() {
       Object.assign(empresa, dados)
       empresa.id = idParam
       cnpjDigitado.value = maskCpfCnpj(dados.cnpj ?? '')
+      // A empresa base pode devolver empresaParametrosDfe = null (sem parâmetros DF-e cadastrados).
+      // Object.assign sobrescreve o default por null e o EmpresaDfePanel quebraria ao ler
+      // `dfe.tipoAmbienteNfce` de null (TypeError no load). Garantir sempre um objeto válido.
+      if (!empresa.empresaParametrosDfe) {
+        empresa.empresaParametrosDfe = criarEmpresaFormInicial().empresaParametrosDfe
+      }
     }
 
     try {
