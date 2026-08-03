@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Epros.Modules.Vendas.Infrastructure.Data;
 
 #nullable disable
 
@@ -10,6 +12,7 @@ namespace Epros.Modules.Vendas.Migrations
     /// unidade_uso/uso_origem/uso_vencimento à cobertura. Fonte: EF_7_VENDAS_GARANTIAS_V1 §0.1/§10.
     /// Migração escrita à mão (Up/Down enxutos) para evitar o ruído de xmin do scaffold automático.
     /// </summary>
+    [DbContext(typeof(ContextVendas))]
     [Migration("20260802090000_AddGarantiaDimensaoUsoVendas")]
     public partial class AddGarantiaDimensaoUsoVendas : Migration
     {
