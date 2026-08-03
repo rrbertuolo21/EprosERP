@@ -59,7 +59,7 @@ namespace Epros.Tests
             // Assertiva
             var inspecoes = await context.InspecoesLote.ToListAsync();
             Assert.Equal(2, inspecoes.Count);
-            
+
             var inspecao1 = inspecoes.FirstOrDefault(i => i.Sku == "PROD-001");
             Assert.NotNull(inspecao1);
             Assert.Equal("Pendente", inspecao1!.Status);
@@ -194,9 +194,9 @@ namespace Epros.Tests
             using var contextEstoque = new ContextEstoque(optionsEstoque, tenantProvider, currentUser);
 
             var produto = new Produto("PROD-001", "Produto Teste", 100.0m, "tenant-1", "user-1");
-            produto.LancarEntradaEstoque(50.0m, 50.0m, "user-1");
             contextEstoque.Produtos.Add(produto);
             await contextEstoque.SaveChangesAsync();
+            await EstoqueTestSeed.SemearSaldoAsync(contextEstoque, "tenant-1", "user-1", produto.Id, 50.0m, 50.0m);
 
             var handler = new InspecaoReprovadaEstoqueHandler(contextEstoque);
             var notification = new InspecaoReprovadaEventNotification(

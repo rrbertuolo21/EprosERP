@@ -1,4 +1,4 @@
-﻿using Flunt.Notifications;
+using Flunt.Notifications;
 
 namespace Epros.ERP.Shared.DomainObjects
 {

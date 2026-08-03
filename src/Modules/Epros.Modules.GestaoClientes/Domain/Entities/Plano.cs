@@ -13,12 +13,39 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public Guid? GrupoPlanoId { get; private set; }
         public int LimiteUsuarios { get; private set; }
         public int LimiteEmpresas { get; private set; }
+
+        // 1.06 (REG-014) — Limite de CLIENTES (customers do tenant / entidade Pessoa com papel cliente).
+        // Convenção única do submódulo: 0 = ILIMITADO (assim como LimiteUsuarios/LimiteEmpresas).
+        public int LimiteClientes { get; private set; }
+
+        // 1.06 — Prazo de tolerância (dias) de inadimplência antes do bloqueio operacional, POR PLANO.
+        // null → o BloqueioInadimplenciaMiddleware usa o fallback de 15 dias.
+        public int? DiasToleranciaInadimplencia { get; private set; }
+
         public string? RecursosInclusos { get; private set; }
         public string? DescricaoCurta { get; private set; }
         public string? DescricaoCompleta { get; private set; }
         public DateTime? DataInicio { get; private set; }
         public DateTime? DataFim { get; private set; }
+
+        // 1.01: duração/vigência do plano do catálogo (EF: vitalícia/mensal/anual).
+        public PlanoDuration Duration { get; private set; } = PlanoDuration.Mensal;
+
+        // 1.01: flags de módulo do plano (EF: Crm/Project/Hrm/Account/Pos).
+        public bool ModuloCrm { get; private set; }
+        public bool ModuloProjetos { get; private set; }
+        public bool ModuloRh { get; private set; }
+        public bool ModuloFinanceiro { get; private set; }
+        public bool ModuloPdv { get; private set; }
+
         public List<ModuloPlano> Modulos { get; private set; } = new();
+
+        /// <summary>
+        /// Plano híbrido (1.01): quando <c>TenantId == "system"</c> o plano é o catálogo GLOBAL do Siser
+        /// (visível a todos os tenants). Quando <c>TenantId</c> é um tenant real, é um plano custom daquele cliente.
+        /// A distinção nasce do contexto de criação (landlord "system" vs. tenant), aplicada em ProcessarEntidadesSaaS.
+        /// </summary>
+        public bool EhCatalogoGlobal() => TenantId == "system";
 
         protected Plano() { } // EF Core
 
@@ -34,15 +61,25 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             string? descricaoCurta = null,
             string? descricaoCompleta = null,
             DateTime? dataInicio = null,
-            DateTime? dataFim = null)
+            DateTime? dataFim = null,
+            PlanoDuration duration = PlanoDuration.Mensal,
+            bool moduloCrm = false,
+            bool moduloProjetos = false,
+            bool moduloRh = false,
+            bool moduloFinanceiro = false,
+            bool moduloPdv = false,
+            int limiteClientes = 0,
+            int? diasToleranciaInadimplencia = 15)
             : base(tenantId, criadoPor)
         {
             AddNotifications(new Contract<Plano>()
                 .Requires()
                 .IsNotNullOrEmpty(nome, nameof(Nome), "Nome do plano é obrigatório")
                 .IsGreaterThan(preco, -0.01m, nameof(Preco), "Preço do plano deve ser maior ou igual a zero")
-                .IsGreaterThan(limiteUsuarios, 0, nameof(LimiteUsuarios), "Limite de usuários deve ser maior que zero")
-                .IsGreaterThan(limiteEmpresas, 0, nameof(LimiteEmpresas), "Limite de empresas deve ser maior que zero")
+                // 1.06 (REG-014): 0 = ilimitado — aceitamos limite >= 0 (o enforcement trata <= 0 como sem teto).
+                .IsGreaterOrEqualsThan(limiteUsuarios, 0, nameof(LimiteUsuarios), "Limite de usuários deve ser maior ou igual a zero (0 = ilimitado)")
+                .IsGreaterOrEqualsThan(limiteEmpresas, 0, nameof(LimiteEmpresas), "Limite de empresas deve ser maior ou igual a zero (0 = ilimitado)")
+                .IsGreaterOrEqualsThan(limiteClientes, 0, nameof(LimiteClientes), "Limite de clientes deve ser maior ou igual a zero (0 = ilimitado)")
             );
 
             Nome = nome;
@@ -50,11 +87,19 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             GrupoPlanoId = grupoPlanoId;
             LimiteUsuarios = limiteUsuarios;
             LimiteEmpresas = limiteEmpresas;
+            LimiteClientes = limiteClientes;
+            DiasToleranciaInadimplencia = diasToleranciaInadimplencia;
             RecursosInclusos = recursosInclusos;
             DescricaoCurta = descricaoCurta;
             DescricaoCompleta = descricaoCompleta;
             DataInicio = dataInicio;
             DataFim = dataFim;
+            Duration = duration;
+            ModuloCrm = moduloCrm;
+            ModuloProjetos = moduloProjetos;
+            ModuloRh = moduloRh;
+            ModuloFinanceiro = moduloFinanceiro;
+            ModuloPdv = moduloPdv;
             Ativo = true;
         }
 
@@ -101,14 +146,24 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             string? descricaoCurta = null,
             string? descricaoCompleta = null,
             DateTime? dataInicio = null,
-            DateTime? dataFim = null)
+            DateTime? dataFim = null,
+            PlanoDuration duration = PlanoDuration.Mensal,
+            bool moduloCrm = false,
+            bool moduloProjetos = false,
+            bool moduloRh = false,
+            bool moduloFinanceiro = false,
+            bool moduloPdv = false,
+            int limiteClientes = 0,
+            int? diasToleranciaInadimplencia = 15)
         {
             AddNotifications(new Contract<Plano>()
                 .Requires()
                 .IsNotNullOrEmpty(nome, nameof(Nome), "Nome do plano é obrigatório")
                 .IsGreaterThan(preco, -0.01m, nameof(Preco), "Preço do plano deve ser maior ou igual a zero")
-                .IsGreaterThan(limiteUsuarios, 0, nameof(LimiteUsuarios), "Limite de usuários deve ser maior que zero")
-                .IsGreaterThan(limiteEmpresas, 0, nameof(LimiteEmpresas), "Limite de empresas deve ser maior que zero")
+                // 1.06 (REG-014): 0 = ilimitado — aceitamos limite >= 0 (o enforcement trata <= 0 como sem teto).
+                .IsGreaterOrEqualsThan(limiteUsuarios, 0, nameof(LimiteUsuarios), "Limite de usuários deve ser maior ou igual a zero (0 = ilimitado)")
+                .IsGreaterOrEqualsThan(limiteEmpresas, 0, nameof(LimiteEmpresas), "Limite de empresas deve ser maior ou igual a zero (0 = ilimitado)")
+                .IsGreaterOrEqualsThan(limiteClientes, 0, nameof(LimiteClientes), "Limite de clientes deve ser maior ou igual a zero (0 = ilimitado)")
             );
 
             if (!IsValid) return;
@@ -118,11 +173,19 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             GrupoPlanoId = grupoPlanoId;
             LimiteUsuarios = limiteUsuarios;
             LimiteEmpresas = limiteEmpresas;
+            LimiteClientes = limiteClientes;
+            DiasToleranciaInadimplencia = diasToleranciaInadimplencia;
             RecursosInclusos = recursosInclusos;
             DescricaoCurta = descricaoCurta;
             DescricaoCompleta = descricaoCompleta;
             DataInicio = dataInicio;
             DataFim = dataFim;
+            Duration = duration;
+            ModuloCrm = moduloCrm;
+            ModuloProjetos = moduloProjetos;
+            ModuloRh = moduloRh;
+            ModuloFinanceiro = moduloFinanceiro;
+            ModuloPdv = moduloPdv;
             MarcarAlterado(alteradoPor);
         }
 

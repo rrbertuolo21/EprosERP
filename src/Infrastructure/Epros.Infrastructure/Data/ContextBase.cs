@@ -119,6 +119,21 @@ namespace Epros.Infrastructure.Data
                     modelBuilder.Entity(entityType.ClrType)
                         .HasIndex(nameof(EntidadeSaaSBase.TenantId))
                         .HasDatabaseName(ToSnakeCase($"ix_{entityType.ClrType.Name}_tenant_id"));
+
+                    // REG-017 — LOCK OTIMISTA global: usa a coluna de sistema xmin do PostgreSQL como
+                    // concurrency token (aditivo, sem migration/coluna nova). Todo UPDATE/DELETE passa a
+                    // carregar "WHERE ... AND xmin = @original"; se a linha mudou entre a leitura e o save,
+                    // o EF lança DbUpdateConcurrencyException (mapeada a 409 no middleware global).
+                    // Aplicado SÓ no provider Npgsql: o xmin não existe no InMemory (usado por parte da
+                    // suíte), e como é ValueGeneratedOnAddOrUpdate o Postgres o preenche sozinho — inserts
+                    // com seeds não precisam setar versão (não há "match em insert").
+                    if (Database.IsNpgsql())
+                    {
+                        // Npgsql 7+: uint + IsRowVersion() mapeia automaticamente para a coluna de sistema xmin.
+                        modelBuilder.Entity(entityType.ClrType)
+                            .Property<uint>("xmin")
+                            .IsRowVersion();
+                    }
                 }
             }
         }
@@ -158,13 +173,13 @@ namespace Epros.Infrastructure.Data
             {
                 foreach (var entry in ChangeTracker.Entries<EntidadeSaaSBase>())
                 {
-                    if (entry.State == EntityState.Added || 
-                        entry.State == EntityState.Modified || 
+                    if (entry.State == EntityState.Added ||
+                        entry.State == EntityState.Modified ||
                         entry.State == EntityState.Deleted)
                     {
                         var entityType = entry.Entity.GetType();
-                        if (entityType.Name != "SessaoUsuario" && 
-                            entityType.Name != "SessaoImpersonacao" && 
+                        if (entityType.Name != "SessaoUsuario" &&
+                            entityType.Name != "SessaoImpersonacao" &&
                             entityType.Name != "HistoricoLogin")
                         {
                             throw new Epros.Shared.Domain.Exceptions.OperacaoBloqueadaModoDemoException();
@@ -215,7 +230,7 @@ namespace Epros.Infrastructure.Data
         {
             if (string.IsNullOrEmpty(input)) return input;
             var startUnderscore = input.StartsWith("_");
-            return (startUnderscore ? "_" : "") + 
+            return (startUnderscore ? "_" : "") +
                    string.Concat(input.Select((x, i) => i > 0 && char.IsUpper(x) ? "_" + x.ToString() : x.ToString()))
                          .ToLower();
         }

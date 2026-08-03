@@ -41,6 +41,7 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
         public DbSet<LancamentoContabil> LancamentosContabeis => Set<LancamentoContabil>();
         public DbSet<LancamentoContabilLinha> LancamentoContabilLinhas => Set<LancamentoContabilLinha>();
         public DbSet<SaldoAbertura> SaldosAbertura => Set<SaldoAbertura>();
+        public DbSet<RegraContabilizacao> RegrasContabilizacao => Set<RegraContabilizacao>();
 
         // ----- FIN-SF: Serviços Financeiros (cobrança/boleto/remessa) -----
         public DbSet<ConfiguracaoCedente> ConfiguracoesCedente => Set<ConfiguracaoCedente>();
@@ -51,7 +52,10 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
         public DbSet<Boleto> Boletos => Set<Boleto>();
         public DbSet<Remessa> Remessas => Set<Remessa>();
         public DbSet<RemessaBoleto> RemessaBoletos => Set<RemessaBoleto>();
+        public DbSet<RetornoBancario> RetornosBancarios => Set<RetornoBancario>();
         public DbSet<CobrancaEmail> CobrancasEmail => Set<CobrancaEmail>();
+        public DbSet<GatewayPagamento> GatewaysPagamento => Set<GatewayPagamento>();
+        public DbSet<WebhookPagamentoRecebido> WebhooksPagamento => Set<WebhookPagamentoRecebido>();
 
         // ----- FIN-CAM: Câmbio e Risco de Mercado -----
         public DbSet<Moeda> Moedas => Set<Moeda>();
@@ -77,6 +81,7 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
         public DbSet<ContratoFinanceiro> ContratosFinanceiros => Set<ContratoFinanceiro>();
         public DbSet<FaturaRecorrente> FaturasRecorrentes => Set<FaturaRecorrente>();
         public DbSet<ReajusteContrato> ReajustesContrato => Set<ReajusteContrato>();
+        public DbSet<ContratoArrendamento> ContratosArrendamento => Set<ContratoArrendamento>();
 
         // ----- FIN-SBF: Subsídios e Fundos -----
         public DbSet<ProgramaSubsidio> ProgramasSubsidio => Set<ProgramaSubsidio>();
@@ -102,6 +107,8 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
         public DbSet<MetaMilestone> MetaMilestones => Set<MetaMilestone>();
         public DbSet<MetaContribuicao> MetaContribuicoes => Set<MetaContribuicao>();
         public DbSet<MetaTracking> MetaTrackings => Set<MetaTracking>();
+        public DbSet<OrcamentoComercial> OrcamentosComerciais => Set<OrcamentoComercial>();
+        public DbSet<OrcamentoComercialItem> OrcamentoComercialItens => Set<OrcamentoComercialItem>();
 
         // ----- FIN-TS: Tesouraria e Gestão de Liquidez -----
         public DbSet<ContaFinanceira> ContasFinanceiras => Set<ContaFinanceira>();
@@ -293,7 +300,7 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
                 entity.Property(c => c.FoneGerente).HasMaxLength(150);
                 entity.Property(c => c.Detalhe).HasMaxLength(1000);
                 entity.Property(c => c.DigitoAgencia).HasMaxLength(2);
-                
+
                 entity.HasOne(c => c.Banco)
                       .WithMany()
                       .HasForeignKey(c => c.BancoId)
@@ -549,10 +556,19 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
                 entity.HasIndex(p => new { p.TenantId, p.AnoFiscal }).HasDatabaseName("ix_periodo_contabil_tenant_ano");
             });
 
+            // DE-PARA evento→conta (motor de contabilização automática — TEC-8/FD-NF3)
+            modelBuilder.Entity<RegraContabilizacao>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.TipoEvento).HasMaxLength(80);
+                entity.Property(r => r.Historico).HasMaxLength(255);
+                entity.HasIndex(r => new { r.TenantId, r.TipoEvento }).HasDatabaseName("ix_regra_contabilizacao_tenant_evento");
+            });
+
             modelBuilder.Entity<LancamentoContabil>(entity =>
             {
                 entity.HasKey(l => l.Id);
-                entity.Property(l => l.NumeroLancamento).HasMaxLength(50);
+                entity.Property(l => l.NumeroLancamento).HasMaxLength(80);
                 entity.Ignore(l => l.TotalDebitos);
                 entity.Ignore(l => l.TotalCreditos);
                 entity.Ignore(l => l.Balanceado);
@@ -687,12 +703,43 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
                 entity.HasIndex(rb => new { rb.RemessaId, rb.BoletoId }).IsUnique().HasDatabaseName("uq_remessa_boleto");
             });
 
+            modelBuilder.Entity<RetornoBancario>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.NomeArquivo).HasMaxLength(200);
+                entity.Property(x => x.HashArquivo).HasMaxLength(64);
+                entity.Property(x => x.ValorTotalBaixado).HasPrecision(18, 2);
+                entity.HasIndex(x => new { x.TenantId, x.HashArquivo }).HasDatabaseName("ix_retorno_bancario_tenant_hash");
+            });
+
             modelBuilder.Entity<CobrancaEmail>(entity =>
             {
                 entity.HasKey(c => c.Id);
                 entity.Property(c => c.Nome).HasMaxLength(255);
                 entity.Property(c => c.Valor).HasPrecision(18, 2);
                 entity.HasIndex(c => new { c.TenantId, c.Status }).HasDatabaseName("ix_cobranca_email_tenant_status");
+            });
+
+            modelBuilder.Entity<GatewayPagamento>(entity =>
+            {
+                entity.HasKey(g => g.Id);
+                entity.Property(g => g.Nome).HasMaxLength(150);
+                entity.Property(g => g.ChaveAssinatura).HasMaxLength(512);
+                entity.Property(g => g.IdentificadorExterno).HasMaxLength(150);
+                entity.HasIndex(g => new { g.TenantId, g.Provedor }).HasDatabaseName("ix_gateway_pagamento_tenant_provedor");
+            });
+
+            modelBuilder.Entity<WebhookPagamentoRecebido>(entity =>
+            {
+                entity.HasKey(w => w.Id);
+                entity.Property(w => w.EventoExternoId).HasMaxLength(200);
+                entity.Property(w => w.TipoEvento).HasMaxLength(100);
+                entity.Property(w => w.Valor).HasPrecision(18, 2);
+                entity.Property(w => w.Detalhe).HasMaxLength(1000);
+                // Dedup/idempotência: um registro por (tenant x gateway x id de evento externo).
+                entity.HasIndex(w => new { w.TenantId, w.GatewayPagamentoId, w.EventoExternoId })
+                    .IsUnique().HasDatabaseName("ix_webhook_pagamento_dedup");
+                entity.HasIndex(w => new { w.TenantId, w.NossoNumero }).HasDatabaseName("ix_webhook_pagamento_tenant_nn");
             });
 
             // ===== FIN-CAM: Câmbio e Risco de Mercado =====
@@ -868,6 +915,21 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
                 e.HasIndex(x => x.ContratoId).HasDatabaseName("ix_reajuste_contrato");
             });
 
+            // FIN-GCF extensão — Arrendamento mercantil (IFRS-16 / CPC 06 R2)
+            modelBuilder.Entity<ContratoArrendamento>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Descricao).HasMaxLength(255);
+                e.Property(x => x.ValorContraprestacao).HasPrecision(18, 2);
+                e.Property(x => x.TaxaIncrementalPeriodo).HasPrecision(18, 8);
+                e.Property(x => x.CustosDiretosIniciais).HasPrecision(18, 2);
+                e.Property(x => x.IncentivosRecebidos).HasPrecision(18, 2);
+                e.Property(x => x.PassivoArrendamentoInicial).HasPrecision(18, 2);
+                e.Property(x => x.DireitoDeUsoInicial).HasPrecision(18, 2);
+                e.Property(x => x.MotivoEncerramento).HasMaxLength(500);
+                e.HasIndex(x => new { x.TenantId, x.Status }).HasDatabaseName("ix_contrato_arrendamento_tenant_status");
+            });
+
             // ===== FIN-SBF: Subsídios e Fundos =====
             modelBuilder.Entity<ProgramaSubsidio>(e =>
             {
@@ -928,6 +990,7 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
                 e.Property(x => x.TotalDebito).HasPrecision(18, 2);
                 e.Property(x => x.TotalCredito).HasPrecision(18, 2);
                 e.Property(x => x.SaldoFinal).HasPrecision(18, 2);
+                e.Property(x => x.TotalEliminacoes).HasPrecision(18, 2);
                 e.HasMany(x => x.Linhas).WithOne(l => l.BalanceteConsolidado).HasForeignKey(l => l.BalanceteConsolidadoId).OnDelete(DeleteBehavior.Cascade);
                 e.HasIndex(x => new { x.GrupoConsolidacaoId, x.Periodo }).HasDatabaseName("ix_balancete_grupo_periodo");
             });
@@ -1038,6 +1101,38 @@ namespace Epros.Modules.Financeiro.Infrastructure.Data
                 e.Property(x => x.Percentual).HasPrecision(18, 4);
                 e.Property(x => x.StatusProgresso).HasMaxLength(50);
                 e.HasIndex(x => x.MetaId).HasDatabaseName("ix_meta_tracking_meta");
+            });
+
+            modelBuilder.Entity<OrcamentoComercial>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Tipo).HasMaxLength(50);
+                e.Property(x => x.Codigo).HasMaxLength(50);
+                e.Property(x => x.TipoFrete).HasMaxLength(50);
+                e.Property(x => x.StatusPedido).HasMaxLength(50);
+                e.Property(x => x.Observacao).HasMaxLength(1000);
+                e.Property(x => x.ValorSubtotal).HasPrecision(18, 2);
+                e.Property(x => x.ValorFrete).HasPrecision(18, 2);
+                e.Property(x => x.TaxaComissao).HasPrecision(18, 4);
+                e.Property(x => x.ValorComissao).HasPrecision(18, 2);
+                e.Property(x => x.TaxaDesconto).HasPrecision(18, 4);
+                e.Property(x => x.ValorDesconto).HasPrecision(18, 2);
+                e.Property(x => x.ValorTotal).HasPrecision(18, 2);
+                e.HasMany(x => x.Itens).WithOne(i => i.OrcamentoComercial).HasForeignKey(i => i.OrcamentoComercialId).OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(x => new { x.TenantId, x.Codigo }).HasDatabaseName("ix_orcamento_comercial_tenant_codigo");
+                e.HasIndex(x => new { x.TenantId, x.StatusPedido }).HasDatabaseName("ix_orcamento_comercial_tenant_status");
+            });
+
+            modelBuilder.Entity<OrcamentoComercialItem>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Quantidade).HasPrecision(18, 4);
+                e.Property(x => x.ValorUnitario).HasPrecision(18, 2);
+                e.Property(x => x.ValorSubtotal).HasPrecision(18, 2);
+                e.Property(x => x.TaxaDesconto).HasPrecision(18, 4);
+                e.Property(x => x.ValorDesconto).HasPrecision(18, 2);
+                e.Property(x => x.ValorTotal).HasPrecision(18, 2);
+                e.HasIndex(x => x.OrcamentoComercialId).HasDatabaseName("ix_orcamento_comercial_item_cabecalho");
             });
 
             // ===== FIN-TS: Tesouraria e Gestão de Liquidez =====

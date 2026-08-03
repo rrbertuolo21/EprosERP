@@ -219,34 +219,34 @@ namespace Epros.Tests
 
             // Adiciona a primeira empresa
             var empresa1 = new Empresa(
-                "Razao Social 1", 
-                "Fantasia 1", 
-                "11.111.111/0001-11", 
-                "IE", 
-                "IM", 
-                null, 
-                null, 
-                RegimeTributario.SimplesNacional, 
-                RegimeApuracao.Cumulativo, 
-                null, 
-                null, 
-                null, 
-                null, 
-                null, 
-                null, 
-                null, 
-                null, 
-                null, 
-                null, 
-                new Epros.Modules.GestaoClientes.Domain.ValueObjects.Endereco("L", "N", null, "B", "C", "C", "E"), 
-                tenantId, 
+                "Razao Social 1",
+                "Fantasia 1",
+                "11.111.111/0001-11",
+                "IE",
+                "IM",
+                null,
+                null,
+                RegimeTributario.SimplesNacional,
+                RegimeApuracao.Cumulativo,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                new Epros.Modules.GestaoClientes.Domain.ValueObjects.Endereco("L", "N", null, "B", "C", "C", "E"),
+                tenantId,
                 userId
             );
             contextGestao.Empresas.Add(empresa1);
             await contextGestao.SaveChangesAsync();
 
             var validadorLimites = new ValidadorLimitesSaaS(contextApp, contextGestao);
-            var handler = new CriarEmpresaCommandHandler(contextGestao, tenantProvider, currentUser, validadorLimites);
+            var handler = new CriarEmpresaCommandHandler(contextGestao, tenantProvider, currentUser, validadorLimites, new IdentityCofrePixLp());
 
             // Act: Tenta criar a segunda empresa
             var command = new CriarEmpresaCommand(
@@ -310,34 +310,34 @@ namespace Epros.Tests
 
             // Adiciona a primeira empresa
             var empresa1 = new Empresa(
-                "Razao Social 1", 
-                "Fantasia 1", 
-                "11.111.111/0001-11", 
-                "IE", 
-                "IM", 
-                null, 
-                null, 
-                RegimeTributario.SimplesNacional, 
-                RegimeApuracao.Cumulativo, 
-                null, 
-                null, 
-                null, 
-                null, 
-                null, 
-                null, 
-                null, 
-                null, 
-                null, 
-                null, 
-                new Epros.Modules.GestaoClientes.Domain.ValueObjects.Endereco("L", "N", null, "B", "C", "C", "E"), 
-                tenantId, 
+                "Razao Social 1",
+                "Fantasia 1",
+                "11.111.111/0001-11",
+                "IE",
+                "IM",
+                null,
+                null,
+                RegimeTributario.SimplesNacional,
+                RegimeApuracao.Cumulativo,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                new Epros.Modules.GestaoClientes.Domain.ValueObjects.Endereco("L", "N", null, "B", "C", "C", "E"),
+                tenantId,
                 userId
             );
             contextGestao.Empresas.Add(empresa1);
             await contextGestao.SaveChangesAsync();
 
             var validadorLimites = new ValidadorLimitesSaaS(contextApp, contextGestao);
-            var handler = new CriarEmpresaCommandHandler(contextGestao, tenantProvider, currentUser, validadorLimites);
+            var handler = new CriarEmpresaCommandHandler(contextGestao, tenantProvider, currentUser, validadorLimites, new IdentityCofrePixLp());
 
             // Act: Tenta criar a segunda empresa
             var command = new CriarEmpresaCommand(
@@ -466,6 +466,12 @@ namespace Epros.Tests
             public string? GetUserId() => _userId;
             public string? GetUserName() => "Test User";
             public string? GetUserEmail() => "test@epros.com";
+        }
+
+        private sealed class IdentityCofrePixLp : ISegredoCofreService
+        {
+            public Task<string> CriptografarAsync(string valor) => Task.FromResult("enc:" + valor);
+            public Task<string> DescriptografarAsync(string ciphertext) => Task.FromResult(ciphertext);
         }
 
         #endregion

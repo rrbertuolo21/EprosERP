@@ -88,7 +88,8 @@ namespace Epros.Modules.Projetos.Application.Handlers
                 request.ValorTotal,
                 request.OrigemTipo,
                 request.OrigemId,
-                usuario);
+                usuario,
+                request.Reembolsavel);
 
             if (!faturamento.IsValid)
                 return CommandResult.Falha(faturamento.Notifications.Select(n => n.Message));
@@ -158,6 +159,46 @@ namespace Epros.Modules.Projetos.Application.Handlers
         }
     }
 
+    /// <summary>DP-FAT-004/008: aplica tributos/retenções fiscais. // valida-contador (valores/alíquotas ao contador).</summary>
+    public class AplicarTributacaoFaturamentoCommandHandler : ICommandHandler<AplicarTributacaoFaturamentoCommand>
+    {
+        private readonly ContextProjetos _context;
+        private readonly ICurrentUser _currentUser;
+
+        public AplicarTributacaoFaturamentoCommandHandler(ContextProjetos context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
+
+        public async Task<CommandResult> Handle(AplicarTributacaoFaturamentoCommand request, CancellationToken cancellationToken)
+        {
+            var usuario = _currentUser.GetUserId() ?? "system";
+            var faturamento = await _context.Faturamentos
+                .Include(f => f.Itens)
+                .FirstOrDefaultAsync(f => f.Id == request.FaturamentoProjetoId, cancellationToken);
+
+            if (faturamento == null)
+                return CommandResult.Falha("Faturamento nao encontrado.");
+
+            faturamento.AplicarTributacao(
+                request.ValorIss, request.ValorIrrf, request.ValorInss,
+                request.ValorPis, request.ValorCofins, request.ValorCsll, usuario);
+
+            if (!faturamento.IsValid)
+                return CommandResult.Falha(faturamento.Notifications.Select(n => n.Message));
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Tributacao aplicada ao faturamento.", new
+            {
+                faturamento.Id,
+                faturamento.ValorTotal,
+                faturamento.ValorRetencoes,
+                faturamento.ValorLiquido
+            });
+        }
+    }
+
     /// <summary>
     /// RN-FAT-006/008/009: aprova o faturamento (Ativo) e enfileira evento ProjetoFaturado no Outbox.
     /// O titulo de Contas a Receber e criado no modulo Financeiro (consumidor do evento).
@@ -197,7 +238,10 @@ namespace Epros.Modules.Projetos.Application.Handlers
                     NomeProjeto = projeto?.Nome ?? faturamento.Descricao,
                     ClienteId = faturamento.ClienteId ?? projeto?.ClienteId ?? System.Guid.Empty,
                     Milestone = faturamento.ValorTotal,
-                    ValorFaturamento = faturamento.ValorTotal
+                    ValorFaturamento = faturamento.ValorTotal,
+                    ValorRetencoes = faturamento.ValorRetencoes,
+                    ValorLiquido = faturamento.ValorLiquido,
+                    Moeda = faturamento.Moeda
                 };
 
                 var outbox = new OutboxMessage(tenantId, "ProjetoFaturado", JsonSerializer.Serialize(payload));

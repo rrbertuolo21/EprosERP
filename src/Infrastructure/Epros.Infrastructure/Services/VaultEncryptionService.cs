@@ -18,7 +18,7 @@ namespace Epros.Infrastructure.Services
     /// Implementação de ISegredoCofreService integrada ao Vault Transit Engine,
     /// com mecanismo de fallback local resiliente com AES-256-GCM.
     /// </summary>
-    public class VaultEncryptionService : ISegredoCofreService
+    public class VaultEncryptionService : ISegredoCofreService, ISegredoRotacaoService
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<VaultEncryptionService> _logger;
@@ -39,16 +39,44 @@ namespace Epros.Infrastructure.Services
             // Define URL base a partir da configuração ou usa padrão local
             var vaultUrl = configuration["Cofre:VaultUrl"] ?? "http://localhost:8200";
             _httpClient.BaseAddress = new Uri(vaultUrl);
-            
-            // Define o token padrão de desenvolvimento se não houver um configurado
-            var token = configuration["Cofre:VaultToken"] ?? "epros-dev-token";
+
+            // Fail-closed (fechamento do "gato"): o token do cofre e a KEK local só podem cair no
+            // valor fixo de desenvolvimento em desenvolvimento local puro. Em qualquer ambiente
+            // deployado (Production/Staging/Testing, ou Development em contêiner/CI) eles são
+            // obrigatórios via env/secret — a ausência ABORTA a construção do serviço (fail-closed),
+            // em vez de operar com segredo público conhecido.
+            var envName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+                ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT");
+            var permiteFallbackDevLocal = Epros.Shared.Security.AmbienteImplantacao
+                .EhDesenvolvimentoLocal(envName);
+
+            // Define o token do cofre (obrigatório fora de dev local)
+            var token = configuration["Cofre:VaultToken"];
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                if (!permiteFallbackDevLocal)
+                {
+                    throw new InvalidOperationException(
+                        "Cofre:VaultToken não configurado. Defina o token do cofre (env/secret) antes de iniciar fora de desenvolvimento local.");
+                }
+                token = "epros-dev-token";
+            }
             _httpClient.DefaultRequestHeaders.Clear();
             _httpClient.DefaultRequestHeaders.Add("X-Vault-Token", token);
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             _chaveNome = configuration["Cofre:ChaveNome"] ?? "epros-kek";
 
-            var kekLocalString = configuration["Cofre:KekLocal"] ?? "epros-local-default-fallback-kek-key-32bytes";
+            var kekLocalString = configuration["Cofre:KekLocal"];
+            if (string.IsNullOrWhiteSpace(kekLocalString))
+            {
+                if (!permiteFallbackDevLocal)
+                {
+                    throw new InvalidOperationException(
+                        "Cofre:KekLocal não configurada. Defina a chave-mestra local (env/secret) antes de iniciar fora de desenvolvimento local.");
+                }
+                kekLocalString = "epros-local-default-fallback-kek-key-32bytes";
+            }
             // Gera a chave de 32 bytes de forma robusta e determinística via SHA256 da string configurada
             _kekLocal = SHA256.HashData(Encoding.UTF8.GetBytes(kekLocalString));
         }
@@ -72,21 +100,21 @@ namespace Epros.Infrastructure.Services
                 {
                     // Tenta habilitar o transit engine via POST /v1/sys/mounts/transit
                     var responseTransit = await _httpClient.PostAsJsonAsync("v1/sys/mounts/transit", new { type = "transit" });
-                    
+
                     // Se for 200/204 ou se for 400 (porque já está montado/em uso), consideramos sucesso
                     if (responseTransit.IsSuccessStatusCode || responseTransit.StatusCode == System.Net.HttpStatusCode.BadRequest)
                     {
                         _logger.LogInformation("Vault Transit Secret Engine está habilitado.");
-                        
+
                         // Tenta verificar se a chave existe fazendo GET
                         var responseGetChave = await _httpClient.GetAsync($"v1/transit/keys/{_chaveNome}");
                         if (responseGetChave.StatusCode == System.Net.HttpStatusCode.NotFound)
                         {
                             _logger.LogInformation("Chave {ChaveNome} não encontrada. Criando chave no Vault...", _chaveNome);
-                            
+
                             // Cria a chave aes256-gcm96
                             var responseCreateChave = await _httpClient.PostAsJsonAsync($"v1/transit/keys/{_chaveNome}", new { type = "aes256-gcm96" });
-                            
+
                             if (responseCreateChave.IsSuccessStatusCode)
                             {
                                 _logger.LogInformation("Chave {ChaveNome} criada com sucesso no Vault.", _chaveNome);
@@ -213,10 +241,70 @@ namespace Epros.Infrastructure.Services
             }
         }
 
+        /// <summary>
+        /// TRANSVERSAL T5 — rotação (rewrap) de um ciphertext para a versão de chave corrente.
+        /// Vault: usa /transit/rewrap (o texto plano nunca sai do cofre). Fallback local: re-encripta
+        /// com nonce novo. Não altera o texto plano — só a proteção sob a chave mais recente.
+        /// </summary>
+        public async Task<string> RotacionarAsync(string ciphertext)
+        {
+            if (string.IsNullOrEmpty(ciphertext)) return ciphertext;
+
+            // Segredos locais: re-encripta localmente (nonce novo).
+            if (ciphertext.StartsWith("local:v1:"))
+            {
+                var planoLocal = DescriptografarLocal(ciphertext);
+                return CriptografarLocal(planoLocal);
+            }
+
+            if (!_inicializado)
+            {
+                await InicializarCofreAsync();
+            }
+
+            if (_usarCofreLocal)
+            {
+                // Sem Vault disponível: decifra (localmente, se for local) e re-encripta local.
+                var plano = await DescriptografarAsync(ciphertext);
+                return CriptografarLocal(plano);
+            }
+
+            try
+            {
+                var payload = new { ciphertext = ciphertext };
+                var response = await _httpClient.PostAsJsonAsync($"v1/transit/rewrap/{_chaveNome}", payload);
+                if (response.IsSuccessStatusCode)
+                {
+                    var resultJson = await response.Content.ReadFromJsonAsync<JsonElement>();
+                    var novo = resultJson.GetProperty("data").GetProperty("ciphertext").GetString();
+                    if (!string.IsNullOrEmpty(novo))
+                    {
+                        return novo;
+                    }
+                }
+
+                _logger.LogWarning("Rewrap no Vault não retornou ciphertext. Rotação re-encriptando via encrypt.");
+                var plano = await DescriptografarAsync(ciphertext);
+                return await CriptografarAsync(plano);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Falha ao rotacionar segredo no Vault: {Ciphertext}", ciphertext);
+                throw;
+            }
+        }
+
+        /// <summary>Política auxiliar: true se passou <paramref name="idadeMaximaDias"/> desde a última rotação.</summary>
+        public bool PrecisaRotacionar(DateTime rotacionadoEm, int idadeMaximaDias)
+        {
+            if (idadeMaximaDias <= 0) return false;
+            return (DateTime.UtcNow - rotacionadoEm).TotalDays >= idadeMaximaDias;
+        }
+
         private string CriptografarLocal(string valor)
         {
             var plaintextBytes = Encoding.UTF8.GetBytes(valor);
-            
+
             // Gerar Nonce aleatório de 12 bytes
             var nonce = new byte[12];
             RandomNumberGenerator.Fill(nonce);

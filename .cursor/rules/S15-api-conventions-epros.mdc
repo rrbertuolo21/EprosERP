@@ -1,0 +1,48 @@
+---
+description: "Convenções de API do Epros: versionamento, paginação, verbos de ação (POST /{recurso}/{id}/{verbo}), Idempotency-Key com Valkey, rate limits por plano e política de breaking change com depreciação. Use ao criar ou alterar qualquer endpoint, revisar contratos públicos, ou avaliar impacto de mudanças na API."
+globs:
+alwaysApply: false
+---
+
+# api-conventions-epros
+
+> **S15 · Camada 1 — Engenharia** — Epros Dev Framework
+
+## Quando usar
+
+Ative esta skill quando a tarefa envolver: **endpoint, API, rota, versionamento, paginação, idempotência, rate limit, breaking change, contrato, OpenAPI, depreciar**.
+
+## O que esta skill cobre
+
+As convenções completas da API do Epros: versionamento, paginação (?pagina=&tamanhoPagina=), verbos de ação (POST /{recurso}/{id}/{verbo}), Idempotency-Key implementada com Valkey, rate limits por plano e a política formal de breaking change com processo de depreciação.
+
+Manter a API previsível para clientes e integradores: endpoint novo segue o padrão sem discussão, e mudança que quebra contrato passa por versionamento e sunset — nunca por surpresa.
+
+## Instruções para o agente
+
+1. Endpoint novo: siga o checklist (rota no padrão, paginação se lista, [Authorize], versão, OpenAPI).
+2. Ação de negócio = POST /{recurso}/{id}/{verbo} (ex: /baixar, /cancelar, /emitir) — não invente PATCH criativo.
+3. Operação não-idempotente com efeito financeiro/fiscal: exija header Idempotency-Key e use a implementação padrão com Valkey.
+4. Antes de mudar contrato público: classifique se é breaking (lista objetiva na skill). Se for: nova versão + processo de depreciação.
+
+## Recursos desta skill
+
+> Legenda: ✅ pronto · ⬜ a construir (ver "Como completar" abaixo)
+
+- ✅ `SKILL.md` — este arquivo (semente v1)
+- ⬜ `checklists/endpoint-novo.md` — checklist de criação de endpoint
+- ⬜ `exemplos/deprecacao-endpoint.md` — depreciação real executada passo a passo
+- ⬜ `templates/controller-versionado.cs` — controller no padrão com versão
+
+## Como completar esta skill (do v1-semente à versão completa)
+
+1. Consolide as convenções já definidas (base URL, paginação, verbos, rate limits) num documento único.
+2. Implemente/documente o middleware de Idempotency-Key com Valkey.
+3. Escreva a lista objetiva do que é breaking change e o processo de sunset.
+4. Gere o template de controller a partir do melhor exemplo do código.
+
+## Regras de manutenção
+
+- Detalhe profundo vai para `exemplos/` e `checklists/` — este arquivo fica abaixo de 500 linhas.
+- Todo conteúdo deve ser específico do Epros (código real, casos reais, dados de homologação).
+- Ao concluir os recursos, mude `status:` para `completa` e atualize a data de revisão.

@@ -71,7 +71,7 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             );
             cache.Falhou = true;
             cache.MotivoFalha = motivoFalha;
-            
+
             cache.AddNotifications(new Contract<CodigoPostalCache>()
                 .Requires()
                 .AreNotEquals(paisId, Guid.Empty, nameof(PaisId), "O ID do país é obrigatório.")
@@ -101,7 +101,7 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
                 criadoPor
             );
             cache.MotivoFalha = justificativa;
-            
+
             cache.AddNotifications(new Contract<CodigoPostalCache>()
                 .Requires()
                 .AreNotEquals(paisId, Guid.Empty, nameof(PaisId), "O ID do país é obrigatório.")

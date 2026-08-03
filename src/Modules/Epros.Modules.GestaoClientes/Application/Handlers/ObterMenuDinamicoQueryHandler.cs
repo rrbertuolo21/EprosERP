@@ -118,9 +118,9 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
 
         private bool TemAcessoRecurso(PerfilColaborador perfil, string recurso, string acao)
         {
-            return perfil.Permissoes.Any(p => 
-                p.Recurso.Equals(recurso, StringComparison.OrdinalIgnoreCase) && 
-                p.Acao.Equals(acao, StringComparison.OrdinalIgnoreCase) && 
+            return perfil.Permissoes.Any(p =>
+                p.Recurso.Equals(recurso, StringComparison.OrdinalIgnoreCase) &&
+                p.Acao.Equals(acao, StringComparison.OrdinalIgnoreCase) &&
                 p.Permitido);
         }
     }

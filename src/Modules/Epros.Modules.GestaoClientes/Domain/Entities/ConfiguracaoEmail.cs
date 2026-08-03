@@ -29,7 +29,7 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             if (username != null)
                 AddNotifications(new Contract<ConfiguracaoEmail>().Requires().HasMaxLen(username, 150, nameof(Username), "Username deve ter no máximo 150 caracteres."));
             if (password != null)
-                AddNotifications(new Contract<ConfiguracaoEmail>().Requires().HasMaxLen(password, 250, nameof(Password), "Senha deve ter no máximo 250 caracteres."));
+                AddNotifications(new Contract<ConfiguracaoEmail>().Requires().HasMaxLen(password, 512, nameof(Password), "Senha deve ter no máximo 512 caracteres."));
             if (fromEmail != null)
                 AddNotifications(new Contract<ConfiguracaoEmail>().Requires().HasMaxLen(fromEmail, 150, nameof(FromEmail), "E-mail do remetente deve ter no máximo 150 caracteres."));
 
@@ -53,7 +53,7 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             if (username != null)
                 AddNotifications(new Contract<ConfiguracaoEmail>().Requires().HasMaxLen(username, 150, nameof(Username), "Username deve ter no máximo 150 caracteres."));
             if (password != null)
-                AddNotifications(new Contract<ConfiguracaoEmail>().Requires().HasMaxLen(password, 250, nameof(Password), "Senha deve ter no máximo 250 caracteres."));
+                AddNotifications(new Contract<ConfiguracaoEmail>().Requires().HasMaxLen(password, 512, nameof(Password), "Senha deve ter no máximo 512 caracteres."));
             if (fromEmail != null)
                 AddNotifications(new Contract<ConfiguracaoEmail>().Requires().HasMaxLen(fromEmail, 150, nameof(FromEmail), "E-mail do remetente deve ter no máximo 150 caracteres."));
 

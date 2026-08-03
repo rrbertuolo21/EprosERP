@@ -43,4 +43,21 @@ namespace Epros.Modules.Aplicativo.Application.Dtos
         string CheckoutUrl,
         DateTime DataExpiracao
     );
+
+    // 1.08D — Resultado da mudança de plano com o ajuste de proração calculado (mecanismo pro-rata por dias).
+    // ⚠️ ValidaContador=true: política de arredondamento/índice/contas contábeis é parâmetro do contador.
+    public record MudancaPlanoResultadoDto(
+        Guid AssinaturaId,
+        Guid PlanoAnteriorId,
+        Guid PlanoNovoId,
+        string TipoMudanca,          // "Upgrade" | "Downgrade" | "Lateral"
+        decimal PrecoAnterior,
+        decimal PrecoNovo,
+        int DiasCiclo,
+        int DiasRestantes,
+        decimal ValorProracao,       // positivo = débito (fatura de diferença) | negativo = crédito
+        string TipoProracao,         // "Debito" | "Credito" | "Neutro"
+        Guid? FaturaDiferencaId,
+        bool ValidaContador
+    );
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Epros.API.Security;
 using Epros.Modules.Aplicativo.Application.Commands;
 using Epros.Modules.Aplicativo.Application.Queries;
 using Epros.Shared.Application.Models;
@@ -22,6 +23,7 @@ namespace Epros.API.Controllers
         }
 
         [HttpGet]
+        [AbacAuthorize("Usuario", "Ver")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> ListarUsuarios([FromQuery] string? search, [FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 200)
         {
@@ -31,6 +33,7 @@ namespace Epros.API.Controllers
         }
 
         [HttpGet("{id:guid}")]
+        [AbacAuthorize("Usuario", "Ver")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> ObterUsuario([FromRoute] Guid id)
@@ -45,6 +48,7 @@ namespace Epros.API.Controllers
         }
 
         [HttpPost]
+        [AbacAuthorize("Usuario", "Editar")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<CommandResult>> CriarUsuario([FromBody] CriarUsuarioCommand command)
@@ -58,6 +62,7 @@ namespace Epros.API.Controllers
         }
 
         [HttpPut]
+        [AbacAuthorize("Usuario", "Editar")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<CommandResult>> AtualizarUsuario([FromBody] AtualizarUsuarioCommand command)
@@ -71,6 +76,7 @@ namespace Epros.API.Controllers
         }
 
         [HttpDelete("{id:guid}")]
+        [AbacAuthorize("Usuario", "Excluir")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<CommandResult>> DeletarUsuario([FromRoute] Guid id)
@@ -85,6 +91,7 @@ namespace Epros.API.Controllers
         }
 
         [HttpPut("nova-senha")]
+        [AbacAuthorize("Usuario", "Editar")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
         public async Task<ActionResult<CommandResult>> AlterarSenhaAdministrativa([FromBody] AlterarSenhaAdministrativaCommand command)
@@ -98,6 +105,7 @@ namespace Epros.API.Controllers
         }
 
         [HttpGet("historico-login")]
+        [AbacAuthorize("Usuario", "Ver")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> ListarHistoricoLogin([FromQuery] string? search, [FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 200)
         {

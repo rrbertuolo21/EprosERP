@@ -72,7 +72,7 @@ namespace Epros.Tests
 
             // Assert
             Assert.False(result.Sucesso);
-            Assert.True(result.Erros.Contains("E-mail ou senha incorretos."));
+            Assert.Contains("E-mail ou senha incorretos.", result.Erros);
         }
 
         [Fact]
@@ -95,7 +95,7 @@ namespace Epros.Tests
 
             // Assert
             Assert.False(result.Sucesso);
-            Assert.True(result.Erros.Contains("E-mail ou senha incorretos."));
+            Assert.Contains("E-mail ou senha incorretos.", result.Erros);
 
             // Verifica incremento de falhas e registro de auditoria
             var usuarioDb = await contextApp.Usuarios.FirstAsync(u => u.Id == usuario.Id);
@@ -130,7 +130,7 @@ namespace Epros.Tests
 
             // Assert
             Assert.False(result.Sucesso);
-            Assert.True(result.Erros.Contains("Conta temporariamente bloqueada."));
+            Assert.Contains("Conta temporariamente bloqueada.", result.Erros);
 
             var usuarioDb = await contextApp.Usuarios.FirstAsync(u => u.Id == usuario.Id);
             Assert.True(usuarioDb.LockoutEnd.HasValue && usuarioDb.LockoutEnd.Value > DateTime.UtcNow);
@@ -226,7 +226,7 @@ namespace Epros.Tests
 
             // Assert
             Assert.False(result.Sucesso);
-            Assert.True(result.Erros.Contains("O usuário não possui permissão de acesso à empresa informada."));
+            Assert.Contains("O usuário não possui permissão de acesso à empresa informada.", result.Erros);
         }
 
         [Fact]
@@ -265,18 +265,22 @@ namespace Epros.Tests
             var mediator = serviceProvider.GetRequiredService<IMediator>();
 
             var endereco = new Epros.Modules.GestaoClientes.Domain.ValueObjects.Endereco("Logradouro", "123", null, "Centro", "11111111", "Cianorte", "PR");
-            var empresaExistente = new Empresa("Razao Existente", "Fantasia", "12345678901234", null, null, null, null, RegimeTributario.SimplesNacional, RegimeApuracao.Cumulativo, null, null, null, null, null, null, null, null, null, null, endereco, "tenant-ex", "system");
+            // CNPJ válido (dígito verificador correto) para exercitar a checagem de DUPLICIDADE — a
+            // validação de CNPJ inválido é anterior e barraria um CNPJ com DV errado antes daqui.
+            var empresaExistente = new Empresa("Razao Existente", "Fantasia", "12345678000195", null, null, null, null, RegimeTributario.SimplesNacional, RegimeApuracao.Cumulativo, null, null, null, null, null, null, null, null, null, null, endereco, "tenant-ex", "system");
             contextGestao.Empresas.Add(empresaExistente);
             await contextGestao.SaveChangesAsync();
 
-            var command = new RegistrarNovoTenantCommand("Nova Empresa S/A", "12345678901234", "Admin", "admin@nova.com", "senhaForte1");
+            var command = new RegistrarNovoTenantCommand(
+                "Nova Empresa S/A", "12345678000195", "Admin", "admin@nova.com", "senhaForte1",
+                CodigoIbgeMunicipio: 4105508, Telefone: "44999990000", TipoTelefone: "Celular");
 
             // Act
             var result = await mediator.Send(command);
 
             // Assert
             Assert.False(result.Sucesso);
-            Assert.True(result.Erros.Contains("Já existe uma empresa cadastrada com este CNPJ."));
+            Assert.Contains("Já existe uma empresa cadastrada com este CNPJ.", result.Erros);
         }
 
         #region Provedores de Teste

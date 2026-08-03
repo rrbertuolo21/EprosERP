@@ -86,6 +86,18 @@ namespace Epros.API.Controllers
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
 
+        // MAN-CRV D24 — motor: calcula MTTR/MTBF/Disponibilidade lendo Paradas (nao entrada manual).
+        [HttpPost("revisoes/{id:guid}/indicadores/calcular")]
+        [AbacAuthorize("ManutencaoConfiabilidade", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> CalcularIndicadores(Guid id, [FromBody] CalcularIndicadoresConfiabilidadeCommand command, CancellationToken ct)
+        {
+            if (id != command.RevisaoId) return BadRequest("O ID da rota nao corresponde ao ID do corpo.");
+            var result = await _mediator.Send(command, ct);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
         [HttpPost("revisoes/{id:guid}/submeter")]
         [AbacAuthorize("ManutencaoConfiabilidade", "Editar")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]

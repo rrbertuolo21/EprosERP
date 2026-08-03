@@ -1,0 +1,437 @@
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Epros.Shared.Domain.Events
+{
+    /// <summary>
+    /// TRANSVERSAL T2 — CATÁLOGO ÚNICO DE EVENTOS DE INTEGRAÇÃO.
+    /// Registro central e versionado dos tipos de evento publicados via Outbox pós-commit
+    /// (<see cref="OutboxMessage.EventType"/>). Substitui as "magic strings" espalhadas por
+    /// módulo: código novo referencia estas constantes, e consumidores/testes validam o tipo
+    /// contra <see cref="EhEventoConhecido"/>.
+    ///
+    /// É a casa da homologação dos ~20 *EventNotification.cs + eventos dotados (EST-*, COM-*, FIN-*).
+    /// Ver DECISOES-TRANSVERSAIS.md · T2 e DECISOES_IMPLANTACAO_V1.md · TC-01/TC-02.
+    /// </summary>
+    public static class CatalogoEventosIntegracao
+    {
+        /// <summary>Versão do envelope/catálogo (semver simplificado). Muda quando o schema evolui.</summary>
+        public const string Versao = "1";
+
+        /// <summary>Eventos de assinatura/SaaS e ciclo de faturamento (COM-*/FIN- do Landlord).</summary>
+        public static class Assinatura
+        {
+            public const string AssinaturaCancelada = "AssinaturaCanceladaEvent";
+            public const string AssinaturaReativada = "AssinaturaReativadaEvent";
+            public const string PlanoAlterado = "PlanoAlteradoEvent";
+            public const string TrialEncerrado = "TrialEncerradoEvent";
+            public const string ComissaoApurada = "ComissaoApuradaEvent";
+            public const string FaturaAlertaCobranca = "FaturaAlertaCobrancaEvent";
+            public const string PagamentoEstornado = "PagamentoEstornadoEvent";
+            public const string ReciboEmitido = "ReciboEmitidoEvent";
+        }
+
+        /// <summary>Aprovações/workflow transversal.</summary>
+        public static class Workflow
+        {
+            public const string AprovacaoSolicitada = "AprovacaoSolicitada";
+            public const string AprovacaoConcluida = "AprovacaoConcluida";
+        }
+
+        /// <summary>Cadastro/governança de pessoa (LGPD — T1).</summary>
+        public static class Pessoa
+        {
+            public const string Criada = "pessoa.criada";
+            public const string Atualizada = "pessoa.atualizada";
+            public const string Inativada = "pessoa.inativada";
+            public const string Mesclada = "pessoa.mesclada";
+            public const string Anonimizada = "pessoa.anonimizada";
+        }
+
+        /// <summary>Vendas / comercial (COM-*).</summary>
+        public static class Vendas
+        {
+            public const string VendaFaturada = "VendaFaturada";
+            public const string VendaCancelada = "VendaCancelada";
+            public const string PedidoEcommerceParaVenda = "PedidoEcommerceParaVenda";
+            public const string DemandaPlanejadaPublicada = "DemandaPlanejadaPublicada";
+            /// <summary>Expedição/logística de saída confirmada (VEN ven.*). ⚠️ NÃO baixa estoque (VendaFaturada já baixa — anti-dupla-contagem): sem consumidor de efeito, roteia ao fallback (pendência de regra).</summary>
+            public const string ExpedicaoConfirmada = "ven.ExpedicaoConfirmada";
+            public const string ProjetoFaturado = "ProjetoFaturado";
+        }
+
+        /// <summary>Compras / entradas.</summary>
+        public static class Compras
+        {
+            public const string CompraLancada = "CompraLancada";
+            public const string CompraCancelada = "CompraCancelada";
+            public const string CompraFiscalLancada = "CompraFiscalLancada";
+            public const string CompraEntradaPropriaLancada = "CompraEntradaPropriaLancada";
+            public const string CompraEntradaFornecedorLancada = "CompraEntradaFornecedorLancada";
+            // Devolução de Compra (CD4 / EF DEVOLUCAO_DE_COMPRA). Confirmação publica saída de estoque
+            // (motor único D1) + estorno financeiro idempotente por compra (DEV-006). Cancelamento compensa.
+            public const string DevolucaoCompraConfirmada = "com.devolucao.confirmada";
+            /// <summary>Saída de estoque da devolução — consumida pelo motor único de saldo (D1). Sentido/CFOP = valida-contador (NF-06).</summary>
+            public const string DevolucaoCompraSaidaEstoque = "com.devolucao.saida_estoque";
+            /// <summary>Estorno/redução do passivo — fato gerador financeiro único, idempotente por devolução/compra (DEV-006).</summary>
+            public const string DevolucaoCompraEstornoFinanceiro = "com.devolucao.estorno_financeiro";
+            public const string DevolucaoCompraCancelada = "com.devolucao.cancelada";
+            // Comércio Exterior / Importação (CD1 / EF COMERCIO_EXTERIOR). Nacionalização gera entrada no
+            // Estoque (motor único D1) com custo landed (quando ligado) + títulos financeiros de tributos/frete.
+            /// <summary>Entrada nacionalizada da importação — consumida pelo motor único de saldo (D1), com custo (landed quando ligado).</summary>
+            public const string ImportacaoNacionalizada = "com.importacao.nacionalizada";
+            /// <summary>Títulos financeiros de tributos/frete de importação — fato gerador único, idempotente por compra.</summary>
+            public const string ImportacaoTitulosFinanceiros = "com.importacao.titulos_financeiros";
+        }
+
+        /// <summary>Fiscal (documento eletrônico).</summary>
+        public static class Fiscal
+        {
+            public const string DocumentoFiscalAutorizado = "DocumentoFiscalAutorizado";
+            public const string DocumentoFiscalCancelado = "DocumentoFiscalCancelado";
+        }
+
+        /// <summary>Estoque (EST-*): LDE, WMS, GCC, SUB, TMS, SC.</summary>
+        public static class Estoque
+        {
+            public const string LdeEntradaCriada = "est.lde.entrada_criada";
+            public const string LdeEntradaConfirmada = "est.lde.entrada_confirmada";
+            public const string LdeEntradaCancelada = "est.lde.entrada_cancelada";
+            public const string LdeEntradaEstornada = "est.lde.entrada_estornada";
+            public const string LdeDocumentoVinculado = "est.lde.documento_vinculado";
+            public const string LdeLocalEntregaAlterado = "est.lde.local_entrega_alterado";
+            /// <summary>Mercadoria fisicamente recebida/conferida (LDE). Consumidores: Qualidade (inspecao) e Financeiro (contas a pagar).</summary>
+            public const string MercadoriaRecebida = "est.lde.mercadoria_recebida";
+            public const string ScPedidoCompraCriado = "est.sc.pedido_compra_criado";
+            /// <summary>Cotação decidida (CD2): vencedor escolhido após o mapa comparativo; apta a originar pedido.</summary>
+            public const string ScCotacaoDecidida = "est.sc.cotacao_decidida";
+            public const string TmsAlterado = "est.tms.001.alterado";
+            /// <summary>Frete de entrada rateado sobre os itens da compra (NF-04): compõe o custo (motor de custeio D1).</summary>
+            public const string TmsFreteRateado = "est.tms.frete_rateado";
+            public const string WmsArmazemCriado = "estoque.wms.armazem_criado";
+            public const string WmsArmazemAlterado = "estoque.wms.armazem_alterado";
+            public const string WmsArmazemExclusaoSolicitada = "estoque.wms.armazem_exclusao_solicitada";
+            public const string GccContratoCriado = "estoque.gcc.contrato_criado";
+            public const string GccContratoEnviadoAprovacao = "estoque.gcc.contrato_enviado_aprovacao";
+            public const string GccContratoAprovado = "estoque.gcc.contrato_aprovado";
+            public const string GccConsumoRegistrado = "estoque.gcc.consumo_registrado";
+            /// <summary>Aditivo contratual aplicado (CD5): preço/quantidade/vigência/condições de contrato aprovado.</summary>
+            public const string GccAditivoRegistrado = "estoque.gcc.aditivo_registrado";
+            public const string SubEnvioRegistrado = "estoque.sub.envio_registrado";
+            public const string SubRetornoRegistrado = "estoque.sub.retorno_registrado";
+            /// <summary>Serviço de beneficiamento cobrado (SUB-009): gera a compra do serviço + contas a pagar (via evento).</summary>
+            public const string SubServicoCobrado = "estoque.sub.servico_cobrado";
+            /// <summary>Documento fiscal de remessa/retorno da subcontratação com CFOP parametrizado (valida-contador).</summary>
+            public const string SubDocumentoFiscalRegistrado = "estoque.sub.documento_fiscal_registrado";
+            // Inventário Físico e Contagem Cíclica (EST-INV) — EF §13.
+            public const string InventarioCriado = "estoque.inv.inventario_criado";
+            public const string InventarioItemContado = "estoque.inv.item_contado";
+            public const string InventarioDivergenciaCalculada = "estoque.inv.divergencia_calculada";
+            public const string InventarioAprovado = "estoque.inv.inventario_aprovado";
+            public const string InventarioAjusteGerado = "estoque.inv.ajuste_gerado";
+            // Rastreabilidade de Lote e Serialização (EST-RLT).
+            public const string LoteCriado = "estoque.rlt.lote_criado";
+            public const string LoteBloqueado = "estoque.rlt.lote_bloqueado";
+            public const string LoteDesbloqueado = "estoque.rlt.lote_desbloqueado";
+            public const string SerialRegistrado = "estoque.rlt.serial_registrado";
+            public const string RecallAberto = "estoque.rlt.recall_aberto";
+            public const string RecallEncerrado = "estoque.rlt.recall_encerrado";
+            // Análise e Planejamento de Estoque (EST-APE).
+            public const string AnaliseParametrosAlterados = "estoque.analise.parametros_alterados";
+            public const string AnaliseAlertaReposicao = "estoque.analise.alerta_reposicao";
+            public const string AnaliseExcessoMaximo = "estoque.analise.excesso_maximo";
+            // Portal do Fornecedor (EST-PFO) — EF §13.
+            public const string PfoConviteEnviado = "est.pfo.convite_enviado";
+            public const string PfoAcessoAtivado = "est.pfo.acesso_ativado";
+            public const string PfoCotacaoRespondida = "est.pfo.cotacao_respondida";
+            public const string PfoPreAvisoEnviado = "est.pfo.pre_aviso_enviado";
+            public const string PfoDocumentoEnviado = "est.pfo.documento_enviado";
+        }
+
+        /// <summary>Qualidade (QLD-*): INS, ACR, NCR. Decide e SOLICITA o efeito ao dono (Estoque/NCR) — nunca movimenta saldo.</summary>
+        public static class Qualidade
+        {
+            /// <summary>ACR decidiu rejeitar: solicita bloqueio do lote ao Estoque.</summary>
+            public const string AcrLoteBloqueado = "qld.acr.lote_bloqueado";
+            /// <summary>ACR aceitou: solicita liberação do lote ao Estoque.</summary>
+            public const string AcrLoteLiberado = "qld.acr.lote_liberado";
+            /// <summary>ACR colocou em quarentena: solicita quarentena do lote ao Estoque.</summary>
+            public const string AcrLoteQuarentena = "qld.acr.lote_quarentena";
+            /// <summary>ACR sugere abertura de NCR por gatilho (severidade/recorrência) — D13, default seguro (sugere, não cria à revelia).</summary>
+            public const string AcrNcrSolicitada = "qld.acr.ncr_solicitada";
+            /// <summary>ACR sinaliza intenção de devolução fiscal ao módulo Fiscal — ⚠️ valida-contador (D15).</summary>
+            public const string AcrDevolucaoSolicitada = "qld.acr.devolucao_solicitada";
+            /// <summary>INS concluiu execução com resultado técnico (alimenta ACR).</summary>
+            public const string InsInspecaoConcluida = "qld.ins.inspecao_concluida";
+            /// <summary>INS reprovou a execução: sugere abertura de NCR por desvio (default seguro — sugere, não cria à revelia).</summary>
+            public const string InsNcrSolicitada = "qld.ins.ncr_solicitada";
+            /// <summary>NCR aberta.</summary>
+            public const string NcrAberta = "qld.ncr.aberta";
+            /// <summary>NCR encerrada.</summary>
+            public const string NcrEncerrada = "qld.ncr.encerrada";
+            /// <summary>Recall aberto (RST).</summary>
+            public const string RstRecallAberto = "qld.rst.recall_aberto";
+            /// <summary>Recall encerrado (RST).</summary>
+            public const string RstRecallEncerrado = "qld.rst.recall_encerrado";
+            /// <summary>RST solicita contencao/bloqueio de lote/serie ao Estoque (nao movimenta saldo — D6/D24).</summary>
+            public const string RstBloqueioSolicitado = "qld.rst.bloqueio_solicitado";
+        }
+
+        /// <summary>
+        /// Imobiliaria (IMO-*). ⚠️ ADIÇÃO MÍNIMA pelo módulo IMOBILIARIA (worktree wt/imobiliaria) —
+        /// homologar nomes/consumidores na revisão do catálogo. Baixa de aluguel integra o
+        /// CONTAS_RECEBER por evento (não recria o recebível): a IMOBILIARIA publica a cobrança
+        /// gerada e reflete a baixa/estorno vinda do FINANCEIRO.
+        /// </summary>
+        public static class Imobiliaria
+        {
+            public const string ImovelDisponibilizado = "imo.imovel.disponibilizado";
+            public const string ImovelInativado = "imo.imovel.inativado";
+            public const string LocacaoFormalizada = "imo.locacao.formalizada";
+            public const string LocacaoEncerrada = "imo.locacao.encerrada";
+            public const string LocacaoCancelada = "imo.locacao.cancelada";
+            public const string LocacaoReajustada = "imo.locacao.reajustada";
+            public const string LocacaoRescindida = "imo.locacao.rescindida";
+            /// <summary>Cobrança recorrente por competência — CONSUMIDA pelo CONTAS_RECEBER (origina o título).</summary>
+            public const string AluguelCobrancaGerada = "imo.aluguel.cobranca_gerada";
+            /// <summary>Baixa refletida do FINANCEIRO (não governa juros/multa/desconto — NF-01).</summary>
+            public const string AluguelBaixaRefletida = "imo.aluguel.baixa_refletida";
+            public const string AluguelBaixaEstornada = "imo.aluguel.baixa_estornada";
+            public const string ReciboEmitido = "imo.recibo.emitido";
+            public const string PropostaConvertida = "imo.proposta.convertida";
+            public const string GarantiaRegistrada = "imo.garantia.registrada";
+        }
+
+        /// <summary>
+        /// Projetos (PRJ-*) — catálogo PRJ-EVT-* (DECISOES_IMPLANTACAO_V1 · seção 3, DP-*-eventos).
+        /// Portfólio→Definição, Rastreamento/Recursos→Faturamento, Faturamento→Financeiro, Encerramento→Portfólio.
+        /// O evento financeiro legado (<see cref="Vendas.ProjetoFaturado"/>) permanece para compat. do consumidor Financeiro.
+        /// </summary>
+        public static class Projetos
+        {
+            /// <summary>Portfólio aprovou um item candidato: vira projeto (Portfólio→Definição).</summary>
+            public const string ItemPortfolioAprovado = "prj.portfolio.item_aprovado";
+            /// <summary>Baseline de orçamento congelada (snapshot imutável, DP-ORC-002).</summary>
+            public const string OrcamentoBaselineCongelada = "prj.orcamento.baseline_congelada";
+            /// <summary>Faturamento de projeto aprovado (evento faturável → Financeiro/Contas a Receber, DP-FAT-007).</summary>
+            public const string FaturamentoAprovado = "prj.faturamento.aprovado";
+            /// <summary>Encerramento de projeto aprovado (Encerramento→Portfólio: baixa do item).</summary>
+            public const string ProjetoEncerrado = "prj.encerramento.aprovado";
+        }
+
+        /// <summary>Eventos do módulo Financeiro (FIN-*): motor de contabilização automática (TEC-8)
+        /// e conciliação de retorno bancário CNAB (FD2/FD-NF11).</summary>
+        public static class Financeiro
+        {
+            /// <summary>Lançamento contábil automático gerado a partir de um fato de integração (motor evento→ledger, TEC-8).</summary>
+            public const string LancamentoContabilGerado = "fin.contabilizacao.lancamento_gerado";
+            /// <summary>Retorno bancário CNAB processado (baixas de faturas por nosso número — RSF-007).</summary>
+            public const string RetornoBancarioProcessado = "fin.cobranca.retorno_processado";
+            /// <summary>Arquivo de remessa CNAB gerado (faturas remetidas — RSF-014).</summary>
+            public const string RemessaCnabGerada = "fin.cobranca.remessa_gerada";
+            /// <summary>Webhook de pagamento processado (baixa de fatura por nosso número via gateway — assinatura + idempotência).</summary>
+            public const string WebhookPagamentoProcessado = "fin.cobranca.webhook_processado";
+
+            // ----- Chaves de TIPO DE EVENTO do de-para RegraContabilizacao (motor evento→ledger, TEC-8) -----
+            // A conta débito×crédito de cada uma é parametrização do contador (// valida-contador); sem
+            // de-para configurado o motor cai na conta transitória em Rascunho.
+            /// <summary>Depreciação mensal registrada de um ativo (contabilização automática).</summary>
+            public const string DepreciacaoRegistrada = "fin.ativos.depreciacao";
+            /// <summary>Baixa de ativo fixo (contabilização automática — resíduo/resultado na baixa).</summary>
+            public const string AtivoBaixado = "fin.ativos.baixa";
+            /// <summary>Variação cambial reconhecida numa reavaliação de títulos (contabilização automática).</summary>
+            public const string VariacaoCambialContabilizada = "fin.cambio.variacao";
+            /// <summary>Estorno contábil do cancelamento de uma compra.</summary>
+            public const string CompraCanceladaEstorno = "fin.contabilizacao.compra_cancelada_estorno";
+            /// <summary>Estorno contábil do cancelamento de uma venda.</summary>
+            public const string VendaCanceladaEstorno = "fin.contabilizacao.venda_cancelada_estorno";
+        }
+
+        /// <summary>
+        /// Produção MES/GOS (PRD-*) — T5. Ordem de produção canônica move estoque pelo MOTOR ÚNICO
+        /// via evento Outbox pós-commit (consumo de insumos + entrada do acabado). O evento legado
+        /// <see cref="Operacoes.OrdemProducaoEncerrada"/> permanece para o fluxo antigo (OrdemProducao),
+        /// que segue como leitura na convergência incremental.
+        /// </summary>
+        public static class Producao
+        {
+            /// <summary>Ordem de produção MES concluída/finalizada: baixa os insumos e dá entrada do acabado
+            /// no Estoque pelo motor único (kardex D1). Consumidor idempotente por ordem, anti-dupla-contagem.</summary>
+            public const string OrdemConcluida = "prd.ordem.concluida";
+        }
+
+        /// <summary>Operações (produção/manutenção/qualidade/RH/GRC).</summary>
+        public static class Operacoes
+        {
+            public const string OrdemProducaoEncerrada = "OrdemProducaoEncerrada";
+            public const string OrdemManutencaoConcluida = "OrdemManutencaoConcluida";
+            /// <summary>T5 — Devolucao de peca de manutencao: entrada compensatoria no Estoque pelo motor unico (D1), simetrica a baixa.</summary>
+            public const string DevolucaoPecaManutencao = "DevolucaoPecaManutencao";
+            public const string InspecaoReprovada = "InspecaoReprovada";
+            public const string FolhaProcessada = "FolhaProcessada";
+            public const string DenunciaProcedente = "DenunciaProcedente";
+        }
+
+        /// <summary>
+        /// GRC (Governança, Risco e Compliance) — contratos GRC-EVT-* emitidos via Outbox (D-TEC-02).
+        /// [MÍNIMO — adicionado pelo agente do módulo GRC; sinalizado no relatório para homologação
+        /// central junto com os demais eventos de integração.]
+        /// </summary>
+        public static class Grc
+        {
+            // SoD — segregação de funções
+            public const string SodConcessaoAvaliada = "grc.sod.concessao_avaliada";
+            public const string SodConcessaoBloqueada = "grc.sod.concessao_bloqueada";
+            public const string SodBypassAdmin = "grc.sod.bypass_admin";
+            public const string SodExcecaoAprovada = "grc.sod.excecao_aprovada";
+            public const string SodViolacaoDetectada = "grc.sod.violacao_detectada";
+            // REG — compliance regulatório
+            public const string RegCertificadoAlertaVencimento = "grc.reg.certificado_alerta_vencimento";
+            public const string RegCertificadoRevogado = "grc.reg.certificado_revogado";
+            // POL — políticas
+            public const string PolPoliticaPublicada = "grc.pol.politica_publicada";
+            // RIS — riscos
+            public const string RisKriExcedido = "grc.ris.kri_excedido";
+            // CIA — controles/auditoria
+            public const string CiaAchadoCritico = "grc.cia.achado_critico";
+        }
+
+        /// <summary>
+        /// CONCESSIONÁRIAS / DMS (con.*) — vertical automotiva. ⚠️ ADIÇÃO MÍNIMA pelo agente do
+        /// módulo CONCESSIONARIAS (worktree wt/concessionarias); homologar nomes/consumidores na
+        /// revisão central do catálogo (T2). Contratos CON-EVT-* da EF de integração.
+        /// </summary>
+        public static class Concessionarias
+        {
+            // CON-FIN (F&I)
+            /// <summary>Simulação de financiamento calculada (parcela/CET/IOF) — CON-EVT F&I (NF-01).</summary>
+            public const string FinSimulacaoCalculada = "con.fin.simulacao_calculada";
+            public const string FinContratoEmitido = "con.fin.contrato_emitido";
+            public const string FinJornadaEncerrada = "con.fin.jornada_encerrada";
+            // CON-VEN (venda de veículo)
+            public const string VenPropostaAceita = "con.ven.proposta_aceita";
+            public const string VenVeiculoReservado = "con.ven.veiculo_reservado";
+            public const string VenVeiculoFaturado = "con.ven.veiculo_faturado";
+            // CON-CRM
+            public const string CrmOportunidadeConvertida = "con.crm.oportunidade_convertida";
+            public const string CrmOportunidadePerdida = "con.crm.oportunidade_perdida";
+            // CON-GAR
+            public const string GarSolicitacaoJulgada = "con.gar.solicitacao_julgada";
+            // CON-SRV / CON-MNT (oficina via MAN)
+            public const string MntOrdemServicoAberta = "con.mnt.ordem_servico_aberta";
+            public const string MntOrdemServicoFechada = "con.mnt.ordem_servico_fechada";
+            // CON-PES (peças via EST)
+            public const string PesReservaConfirmada = "con.pes.reserva_confirmada";
+        }
+
+        /// <summary>
+        /// PLATAFORMA COMPARTILHADA (PLT) — eventos dos submódulos spec-only construídos sobre as
+        /// transversais (GED/T10, Assinatura/T10, cofre/T5, eventos/T2). Prefixo <c>plt.*</c>.
+        /// [MÍNIMO — adicionado pelo agente da Plataforma; sinalizado no relatório para homologação
+        /// central junto com os demais eventos de integração.]
+        /// </summary>
+        public static class Plataforma
+        {
+            // GED — gestão eletrônica de documentos (canônico único)
+            public const string GedDocumentoRegistrado = "plt.ged.documento_registrado";
+            public const string GedNovaVersaoRegistrada = "plt.ged.nova_versao_registrada";
+            public const string GedDocumentoVinculado = "plt.ged.documento_vinculado";
+            public const string GedRetencaoVencida = "plt.ged.retencao_vencida";
+            // Assinatura eletrônica ICP (documental)
+            public const string AssinaturaSolicitada = "plt.assinatura.solicitada";
+            public const string AssinaturaRegistrada = "plt.assinatura.registrada";
+            public const string AssinaturaConcluida = "plt.assinatura.concluida";
+            public const string AssinaturaRecusada = "plt.assinatura.recusada";
+            public const string AssinaturaLinkPublicoRevogado = "plt.assinatura.link_publico_revogado";
+            // Analytics
+            public const string AnalyticsSnapshotGerado = "plt.analytics.snapshot_gerado";
+            // Conectores / Webhooks
+            public const string ConectorEndpointRegistrado = "plt.conector.endpoint_registrado";
+            public const string ConectorEntregaFalhou = "plt.conector.entrega_falhou";
+            public const string ConectorEntregaConcluida = "plt.conector.entrega_concluida";
+            // Wizards
+            public const string WizardExecucaoConcluida = "plt.wizard.execucao_concluida";
+            // IoT
+            public const string IotLeituraForaFaixa = "plt.iot.leitura_fora_faixa";
+            public const string IotCondicaoOperacionalDetectada = "plt.iot.condicao_operacional_detectada";
+            // SDK / Extensões
+            public const string SdkChaveApiGerada = "plt.sdk.chave_api_gerada";
+            public const string SdkChaveApiRevogada = "plt.sdk.chave_api_revogada";
+        }
+
+        private static readonly HashSet<string> _todos = new(new[]
+        {
+            Plataforma.GedDocumentoRegistrado, Plataforma.GedNovaVersaoRegistrada, Plataforma.GedDocumentoVinculado,
+            Plataforma.GedRetencaoVencida,
+            Plataforma.AssinaturaSolicitada, Plataforma.AssinaturaRegistrada, Plataforma.AssinaturaConcluida,
+            Plataforma.AssinaturaRecusada, Plataforma.AssinaturaLinkPublicoRevogado,
+            Plataforma.AnalyticsSnapshotGerado,
+            Plataforma.ConectorEndpointRegistrado, Plataforma.ConectorEntregaFalhou, Plataforma.ConectorEntregaConcluida,
+            Plataforma.WizardExecucaoConcluida,
+            Plataforma.IotLeituraForaFaixa, Plataforma.IotCondicaoOperacionalDetectada,
+            Plataforma.SdkChaveApiGerada, Plataforma.SdkChaveApiRevogada,
+            Assinatura.AssinaturaCancelada, Assinatura.AssinaturaReativada, Assinatura.PlanoAlterado,
+            Assinatura.TrialEncerrado, Assinatura.ComissaoApurada, Assinatura.FaturaAlertaCobranca,
+            Assinatura.PagamentoEstornado, Assinatura.ReciboEmitido,
+            Workflow.AprovacaoSolicitada, Workflow.AprovacaoConcluida,
+            Pessoa.Criada, Pessoa.Atualizada, Pessoa.Inativada, Pessoa.Mesclada, Pessoa.Anonimizada,
+            Vendas.VendaFaturada, Vendas.VendaCancelada, Vendas.PedidoEcommerceParaVenda,
+            Vendas.DemandaPlanejadaPublicada, Vendas.ExpedicaoConfirmada, Vendas.ProjetoFaturado,
+            Compras.CompraLancada, Compras.CompraCancelada, Compras.CompraFiscalLancada,
+            Compras.CompraEntradaPropriaLancada, Compras.CompraEntradaFornecedorLancada,
+            Compras.DevolucaoCompraConfirmada, Compras.DevolucaoCompraSaidaEstoque,
+            Compras.DevolucaoCompraEstornoFinanceiro, Compras.DevolucaoCompraCancelada,
+            Compras.ImportacaoNacionalizada, Compras.ImportacaoTitulosFinanceiros,
+            Fiscal.DocumentoFiscalAutorizado, Fiscal.DocumentoFiscalCancelado,
+            Estoque.LdeEntradaCriada, Estoque.LdeEntradaConfirmada, Estoque.LdeEntradaCancelada,
+            Estoque.LdeEntradaEstornada, Estoque.LdeDocumentoVinculado, Estoque.LdeLocalEntregaAlterado,
+            Estoque.MercadoriaRecebida,
+            Estoque.ScPedidoCompraCriado, Estoque.ScCotacaoDecidida, Estoque.TmsAlterado, Estoque.TmsFreteRateado,
+            Estoque.WmsArmazemCriado, Estoque.WmsArmazemAlterado, Estoque.WmsArmazemExclusaoSolicitada,
+            Estoque.GccContratoCriado, Estoque.GccContratoEnviadoAprovacao, Estoque.GccContratoAprovado,
+            Estoque.GccConsumoRegistrado, Estoque.GccAditivoRegistrado, Estoque.SubEnvioRegistrado, Estoque.SubRetornoRegistrado,
+            Estoque.SubServicoCobrado, Estoque.SubDocumentoFiscalRegistrado,
+            Estoque.InventarioCriado, Estoque.InventarioItemContado, Estoque.InventarioDivergenciaCalculada,
+            Estoque.InventarioAprovado, Estoque.InventarioAjusteGerado,
+            Estoque.LoteCriado, Estoque.LoteBloqueado, Estoque.LoteDesbloqueado,
+            Estoque.SerialRegistrado, Estoque.RecallAberto, Estoque.RecallEncerrado,
+            Estoque.AnaliseParametrosAlterados, Estoque.AnaliseAlertaReposicao, Estoque.AnaliseExcessoMaximo,
+            Estoque.PfoConviteEnviado, Estoque.PfoAcessoAtivado, Estoque.PfoCotacaoRespondida,
+            Estoque.PfoPreAvisoEnviado, Estoque.PfoDocumentoEnviado,
+            Producao.OrdemConcluida,
+            Operacoes.OrdemProducaoEncerrada, Operacoes.OrdemManutencaoConcluida, Operacoes.DevolucaoPecaManutencao,
+            Operacoes.InspecaoReprovada,
+            Operacoes.FolhaProcessada, Operacoes.DenunciaProcedente,
+            Projetos.ItemPortfolioAprovado, Projetos.OrcamentoBaselineCongelada,
+            Projetos.FaturamentoAprovado, Projetos.ProjetoEncerrado,
+            Qualidade.AcrLoteBloqueado, Qualidade.AcrLoteLiberado, Qualidade.AcrLoteQuarentena,
+            Qualidade.AcrNcrSolicitada, Qualidade.AcrDevolucaoSolicitada, Qualidade.InsInspecaoConcluida,
+            Qualidade.InsNcrSolicitada, Qualidade.NcrAberta, Qualidade.NcrEncerrada,
+            Qualidade.RstRecallAberto, Qualidade.RstRecallEncerrado, Qualidade.RstBloqueioSolicitado,
+            Imobiliaria.ImovelDisponibilizado, Imobiliaria.ImovelInativado,
+            Imobiliaria.LocacaoFormalizada, Imobiliaria.LocacaoEncerrada, Imobiliaria.LocacaoCancelada,
+            Imobiliaria.LocacaoReajustada, Imobiliaria.LocacaoRescindida,
+            Imobiliaria.AluguelCobrancaGerada, Imobiliaria.AluguelBaixaRefletida, Imobiliaria.AluguelBaixaEstornada,
+            Imobiliaria.ReciboEmitido, Imobiliaria.PropostaConvertida, Imobiliaria.GarantiaRegistrada,
+            Grc.SodConcessaoAvaliada, Grc.SodConcessaoBloqueada, Grc.SodBypassAdmin,
+            Grc.SodExcecaoAprovada, Grc.SodViolacaoDetectada,
+            Grc.RegCertificadoAlertaVencimento, Grc.RegCertificadoRevogado,
+            Grc.PolPoliticaPublicada, Grc.RisKriExcedido, Grc.CiaAchadoCritico,
+            Financeiro.LancamentoContabilGerado, Financeiro.RetornoBancarioProcessado, Financeiro.RemessaCnabGerada,
+            Financeiro.WebhookPagamentoProcessado,
+            Concessionarias.FinSimulacaoCalculada, Concessionarias.FinContratoEmitido,
+            Concessionarias.FinJornadaEncerrada, Concessionarias.VenPropostaAceita,
+            Concessionarias.VenVeiculoReservado, Concessionarias.VenVeiculoFaturado,
+            Concessionarias.CrmOportunidadeConvertida, Concessionarias.CrmOportunidadePerdida,
+            Concessionarias.GarSolicitacaoJulgada, Concessionarias.MntOrdemServicoAberta,
+            Concessionarias.MntOrdemServicoFechada, Concessionarias.PesReservaConfirmada
+        }, System.StringComparer.Ordinal);
+
+        /// <summary>Todos os tipos de evento homologados no catálogo.</summary>
+        public static IReadOnlyCollection<string> Todos => _todos;
+
+        /// <summary>True se o tipo de evento está registrado no catálogo central.</summary>
+        public static bool EhEventoConhecido(string eventType) =>
+            !string.IsNullOrWhiteSpace(eventType) && _todos.Contains(eventType);
+    }
+}

@@ -1,4 +1,4 @@
-﻿using DFe.Classes.Entidades;
+using DFe.Classes.Entidades;
 using Flunt.Notifications;
 
 namespace Epros.ERP.DfeCalculos.Models.Vendas

@@ -7,7 +7,10 @@ using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
 using Epros.Shared.Domain.Events;
 using Epros.Modules.Estoque.Application.Commands;
+using Epros.Modules.Estoque.Application.Security;
+using Epros.Modules.Estoque.Application.Services;
 using Epros.Modules.Estoque.Domain.Entities;
+using Epros.Modules.Estoque.Domain.Enums;
 using Epros.Modules.Estoque.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,6 +38,10 @@ namespace Epros.Modules.Estoque.Application.Handlers
             var tenantId = _tenantProvider.GetTenantId();
             var usuario = _currentUser.GetUserId() ?? "system";
 
+            // CD3/SRC-008: se a origem está sob alçada, só efetiva com o pedido de aprovação APROVADO.
+            var erroAlcada = await AlcadaCompraGate.GarantirAprovadaAsync(_context, request.AprovacaoOrigemId, cancellationToken);
+            if (erroAlcada != null) return erroAlcada;
+
             // 1. Evitar lançamento em duplicidade de nota fiscal de compra (ChaveAcesso única por tenant)
             var notaExistente = await _context.Compras.AnyAsync(c => c.ChaveAcesso == request.ChaveAcesso, cancellationToken);
             if (notaExistente)
@@ -59,7 +66,16 @@ namespace Epros.Modules.Estoque.Application.Handlers
                 return CommandResult.Falha(compra.Notifications.Select(n => n.Message), "Dados de cabeçalho da nota fiscal são inválidos.");
             }
 
-            // 3. Processar cada item da nota
+            // 3. Processar cada item da nota — a entrada de estoque passa pelo MOTOR ÚNICO (kardex, D1).
+            //    ANTI-DUPLA-CONTAGEM (Gap LDE): o LANÇAMENTO FISCAL é a ÚNICA autoridade que credita o estoque
+            //    da compra. O crédito é idempotente por ORIGEM = CompraId — um único FatoGeradorEstoque com
+            //    CompraId preenchido cobre TODOS os itens desta compra. O relançamento da mesma NF já é barrado
+            //    acima pela unicidade da ChaveAcesso. A LDE (recebimento físico) NÃO credita de novo; ela
+            //    consulta EstoqueCreditoCompra.JaCreditadaAsync para NÃO recreditar o que este fato já creditou.
+            var motor = new MotorMovimentacaoEstoque(_context, tenantId, usuario);
+            var fato = new FatoGeradorEstoque(null, compra.Id, null, EOrigemFatoGeradorEstoque.EntradaFiscal, tenantId, usuario, referenciaExterna: $"Compra NF {request.NumeroNota}");
+            _context.FatosGeradoresEstoque.Add(fato);
+
             foreach (var itemInput in request.Itens)
             {
                 // Buscar produto por SKU no tenant ativo
@@ -75,11 +91,18 @@ namespace Epros.Modules.Estoque.Application.Handlers
                     _context.Produtos.Add(produto);
                 }
 
-                // Incrementar estoque e recalcular custo médio
-                produto.LancarEntradaEstoque(itemInput.Quantidade, itemInput.PrecoUnitario, usuario);
-                if (!produto.IsValid)
+                // Incrementar estoque e recalcular custo médio via motor (kardex = fonte da verdade)
+                var custeioPadrao = await _context.EstoqueProdutos
+                    .Where(e => e.EmpresaId == MotorMovimentacaoEstoque.EmpresaPadrao && e.ProdutoId == produto.Id)
+                    .Select(e => (ETipoCusteioEstoque?)e.TipoCusteioEstoque)
+                    .FirstOrDefaultAsync(cancellationToken) ?? ETipoCusteioEstoque.CustoMedio;
+
+                var resEntrada = await motor.AplicarEntradaAsync(
+                    MotorMovimentacaoEstoque.EmpresaPadrao, produto.Id, ETipoEstoque.Geral, itemInput.Quantidade, itemInput.PrecoUnitario,
+                    fato.Id, null, null, null, custeioPadrao, cancellationToken);
+                if (!resEntrada.Sucesso)
                 {
-                    return CommandResult.Falha(produto.Notifications.Select(n => n.Message), $"Erro ao lançar entrada de estoque para o SKU {itemInput.Sku}.");
+                    return CommandResult.Falha(resEntrada.Erro ?? $"Erro ao lançar entrada de estoque para o SKU {itemInput.Sku}.");
                 }
 
                 // Gerar registro de movimentação física do estoque

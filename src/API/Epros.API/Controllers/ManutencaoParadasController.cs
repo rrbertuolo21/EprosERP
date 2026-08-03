@@ -71,5 +71,28 @@ namespace Epros.API.Controllers
             var result = await _mediator.Send(command, ct);
             return result.Sucesso ? Created(string.Empty, result) : UnprocessableEntity(result);
         }
+
+        // T5 — gera a OS corretiva canonica (man_trb_ordem_servico, origem=Corretiva) da parada.
+        [HttpPost("{id:guid}/gerar-os-corretiva")]
+        [AbacAuthorize("ManutencaoParadas", "Alterar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> GerarOsCorretiva(Guid id, CancellationToken ct)
+        {
+            var result = await _mediator.Send(new GerarOsCorretivaParadaCommand(id), ct);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        // MAN-PAR D16 — motor de indicadores (MTTR/MTBF/Disponibilidade) sob demanda.
+        [HttpPost("{id:guid}/indicadores/calcular")]
+        [AbacAuthorize("ManutencaoParadas", "Alterar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> CalcularIndicadores(Guid id, [FromBody] CalcularIndicadoresParadaCommand command, CancellationToken ct)
+        {
+            if (id != command.ParadaId) return BadRequest("O ID da rota nao corresponde ao ID do corpo.");
+            var result = await _mediator.Send(command, ct);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
     }
 }

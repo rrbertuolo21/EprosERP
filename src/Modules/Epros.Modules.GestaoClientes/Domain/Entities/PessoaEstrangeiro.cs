@@ -25,7 +25,7 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
                 .IsNotNullOrEmpty(nome, nameof(Nome), "O campo Nome é obrigatório.")
                 .HasMaxLen(nome, 60, nameof(Nome), "O campo Nome deve ter no máximo 60 caracteres [Origem: PessoaEstrangeiro]")
                 .IsNotNullOrEmpty(identificacaoEstrangeiro, nameof(IdentificacaoEstrangeiro), "O campo IdentificacaoEstrangeiro é obrigatório.")
-                .HasMaxLen(identificacaoEstrangeiro, 20, nameof(IdentificacaoEstrangeiro), "O campo Identificacao Estrangeiro deve ter no máximo 20 caracteres [Origem: PessoaEstrangeiro]")
+                .HasMaxLen(identificacaoEstrangeiro, 30, nameof(IdentificacaoEstrangeiro), "O campo Identificacao Estrangeiro deve ter no máximo 30 caracteres [Origem: PessoaEstrangeiro]")
             );
 
             PessoaId = pessoaId;

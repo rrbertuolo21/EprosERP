@@ -29,6 +29,22 @@ namespace Epros.Modules.Projetos.Domain.Entities.Faturamento
         public int Versao { get; private set; }
         public string? MotivoRejeicao { get; private set; }
 
+        // ===================== FISCAL (DP-FAT-004/008) — // valida-contador =====================
+        // Modelagem dos tributos/retenções sobre serviço de projeto (ISS/IRRF/INSS/PIS/COFINS/CSLL).
+        // ⚠️ valida-contador: quais tributos incidem, bases e alíquotas por serviço de projeto e o
+        // contrato de NFS-e vão ao contador (Negocio-acumulado/fiscal + validação humana). NENHUM valor
+        // ou alíquota é inventado aqui: os campos guardam valores informados e o líquido = bruto - retenções.
+        public decimal? ValorIss { get; private set; }
+        public decimal? ValorIrrf { get; private set; }
+        public decimal? ValorInss { get; private set; }
+        public decimal? ValorPis { get; private set; }
+        public decimal? ValorCofins { get; private set; }
+        public decimal? ValorCsll { get; private set; }
+        /// <summary>Soma das retenções aplicadas (derivado). // valida-contador para quais tributos são retidos.</summary>
+        public decimal ValorRetencoes { get; private set; }
+        /// <summary>Valor líquido a receber = ValorTotal (bruto) - ValorRetencoes. Regra de dado, não fiscal.</summary>
+        public decimal ValorLiquido { get; private set; }
+
         public List<ItemFaturamentoProjeto> Itens { get; private set; } = new();
 
         protected FaturamentoProjeto() { } // EF Core
@@ -55,6 +71,12 @@ namespace Epros.Modules.Projetos.Domain.Entities.Faturamento
                 .AreNotEquals(projetoId, Guid.Empty, nameof(ProjetoId), "O projeto e obrigatorio. [Origem: FaturamentoProjeto]")
                 .AreNotEquals(responsavelId, Guid.Empty, nameof(ResponsavelId), "O responsavel e obrigatorio. [Origem: FaturamentoProjeto]"));
 
+            // DP-FAT-002/003: Cliente e Moeda passam a ser obrigatorios no agregado de faturamento.
+            if (clienteId is null || clienteId == Guid.Empty)
+                AddNotification(nameof(ClienteId), "O cliente do faturamento e obrigatorio. [Origem: FaturamentoProjeto / DP-FAT-002]");
+            if (string.IsNullOrWhiteSpace(moeda))
+                AddNotification(nameof(Moeda), "A moeda do faturamento e obrigatoria. [Origem: FaturamentoProjeto / DP-FAT-003]");
+
             Codigo = codigo ?? string.Empty;
             Descricao = descricao ?? string.Empty;
             ProjetoId = projetoId;
@@ -67,6 +89,8 @@ namespace Epros.Modules.Projetos.Domain.Entities.Faturamento
             DataCriacao = DateTime.UtcNow;
             Versao = 1;
             ValorTotal = 0;
+            ValorRetencoes = 0;
+            ValorLiquido = 0;
         }
 
         public void AdicionarItem(
@@ -78,7 +102,8 @@ namespace Epros.Modules.Projetos.Domain.Entities.Faturamento
             decimal? valorTotalItem,
             string? origemTipo,
             Guid? origemId,
-            string usuario)
+            string usuario,
+            bool reembolsavel = false)
         {
             // RN-FAT-004: rascunho editavel por perfil autorizado.
             if (Status != EProjetoWorkflowStatus.Rascunho)
@@ -87,7 +112,7 @@ namespace Epros.Modules.Projetos.Domain.Entities.Faturamento
                 return;
             }
 
-            var item = new ItemFaturamentoProjeto(Id, sequencia, quantidade, observacao, tipoItem, valorUnitario, valorTotalItem, origemTipo, origemId, TenantId, usuario);
+            var item = new ItemFaturamentoProjeto(Id, sequencia, quantidade, observacao, tipoItem, valorUnitario, valorTotalItem, origemTipo, origemId, TenantId, usuario, reembolsavel);
             if (!item.IsValid)
             {
                 AddNotifications(item.Notifications);
@@ -101,6 +126,60 @@ namespace Epros.Modules.Projetos.Domain.Entities.Faturamento
         private void RecalcularTotal()
         {
             ValorTotal = Itens.Sum(i => i.ValorTotal ?? 0);
+            RecalcularLiquido();
+        }
+
+        private void RecalcularLiquido()
+        {
+            ValorRetencoes = (ValorIss ?? 0) + (ValorIrrf ?? 0) + (ValorInss ?? 0)
+                           + (ValorPis ?? 0) + (ValorCofins ?? 0) + (ValorCsll ?? 0);
+            ValorLiquido = ValorTotal - ValorRetencoes;
+        }
+
+        /// <summary>
+        /// DP-FAT-004/008 — aplica os valores de tributos/retenções ao faturamento. // valida-contador:
+        /// os VALORES/ALÍQUOTAS e quais tributos incidem/são retidos sobre serviço de projeto são decididos
+        /// pelo contador (Negocio-acumulado/fiscal). Aqui só persistimos os valores informados e derivamos
+        /// o líquido (bruto - retenções). Só é permitido em Rascunho/EmAnalise (antes da geração do evento
+        /// financeiro), preservando a imutabilidade fiscal do faturamento já ativo (RN-FAT-008).
+        /// </summary>
+        public void AplicarTributacao(
+            decimal? valorIss,
+            decimal? valorIrrf,
+            decimal? valorInss,
+            decimal? valorPis,
+            decimal? valorCofins,
+            decimal? valorCsll,
+            string usuario)
+        {
+            if (Status != EProjetoWorkflowStatus.Rascunho && Status != EProjetoWorkflowStatus.EmAnalise)
+            {
+                AddNotification(nameof(Status), "A tributacao so pode ser ajustada antes da aprovacao do faturamento. [Origem: FaturamentoProjeto]");
+                return;
+            }
+
+            // Nenhum valor negativo (regra de dado, não fiscal).
+            foreach (var (valor, campo) in new[]
+            {
+                (valorIss, nameof(ValorIss)), (valorIrrf, nameof(ValorIrrf)), (valorInss, nameof(ValorInss)),
+                (valorPis, nameof(ValorPis)), (valorCofins, nameof(ValorCofins)), (valorCsll, nameof(ValorCsll))
+            })
+            {
+                if (valor.HasValue && valor.Value < 0)
+                {
+                    AddNotification(campo, "O valor de tributo/retencao nao pode ser negativo. [Origem: FaturamentoProjeto]");
+                    return;
+                }
+            }
+
+            ValorIss = valorIss;
+            ValorIrrf = valorIrrf;
+            ValorInss = valorInss;
+            ValorPis = valorPis;
+            ValorCofins = valorCofins;
+            ValorCsll = valorCsll;
+            RecalcularLiquido();
+            MarcarAlterado(usuario);
         }
 
         /// <summary>RN-FAT-005: submissao exige itens validos.</summary>

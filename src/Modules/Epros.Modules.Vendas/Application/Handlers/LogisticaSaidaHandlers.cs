@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Epros.Modules.Vendas.Application.Commands;
@@ -6,6 +7,7 @@ using Epros.Modules.Vendas.Domain.Entities;
 using Epros.Modules.Vendas.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
+using Epros.Shared.Domain.Events;
 using Microsoft.EntityFrameworkCore;
 
 namespace Epros.Modules.Vendas.Application.Handlers
@@ -103,7 +105,26 @@ namespace Epros.Modules.Vendas.Application.Handlers
             if (expedicao == null) return CommandResult.Falha("Expedição não encontrada.");
             var anterior = expedicao.Status.ToString();
             expedicao.Confirmar(usuario);
+            if (!expedicao.IsValid) return CommandResult.Falha(expedicao.Notifications.Select(n => n.Message), "Não foi possível confirmar a expedição.");
             _context.ExpedicaoHistoricos.Add(new ExpedicaoHistorico(expedicao.Id, System.Guid.Empty, "Confirmacao", anterior, expedicao.Status.ToString(), null, null, tenantId, usuario));
+
+            // NF-04 / T-04: a Logística NÃO escreve saldo direto. Ao confirmar a expedição, publica o
+            // evento de saída via Outbox; o MOTOR ÚNICO do Estoque consome e faz a baixa (converte a
+            // reserva em saída), idempotente por expedicao+item. Aqui só o registro documental + evento.
+            var itensEntrega = await _context.ExpedicaoItensEntrega
+                .Where(i => i.TenantId == tenantId && i.ExpedicaoId == expedicao.Id)
+                .Select(i => new { i.Id, i.ProdutoId, i.QuantidadeEntregue })
+                .ToListAsync(cancellationToken);
+            var payload = JsonSerializer.Serialize(new
+            {
+                ExpedicaoId = expedicao.Id,
+                expedicao.PedidoId,
+                expedicao.DocumentoFiscalId,
+                Itens = itensEntrega
+            });
+            // Convenção de eventos do módulo (ven.*), idempotência por expedicao+item no consumidor (motor único).
+            _context.OutboxMessages.Add(new OutboxMessage(tenantId, "ven.ExpedicaoConfirmada", payload));
+
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Expedição confirmada.", new { expedicao.Id, Status = expedicao.Status.ToString() });
         }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Epros.Modules.Estoque.Domain.Enums;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Domain.Enums;
 
@@ -38,4 +39,15 @@ namespace Epros.Modules.Estoque.Application.Commands
     public record ConfirmarTmsTransporteCompraCommand(Guid Id) : ICommand;
 
     public record CancelarTmsTransporteCompraCommand(Guid Id) : ICommand;
+
+    /// <summary>
+    /// NF-04 — rateia o frete de entrada sobre os itens da compra, compondo o custo (motor de custeio D1).
+    /// O valor do frete é FACTUAL (CT-e/transportadora); a apropriação (por valor/quantidade) é estrutural.
+    /// Publica evento consumido pelo motor de custeio. Idempotente por compra (não rateia duas vezes).
+    /// </summary>
+    public record RatearFreteCompraCommand(
+        Guid CompraId,
+        decimal ValorFrete,
+        ERateioLandedMetodo Metodo = ERateioLandedMetodo.PorValor
+    ) : ICommand;
 }

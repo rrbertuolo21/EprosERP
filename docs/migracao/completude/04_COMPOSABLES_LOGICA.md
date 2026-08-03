@@ -6,7 +6,7 @@
 > próprios sem Vuetify).
 >
 > Legado: `Epros/epros_erp_front-main/app/composables` + `app/utils` (~110 fontes reais, fora testes/`._*`).
-> Novo: `EprosERP/Epros.App/composables` (39), `Epros.App/components/**` e `Epros.App/pages/**`.
+> Novo: `EprosERP/EprosApp/composables` (39), `EprosApp/components/**` e `EprosApp/pages/**`.
 >
 > **Metodologia e nota de cautela:** o novo front NÃO concentra a lógica em `composables/`.
 > Ele a distribui em três lugares: (1) `composables/` compartilhados; (2) **lógica local à

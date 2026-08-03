@@ -17,14 +17,13 @@ namespace Epros.Modules.Projetos.Application.Commands
     {
         public CriarProjetoCommandValidator()
         {
+            // A3/A4: só o Nome é obrigatório. Cliente (projeto interno) e orçamento são opcionais na criação
+            // (projeto nasce em Rascunho; orçamento é submódulo próprio com baseline).
             RuleFor(c => c.Nome)
                 .NotEmpty().WithMessage("O Nome do projeto é obrigatório.");
 
-            RuleFor(c => c.ClienteId)
-                .NotEmpty().WithMessage("O Cliente do projeto é obrigatório.");
-
             RuleFor(c => c.OrcamentoTotal)
-                .GreaterThan(0).WithMessage("O Orçamento total deve ser maior que zero.");
+                .GreaterThanOrEqualTo(0).WithMessage("O Orçamento total não pode ser negativo.");
         }
     }
 }

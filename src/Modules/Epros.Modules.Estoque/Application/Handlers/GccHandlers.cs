@@ -199,4 +199,72 @@ namespace Epros.Modules.Estoque.Application.Handlers
             return CommandResult.Ok("Consumo contratual registrado com sucesso!", new { consumo.Id, saldoQuantidade = item.SaldoQuantidade, saldoValor = item.SaldoValor });
         }
     }
+
+    /// <summary>
+    /// CD5 — registra e aplica um aditivo contratual (preço/quantidade/vigência/condições) sobre contrato
+    /// APROVADO. Aditivos de item (Preco/Quantidade) exigem o item; ajustam preço/comprometido e recompõem
+    /// o saldo. Publica evento estoque.gcc.aditivo_registrado.
+    /// </summary>
+    public class RegistrarGccAditivoCommandHandler : ICommandHandler<RegistrarGccAditivoCommand>
+    {
+        private readonly ContextEstoque _context;
+        private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
+
+        public RegistrarGccAditivoCommandHandler(ContextEstoque context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        {
+            _context = context;
+            _tenantProvider = tenantProvider;
+            _currentUser = currentUser;
+        }
+
+        public async Task<CommandResult> Handle(RegistrarGccAditivoCommand request, CancellationToken cancellationToken)
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var usuario = _currentUser.GetUserId() ?? "system";
+
+            var contrato = await _context.GccContratosCompra.Include(c => c.Itens)
+                .FirstOrDefaultAsync(c => c.Id == request.ContratoCompraId && c.DeletadoEm == null, cancellationToken);
+            if (contrato == null)
+                return CommandResult.Falha("Contrato de compra não encontrado.");
+
+            // Aditivos por item (Preco/Quantidade): localiza e aplica no item antes do efeito de cabeçalho.
+            if (request.TipoAditivo == Domain.Enums.ETipoAditivoContrato.Preco || request.TipoAditivo == Domain.Enums.ETipoAditivoContrato.Quantidade)
+            {
+                if (request.ContratoCompraItemId is null)
+                    return CommandResult.Falha("Aditivo de preço/quantidade exige o item contratual (ContratoCompraItemId).");
+                var item = contrato.Itens.FirstOrDefault(i => i.Id == request.ContratoCompraItemId.Value && i.DeletadoEm == null);
+                if (item == null)
+                    return CommandResult.Falha("Item contratual não encontrado.");
+
+                if (request.TipoAditivo == Domain.Enums.ETipoAditivoContrato.Preco)
+                {
+                    if (request.NovoPreco is null) return CommandResult.Falha("Aditivo de preço exige NovoPreco.");
+                    item.AjustarPreco(request.NovoPreco.Value, usuario);
+                }
+                else
+                {
+                    if (request.QuantidadeAdicional is null) return CommandResult.Falha("Aditivo de quantidade exige QuantidadeAdicional.");
+                    item.AumentarComprometido(request.QuantidadeAdicional.Value, usuario);
+                }
+                if (!item.IsValid)
+                    return CommandResult.Falha(item.Notifications.Select(n => n.Message), "Aditivo de item inválido.");
+            }
+
+            var aditivo = new GccContratoCompraAditivo(contrato.Id, request.NumeroAditivo, request.TipoAditivo,
+                request.Justificativa, request.DataAditivo, tenantId, usuario);
+            if (!aditivo.IsValid)
+                return CommandResult.Falha(aditivo.Notifications.Select(n => n.Message), "Dados do aditivo inválidos.");
+
+            if (!contrato.AplicarAditivo(aditivo, request.NovaVigenciaFim, request.NovoValorTotal, request.NovaObservacao, usuario))
+                return CommandResult.Falha(contrato.Notifications.Select(n => n.Message), "Não foi possível aplicar o aditivo.");
+
+            _context.GccContratosCompraAditivos.Add(aditivo);
+            _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Estoque.GccAditivoRegistrado,
+                JsonSerializer.Serialize(new { contratoId = contrato.Id, aditivoId = aditivo.Id, tipo = request.TipoAditivo.ToString(), usuario })));
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Aditivo registrado e aplicado.", new { aditivo.Id, contrato.VigenciaFim, contrato.ValorTotal });
+        }
+    }
 }

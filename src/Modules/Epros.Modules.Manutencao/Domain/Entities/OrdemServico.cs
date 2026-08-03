@@ -16,7 +16,12 @@ namespace Epros.Modules.Manutencao.Domain.Entities
         public EPerfilOrdem PerfilOrdem { get; private set; }
         public Guid? EmpresaId { get; private set; }
         public int TipoPessoa { get; private set; }
-        public Guid PessoaId { get; private set; }
+        // T5 — nullable: ordem INTERNA (origem != Manual) nao exige cliente/pessoa.
+        public Guid? PessoaId { get; private set; }
+        // T5 — origem canonica da OS (Manual/Preventiva/Preditiva/Corretiva/Confiabilidade)
+        // e id do registro de origem (execucao PRV, alarme PDT, parada PAR, recomendacao CRV).
+        public EOrigemOrdemServico OrigemTipo { get; private set; } = EOrigemOrdemServico.Manual;
+        public Guid? OrigemId { get; private set; }
         public Guid? ColaboradorId { get; private set; }
         public DateTime Data { get; private set; }
         public DateTime? DataAbertura { get; private set; }
@@ -92,11 +97,60 @@ namespace Epros.Modules.Manutencao.Domain.Entities
             MarcaId = marcaId;
             ColaboradorId = colaboradorId;
             Numero = numero;
+            OrigemTipo = EOrigemOrdemServico.Manual;
             StatusCodigo = EStatusOrdemServico.Aberta;
             DataAbertura = DateTime.UtcNow;
             Versao = 1;
             Validar();
         }
+
+        // T5 — construtor de ordem INTERNA (sem cliente/pessoa). Usado pela factory CriarInterna.
+        private OrdemServico(
+            EOrigemOrdemServico origemTipo,
+            Guid origemId,
+            EPerfilOrdem perfilOrdem,
+            DateTime data,
+            Guid? colaboradorId,
+            Guid? tipoEquipamentoId,
+            string? numero,
+            string? observacaoAbertura,
+            string tenantId,
+            string criadoPor)
+            : base(tenantId, criadoPor)
+        {
+            PerfilOrdem = perfilOrdem;
+            TipoPessoa = 0;
+            PessoaId = null; // ordem interna nao tem cliente
+            OrigemTipo = origemTipo;
+            OrigemId = origemId;
+            Data = data;
+            ColaboradorId = colaboradorId;
+            TipoEquipamentoId = tipoEquipamentoId;
+            Numero = numero;
+            ObservacaoAbertura = observacaoAbertura;
+            StatusCodigo = EStatusOrdemServico.Aberta;
+            DataAbertura = DateTime.UtcNow;
+            Versao = 1;
+            Validar();
+        }
+
+        /// <summary>
+        /// T5 — Cria a OS canonica INTERNA a partir de outro submodulo (PRV/PDT/PAR/CRV),
+        /// sem exigir cliente/pessoa. Perfil default Oficina; a origem (tipo+id) rastreia o
+        /// registro gerador (execucao preventiva, alarme preditivo, parada, recomendacao).
+        /// </summary>
+        public static OrdemServico CriarInterna(
+            EOrigemOrdemServico origemTipo,
+            Guid origemId,
+            DateTime data,
+            string tenantId,
+            string criadoPor,
+            Guid? colaboradorId = null,
+            Guid? tipoEquipamentoId = null,
+            string? numero = null,
+            string? observacaoAbertura = null,
+            EPerfilOrdem perfilOrdem = EPerfilOrdem.Oficina)
+            => new OrdemServico(origemTipo, origemId, perfilOrdem, data, colaboradorId, tipoEquipamentoId, numero, observacaoAbertura, tenantId, criadoPor);
 
         public void AdicionarItem(OrdemServicoItem item, string usuario)
         {
@@ -118,12 +172,38 @@ namespace Epros.Modules.Manutencao.Domain.Entities
             MarcarAlterado(usuario);
         }
 
+        // D19 — maquina de estado da OS (gating). Transicoes validas por status atual.
+        // Cancelamento se da por Cancelar() (exige motivo), nao por TransicionarStatus.
+        private static readonly System.Collections.Generic.Dictionary<EStatusOrdemServico, EStatusOrdemServico[]> TransicoesValidas = new()
+        {
+            [EStatusOrdemServico.Aberta] = new[] { EStatusOrdemServico.EmOrcamento, EStatusOrdemServico.Aprovada },
+            [EStatusOrdemServico.EmOrcamento] = new[] { EStatusOrdemServico.Aprovada, EStatusOrdemServico.Aberta },
+            [EStatusOrdemServico.Aprovada] = new[] { EStatusOrdemServico.Montagem },
+            [EStatusOrdemServico.Montagem] = new[] { EStatusOrdemServico.Pronta },
+            [EStatusOrdemServico.Pronta] = new[] { EStatusOrdemServico.Entregue },
+            [EStatusOrdemServico.Entregue] = System.Array.Empty<EStatusOrdemServico>(),
+            [EStatusOrdemServico.Cancelada] = System.Array.Empty<EStatusOrdemServico>()
+        };
+
+        public static bool PodeTransicionar(EStatusOrdemServico de, EStatusOrdemServico para) =>
+            TransicoesValidas.TryGetValue(de, out var destinos) && System.Array.IndexOf(destinos, para) >= 0;
+
         // Transicoes de status espelhando o campo de data associado.
         public void TransicionarStatus(EStatusOrdemServico novoStatus, string usuario)
         {
             if (Cancelado)
             {
                 AddNotification(nameof(StatusCodigo), "OS cancelada nao pode mudar de status.");
+                return;
+            }
+            if (novoStatus == EStatusOrdemServico.Cancelada)
+            {
+                AddNotification(nameof(StatusCodigo), "Use o cancelamento (com motivo) para cancelar a OS.");
+                return;
+            }
+            if (!PodeTransicionar(StatusCodigo, novoStatus))
+            {
+                AddNotification(nameof(StatusCodigo), $"Transicao de status invalida: {StatusCodigo} -> {novoStatus}.");
                 return;
             }
             StatusCodigo = novoStatus;
@@ -176,7 +256,12 @@ namespace Epros.Modules.Manutencao.Domain.Entities
             Clear();
             AddNotifications(new Contract<OrdemServico>()
                 .Requires()
-                .AreNotEquals(PessoaId, Guid.Empty, nameof(PessoaId), "A pessoa/cliente e obrigatoria [Origem: OrdemServico].")
+                // T5 — cliente/pessoa so e obrigatorio na ordem EXTERNA (origem Manual);
+                // ordens internas (PRV/PDT/PAR/CRV) nao tem pessoa.
+                .IsTrue(
+                    OrigemTipo != EOrigemOrdemServico.Manual || (PessoaId.HasValue && PessoaId.Value != Guid.Empty),
+                    nameof(PessoaId),
+                    "A pessoa/cliente e obrigatoria [Origem: OrdemServico].")
                 .IsTrue(
                     PerfilOrdem != EPerfilOrdem.Campo || (ColaboradorId.HasValue && ColaboradorId.Value != Guid.Empty),
                     nameof(ColaboradorId),

@@ -53,7 +53,14 @@ namespace Epros.Modules.Fiscal.Application.Queries
 
             return CommandResult.Ok("OK", new
             {
-                n.Id, n.CodigoNcm, n.Descricao, n.DataInicio, n.DataFim, n.TipoAtoIni, n.NumeroAtoIni, n.AnoAtoIni
+                n.Id,
+                n.CodigoNcm,
+                n.Descricao,
+                n.DataInicio,
+                n.DataFim,
+                n.TipoAtoIni,
+                n.NumeroAtoIni,
+                n.AnoAtoIni
             });
         }
     }

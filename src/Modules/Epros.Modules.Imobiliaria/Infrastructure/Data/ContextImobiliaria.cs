@@ -1,6 +1,7 @@
 using Epros.Infrastructure.Data;
 using Epros.Modules.Imobiliaria.Domain.Entities;
 using Epros.Shared.Application.Contracts;
+using Epros.Shared.Domain.Events;
 using Microsoft.EntityFrameworkCore;
 
 namespace Epros.Modules.Imobiliaria.Infrastructure.Data
@@ -23,6 +24,18 @@ namespace Epros.Modules.Imobiliaria.Infrastructure.Data
         public DbSet<LocacaoParte> LocacaoPartes => Set<LocacaoParte>();
         public DbSet<LocacaoCusto> LocacaoCustos => Set<LocacaoCusto>();
         public DbSet<LocacaoDocumento> LocacaoDocumentos => Set<LocacaoDocumento>();
+
+        // Ciclo do aluguel + garantias/reajuste/rescisao/proposta (escopo maximo)
+        public DbSet<LocacaoGarantia> LocacaoGarantias => Set<LocacaoGarantia>();
+        public DbSet<LocacaoReajuste> LocacaoReajustes => Set<LocacaoReajuste>();
+        public DbSet<LocacaoRescisao> LocacaoRescisoes => Set<LocacaoRescisao>();
+        public DbSet<CobrancaAluguel> CobrancasAluguel => Set<CobrancaAluguel>();
+        public DbSet<ReciboAluguel> RecibosAluguel => Set<ReciboAluguel>();
+        public DbSet<Proposta> Propostas => Set<Proposta>();
+        public DbSet<PropostaParte> PropostaPartes => Set<PropostaParte>();
+
+        // TRANSVERSAL T2 — Outbox pos-commit (eventos imo.*).
+        public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
         public ContextImobiliaria(
             DbContextOptions<ContextImobiliaria> options,
@@ -162,6 +175,90 @@ namespace Epros.Modules.Imobiliaria.Infrastructure.Data
                 entity.Property(e => e.NomeArquivo).HasMaxLength(255);
                 entity.Property(e => e.ContentType).HasMaxLength(100);
                 entity.HasIndex(e => new { e.TenantId, e.LocacaoId });
+            });
+
+            // ================= Garantias da locacao (ID6/NF-04) =================
+            modelBuilder.Entity<LocacaoGarantia>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("imo_locacao_garantia");
+                entity.Property(e => e.Tipo).HasConversion<string>().HasMaxLength(30);
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.Descricao).HasMaxLength(500);
+                entity.HasIndex(e => new { e.TenantId, e.LocacaoId });
+                entity.HasIndex(e => new { e.TenantId, e.SubstituiId });
+            });
+
+            // ================= Reajuste (ID7/NF-02) =================
+            modelBuilder.Entity<LocacaoReajuste>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("imo_locacao_reajuste");
+                entity.Property(e => e.Indice).HasMaxLength(20);
+                entity.HasIndex(e => new { e.TenantId, e.LocacaoId });
+            });
+
+            // ================= Rescisao (ID7) =================
+            modelBuilder.Entity<LocacaoRescisao>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("imo_locacao_rescisao");
+                entity.Property(e => e.Motivo).HasMaxLength(1000);
+                entity.HasIndex(e => new { e.TenantId, e.LocacaoId }).IsUnique();
+            });
+
+            // ================= Cobranca de aluguel (ID8/NF-01) =================
+            modelBuilder.Entity<CobrancaAluguel>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("imo_cobranca_aluguel");
+                entity.Property(e => e.Tipo).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.ReceberRef).HasMaxLength(100);
+                // Idempotencia por (tenant, locacao, competencia, tipo) — T2/NF-01.
+                entity.HasIndex(e => new { e.TenantId, e.LocacaoId, e.Competencia, e.Tipo }).IsUnique();
+            });
+
+            // ================= Recibo (ID8/NF-05, numeracao T9) =================
+            modelBuilder.Entity<ReciboAluguel>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("imo_recibo_aluguel");
+                entity.Property(e => e.DocumentoRef).HasMaxLength(200);
+                entity.HasIndex(e => new { e.TenantId, e.CobrancaId }).IsUnique();
+                entity.HasIndex(e => new { e.TenantId, e.Numero }).IsUnique();
+            });
+
+            // ================= Proposta (ID2) =================
+            modelBuilder.Entity<Proposta>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("imo_proposta");
+                entity.Property(e => e.Tipo).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.Observacao).HasMaxLength(2000);
+                entity.HasIndex(e => new { e.TenantId, e.ImovelId });
+                entity.HasIndex(e => new { e.TenantId, e.ContrapropostaDeId });
+
+                entity.HasMany(e => e.Partes)
+                    .WithOne()
+                    .HasForeignKey(p => p.PropostaId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<PropostaParte>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("imo_proposta_parte");
+                entity.Property(e => e.Papel).HasConversion<string>().HasMaxLength(20);
+                entity.HasIndex(e => new { e.TenantId, e.PropostaId, e.PessoaId, e.Papel }).IsUnique();
+            });
+
+            // ================= Outbox (T2) =================
+            modelBuilder.Entity<OutboxMessage>(entity =>
+            {
+                entity.HasKey(o => o.Id);
+                entity.ToTable("outbox_messages", "imobiliaria");
             });
 
             base.OnModelCreating(modelBuilder);

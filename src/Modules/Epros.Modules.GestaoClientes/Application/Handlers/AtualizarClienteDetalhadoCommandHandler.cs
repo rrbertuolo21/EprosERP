@@ -57,6 +57,9 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 alteradoPor
             );
 
+            // 1.01 — cota (snapshot) que sobrepõe os limites do plano
+            cliente.AtualizarCota(request.CotaUsuarios, request.CotaEmpresas, request.CotaPermissoes, alteradoPor, request.CotaClientes);
+
             if (!cliente.IsValid)
             {
                 return CommandResult.Falha(cliente.Notifications.Select(n => n.Message), "Erro de validação nos dados do cliente");
@@ -216,6 +219,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                         {
                             return CommandResult.Falha(novoEnd.Notifications.Select(n => n.Message), "Erro ao criar novo endereço do cliente");
                         }
+                        novoEnd.DefinirPrincipal(endReq.Principal, alteradoPor);
                         _context.EnderecosPessoas.Add(novoEnd);
                     }
                     else
@@ -259,6 +263,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                             typeof(EnderecoEntity).GetProperty("Complemento")?.SetValue(endExistente, endReq.Complemento);
                             typeof(EnderecoEntity).GetProperty("Bairro")?.SetValue(endExistente, endReq.Bairro);
                             typeof(EnderecoEntity).GetProperty("Referencia")?.SetValue(endExistente, endReq.Referencia);
+                            endExistente.DefinirPrincipal(endReq.Principal, alteradoPor);
                             endExistente.MarcarAlterado(alteradoPor);
 
                             _context.EnderecosPessoas.Update(endExistente);

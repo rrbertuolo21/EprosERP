@@ -16,6 +16,8 @@ namespace Epros.Modules.Financeiro.Application.Queries
     public record ListarBudgetsPeriodoQuery(Guid PeriodoId) : IRequest<CommandResult>;
     public record ListarMetasQuery(Guid? CategoriaId) : IRequest<CommandResult>;
     public record ObterMetaPorIdQuery(Guid Id) : IRequest<CommandResult>;
+    public record ListarOrcamentosComerciaisQuery(int Pagina = 1, int TamanhoPagina = 20) : IRequest<CommandResult>;
+    public record ObterOrcamentoComercialPorIdQuery(Guid Id) : IRequest<CommandResult>;
 
     public class PlanejamentoOrcamentoQueryHandlers :
         IRequestHandler<ListarVersoesOrcamentariasQuery, CommandResult>,
@@ -24,7 +26,9 @@ namespace Epros.Modules.Financeiro.Application.Queries
         IRequestHandler<ListarPeriodosOrcamentariosQuery, CommandResult>,
         IRequestHandler<ListarBudgetsPeriodoQuery, CommandResult>,
         IRequestHandler<ListarMetasQuery, CommandResult>,
-        IRequestHandler<ObterMetaPorIdQuery, CommandResult>
+        IRequestHandler<ObterMetaPorIdQuery, CommandResult>,
+        IRequestHandler<ListarOrcamentosComerciaisQuery, CommandResult>,
+        IRequestHandler<ObterOrcamentoComercialPorIdQuery, CommandResult>
     {
         private readonly ContextFinanceiro _context;
         public PlanejamentoOrcamentoQueryHandlers(ContextFinanceiro context) => _context = context;
@@ -85,6 +89,24 @@ namespace Epros.Modules.Financeiro.Application.Queries
                 .Include(m => m.Milestones).Include(m => m.Contribuicoes).Include(m => m.Trackings)
                 .FirstOrDefaultAsync(m => m.Id == request.Id, ct);
             return meta == null ? CommandResult.Falha("Meta não encontrada.") : CommandResult.Ok("Meta encontrada.", meta);
+        }
+
+        public async Task<CommandResult> Handle(ListarOrcamentosComerciaisQuery request, CancellationToken ct)
+        {
+            var tamanho = request.TamanhoPagina is <= 0 or > 100 ? 20 : request.TamanhoPagina;
+            var pagina = request.Pagina <= 0 ? 1 : request.Pagina;
+            var query = _context.OrcamentosComerciais.AsNoTracking();
+            var total = await query.CountAsync(ct);
+            var itens = await query.OrderByDescending(o => o.DataCadastro).Skip((pagina - 1) * tamanho).Take(tamanho)
+                .Select(o => new { o.Id, o.Codigo, o.Tipo, o.ClienteId, o.VendedorId, o.StatusPedido, o.ValorSubtotal, o.ValorTotal, o.DataCadastro })
+                .ToListAsync(ct);
+            return CommandResult.Ok("Orçamentos comerciais listados.", new { total, pagina, tamanho, itens });
+        }
+
+        public async Task<CommandResult> Handle(ObterOrcamentoComercialPorIdQuery request, CancellationToken ct)
+        {
+            var orc = await _context.OrcamentosComerciais.AsNoTracking().Include(o => o.Itens).FirstOrDefaultAsync(o => o.Id == request.Id, ct);
+            return orc == null ? CommandResult.Falha("Orçamento comercial não encontrado.") : CommandResult.Ok("Orçamento comercial encontrado.", orc);
         }
     }
 }

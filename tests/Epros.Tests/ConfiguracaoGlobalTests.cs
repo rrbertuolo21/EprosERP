@@ -53,7 +53,7 @@ namespace Epros.Tests
             var result = await handler.Handle(command, CancellationToken.None);
 
             Assert.True(result.Sucesso);
-            
+
             var configSalva = await context.ConfiguracoesGlobais.FirstOrDefaultAsync(c => c.Chave == "token_key");
             Assert.NotNull(configSalva);
             Assert.Equal("sec-123", configSalva!.Valor);
@@ -128,7 +128,7 @@ namespace Epros.Tests
 
         private class FakeConfiguracaoGlobalCache : IConfiguracaoGlobalCache
         {
-            public Task<Epros.Modules.GestaoClientes.Application.Dtos.ConfiguracaoGlobalCacheDto?> ObterAsync(string chave, Func<Task<ConfiguracaoGlobal?>> factory) => 
+            public Task<Epros.Modules.GestaoClientes.Application.Dtos.ConfiguracaoGlobalCacheDto?> ObterAsync(string chave, Func<Task<ConfiguracaoGlobal?>> factory) =>
                 factory().ContinueWith(t => t.Result == null ? null : new Epros.Modules.GestaoClientes.Application.Dtos.ConfiguracaoGlobalCacheDto(t.Result.Id, t.Result.Chave, t.Result.Valor, t.Result.EhSegredo, t.Result.Descricao, t.Result.TenantId));
 
             public Task InvalidarAsync(string chave) => Task.CompletedTask;

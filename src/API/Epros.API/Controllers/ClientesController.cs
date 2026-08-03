@@ -162,11 +162,14 @@ namespace Epros.API.Controllers
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
         public async Task<IActionResult> ProcessarWebhook(
             [FromBody] ProcessarWebhookPagamentoCommand command,
-            [FromHeader(Name = "X-Signature")] string? xSignature = null,
-            [FromHeader(Name = "Signature")] string? signature = null)
+            [FromHeader(Name = "x-signature")] string? xSignature = null,
+            [FromHeader(Name = "Signature")] string? signature = null,
+            [FromHeader(Name = "x-request-id")] string? xRequestId = null)
         {
+            // 1.08A — esquema oficial do Mercado Pago: x-signature ("ts=..,v1=..") + x-request-id compõem
+            // o manifesto HMAC validado no handler (motor de cobrança unificado).
             var sig = !string.IsNullOrEmpty(xSignature) ? xSignature : signature;
-            var commandWithSig = command with { Signature = sig };
+            var commandWithSig = command with { Signature = sig, RequestId = xRequestId };
 
             var result = await _mediator.Send(commandWithSig);
 

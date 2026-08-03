@@ -70,7 +70,7 @@ namespace Epros.Tests
 
             // Assert - Criar
             Assert.True(createResult.Sucesso);
-            var produtoId = (Guid)createResult.Dados.GetType().GetProperty("ProdutoId")!.GetValue(createResult.Dados)!;
+            var produtoId = (Guid)createResult.Dados!.GetType().GetProperty("ProdutoId")!.GetValue(createResult.Dados)!;
             var produtoSalvo = await context.Produtos.FindAsync(produtoId);
             Assert.NotNull(produtoSalvo);
             Assert.Equal("PROD-TI", produtoSalvo.Codigo);
@@ -83,7 +83,7 @@ namespace Epros.Tests
 
             // Assert - Listar
             Assert.True(listResult.Sucesso);
-            var listDados = listResult.Dados;
+            var listDados = listResult.Dados!;
             var total = (int)listDados.GetType().GetProperty("Total")!.GetValue(listDados)!;
             Assert.Equal(1, total);
 

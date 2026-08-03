@@ -88,7 +88,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 // Dispara o comando original via MediatR dinamicamente
                 var sendMethod = _mediator.GetType().GetMethods()
                     .First(m => m.Name == "Send" && m.GetParameters().Length == 2 && m.GetParameters()[0].ParameterType == typeof(object));
-                
+
                 var taskResult = (Task<object>)sendMethod.Invoke(_mediator, new[] { comandoInstancia, cancellationToken })!;
                 var resultObj = await taskResult;
                 var result = (CommandResult)resultObj;

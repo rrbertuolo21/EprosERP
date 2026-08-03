@@ -357,6 +357,26 @@ namespace Epros.API.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// REG-016 — restauração GOVERNADA de soft-delete de uma entidade-chave do control-plane
+        /// (Cliente, Plano, Cupom, Usuario). Operação de operador interno (herda o gate SuperAdmin:Configurar
+        /// da classe). Idempotente: restaurar algo já ativo é no-op; respeita o tenant corrente.
+        /// </summary>
+        [HttpPost("restaurar/{tipo}/{id:guid}")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> RestaurarEntidade(string tipo, Guid id)
+        {
+            if (!Enum.TryParse<Epros.Modules.Aplicativo.Application.Commands.EntidadeRestauravel>(tipo, ignoreCase: true, out var tipoEnum))
+            {
+                return BadRequest(new { error = $"Tipo de entidade inválido: '{tipo}'. Válidos: Cliente, Plano, Cupom, Usuario." });
+            }
+
+            var result = await _mediator.Send(new Epros.Modules.Aplicativo.Application.Commands.RestaurarEntidadeCommand(tipoEnum, id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
         #endregion
     }
 }

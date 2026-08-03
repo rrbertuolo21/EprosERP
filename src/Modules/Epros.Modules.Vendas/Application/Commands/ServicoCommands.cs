@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Epros.Modules.Vendas.Domain.Enums;
 using Epros.Shared.Application.Contracts;
 
 namespace Epros.Modules.Vendas.Application.Commands
@@ -51,7 +52,11 @@ namespace Epros.Modules.Vendas.Application.Commands
         decimal CustoEnvioEntrega,
         decimal ValorPago,
         string? Detalhes,
-        List<ServicoFaturaLinhaInput> Linhas) : ICommand;
+        List<ServicoFaturaLinhaInput> Linhas,
+        // ISS (valida-contador / NF-03): alíquota ISS por município/atividade entra como PARÂMETRO.
+        // Sem parâmetro → stub 0% Exclusivo (não inventar alíquota). Ver ServicoFaturaHandlerBase.
+        decimal? AliquotaIssPercentual = null,
+        ETipoImpostoServico? TipoImpostoIss = null) : ICommand;
 
     public record AtualizarServicoFaturaCommand(
         Guid Id,
@@ -61,10 +66,14 @@ namespace Epros.Modules.Vendas.Application.Commands
         decimal CustoEnvioEntrega,
         decimal ValorPago,
         string? Detalhes,
-        List<ServicoFaturaLinhaInput> Linhas) : ICommand;
+        List<ServicoFaturaLinhaInput> Linhas,
+        decimal? AliquotaIssPercentual = null,
+        ETipoImpostoServico? TipoImpostoIss = null) : ICommand;
 
     public record ConfirmarServicoFaturaCommand(Guid Id) : ICommand;
     public record FaturarServicoFaturaCommand(Guid Id) : ICommand;
     public record CancelarServicoFaturaCommand(Guid Id) : ICommand;
+    /// <summary>EC-08: estorno de fatura FATURADA (transição distinta de Cancelar), reverte lançamentos.</summary>
+    public record EstornarServicoFaturaCommand(Guid Id) : ICommand;
     public record ExcluirServicoFaturaCommand(Guid Id) : ICommand;
 }

@@ -34,6 +34,8 @@ namespace Epros.Modules.Vendas.Application.Handlers
                 request.CampanhaId, request.EnderecoIpCaptacao, tenantId, usuario);
             if (!lead.IsValid) return CommandResult.Falha(lead.Notifications.Select(n => n.Message), "Dados do lead inválidos.");
             _context.CrmLeads.Add(lead);
+            // T-09/EC-05: efetiva a escrita de histórico (antes nunca gravado).
+            _context.CrmHistoricos.Add(new CrmHistorico("Lead", lead.Id, "Criacao", null, null, null, null, tenantId, usuario));
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Lead criado com sucesso!", new { lead.Id, Status = lead.Status.ToString() });
         }
@@ -57,6 +59,7 @@ namespace Epros.Modules.Vendas.Application.Handlers
             var lead = await _context.CrmLeads.FirstOrDefaultAsync(l => l.TenantId == tenantId && l.Id == request.LeadId, cancellationToken);
             if (lead == null) return CommandResult.Falha("Lead não encontrado.");
             lead.MoverEtapa(request.EtapaId, request.PosicaoKanban, usuario);
+            _context.CrmHistoricos.Add(new CrmHistorico("Lead", lead.Id, "MoverEtapa", null, null, null, null, tenantId, usuario));
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Lead movido de etapa.", new { lead.Id, Status = lead.Status.ToString() });
         }
@@ -104,6 +107,9 @@ namespace Epros.Modules.Vendas.Application.Handlers
 
             // CRM-009: marca o lead como convertido e grava vínculos gerados.
             lead.Converter(request.ClienteId, request.ContatoId, oportunidadeId, usuario);
+            _context.CrmHistoricos.Add(new CrmHistorico("Lead", lead.Id, "Conversao", null, null, null, null, tenantId, usuario));
+            if (oportunidadeId.HasValue)
+                _context.CrmHistoricos.Add(new CrmHistorico("Oportunidade", oportunidadeId.Value, "Criacao", null, null, null, "Criada por conversão de lead.", tenantId, usuario));
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Lead convertido com sucesso!", new { lead.Id, OportunidadeId = oportunidadeId });
         }
@@ -127,6 +133,7 @@ namespace Epros.Modules.Vendas.Application.Handlers
             var lead = await _context.CrmLeads.FirstOrDefaultAsync(l => l.TenantId == tenantId && l.Id == request.LeadId, cancellationToken);
             if (lead == null) return CommandResult.Falha("Lead não encontrado.");
             lead.Arquivar(usuario);
+            _context.CrmHistoricos.Add(new CrmHistorico("Lead", lead.Id, "Arquivamento", null, null, null, null, tenantId, usuario));
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Lead arquivado.", new { lead.Id });
         }
@@ -153,6 +160,7 @@ namespace Epros.Modules.Vendas.Application.Handlers
                 request.CriadoPorUsuarioId, tenantId, usuario);
             if (!oportunidade.IsValid) return CommandResult.Falha(oportunidade.Notifications.Select(n => n.Message), "Dados da oportunidade inválidos.");
             _context.CrmOportunidades.Add(oportunidade);
+            _context.CrmHistoricos.Add(new CrmHistorico("Oportunidade", oportunidade.Id, "Criacao", null, null, null, null, tenantId, usuario));
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Oportunidade criada com sucesso!", new { oportunidade.Id, Status = oportunidade.Status.ToString() });
         }
@@ -176,6 +184,7 @@ namespace Epros.Modules.Vendas.Application.Handlers
             var op = await _context.CrmOportunidades.FirstOrDefaultAsync(o => o.TenantId == tenantId && o.Id == request.OportunidadeId, cancellationToken);
             if (op == null) return CommandResult.Falha("Oportunidade não encontrada.");
             op.MoverEtapa(request.EtapaId, request.PosicaoKanban, usuario);
+            _context.CrmHistoricos.Add(new CrmHistorico("Oportunidade", op.Id, "MoverEtapa", null, null, null, null, tenantId, usuario));
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Oportunidade movida de etapa.", new { op.Id });
         }
@@ -199,6 +208,7 @@ namespace Epros.Modules.Vendas.Application.Handlers
             var op = await _context.CrmOportunidades.FirstOrDefaultAsync(o => o.TenantId == tenantId && o.Id == request.OportunidadeId, cancellationToken);
             if (op == null) return CommandResult.Falha("Oportunidade não encontrada.");
             op.Ganhar(usuario);
+            _context.CrmHistoricos.Add(new CrmHistorico("Oportunidade", op.Id, "Ganho", null, null, null, null, tenantId, usuario));
             await _context.SaveChangesAsync(cancellationToken);
             // CRM-026 / EF §6.6: oportunidade ganha pode acionar proposta/pedido/venda (integração futura via Outbox).
             return CommandResult.Ok("Oportunidade marcada como ganha.", new { op.Id, Status = op.Status.ToString() });
@@ -223,6 +233,7 @@ namespace Epros.Modules.Vendas.Application.Handlers
             var op = await _context.CrmOportunidades.FirstOrDefaultAsync(o => o.TenantId == tenantId && o.Id == request.OportunidadeId, cancellationToken);
             if (op == null) return CommandResult.Falha("Oportunidade não encontrada.");
             op.Perder(request.MotivoPerda, usuario);
+            _context.CrmHistoricos.Add(new CrmHistorico("Oportunidade", op.Id, "Perda", null, null, null, request.MotivoPerda, tenantId, usuario));
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Oportunidade marcada como perdida.", new { op.Id, Status = op.Status.ToString() });
         }

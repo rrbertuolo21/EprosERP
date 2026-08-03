@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Epros.Modules.Aplicativo.Application.Commands;
 using Epros.Modules.Aplicativo.Application.Dtos;
 using Epros.Modules.Aplicativo.Application.Queries;
+using Epros.Modules.Aplicativo.Application.Services;
 using Epros.Modules.Aplicativo.Domain.Entities;
 using Epros.Modules.Aplicativo.Infrastructure.Data;
 using Epros.Modules.GestaoClientes.Infrastructure.Data;
@@ -22,7 +23,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
         private readonly ITenantProvider _tenantProvider;
 
         public SalvarConfiguracaoEmpresaCommandHandler(
-            ContextAplicativo context, 
+            ContextAplicativo context,
             ICurrentUser currentUser,
             ITenantProvider tenantProvider)
         {
@@ -97,7 +98,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
         private readonly ITenantProvider _tenantProvider;
 
         public HabilitarIdiomaCommandHandler(
-            ContextAplicativo context, 
+            ContextAplicativo context,
             ICurrentUser currentUser,
             ITenantProvider tenantProvider)
         {
@@ -208,21 +209,19 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 return CommandResult.Falha("Plano SaaS informado é inválido ou está inativo.");
             }
 
-            var cliente = new Epros.Modules.GestaoClientes.Domain.Entities.Cliente(
+            // Reusa o ponto único de criação de Cliente SaaS (1.07) — mesma lógica do self-register.
+            var cliente = OnboardingSaaSProvisioner.CriarCliente(
+                tenantId: request.TenantId,
                 razaoSocial: request.RazaoSocial,
-                cnpj: request.Cnpj,
+                documento: request.Cnpj,
                 email: request.Email,
                 planoId: request.PlanoId,
-                revendaId: null,
-                vendedorId: null,
+                statusSaaS: Epros.Modules.GestaoClientes.Domain.Entities.StatusSaaS.Ativo,
                 diaVencimento: request.DiaVencimento,
-                statusSaaS: "Active",
-                tenantId: request.TenantId,
                 criadoPor: criadoPor,
                 telefone: request.Telefone,
                 nomeContato: request.NomeContato,
-                isDemo: request.IsDemo,
-                tokenAcesso: null);
+                isDemo: request.IsDemo);
 
             if (!cliente.IsValid)
             {
@@ -358,14 +357,19 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     limiteUsuarios = plano.LimiteUsuarios;
                 }
 
-                if (cliente.StatusSaaS != "Active" || !cliente.Ativo)
+                // 1.07 (destrava §3.2) — TrialGratuito opera normalmente (alinhado ao InquilinoSaaSMiddleware,
+                // que trata Ativo/TrialGratuito como operacionais). Só bloqueia fora desses dois status ou
+                // se o cliente estiver inativo. O fim do trial recai no gating de StatusSaaS (1.01/REG-021).
+                if ((cliente.StatusSaaS != Epros.Modules.GestaoClientes.Domain.Entities.StatusSaaS.Ativo
+                     && cliente.StatusSaaS != Epros.Modules.GestaoClientes.Domain.Entities.StatusSaaS.TrialGratuito)
+                    || !cliente.Ativo)
                 {
                     block = true;
                 }
 
                 var hasOverdueInvoice = await _contextGestaoClientes.Faturas
                     .IgnoreQueryFilters()
-                    .AnyAsync(f => f.ClienteId == cliente.Id && 
+                    .AnyAsync(f => f.ClienteId == cliente.Id &&
                                    (f.Status == Epros.Modules.GestaoClientes.Domain.Entities.FaturaStatus.Pendente || f.Status == Epros.Modules.GestaoClientes.Domain.Entities.FaturaStatus.Atrasada) &&
                                    f.DataVencimento.AddDays(15) < DateTime.UtcNow, cancellationToken);
 

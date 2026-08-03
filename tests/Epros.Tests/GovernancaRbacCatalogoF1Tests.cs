@@ -195,7 +195,7 @@ namespace Epros.Tests
         public async Task CriarPapel_DadosValidos_DevePersistir()
         {
             var ctx = CreateContext(Guid.NewGuid().ToString());
-            var handler = new CriarPapelCommandHandler(ctx, Tenant(), User());
+            var handler = new CriarPapelCommandHandler(ctx, Tenant(), User(), Limites());
             var result = await handler.Handle(new CriarPapelCommand("Financeiro", "Financeiro", null, true, false, ETipoPapel.Equipe, null, null, null), CancellationToken.None);
 
             Assert.True(result.Sucesso);
@@ -207,11 +207,11 @@ namespace Epros.Tests
         {
             var db = Guid.NewGuid().ToString();
             var ctx = CreateContext(db);
-            var handler = new CriarPapelCommandHandler(ctx, Tenant(), User());
+            var handler = new CriarPapelCommandHandler(ctx, Tenant(), User(), Limites());
             await handler.Handle(new CriarPapelCommand("Financeiro", null, null, true, false, null, null, null, null), CancellationToken.None);
 
             var ctx2 = CreateContext(db);
-            var handler2 = new CriarPapelCommandHandler(ctx2, Tenant(), User());
+            var handler2 = new CriarPapelCommandHandler(ctx2, Tenant(), User(), Limites());
             var result = await handler2.Handle(new CriarPapelCommand("Financeiro", null, null, true, false, null, null, null, null), CancellationToken.None);
 
             Assert.False(result.Sucesso);
@@ -316,6 +316,18 @@ namespace Epros.Tests
 
         private static ITenantProvider Tenant() => new TestTenantProvider(TenantId);
         private static ICurrentUser User() => new TestCurrentUser(UserId);
+        // 1.06 — validador de limites que nunca bloqueia (os testes de RBAC não exercem cota).
+        private static IValidadorLimitesSaaS Limites() => new TestLimitesSempreLiberado();
+
+        private class TestLimitesSempreLiberado : IValidadorLimitesSaaS
+        {
+            public Task<bool> PossuiFolgaUsuariosAsync(string tenantId, CancellationToken cancellationToken = default) => Task.FromResult(true);
+            public Task<bool> PossuiFolgaEmpresasAsync(string tenantId, CancellationToken cancellationToken = default) => Task.FromResult(true);
+            public Task<(bool Excedido, string Mensagem)> ValidarLimiteUsuariosAsync(string tenantId, CancellationToken cancellationToken = default) => Task.FromResult((false, string.Empty));
+            public Task<(bool Excedido, string Mensagem)> ValidarLimiteEmpresasAsync(string tenantId, CancellationToken cancellationToken = default) => Task.FromResult((false, string.Empty));
+            public Task<(bool Excedido, string Mensagem)> ValidarLimiteClientesAsync(string tenantId, CancellationToken cancellationToken = default) => Task.FromResult((false, string.Empty));
+            public Task<(bool Excedido, string Mensagem)> ValidarLimitePermissoesAsync(string tenantId, CancellationToken cancellationToken = default) => Task.FromResult((false, string.Empty));
+        }
 
         private class TestTenantProvider : ITenantProvider
         {

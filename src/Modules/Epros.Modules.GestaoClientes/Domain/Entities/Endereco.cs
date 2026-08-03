@@ -13,6 +13,8 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         // Legado: Endereco.Contador (navegação) -> FK por Guid (cross-module: Contador vive no Fiscal).
         public Guid? ContadorId { get; private set; }
         public ETipoEndereco TipoEndereco { get; private set; }
+        // 1.01 — flag de endereço principal (EF 5.6: único principal por cliente; enforcement na aplicação).
+        public bool Principal { get; private set; }
         public Guid PaisId { get; private set; }
         public Guid MunicipioId { get; private set; }
         public Guid? SubdivisaoId { get; private set; }
@@ -61,7 +63,8 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             string? nomeDoRecebedor = null,
             string? documentoDoRecebedor = null,
             Guid? empresaId = null,
-            Guid? contadorId = null)
+            Guid? contadorId = null,
+            bool principal = false)
             : base(tenantId, criadoPor)
         {
             AddNotifications(new Contract<Endereco>()
@@ -104,6 +107,7 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             PessoaId = pessoaId;
             EmpresaId = empresaId;
             ContadorId = contadorId;
+            Principal = principal;
             TipoEndereco = tipoEndereco;
             PaisId = paisId;
             MunicipioId = municipioId;
@@ -121,6 +125,13 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             Longitude = longitude;
             NomeDoRecebedor = nomeDoRecebedor;
             DocumentoDoRecebedor = documentoDoRecebedor;
+        }
+
+        /// <summary>Marca/desmarca este endereço como principal (a unicidade por cliente é garantida na aplicação).</summary>
+        public void DefinirPrincipal(bool principal, string alteradoPor)
+        {
+            Principal = principal;
+            MarcarAlterado(alteradoPor);
         }
 
         public string ObterEnderecoCompletoTransportadora()

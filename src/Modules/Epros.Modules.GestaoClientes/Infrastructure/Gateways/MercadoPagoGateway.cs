@@ -145,8 +145,13 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Gateways
                 decimal? valor = LerDecimal(root, "transaction_amount");
                 decimal? tarifa = SomarTarifas(root);
                 var dataAprovacao = LerData(root, "date_approved");
+                var externalReference = LerString(root, "external_reference");
+                // Líquido informado pelo gateway (transaction_details.net_received_amount) — fidelidade de dado.
+                decimal? liquido = null;
+                if (root.TryGetProperty("transaction_details", out var td) && td.ValueKind == JsonValueKind.Object)
+                    liquido = LerDecimal(td, "net_received_amount");
 
-                var dto = new ConsultaPagamentoResultado(paymentId, status, valor, tarifa, dataAprovacao);
+                var dto = new ConsultaPagamentoResultado(paymentId, status, valor, tarifa, dataAprovacao, externalReference, liquido);
                 return CommandResult.Ok("Consulta realizada com sucesso.", dto);
             }
             catch (TaskCanceledException)
@@ -197,7 +202,396 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Gateways
             }
         }
 
+        // ===== 1.08B — Boleto =====
+
+        public async Task<CommandResult> GerarBoletoAsync(
+            Fatura fatura,
+            ConfiguracaoGatewayPagamento config,
+            DadosPagador pagador,
+            DateTime dataVencimento,
+            CancellationToken cancellationToken = default)
+        {
+            if (config == null || !config.Ativo)
+                return CommandResult.Falha("Gateway não configurado", "Nenhum gateway de pagamento ativo foi encontrado.");
+
+            var (accessToken, erroToken) = await ObterAccessTokenAsync(config);
+            if (erroToken != null)
+                return CommandResult.Falha(erroToken, "Gateway não configurado");
+
+            var body = new Dictionary<string, object?>
+            {
+                ["transaction_amount"] = fatura.Valor,
+                ["payment_method_id"] = "bolbradesco",
+                ["external_reference"] = fatura.Id.ToString(),
+                ["date_of_expiration"] = new DateTimeOffset(dataVencimento.ToUniversalTime()).ToString("yyyy-MM-ddTHH:mm:ss.fffzzz"),
+                ["description"] = $"Fatura {fatura.Id}",
+                ["payer"] = MontarPagador(pagador)
+            };
+
+            if (!string.IsNullOrWhiteSpace(config.NotificationUrl))
+                body["notification_url"] = config.NotificationUrl;
+
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Post, "v1/payments");
+                AplicarAutenticacao(request, accessToken);
+                request.Headers.TryAddWithoutValidation("X-Idempotency-Key", $"boleto:{fatura.Id}:{Guid.NewGuid()}");
+                request.Content = JsonContent.Create(body);
+
+                var client = CriarClient();
+                using var response = await client.SendAsync(request, cancellationToken);
+                var json = await LerJsonAsync(response, cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                    return CommandResult.Falha(ExtrairMensagemErro(json, response), "Falha ao gerar boleto no Mercado Pago.");
+
+                var root = json.RootElement;
+                var paymentId = LerString(root, "id");
+                var status = LerString(root, "status") ?? "pending";
+
+                string? linhaDigitavel = null, codigoBarras = null, urlBoleto = LerString(root, "external_resource_url");
+                if (root.TryGetProperty("transaction_details", out var td) && td.ValueKind == JsonValueKind.Object)
+                {
+                    linhaDigitavel = LerString(td, "digitable_line");
+                    if (string.IsNullOrWhiteSpace(urlBoleto))
+                        urlBoleto = LerString(td, "external_resource_url");
+                }
+                if (root.TryGetProperty("barcode", out var bc) && bc.ValueKind == JsonValueKind.Object)
+                    codigoBarras = LerString(bc, "content");
+
+                var venc = LerData(root, "date_of_expiration") ?? dataVencimento;
+
+                if (string.IsNullOrWhiteSpace(paymentId))
+                    return CommandResult.Falha("O Mercado Pago não retornou o identificador do boleto.", "Falha ao gerar boleto.");
+
+                var dto = new CobrancaBoletoResultado(paymentId!, linhaDigitavel, codigoBarras, venc, urlBoleto, status);
+                return CommandResult.Ok("Boleto gerado com sucesso.", dto);
+            }
+            catch (TaskCanceledException)
+            {
+                return CommandResult.Falha("Tempo limite excedido ao comunicar com o Mercado Pago.", "Falha ao gerar boleto.");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Erro ao gerar boleto no Mercado Pago para fatura {FaturaId}.", fatura.Id);
+                return CommandResult.Falha($"Erro de comunicação com o Mercado Pago: {ex.Message}", "Falha ao gerar boleto.");
+            }
+        }
+
+        // ===== 1.08B — Cartão-on-file (Customers/Cards) — ⛔ PCI: só o TOKEN do front toca o backend =====
+
+        public async Task<CommandResult> CriarCartaoOnFileAsync(
+            ConfiguracaoGatewayPagamento config,
+            DadosPagador pagador,
+            string cardToken,
+            CancellationToken cancellationToken = default)
+        {
+            if (config == null || !config.Ativo)
+                return CommandResult.Falha("Gateway não configurado", "Nenhum gateway de pagamento ativo foi encontrado.");
+            if (string.IsNullOrWhiteSpace(cardToken))
+                return CommandResult.Falha("Token do cartão é obrigatório.");
+
+            var (accessToken, erroToken) = await ObterAccessTokenAsync(config);
+            if (erroToken != null)
+                return CommandResult.Falha(erroToken, "Gateway não configurado");
+
+            try
+            {
+                var client = CriarClient();
+
+                // 1) Resolve (ou cria) o customer no MP pelo e-mail do pagador.
+                var customerId = await ResolverOuCriarCustomerAsync(client, accessToken, pagador, cancellationToken);
+                if (string.IsNullOrWhiteSpace(customerId))
+                    return CommandResult.Falha("Não foi possível resolver o cliente (customer) no Mercado Pago.", "Falha ao salvar cartão.");
+
+                // 2) Associa o cartão (via TOKEN — nunca o PAN) ao customer.
+                using var reqCard = new HttpRequestMessage(HttpMethod.Post, $"v1/customers/{customerId}/cards");
+                AplicarAutenticacao(reqCard, accessToken);
+                reqCard.Content = JsonContent.Create(new Dictionary<string, object?> { ["token"] = cardToken });
+
+                using var respCard = await client.SendAsync(reqCard, cancellationToken);
+                var jsonCard = await LerJsonAsync(respCard, cancellationToken);
+                if (!respCard.IsSuccessStatusCode)
+                    return CommandResult.Falha(ExtrairMensagemErro(jsonCard, respCard), "Falha ao salvar o cartão no Mercado Pago.");
+
+                var cardRoot = jsonCard.RootElement;
+                var cardId = LerString(cardRoot, "id");
+                var last4 = LerString(cardRoot, "last_four_digits");
+                var mes = LerInt(cardRoot, "expiration_month");
+                var ano = LerInt(cardRoot, "expiration_year");
+                string? bandeira = null;
+                if (cardRoot.TryGetProperty("payment_method", out var pm) && pm.ValueKind == JsonValueKind.Object)
+                    bandeira = LerString(pm, "id");
+
+                if (string.IsNullOrWhiteSpace(cardId))
+                    return CommandResult.Falha("O Mercado Pago não retornou o identificador do cartão.", "Falha ao salvar cartão.");
+
+                var dto = new CartaoOnFileResultado(customerId!, cardId!, bandeira, last4, mes, ano);
+                return CommandResult.Ok("Cartão salvo com sucesso.", dto);
+            }
+            catch (TaskCanceledException)
+            {
+                return CommandResult.Falha("Tempo limite excedido ao comunicar com o Mercado Pago.", "Falha ao salvar cartão.");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Erro ao salvar cartão-on-file no Mercado Pago.");
+                return CommandResult.Falha($"Erro de comunicação com o Mercado Pago: {ex.Message}", "Falha ao salvar cartão.");
+            }
+        }
+
+        public async Task<CommandResult> CobrarCartaoAsync(
+            Fatura fatura,
+            ConfiguracaoGatewayPagamento config,
+            string customerId,
+            string cardId,
+            DadosPagador pagador,
+            CancellationToken cancellationToken = default)
+        {
+            if (config == null || !config.Ativo)
+                return CommandResult.Falha("Gateway não configurado", "Nenhum gateway de pagamento ativo foi encontrado.");
+            if (string.IsNullOrWhiteSpace(customerId) || string.IsNullOrWhiteSpace(cardId))
+                return CommandResult.Falha("Cartão-on-file inválido (customer_id/card_id ausentes).");
+
+            var (accessToken, erroToken) = await ObterAccessTokenAsync(config);
+            if (erroToken != null)
+                return CommandResult.Falha(erroToken, "Gateway não configurado");
+
+            try
+            {
+                var client = CriarClient();
+
+                // 1) Gera um card token a partir do cartão SALVO (⛔ PCI: sem PAN/CVV — só o card_id opaco).
+                using var reqTok = new HttpRequestMessage(HttpMethod.Post, "v1/card_tokens");
+                AplicarAutenticacao(reqTok, accessToken);
+                reqTok.Content = JsonContent.Create(new Dictionary<string, object?> { ["card_id"] = cardId });
+                using var respTok = await client.SendAsync(reqTok, cancellationToken);
+                var jsonTok = await LerJsonAsync(respTok, cancellationToken);
+                if (!respTok.IsSuccessStatusCode)
+                    return CommandResult.Falha(ExtrairMensagemErro(jsonTok, respTok), "Falha ao preparar a cobrança no cartão salvo.");
+                var cardTokenCobranca = LerString(jsonTok.RootElement, "id");
+                if (string.IsNullOrWhiteSpace(cardTokenCobranca))
+                    return CommandResult.Falha("O Mercado Pago não retornou o token do cartão salvo.", "Falha na cobrança do cartão.");
+
+                // 2) Cria o pagamento no cartão salvo.
+                var body = new Dictionary<string, object?>
+                {
+                    ["transaction_amount"] = fatura.Valor,
+                    ["token"] = cardTokenCobranca,
+                    ["installments"] = 1,
+                    ["external_reference"] = fatura.Id.ToString(),
+                    ["description"] = $"Fatura {fatura.Id}",
+                    ["payer"] = new Dictionary<string, object?> { ["type"] = "customer", ["id"] = customerId }
+                };
+                if (!string.IsNullOrWhiteSpace(config.NotificationUrl))
+                    body["notification_url"] = config.NotificationUrl;
+
+                using var reqPay = new HttpRequestMessage(HttpMethod.Post, "v1/payments");
+                AplicarAutenticacao(reqPay, accessToken);
+                reqPay.Headers.TryAddWithoutValidation("X-Idempotency-Key", $"cartao:{fatura.Id}:{Guid.NewGuid()}");
+                reqPay.Content = JsonContent.Create(body);
+                using var respPay = await client.SendAsync(reqPay, cancellationToken);
+                var jsonPay = await LerJsonAsync(respPay, cancellationToken);
+                if (!respPay.IsSuccessStatusCode)
+                    return CommandResult.Falha(ExtrairMensagemErro(jsonPay, respPay), "Falha ao cobrar o cartão salvo no Mercado Pago.");
+
+                var root = jsonPay.RootElement;
+                var paymentId = LerString(root, "id");
+                var status = LerString(root, "status") ?? "unknown";
+                decimal? valor = LerDecimal(root, "transaction_amount");
+                decimal? tarifa = SomarTarifas(root);
+                var dataAprovacao = LerData(root, "date_approved");
+                decimal? liquido = null;
+                if (root.TryGetProperty("transaction_details", out var td) && td.ValueKind == JsonValueKind.Object)
+                    liquido = LerDecimal(td, "net_received_amount");
+
+                if (string.IsNullOrWhiteSpace(paymentId))
+                    return CommandResult.Falha("O Mercado Pago não retornou o identificador do pagamento.", "Falha na cobrança do cartão.");
+
+                var dto = new ConsultaPagamentoResultado(paymentId!, status, valor, tarifa, dataAprovacao, fatura.Id.ToString(), liquido);
+                return CommandResult.Ok("Cobrança no cartão processada.", dto);
+            }
+            catch (TaskCanceledException)
+            {
+                return CommandResult.Falha("Tempo limite excedido ao comunicar com o Mercado Pago.", "Falha na cobrança do cartão.");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Erro ao cobrar cartão salvo no Mercado Pago para fatura {FaturaId}.", fatura.Id);
+                return CommandResult.Falha($"Erro de comunicação com o Mercado Pago: {ex.Message}", "Falha na cobrança do cartão.");
+            }
+        }
+
+        // ===== 1.08B — Checkout Pro (preferência hospedada; cliente paga PIX/cartão/boleto) =====
+
+        public async Task<CommandResult> CriarPreferenciaCheckoutAsync(
+            Fatura fatura,
+            ConfiguracaoGatewayPagamento config,
+            string descricao,
+            DadosPagador pagador,
+            string? urlRetorno,
+            CancellationToken cancellationToken = default)
+        {
+            if (config == null || !config.Ativo)
+                return CommandResult.Falha("Gateway não configurado", "Nenhum gateway de pagamento ativo foi encontrado.");
+
+            var (accessToken, erroToken) = await ObterAccessTokenAsync(config);
+            if (erroToken != null)
+                return CommandResult.Falha(erroToken, "Gateway não configurado");
+
+            var body = new Dictionary<string, object?>
+            {
+                ["items"] = new[]
+                {
+                    new Dictionary<string, object?>
+                    {
+                        ["title"] = string.IsNullOrWhiteSpace(descricao) ? $"Fatura {fatura.Id}" : descricao,
+                        ["quantity"] = 1,
+                        ["currency_id"] = "BRL",
+                        ["unit_price"] = fatura.Valor
+                    }
+                },
+                ["external_reference"] = fatura.Id.ToString(),
+                ["payer"] = new Dictionary<string, object?> { ["email"] = pagador.Email }
+            };
+            if (!string.IsNullOrWhiteSpace(urlRetorno))
+                body["back_urls"] = new Dictionary<string, object?> { ["success"] = urlRetorno, ["pending"] = urlRetorno, ["failure"] = urlRetorno };
+            if (!string.IsNullOrWhiteSpace(config.NotificationUrl))
+                body["notification_url"] = config.NotificationUrl;
+
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Post, "checkout/preferences");
+                AplicarAutenticacao(request, accessToken);
+                request.Content = JsonContent.Create(body);
+
+                var client = CriarClient();
+                using var response = await client.SendAsync(request, cancellationToken);
+                var json = await LerJsonAsync(response, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                    return CommandResult.Falha(ExtrairMensagemErro(json, response), "Falha ao criar o checkout no Mercado Pago.");
+
+                var root = json.RootElement;
+                var preferenceId = LerString(root, "id");
+                var initPoint = LerString(root, "init_point") ?? LerString(root, "sandbox_init_point");
+                if (string.IsNullOrWhiteSpace(preferenceId) || string.IsNullOrWhiteSpace(initPoint))
+                    return CommandResult.Falha("O Mercado Pago não retornou a preferência/URL de checkout.", "Falha ao criar checkout.");
+
+                var dto = new PreferenciaCheckoutResultado(preferenceId!, initPoint!);
+                return CommandResult.Ok("Checkout criado com sucesso.", dto);
+            }
+            catch (TaskCanceledException)
+            {
+                return CommandResult.Falha("Tempo limite excedido ao comunicar com o Mercado Pago.", "Falha ao criar checkout.");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Erro ao criar preferência de checkout no Mercado Pago para fatura {FaturaId}.", fatura.Id);
+                return CommandResult.Falha($"Erro de comunicação com o Mercado Pago: {ex.Message}", "Falha ao criar checkout.");
+            }
+        }
+
+        // ===== 1.08E — Estorno / refund (POST /v1/payments/{id}/refunds) =====
+
+        public async Task<CommandResult> EstornarPagamentoAsync(
+            string paymentId,
+            ConfiguracaoGatewayPagamento config,
+            decimal? valor,
+            CancellationToken cancellationToken = default)
+        {
+            if (config == null || !config.Ativo)
+                return CommandResult.Falha("Gateway não configurado", "Nenhum gateway de pagamento ativo foi encontrado.");
+            if (string.IsNullOrWhiteSpace(paymentId))
+                return CommandResult.Falha("Identificador do pagamento é obrigatório para o estorno.");
+
+            var (accessToken, erroToken) = await ObterAccessTokenAsync(config);
+            if (erroToken != null)
+                return CommandResult.Falha(erroToken, "Gateway não configurado");
+
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Post, $"v1/payments/{paymentId}/refunds");
+                AplicarAutenticacao(request, accessToken);
+                // Idempotência exigida pelo MP para evitar estornos duplicados.
+                request.Headers.TryAddWithoutValidation("X-Idempotency-Key", $"refund:{paymentId}:{valor?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "total"}");
+                // Corpo apenas no estorno PARCIAL (total = body vazio).
+                request.Content = valor.HasValue
+                    ? JsonContent.Create(new Dictionary<string, object?> { ["amount"] = valor.Value })
+                    : JsonContent.Create(new Dictionary<string, object?>());
+
+                var client = CriarClient();
+                using var response = await client.SendAsync(request, cancellationToken);
+                var json = await LerJsonAsync(response, cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                    return CommandResult.Falha(ExtrairMensagemErro(json, response), "Falha ao estornar o pagamento no Mercado Pago.");
+
+                var root = json.RootElement;
+                var refundId = LerString(root, "id");
+                var status = LerString(root, "status") ?? "approved";
+                decimal? valorEstornado = LerDecimal(root, "amount");
+
+                if (string.IsNullOrWhiteSpace(refundId))
+                    return CommandResult.Falha("O Mercado Pago não retornou o identificador do estorno.", "Falha ao estornar pagamento.");
+
+                var dto = new EstornoResultado(refundId!, paymentId, valorEstornado ?? valor, status);
+                return CommandResult.Ok("Estorno realizado com sucesso.", dto);
+            }
+            catch (TaskCanceledException)
+            {
+                _logger?.LogWarning("Timeout ao estornar o pagamento {PaymentId} no Mercado Pago.", paymentId);
+                return CommandResult.Falha("Tempo limite excedido ao comunicar com o Mercado Pago.", "Falha ao estornar pagamento.");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Erro ao estornar o pagamento {PaymentId} no Mercado Pago.", paymentId);
+                return CommandResult.Falha($"Erro de comunicação com o Mercado Pago: {ex.Message}", "Falha ao estornar pagamento.");
+            }
+        }
+
         // ===== Helpers =====
+
+        /// <summary>Busca um customer do MP pelo e-mail; se não existir, cria. Retorna o customer_id.</summary>
+        private async Task<string?> ResolverOuCriarCustomerAsync(HttpClient client, string? accessToken, DadosPagador pagador, CancellationToken ct)
+        {
+            // Busca por e-mail.
+            using (var reqBusca = new HttpRequestMessage(HttpMethod.Get, $"v1/customers/search?email={Uri.EscapeDataString(pagador.Email)}"))
+            {
+                AplicarAutenticacao(reqBusca, accessToken);
+                using var respBusca = await client.SendAsync(reqBusca, ct);
+                var jsonBusca = await LerJsonAsync(respBusca, ct);
+                if (respBusca.IsSuccessStatusCode &&
+                    jsonBusca.RootElement.TryGetProperty("results", out var results) &&
+                    results.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var c in results.EnumerateArray())
+                    {
+                        var id = LerString(c, "id");
+                        if (!string.IsNullOrWhiteSpace(id)) return id;
+                    }
+                }
+            }
+
+            // Cria.
+            using var reqCria = new HttpRequestMessage(HttpMethod.Post, "v1/customers");
+            AplicarAutenticacao(reqCria, accessToken);
+            reqCria.Content = JsonContent.Create(new Dictionary<string, object?>
+            {
+                ["email"] = pagador.Email,
+                ["first_name"] = pagador.PrimeiroNome
+            });
+            using var respCria = await client.SendAsync(reqCria, ct);
+            var jsonCria = await LerJsonAsync(respCria, ct);
+            return respCria.IsSuccessStatusCode ? LerString(jsonCria.RootElement, "id") : null;
+        }
+
+        private static int? LerInt(JsonElement el, string prop)
+        {
+            if (el.ValueKind == JsonValueKind.Object && el.TryGetProperty(prop, out var v) &&
+                v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var i))
+                return i;
+            return null;
+        }
 
         private HttpClient CriarClient()
         {

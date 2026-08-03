@@ -13,6 +13,7 @@ using Epros.Modules.GestaoClientes.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
 using Epros.Shared.Security;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 // Desambiguação: SessaoImpersonacao existe em Aplicativo e GestaoClientes; aqui persiste em ContextAplicativo.SessoesImpersonacao.
 using SessaoImpersonacao = Epros.Modules.Aplicativo.Domain.Entities.SessaoImpersonacao;
@@ -402,6 +403,13 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 return CommandResult.Falha(new[] { "Usuário não encontrado." });
             }
 
+            // REG-046 / CT-008 — a nova senha não pode ser igual à senha atual. Comparação via hasher
+            // (hashes são salgados; a igualdade só é detectável verificando a senha crua contra o hash).
+            if (_passwordHasher.Verify(request.NovaSenha, usuario.PasswordHash))
+            {
+                return CommandResult.Falha(new[] { "A nova senha deve ser diferente da senha atual." });
+            }
+
             usuario.AlterarSenha(_passwordHasher.Hash(request.NovaSenha), alteradoPor);
 
             if (!usuario.IsValid)
@@ -493,17 +501,20 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
         private readonly ITenantProvider _tenantProvider;
         private readonly ICurrentUser _currentUser;
         private readonly IEprosTokenService _tokenService;
+        private readonly IHttpContextAccessor? _httpContextAccessor;
 
         public IniciarImpersonacaoCommandHandler(
             ContextAplicativo contextApp,
             ITenantProvider tenantProvider,
             ICurrentUser currentUser,
-            IEprosTokenService tokenService)
+            IEprosTokenService tokenService,
+            IHttpContextAccessor? httpContextAccessor = null)
         {
             _contextApp = contextApp;
             _tenantProvider = tenantProvider;
             _currentUser = currentUser;
             _tokenService = tokenService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<CommandResult> Handle(IniciarImpersonacaoCommand request, CancellationToken cancellationToken)
@@ -538,6 +549,12 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 return CommandResult.Falha(new[] { "Usuário alvo não encontrado ou inativo." });
             }
 
+            // SALVAGUARDA: proibido impersonar/dar suporte a usuário ADMIN do tenant.
+            if (await AcessoSuportePolicy.AlvoEhAdminAsync(_contextApp, request.UsuarioAlvoId, usuarioAlvo.TenantId, cancellationToken))
+            {
+                return CommandResult.Falha(new[] { "Acesso Proibido: não é permitido impersonar um usuário ADMIN do tenant." });
+            }
+
             // Encontra um vínculo válido para gerar o token
             var vinculo = await _contextApp.UsuariosEmpresas
                 .IgnoreQueryFilters()
@@ -558,7 +575,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 usuarioAlvoId: request.UsuarioAlvoId,
                 empresaId: empresaId,
                 motivo: request.Motivo,
-                ipOrigem: "127.0.0.1",
+                ipOrigem: AcessoSuportePolicy.ObterIpOrigem(_httpContextAccessor),
                 criadoPor: adminIdStr
             );
 
@@ -632,6 +649,263 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             await _contextApp.SaveChangesAsync(cancellationToken);
 
             return CommandResult.Ok("Impersonação encerrada com sucesso!");
+        }
+    }
+
+    /// <summary>
+    /// Política compartilhada de acesso de suporte/impersonação. Centraliza a detecção de "alvo é
+    /// ADMIN do tenant" (salvaguarda) para não duplicar a regra entre impersonação e suporte.
+    /// </summary>
+    internal static class AcessoSuportePolicy
+    {
+        /// <summary>
+        /// IP de origem REAL da requisição (antes ficava hardcoded "127.0.0.1"). Usa o RemoteIpAddress
+        /// do HttpContext; cai para "127.0.0.1" apenas fora de um contexto HTTP (ex.: jobs/testes).
+        /// </summary>
+        public static string ObterIpOrigem(IHttpContextAccessor? httpContextAccessor)
+        {
+            var ip = httpContextAccessor?.HttpContext?.Connection?.RemoteIpAddress?.ToString();
+            return string.IsNullOrWhiteSpace(ip) ? "127.0.0.1" : ip;
+        }
+
+        /// <summary>
+        /// True se o usuário alvo é ADMIN do tenant: possui algum vínculo de empresa com
+        /// <c>EhAdmin</c> ou é <c>Proprietario</c> (dono/admin primário) do tenant. Nesses casos o
+        /// acesso de suporte/impersonação é proibido.
+        /// </summary>
+        public static async Task<bool> AlvoEhAdminAsync(
+            ContextAplicativo contextApp,
+            Guid usuarioAlvoId,
+            string tenantAlvo,
+            CancellationToken cancellationToken)
+        {
+            var ehAdminEmpresa = await contextApp.UsuariosEmpresas
+                .IgnoreQueryFilters()
+                .AnyAsync(ue => ue.UsuarioId == usuarioAlvoId
+                                && ue.EhAdmin
+                                && ue.DeletadoEm == null, cancellationToken);
+            if (ehAdminEmpresa) return true;
+
+            var ehProprietario = await contextApp.AcessosUsuarioTenant
+                .IgnoreQueryFilters()
+                .AnyAsync(a => a.UsuarioId == usuarioAlvoId
+                               && a.TenantId == tenantAlvo
+                               && a.Papel == PapelAcessoTenant.Proprietario
+                               && a.DeletadoEm == null, cancellationToken);
+
+            return ehProprietario;
+        }
+    }
+
+    // Landlord — Iniciar acesso de suporte da Siser a um tenant cliente (1.04 Pass 4).
+    // Reusa a trilha/entidade de auditoria da impersonação (SessaoImpersonacao) + outbox; a diferença
+    // é que é um acesso Siser concedido por PERFIL DE SUPORTE, registrado com TipoAcesso de suporte.
+    public class IniciarAcessoSuporteCommandHandler : ICommandHandler<IniciarAcessoSuporteCommand>
+    {
+        private readonly ContextAplicativo _contextApp;
+        private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
+        private readonly IEprosTokenService _tokenService;
+        private readonly IHttpContextAccessor? _httpContextAccessor;
+
+        public IniciarAcessoSuporteCommandHandler(
+            ContextAplicativo contextApp,
+            ITenantProvider tenantProvider,
+            ICurrentUser currentUser,
+            IEprosTokenService tokenService,
+            IHttpContextAccessor? httpContextAccessor = null)
+        {
+            _contextApp = contextApp;
+            _tenantProvider = tenantProvider;
+            _currentUser = currentUser;
+            _tokenService = tokenService;
+            _httpContextAccessor = httpContextAccessor;
+        }
+
+        public async Task<CommandResult> Handle(IniciarAcessoSuporteCommand request, CancellationToken cancellationToken)
+        {
+            var validator = new IniciarAcessoSuporteCommandValidator();
+            var validationResult = await validator.ValidateAsync(request, cancellationToken);
+            if (!validationResult.IsValid)
+            {
+                return CommandResult.Falha(validationResult.Errors.Select(e => e.ErrorMessage));
+            }
+
+            // FRONTEIRA LANDLORD × CLIENTE: só o landlord/Siser (tenant "system") pode dar suporte.
+            // Mesma checagem da impersonação (UsuarioHandlers: IniciarImpersonacaoCommandHandler).
+            var landlordTenantId = _tenantProvider.GetTenantId();
+            if (!string.Equals(landlordTenantId, "system", StringComparison.OrdinalIgnoreCase))
+            {
+                return CommandResult.Falha(new[] { "Acesso Proibido: o acesso de suporte é restrito à área Landlord (Siser)." });
+            }
+
+            if (string.Equals(request.TenantAlvo, "system", StringComparison.OrdinalIgnoreCase))
+            {
+                return CommandResult.Falha(new[] { "O tenant alvo do suporte deve ser um cliente, não o landlord." });
+            }
+
+            var operadorIdStr = _currentUser.GetUserId() ?? "system";
+            var operadorId = Guid.TryParse(operadorIdStr, out var oid) ? oid : Guid.Empty;
+
+            // O portador precisa ser um usuário interno da Siser COM perfil de suporte (papel de sistema).
+            var operador = await _contextApp.UsuariosInternos
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Id == operadorId && u.DeletadoEm == null, cancellationToken);
+
+            if (operador == null)
+            {
+                return CommandResult.Falha(new[] { "Operador Siser não encontrado na área Landlord." });
+            }
+
+            if (!operador.PodeDarSuporte)
+            {
+                return CommandResult.Falha(new[] { "Acesso Proibido: o operador não possui perfil de suporte (Suporte Técnico ou Suporte Negócio)." });
+            }
+
+            if (operadorId == request.UsuarioAlvoId)
+            {
+                return CommandResult.Falha(new[] { "Não é permitido abrir suporte para si mesmo." });
+            }
+
+            // Usuário alvo precisa existir e pertencer ao tenant cliente informado.
+            var usuarioAlvo = await _contextApp.Usuarios
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Id == request.UsuarioAlvoId && u.DeletadoEm == null, cancellationToken);
+
+            if (usuarioAlvo == null)
+            {
+                return CommandResult.Falha(new[] { "Usuário alvo não encontrado ou inativo." });
+            }
+
+            if (!string.Equals(usuarioAlvo.TenantId, request.TenantAlvo, StringComparison.OrdinalIgnoreCase))
+            {
+                return CommandResult.Falha(new[] { "O usuário alvo não pertence ao tenant cliente informado." });
+            }
+
+            // SALVAGUARDA: proibido abrir suporte para usuário ADMIN do tenant.
+            if (await AcessoSuportePolicy.AlvoEhAdminAsync(_contextApp, request.UsuarioAlvoId, request.TenantAlvo, cancellationToken))
+            {
+                return CommandResult.Falha(new[] { "Acesso Proibido: não é permitido abrir suporte para um usuário ADMIN do tenant." });
+            }
+
+            // Vínculo para escopar o token à empresa/perfil (mesmo padrão da impersonação).
+            var vinculo = await _contextApp.UsuariosEmpresas
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(ue => ue.UsuarioId == request.UsuarioAlvoId && ue.DeletadoEm == null, cancellationToken);
+
+            if (vinculo == null && request.EmpresaId.HasValue)
+            {
+                return CommandResult.Falha(new[] { "Usuário alvo não possui vínculo com nenhuma empresa." });
+            }
+
+            var empresaId = request.EmpresaId ?? vinculo?.EmpresaId;
+            var perfilId = vinculo?.PerfilAcessoId;
+
+            var tipoAcesso = operador.PerfilSuporte == PerfilSuporteSiser.SuporteNegocio
+                ? TipoSessaoAcesso.SuporteNegocio
+                : TipoSessaoAcesso.SuporteTecnico;
+
+            // Auditoria: MESMA entidade/trilha da impersonação, marcada como suporte (TipoAcesso + TenantAlvo).
+            var sessao = new SessaoImpersonacao(
+                tenantId: landlordTenantId,
+                usuarioOriginalId: operadorId,
+                usuarioAlvoId: request.UsuarioAlvoId,
+                empresaId: empresaId,
+                motivo: request.Motivo,
+                ipOrigem: AcessoSuportePolicy.ObterIpOrigem(_httpContextAccessor),
+                criadoPor: operadorIdStr,
+                tipoAcesso: tipoAcesso,
+                tenantAlvo: request.TenantAlvo);
+
+            _contextApp.SessoesImpersonacao.Add(sessao);
+            await _contextApp.SaveChangesAsync(cancellationToken);
+
+            // Evento no outbox (mesma trilha/alerta de segurança da impersonação — REG-033).
+            var payloadSuporte = new
+            {
+                SessaoImpersonacaoId = sessao.Id,
+                UsuarioOriginalId = sessao.UsuarioOriginalId,
+                UsuarioAlvoId = sessao.UsuarioAlvoId,
+                EmpresaId = sessao.EmpresaId,
+                Motivo = sessao.Motivo,
+                CriadoPor = operadorIdStr,
+                TenantAlvo = request.TenantAlvo,
+                PerfilSuporte = tipoAcesso.ToString()
+            };
+
+            var payloadSuporteJson = System.Text.Json.JsonSerializer.Serialize(payloadSuporte, new System.Text.Json.JsonSerializerOptions
+            {
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
+
+            var outboxSuporte = new Epros.Shared.Domain.Events.OutboxMessage(landlordTenantId, "AcessoSuporteIniciado", payloadSuporteJson);
+            _contextApp.OutboxMessages.Add(outboxSuporte);
+            await _contextApp.SaveChangesAsync(cancellationToken);
+
+            // Token escopado ao TENANT-ALVO (cliente), não ao landlord.
+            var expiracao = DateTime.UtcNow.Add(_tokenService.Validade);
+            var token = _tokenService.GerarCompleto(request.TenantAlvo, usuarioAlvo.Id.ToString(), empresaId?.ToString() ?? "null", perfilId?.ToString() ?? "null");
+
+            var dto = new AcessoSuporteResultDto(
+                Token: token,
+                Expiracao: expiracao,
+                UsuarioAlvoId: usuarioAlvo.Id,
+                NomeAlvo: usuarioAlvo.Nome,
+                EmpresaId: empresaId,
+                TenantAlvo: request.TenantAlvo,
+                PerfilSuporte: tipoAcesso.ToString(),
+                SessaoSuporteId: sessao.Id);
+
+            return CommandResult.Ok("Sessão de suporte iniciada com sucesso!", dto);
+        }
+    }
+
+    // Landlord — Definir o perfil de suporte (papel de sistema da Siser) de um usuário interno.
+    public class DefinirPerfilSuporteInternoCommandHandler : ICommandHandler<DefinirPerfilSuporteInternoCommand>
+    {
+        private readonly ContextAplicativo _contextApp;
+        private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
+
+        public DefinirPerfilSuporteInternoCommandHandler(
+            ContextAplicativo contextApp,
+            ITenantProvider tenantProvider,
+            ICurrentUser currentUser)
+        {
+            _contextApp = contextApp;
+            _tenantProvider = tenantProvider;
+            _currentUser = currentUser;
+        }
+
+        public async Task<CommandResult> Handle(DefinirPerfilSuporteInternoCommand request, CancellationToken cancellationToken)
+        {
+            var validator = new DefinirPerfilSuporteInternoCommandValidator();
+            var validationResult = await validator.ValidateAsync(request, cancellationToken);
+            if (!validationResult.IsValid)
+            {
+                return CommandResult.Falha(validationResult.Errors.Select(e => e.ErrorMessage));
+            }
+
+            if (!string.Equals(_tenantProvider.GetTenantId(), "system", StringComparison.OrdinalIgnoreCase))
+            {
+                return CommandResult.Falha(new[] { "Acesso Proibido: gerir perfis de suporte é restrito à área Landlord (Siser)." });
+            }
+
+            var alteradoPor = _currentUser.GetUserId() ?? "system";
+
+            var interno = await _contextApp.UsuariosInternos
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(u => u.Id == request.UsuarioInternoId && u.DeletadoEm == null, cancellationToken);
+
+            if (interno == null)
+            {
+                return CommandResult.Falha(new[] { "Usuário interno não encontrado." });
+            }
+
+            interno.DefinirPerfilSuporte(request.PerfilSuporte, alteradoPor);
+            await _contextApp.SaveChangesAsync(cancellationToken);
+
+            return CommandResult.Ok("Perfil de suporte atualizado com sucesso!");
         }
     }
 

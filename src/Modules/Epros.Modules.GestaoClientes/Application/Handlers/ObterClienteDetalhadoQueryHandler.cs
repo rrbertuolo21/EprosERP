@@ -74,7 +74,8 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                     Numero = e.Numero,
                     Complemento = e.Complemento,
                     Bairro = e.Bairro,
-                    Referencia = e.Referencia
+                    Referencia = e.Referencia,
+                    Principal = e.Principal
                 })
                 .ToListAsync(cancellationToken);
 
@@ -91,7 +92,10 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 VendedorId = cliente.VendedorId,
                 VendedorNome = vendedor?.Nome,
                 DiaVencimento = cliente.DiaVencimento,
-                StatusSaaS = cliente.StatusSaaS,
+                StatusSaaS = cliente.StatusSaaS.ToString(),
+                CotaUsuarios = cliente.CotaUsuarios,
+                CotaEmpresas = cliente.CotaEmpresas,
+                CotaPermissoes = cliente.CotaPermissoes,
                 Ativo = cliente.Ativo,
                 Telefone = cliente.Telefone,
                 NomeContato = cliente.NomeContato,

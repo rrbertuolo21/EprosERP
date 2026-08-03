@@ -47,6 +47,22 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             Ativo = true;
         }
 
+        public void Atualizar(string nome, string? capital, string? codigoDiscagem, string alteradoPor)
+        {
+            AddNotifications(new Contract<Pais>()
+                .Requires()
+                .IsNotNullOrEmpty(nome, nameof(Nome), "O Nome do país é obrigatório.")
+                .HasMaxLen(nome, 60, nameof(Nome), "O Nome do país deve ter no máximo 60 caracteres.")
+            );
+            if (IsValid)
+            {
+                Nome = nome;
+                Capital = capital;
+                CodigoDiscagem = codigoDiscagem;
+                MarcarAlterado(alteradoPor);
+            }
+        }
+
         public void Inativar(string alteradoPor)
         {
             Ativo = false;

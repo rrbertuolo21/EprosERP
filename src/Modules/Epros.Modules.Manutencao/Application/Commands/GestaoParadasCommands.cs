@@ -100,6 +100,69 @@ namespace Epros.Modules.Manutencao.Application.Commands
         }
     }
 
+    // ===== T5: gerar OS corretiva canonica a partir da parada =====
+    // A parada (tipicamente nao planejada) passa a CRIAR a OT canonica (man_trb_ordem_servico,
+    // origem=Corretiva) como ordem interna, vinculando a OS gerada a parada. Idempotente por parada.
+    public record GerarOsCorretivaParadaCommand(Guid ParadaId) : ICommand;
+
+    public class GerarOsCorretivaParadaCommandValidator : AbstractValidator<GerarOsCorretivaParadaCommand>
+    {
+        public GerarOsCorretivaParadaCommandValidator()
+        {
+            RuleFor(c => c.ParadaId).NotEmpty();
+        }
+    }
+
+    public class GerarOsCorretivaParadaCommandHandler : ICommandHandler<GerarOsCorretivaParadaCommand>
+    {
+        private readonly ContextManutencao _context;
+        private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
+
+        public GerarOsCorretivaParadaCommandHandler(ContextManutencao context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        {
+            _context = context;
+            _tenantProvider = tenantProvider;
+            _currentUser = currentUser;
+        }
+
+        public async Task<CommandResult> Handle(GerarOsCorretivaParadaCommand request, CancellationToken cancellationToken)
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var usuario = _currentUser.GetUserId() ?? "system";
+
+            var parada = await _context.Paradas
+                .Include(p => p.VinculosOs)
+                .FirstOrDefaultAsync(p => p.Id == request.ParadaId, cancellationToken);
+            if (parada == null)
+                return CommandResult.Falha("Parada nao encontrada.");
+
+            // Idempotencia: uma OS corretiva por parada.
+            if (parada.OsGeradaId.HasValue && parada.OsGeradaId.Value != Guid.Empty)
+                return CommandResult.Ok("OS corretiva ja gerada para esta parada (idempotente).",
+                    new { parada.Id, OrdemServicoId = parada.OsGeradaId });
+
+            var os = OrdemServico.CriarInterna(
+                EOrigemOrdemServico.Corretiva, parada.Id, DateTime.UtcNow, tenantId, usuario,
+                tipoEquipamentoId: null,
+                observacaoAbertura: $"OS corretiva gerada da parada {parada.Codigo} ({parada.TipoParada}).");
+            _context.OrdensServico.Add(os);
+
+            var vinculo = new ParadaVinculoOs(parada.Id, ETipoVinculoOsParada.GeradaAutomaticamente, null, "T5:gerar-os-corretiva", tenantId, usuario);
+            vinculo.RegistrarGeracao(os.Id, usuario);
+            parada.AdicionarVinculoOs(vinculo, usuario);
+            parada.VincularOsGerada(os.Id, usuario);
+            if (!parada.IsValid)
+                return CommandResult.Falha(parada.Notifications.Select(n => n.Message));
+
+            // Filho novo em agregado JA existente: Add explicito garante estado Added.
+            _context.ParadaVinculosOs.Add(vinculo);
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("OS corretiva canonica gerada a partir da parada.",
+                new { parada.Id, OrdemServicoId = os.Id, VinculoId = vinculo.Id });
+        }
+    }
+
     // ===== Cadastrar motivo de parada =====
     public record CriarMotivoParadaCommand(
         string Codigo,

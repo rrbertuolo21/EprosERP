@@ -188,8 +188,11 @@ namespace Epros.Modules.Manutencao.Infrastructure.Data
                 entity.ToTable("man_trb_ordem_servico");
                 entity.HasIndex(e => new { e.TenantId, e.Numero });
                 entity.HasIndex(e => new { e.TenantId, e.StatusCodigo });
+                // T5 — rastreio da origem (PRV/PDT/PAR/CRV) para dedup e navegacao inversa.
+                entity.HasIndex(e => new { e.TenantId, e.OrigemTipo, e.OrigemId });
                 entity.Property(e => e.Numero).HasMaxLength(30);
                 entity.Property(e => e.PerfilOrdem).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.OrigemTipo).HasConversion<string>().HasMaxLength(20);
                 entity.Property(e => e.StatusCodigo).HasConversion<string>().HasMaxLength(20);
                 entity.Property(e => e.NomeContato).HasMaxLength(200);
                 entity.Property(e => e.FoneContato).HasMaxLength(30);

@@ -1,4 +1,4 @@
-﻿using DFe.Classes.Flags;
+using DFe.Classes.Flags;
 using Flunt.Notifications;
 using Flunt.Validations;
 using NFe.Classes.Informacoes.Identificacao.Tipos;

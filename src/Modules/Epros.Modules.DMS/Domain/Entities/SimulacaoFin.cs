@@ -16,6 +16,17 @@ namespace Epros.Modules.DMS.Domain.Entities
         public string? OrigemVersao { get; private set; }
         public string? MemoriaJson { get; private set; }
 
+        // ===== Resultado do motor F&I (NF-01) — nulo enquanto a simulação não foi calculada.
+        // Preenchidos por RegistrarCalculo a partir de MotorFinanciamento (skill credito). =====
+        public string? Sistema { get; private set; }              // "Price" | "Sac"
+        public decimal? TaxaJurosMensal { get; private set; }
+        public decimal? ValorParcela { get; private set; }        // 1ª parcela (Price: todas iguais)
+        public decimal? TotalPago { get; private set; }
+        public decimal? TotalJuros { get; private set; }
+        public decimal? Iof { get; private set; }
+        public decimal? CetAnual { get; private set; }
+        public bool Calculada { get; private set; }
+
         protected SimulacaoFin() { } // EF Core
 
         public SimulacaoFin(
@@ -51,6 +62,35 @@ namespace Epros.Modules.DMS.Domain.Entities
             PrazoUnidade = string.IsNullOrWhiteSpace(prazoUnidade) ? "Meses" : prazoUnidade;
             OrigemVersao = origemVersao;
             MemoriaJson = memoriaJson;
+            Calculada = false;
+        }
+
+        /// <summary>
+        /// Grava o resultado do motor F&amp;I (skill Negocio-acumulado/financeiro/credito): sistema,
+        /// taxa mensal, valor da parcela, totais, IOF, CET anual e a memória de cálculo completa
+        /// (tabela de parcelas) em <see cref="MemoriaJson"/>.
+        /// </summary>
+        public void RegistrarCalculo(
+            string sistema,
+            decimal taxaJurosMensal,
+            decimal valorParcela,
+            decimal totalPago,
+            decimal totalJuros,
+            decimal iof,
+            decimal cetAnual,
+            string memoriaJson,
+            string usuario)
+        {
+            Sistema = sistema;
+            TaxaJurosMensal = taxaJurosMensal;
+            ValorParcela = valorParcela;
+            TotalPago = totalPago;
+            TotalJuros = totalJuros;
+            Iof = iof;
+            CetAnual = cetAnual;
+            MemoriaJson = memoriaJson;
+            Calculada = true;
+            MarcarAlterado(usuario);
         }
     }
 }

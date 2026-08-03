@@ -66,7 +66,7 @@ namespace Epros.Infrastructure.Data
             if (!string.IsNullOrEmpty(tenantId))
             {
                 var sanitizedTenantId = SanitizeTenantId(tenantId);
-                
+
                 if (command.Connection.State != System.Data.ConnectionState.Open)
                 {
                     command.Connection.Open();
@@ -78,7 +78,7 @@ namespace Epros.Infrastructure.Data
                     {
                         setCommand.Transaction = command.Transaction;
                     }
-                    setCommand.CommandText = $"SET app.current_tenant_id = '{sanitizedTenantId}';";
+                    setCommand.CommandText = MontarSetCommand(command, sanitizedTenantId);
                     setCommand.ExecuteNonQuery();
                 }
             }
@@ -104,10 +104,24 @@ namespace Epros.Infrastructure.Data
                     {
                         setCommand.Transaction = command.Transaction;
                     }
-                    setCommand.CommandText = $"SET app.current_tenant_id = '{sanitizedTenantId}';";
+                    setCommand.CommandText = MontarSetCommand(command, sanitizedTenantId);
                     await setCommand.ExecuteNonQueryAsync(cancellationToken);
                 }
             }
+        }
+
+        /// <summary>
+        /// Monta o comando que propaga o tenant para a sessão do banco.
+        ///
+        /// Quando há uma transação ambiente, usa <c>SET LOCAL</c> (escopo transacional): o valor é
+        /// automaticamente descartado no commit/rollback, evitando que uma conexão poolada carregue
+        /// <c>app.current_tenant_id</c> de uma unidade de trabalho para a próxima. Sem transação,
+        /// mantém o <c>SET</c> de sessão — reescrito antes de cada comando, como já era.
+        /// </summary>
+        private static string MontarSetCommand(DbCommand command, string sanitizedTenantId)
+        {
+            var escopo = command.Transaction != null ? "SET LOCAL" : "SET";
+            return $"{escopo} app.current_tenant_id = '{sanitizedTenantId}';";
         }
 
         private static string SanitizeTenantId(string tenantId)

@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Epros.Modules.Producao.Application.Commands;
 using Epros.Modules.Producao.Domain.Entities;
 using Epros.Modules.Producao.Domain.Enums;
+using Epros.Modules.Producao.Domain.Services;
 using Epros.Modules.Producao.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
@@ -149,5 +151,148 @@ namespace Epros.Modules.Producao.Application.Handlers
             p.Encerrar(usuario);
             return await FinalizarAsync(p, "Encerramento", usuario, tenantId, ct);
         }
+    }
+
+    /// <summary>
+    /// PD3/PD21 — Motor MRP: explode a BOM vigente multinível, faz o netting e persiste
+    /// necessidades (bruta/líquida) e sugestões (compra/produção). Recalcula preservando sugestões
+    /// já convertidas (idempotência PRD-INT-CA-002). BOM incompleta → resultado sinaliza cálculo incompleto.
+    /// </summary>
+    public class CalcularMrpCommandHandler : ICommandHandler<CalcularMrpCommand>
+    {
+        private readonly ContextProducao _context;
+        private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
+
+        public CalcularMrpCommandHandler(ContextProducao context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        {
+            _context = context;
+            _tenantProvider = tenantProvider;
+            _currentUser = currentUser;
+        }
+
+        public async Task<CommandResult> Handle(CalcularMrpCommand request, CancellationToken ct)
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var usuario = _currentUser.GetUserId() ?? "system";
+
+            var planejamento = await _context.MrpPlanejamentos.FirstOrDefaultAsync(p => p.Id == request.PlanejamentoId, ct);
+            if (planejamento == null) return CommandResult.Falha("Planejamento MRP não encontrado.");
+            if (request.Demandas == null || request.Demandas.Count == 0)
+                return CommandResult.Falha("Informe ao menos uma demanda para o cálculo do MRP.");
+
+            var catalogo = await _context.BomEstruturas
+                .Include(e => e.Componentes)
+                .Where(e => e.Status == EStatusWorkflowProducao.Ativo)
+                .ToListAsync(ct);
+
+            var parametrosPorItem = (request.Parametros ?? new()).ToDictionary(p => p.ItemId);
+            decimal Lookup(Guid item, Func<MrpParametroItemDto, decimal> sel) =>
+                parametrosPorItem.TryGetValue(item, out var p) ? sel(p) : 0m;
+
+            var parametros = new MrpService.ParametrosMrp
+            {
+                Disponibilidade = i => Lookup(i, p => p.Disponibilidade),
+                RecebimentosProgramados = i => Lookup(i, p => p.RecebimentosProgramados),
+                EstoqueSeguranca = i => Lookup(i, p => p.EstoqueSeguranca),
+                LoteMinimo = i => Lookup(i, p => p.LoteMinimo),
+                LoteMultiplo = i => Lookup(i, p => p.LoteMultiplo)
+            };
+
+            var dataRef = request.Demandas[0].DataReferencia ?? DateTime.UtcNow;
+            var demandas = request.Demandas.Select(d =>
+                new MrpService.Demanda(d.ItemId, d.Quantidade, d.DataReferencia ?? DateTime.UtcNow, d.VariacaoId));
+
+            var resultado = new MrpService().Planejar(demandas, catalogo, parametros, dataRef);
+
+            // recálculo idempotente: limpa necessidades e sugestões ainda não convertidas do planejamento
+            var necessidadesAntigas = await _context.MrpNecessidades
+                .Where(n => n.PlanejamentoId == planejamento.Id).ToListAsync(ct);
+            _context.MrpNecessidades.RemoveRange(necessidadesAntigas);
+
+            var sugestoesAntigas = await _context.MrpSugestoes
+                .Where(s => s.PlanejamentoId == planejamento.Id && s.Estado != EEstadoSugestaoMrp.Convertida)
+                .ToListAsync(ct);
+            _context.MrpSugestoes.RemoveRange(sugestoesAntigas);
+
+            foreach (var n in resultado.Necessidades)
+            {
+                _context.MrpNecessidades.Add(new MrpNecessidade(
+                    planejamento.Id, n.ItemId, n.Nivel, dataRef,
+                    n.Bruta, n.Disponibilidade, n.Recebimentos, n.EstoqueSeguranca, tenantId, usuario));
+            }
+
+            foreach (var s in resultado.Sugestoes)
+            {
+                _context.MrpSugestoes.Add(new MrpSugestao(
+                    planejamento.Id, s.ItemId, s.Tipo, s.Quantidade, dataRef, tenantId, usuario));
+            }
+
+            _context.MrpHistoricos.Add(new MrpPlanejamentoHistorico(
+                planejamento.Id, "CalculoMrp", usuario, "{}", tenantId, usuario, null, planejamento.Status));
+            await _context.SaveChangesAsync(ct);
+
+            return CommandResult.Ok(
+                resultado.CalculoIncompleto
+                    ? $"MRP calculado com pendências: {resultado.MotivoIncompleto}"
+                    : "MRP calculado: necessidades e sugestões geradas.",
+                new
+                {
+                    planejamento.Id,
+                    Necessidades = resultado.Necessidades.Count,
+                    Sugestoes = resultado.Sugestoes.Count,
+                    resultado.CalculoIncompleto
+                });
+        }
+    }
+
+    public abstract class MrpSugestaoHandlerBase
+    {
+        protected readonly ContextProducao _context;
+        protected readonly ICurrentUser _currentUser;
+        protected MrpSugestaoHandlerBase(ContextProducao context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
+
+        protected async Task<CommandResult> AplicarAsync(Guid sugestaoId, Action<MrpSugestao, string> acao, string ok, CancellationToken ct)
+        {
+            var usuario = _currentUser.GetUserId() ?? "system";
+            var sugestao = await _context.MrpSugestoes.FirstOrDefaultAsync(s => s.Id == sugestaoId, ct);
+            if (sugestao == null) return CommandResult.Falha("Sugestão MRP não encontrada.");
+            acao(sugestao, usuario);
+            if (!sugestao.IsValid) return CommandResult.Falha(sugestao.Notifications.Select(n => n.Message));
+            await _context.SaveChangesAsync(ct);
+            return CommandResult.Ok(ok, new { sugestao.Id, Estado = sugestao.Estado.ToString(), sugestao.DocumentoGeradoId });
+        }
+    }
+
+    public class SubmeterSugestaoMrpCommandHandler : MrpSugestaoHandlerBase, ICommandHandler<SubmeterSugestaoMrpCommand>
+    {
+        public SubmeterSugestaoMrpCommandHandler(ContextProducao c, ICurrentUser u) : base(c, u) { }
+        public Task<CommandResult> Handle(SubmeterSugestaoMrpCommand r, CancellationToken ct)
+            => AplicarAsync(r.SugestaoId, (s, u) => s.SubmeterAprovacao(u), "Sugestão submetida para aprovação.", ct);
+    }
+
+    public class AprovarSugestaoMrpCommandHandler : MrpSugestaoHandlerBase, ICommandHandler<AprovarSugestaoMrpCommand>
+    {
+        public AprovarSugestaoMrpCommandHandler(ContextProducao c, ICurrentUser u) : base(c, u) { }
+        public Task<CommandResult> Handle(AprovarSugestaoMrpCommand r, CancellationToken ct)
+            => AplicarAsync(r.SugestaoId, (s, u) => s.Aprovar(u), "Sugestão aprovada.", ct);
+    }
+
+    public class ConverterSugestaoMrpCommandHandler : MrpSugestaoHandlerBase, ICommandHandler<ConverterSugestaoMrpCommand>
+    {
+        public ConverterSugestaoMrpCommandHandler(ContextProducao c, ICurrentUser u) : base(c, u) { }
+        public Task<CommandResult> Handle(ConverterSugestaoMrpCommand r, CancellationToken ct)
+            => AplicarAsync(r.SugestaoId, (s, u) => s.Converter(r.DocumentoGeradoId, u), "Sugestão convertida em documento.", ct);
+    }
+
+    public class CancelarSugestaoMrpCommandHandler : MrpSugestaoHandlerBase, ICommandHandler<CancelarSugestaoMrpCommand>
+    {
+        public CancelarSugestaoMrpCommandHandler(ContextProducao c, ICurrentUser u) : base(c, u) { }
+        public Task<CommandResult> Handle(CancelarSugestaoMrpCommand r, CancellationToken ct)
+            => AplicarAsync(r.SugestaoId, (s, u) => s.Cancelar(r.Motivo, u), "Sugestão cancelada.", ct);
     }
 }

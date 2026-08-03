@@ -39,6 +39,9 @@ namespace Epros.Modules.Estoque.Domain.Enums
         Avaria = 9,
 
         [Description("Saldo inicial")]
-        SaldoInicial = 10
+        SaldoInicial = 10,
+
+        [Description("Produção")]
+        Producao = 11
     }
 }

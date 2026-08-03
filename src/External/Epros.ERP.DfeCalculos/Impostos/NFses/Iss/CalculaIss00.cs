@@ -1,4 +1,4 @@
-﻿using Epros.ERP.DfeCalculos.Impostos.NFses.Abstracts;
+using Epros.ERP.DfeCalculos.Impostos.NFses.Abstracts;
 using Epros.ERP.Shared.Extensions;
 
 namespace Epros.ERP.DfeCalculos.Impostos.NFses.Iss

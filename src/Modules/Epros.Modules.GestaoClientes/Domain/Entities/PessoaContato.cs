@@ -32,6 +32,7 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
                 .Requires()
                 .HasMaxLen(nome ?? string.Empty, 60, nameof(Nome), "O campo Nome deve ter no máximo 60 caracteres [Origem: PessoaContato]")
                 .HasMaxLen(numeroTelefone ?? string.Empty, 14, nameof(NumeroTelefone), "O campo NumeroTelefone deve ter no máximo 14 caracteres [Origem: PessoaContato]")
+                .HasMaxLen(email ?? string.Empty, 150, nameof(Email), "O campo Email deve ter no máximo 150 caracteres [Origem: PessoaContato]")
                 .IsTrue(Enum.IsDefined(typeof(ETipoContatoEmail), tipoContatoEmail), nameof(TipoContatoEmail), "TipoContatoEmail não consta na lista [Origem: PessoaContato]")
                 .IsTrue(Enum.IsDefined(typeof(ETipoContatoTelefonico), tipoContatoTelefonico), nameof(TipoContatoTelefonico), "TipoContatoTelefonico não consta na lista [Origem: PessoaContato]")
             );

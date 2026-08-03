@@ -95,5 +95,28 @@ namespace Epros.API.Controllers
             var result = await _mediator.Send(command, cancellationToken);
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
+
+        /// <summary>CD5 — registra e aplica um aditivo (preço/quantidade/vigência/condições) no contrato aprovado.</summary>
+        [HttpPost("{id:guid}/aditivos")]
+        [AbacAuthorize("EstoqueGcc", "Aditar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> RegistrarAditivo(Guid id, [FromBody] RegistrarGccAditivoCommand body, CancellationToken cancellationToken)
+        {
+            var command = body with { ContratoCompraId = id };
+            var result = await _mediator.Send(command, cancellationToken);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        /// <summary>CD5 — performance do contrato: aderência (consumido/comprometido), saldo e vigência.</summary>
+        [HttpGet("{id:guid}/performance")]
+        [AbacAuthorize("EstoqueGcc", "Consultar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<CommandResult>> Performance(Guid id, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new PerformanceGccContratoQuery(id), cancellationToken);
+            return result.Sucesso ? Ok(result) : NotFound(result);
+        }
     }
 }

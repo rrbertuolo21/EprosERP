@@ -47,7 +47,7 @@ namespace Epros.Tests.Integration
             {
                 var plano = new Plano("Plano A", 199.90m, "tenant-a", "user-a");
                 contextTenantA.Planos.Add(plano);
-                
+
                 var cliente = new Cliente("Cliente A Ltda", "11111111000111", "contato@a.com", plano.Id, "tenant-a", "user-a");
                 contextTenantA.Clientes.Add(cliente);
 
@@ -70,7 +70,7 @@ namespace Epros.Tests.Integration
             using (var contextTenantA = _fixture.CreateDbContext("tenant-a", "user-a"))
             {
                 var clientesVisiveis = await contextTenantA.Clientes.ToListAsync();
-                
+
                 Assert.Single(clientesVisiveis);
                 Assert.Equal("Cliente A Ltda", clientesVisiveis.First().RazaoSocial);
                 Assert.Equal("tenant-a", clientesVisiveis.First().TenantId);
@@ -144,7 +144,7 @@ namespace Epros.Tests.Integration
             {
                 var cliente = await context.Clientes.FindAsync(clienteId);
                 Assert.NotNull(cliente);
-                
+
                 cliente.Deletar("user-c");
                 await context.SaveChangesAsync();
             }

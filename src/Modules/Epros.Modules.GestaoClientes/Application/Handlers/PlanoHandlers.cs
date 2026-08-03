@@ -8,6 +8,7 @@ using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
 using Epros.Modules.GestaoClientes.Application.Commands;
 using Epros.Modules.GestaoClientes.Application.Queries;
+using Epros.Modules.GestaoClientes.Application.Security;
 using Epros.Modules.GestaoClientes.Domain.Entities;
 using Epros.Modules.GestaoClientes.Infrastructure.Data;
 
@@ -50,11 +51,24 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
 
         public async Task<CommandResult> Handle(CriarPlanoRicoCommand request, CancellationToken cancellationToken)
         {
+            // 1.11 fix #2 — plano global é catálogo landlord (só operador interno).
+            var guarda = GuardaOperadorInterno.Exigir(_tenantProvider);
+            if (guarda != null) return guarda;
+
             var tenantId = _tenantProvider.GetTenantId();
             var criadoPor = _currentUser.GetUserId() ?? "system";
 
+            // RN 6.1.3 — nome de plano único (dentro do escopo visível: catálogo global + planos do tenant).
+            var nomeNormalizado = (request.Nome ?? string.Empty).Trim().ToLower();
+            var nomeDuplicado = await _context.Planos
+                .AnyAsync(p => p.Nome.ToLower() == nomeNormalizado, cancellationToken);
+            if (nomeDuplicado)
+            {
+                return CommandResult.Falha(new[] { "Já existe um plano com este nome." }, "Falha na validação do plano");
+            }
+
             var plano = new Plano(
-                request.Nome,
+                request.Nome ?? string.Empty,
                 request.Valor,
                 request.GrupoPlanoId,
                 request.LimiteUsuarios,
@@ -65,7 +79,15 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 request.DescricaoCurta,
                 request.DescricaoCompleta,
                 request.DataInicio,
-                request.DataFim
+                request.DataFim,
+                request.Duration,
+                request.ModuloCrm,
+                request.ModuloProjetos,
+                request.ModuloRh,
+                request.ModuloFinanceiro,
+                request.ModuloPdv,
+                request.LimiteClientes,
+                request.DiasToleranciaInadimplencia
             );
 
             if (request.Modulos != null)
@@ -107,15 +129,21 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
     {
         private readonly ContextGestaoClientes _context;
         private readonly ICurrentUser _currentUser;
+        private readonly ITenantProvider _tenantProvider;
 
-        public AtualizarPlanoCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser)
+        public AtualizarPlanoCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser, ITenantProvider tenantProvider)
         {
             _context = context;
             _currentUser = currentUser;
+            _tenantProvider = tenantProvider;
         }
 
         public async Task<CommandResult> Handle(AtualizarPlanoCommand request, CancellationToken cancellationToken)
         {
+            // 1.11 fix #2 — plano global é catálogo landlord (só operador interno).
+            var guarda = GuardaOperadorInterno.Exigir(_tenantProvider);
+            if (guarda != null) return guarda;
+
             var alteradoPor = _currentUser.GetUserId() ?? "system";
 
             var plano = await _context.Planos
@@ -127,8 +155,17 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 return CommandResult.Falha(new[] { "Plano não encontrado." }, "Erro");
             }
 
+            // RN 6.1.3 — nome de plano único (exclui o próprio registro na edição).
+            var nomeNormalizado = (request.Nome ?? string.Empty).Trim().ToLower();
+            var nomeDuplicado = await _context.Planos
+                .AnyAsync(p => p.Id != request.Id && p.Nome.ToLower() == nomeNormalizado, cancellationToken);
+            if (nomeDuplicado)
+            {
+                return CommandResult.Falha(new[] { "Já existe um plano com este nome." }, "Falha na validação do plano");
+            }
+
             plano.Atualizar(
-                request.Nome,
+                request.Nome ?? string.Empty,
                 request.Valor,
                 request.GrupoPlanoId,
                 request.LimiteUsuarios,
@@ -138,7 +175,15 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 request.DescricaoCurta,
                 request.DescricaoCompleta,
                 request.DataInicio,
-                request.DataFim
+                request.DataFim,
+                request.Duration,
+                request.ModuloCrm,
+                request.ModuloProjetos,
+                request.ModuloRh,
+                request.ModuloFinanceiro,
+                request.ModuloPdv,
+                request.LimiteClientes,
+                request.DiasToleranciaInadimplencia
             );
 
             if (!plano.IsValid)
@@ -207,15 +252,21 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
     {
         private readonly ContextGestaoClientes _context;
         private readonly ICurrentUser _currentUser;
+        private readonly ITenantProvider _tenantProvider;
 
-        public ExcluirPlanoCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser)
+        public ExcluirPlanoCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser, ITenantProvider tenantProvider)
         {
             _context = context;
             _currentUser = currentUser;
+            _tenantProvider = tenantProvider;
         }
 
         public async Task<CommandResult> Handle(ExcluirPlanoCommand request, CancellationToken cancellationToken)
         {
+            // 1.11 fix #2 — plano global é catálogo landlord (só operador interno).
+            var guarda = GuardaOperadorInterno.Exigir(_tenantProvider);
+            if (guarda != null) return guarda;
+
             var deletadoPor = _currentUser.GetUserId() ?? "system";
 
             var plano = await _context.Planos.FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
@@ -272,6 +323,8 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                     DataInicio = p.DataInicio,
                     DataFim = p.DataFim,
                     Ativo = p.Ativo,
+                    Duration = p.Duration.ToString(),
+                    Global = p.TenantId == "system",
                     QtdeModulos = p.Modulos.Count,
                     CriadoEm = p.CriadoEm
                 })
@@ -309,10 +362,19 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 DescricaoCompleta = p.DescricaoCompleta,
                 LimiteUsuarios = p.LimiteUsuarios,
                 LimiteEmpresas = p.LimiteEmpresas,
+                LimiteClientes = p.LimiteClientes,
+                DiasToleranciaInadimplencia = p.DiasToleranciaInadimplencia,
                 RecursosInclusos = p.RecursosInclusos,
                 DataInicio = p.DataInicio,
                 DataFim = p.DataFim,
                 Ativo = p.Ativo,
+                Duration = p.Duration.ToString(),
+                ModuloCrm = p.ModuloCrm,
+                ModuloProjetos = p.ModuloProjetos,
+                ModuloRh = p.ModuloRh,
+                ModuloFinanceiro = p.ModuloFinanceiro,
+                ModuloPdv = p.ModuloPdv,
+                Global = p.TenantId == "system",
                 CriadoEm = p.CriadoEm,
                 Modulos = p.Modulos.Select(m => new ModuloPlanoDto
                 {

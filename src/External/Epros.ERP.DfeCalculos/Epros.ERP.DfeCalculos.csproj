@@ -15,6 +15,8 @@
 
   <ItemGroup>
     <PackageReference Include="Flunt.Br" Version="2.0.0" />
+    <PackageReference Include="Hercules.NET.CTe" Version="2026.7.30.1803" />
+    <PackageReference Include="Hercules.NET.MDFe" Version="2026.7.30.1803" />
     <PackageReference Include="Hercules.NET.NFe.NFCe" Version="2026.3.15.14" />
     <PackageReference Include="System.Runtime" Version="4.3.1" />
   </ItemGroup>

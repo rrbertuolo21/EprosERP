@@ -4,6 +4,22 @@ using FluentValidation;
 
 namespace Epros.Modules.Aplicativo.Application.Commands
 {
+    /// <summary>
+    /// Política de senha central (REG-032): mínimo 8 caracteres + ao menos uma letra e um número.
+    /// Reutilizada no registro, no reset e na troca de senha para evitar divergência entre fluxos.
+    /// </summary>
+    public static class PoliticaSenhaValidacao
+    {
+        public static IRuleBuilderOptions<T, string> AplicarPoliticaSenha<T>(this IRuleBuilder<T, string> regra)
+        {
+            return regra
+                .NotEmpty().WithMessage("A senha é obrigatória.")
+                .MinimumLength(8).WithMessage("A senha deve ter no mínimo 8 caracteres.")
+                .Matches("[A-Za-z]").WithMessage("A senha deve conter ao menos uma letra.")
+                .Matches("[0-9]").WithMessage("A senha deve conter ao menos um número.");
+        }
+    }
+
     public record AutenticarUsuarioCommand(
         string Email,
         string Senha,
@@ -61,6 +77,27 @@ namespace Epros.Modules.Aplicativo.Application.Commands
         }
     }
 
+    /// <summary>
+    /// Acesso multi-tenant (1.04 PASS 2): após o login global, a identidade escolhe UM tenant a que tem
+    /// acesso (membership ativa). Emite token escopado ao tenant — reaproveita o padrão de selecionar-empresa.
+    /// </summary>
+    public record SelecionarTenantCommand(
+        Guid UsuarioId,
+        string TenantId
+    ) : ICommand;
+
+    public class SelecionarTenantCommandValidator : AbstractValidator<SelecionarTenantCommand>
+    {
+        public SelecionarTenantCommandValidator()
+        {
+            RuleFor(x => x.UsuarioId)
+                .NotEmpty().WithMessage("O ID do usuário é obrigatório.");
+
+            RuleFor(x => x.TenantId)
+                .NotEmpty().WithMessage("O tenant é obrigatório.");
+        }
+    }
+
     public record SolicitarRecuperacaoSenhaCommand(
         string Email
     ) : ICommand;
@@ -94,8 +131,7 @@ namespace Epros.Modules.Aplicativo.Application.Commands
                 .NotEmpty().WithMessage("O token de reset é obrigatório.");
 
             RuleFor(x => x.NovaSenha)
-                .NotEmpty().WithMessage("A nova senha é obrigatória.")
-                .MinimumLength(8).WithMessage("A nova senha deve ter no mínimo 8 caracteres.");
+                .AplicarPoliticaSenha();
 
             RuleFor(x => x.ConfirmacaoSenha)
                 .NotEmpty().WithMessage("A confirmação da nova senha é obrigatória.")
@@ -120,30 +156,50 @@ namespace Epros.Modules.Aplicativo.Application.Commands
                 .NotEmpty().WithMessage("A senha atual é obrigatória.");
 
             RuleFor(x => x.NovaSenha)
-                .NotEmpty().WithMessage("A nova senha é obrigatória.")
-                .MinimumLength(8).WithMessage("A nova senha deve ter no mínimo 8 caracteres.")
+                .AplicarPoliticaSenha()
                 .NotEqual(x => x.SenhaAtual).WithMessage("A nova senha não pode ser igual à senha atual.");
         }
     }
 
+    /// <summary>
+    /// Self-register de tenant. REG-036 (decisão de negócio — fonte: overlay fiscal): quem emitirá
+    /// documento fiscal precisa de cadastro íntegro. Exige documento fiscal válido (CNPJ ou CPF),
+    /// município IBGE e telefone com tipo; não se aceitam placeholders fiscais.
+    /// </summary>
     public record RegistrarNovoTenantCommand(
         string NomeEmpresa,
         string Cnpj,
         string NomeAdmin,
         string EmailAdmin,
-        string SenhaAdmin
+        string SenhaAdmin,
+        long CodigoIbgeMunicipio,
+        string Telefone,
+        string TipoTelefone,
+        string? Cpf = null,
+        // 1.07 — Endereço informado no cadastro (opcional). Quando presente, é persistido de verdade
+        // (não mais placeholder "A informar"). Cidade/UF continuam vindo do catálogo IBGE.
+        string? Logradouro = null,
+        string? Numero = null,
+        string? Complemento = null,
+        string? Bairro = null,
+        string? Cep = null
     ) : ICommand;
 
     public class RegistrarNovoTenantCommandValidator : AbstractValidator<RegistrarNovoTenantCommand>
     {
+        // Tipos de telefone aceitos no cadastro (REG-036 — "tipo de telefone" obrigatório).
+        private static readonly string[] TiposTelefoneValidos = { "Fixo", "Celular", "Comercial", "Whatsapp" };
+
         public RegistrarNovoTenantCommandValidator()
         {
             RuleFor(x => x.NomeEmpresa)
                 .NotEmpty().WithMessage("O nome da empresa é obrigatório.");
 
+            // REG-036: documento fiscal íntegro — CNPJ (14) OU CPF (11), validados no handler por
+            // dígito verificador. Aqui garantimos que ao menos um documento plausível foi informado.
             RuleFor(x => x.Cnpj)
-                .NotEmpty().WithMessage("O CNPJ é obrigatório.")
-                .Length(14).WithMessage("O CNPJ deve conter exatamente 14 dígitos.");
+                .NotEmpty().When(x => string.IsNullOrWhiteSpace(x.Cpf))
+                .WithMessage("Informe um documento fiscal válido: CNPJ (empresa) ou CPF (pessoa física).");
 
             RuleFor(x => x.NomeAdmin)
                 .NotEmpty().WithMessage("O nome do administrador é obrigatório.");
@@ -153,8 +209,76 @@ namespace Epros.Modules.Aplicativo.Application.Commands
                 .EmailAddress().WithMessage("O e-mail do administrador informado é inválido.");
 
             RuleFor(x => x.SenhaAdmin)
-                .NotEmpty().WithMessage("A senha do administrador é obrigatória.")
-                .MinimumLength(8).WithMessage("A senha do administrador deve ter no mínimo 8 caracteres.");
+                .AplicarPoliticaSenha();
+
+            // REG-036: município IBGE obrigatório (7 dígitos) — validado contra o cadastro no handler.
+            RuleFor(x => x.CodigoIbgeMunicipio)
+                .GreaterThan(0).WithMessage("O município (código IBGE) é obrigatório.")
+                .Must(c => c.ToString().Length == 7).WithMessage("O código IBGE do município deve ter 7 dígitos.");
+
+            // REG-036: telefone + tipo de telefone obrigatórios.
+            RuleFor(x => x.Telefone)
+                .NotEmpty().WithMessage("O telefone é obrigatório.");
+
+            RuleFor(x => x.TipoTelefone)
+                .NotEmpty().WithMessage("O tipo de telefone é obrigatório.")
+                .Must(t => Array.Exists(TiposTelefoneValidos, v => string.Equals(v, t, StringComparison.OrdinalIgnoreCase)))
+                .WithMessage("Tipo de telefone inválido. Valores aceitos: Fixo, Celular, Comercial, Whatsapp.");
+        }
+    }
+
+    /// <summary>
+    /// Login social (1.04 PASS 3): inicia o fluxo OAuth/OIDC (Authorization Code). Gera state + nonce,
+    /// guarda-os no servidor e devolve a URL de autorização do provedor (Google/Microsoft).
+    /// </summary>
+    public record IniciarLoginSocialCommand(
+        string Provedor
+    ) : ICommand;
+
+    public class IniciarLoginSocialCommandValidator : AbstractValidator<IniciarLoginSocialCommand>
+    {
+        public IniciarLoginSocialCommandValidator()
+        {
+            RuleFor(x => x.Provedor)
+                .NotEmpty().WithMessage("O provedor é obrigatório.");
+        }
+    }
+
+    /// <summary>
+    /// Login social (1.04 PASS 3): callback do provedor. Valida o state (anti-CSRF), troca o code por
+    /// token, valida o id_token (assinatura/emissor/audiência/nonce) e resolve a identidade: vínculo
+    /// existente → loga; e-mail verificado casa com usuário → vincula e loga; identidade nova →
+    /// encaminha ao onboarding (não cria tenant fiscal sozinho).
+    /// </summary>
+    public record CallbackLoginSocialCommand(
+        string Provedor,
+        string? Code,
+        string? State,
+        string? Error,
+        string IpAddress,
+        string UserAgent
+    ) : ICommand;
+
+    public class CallbackLoginSocialCommandValidator : AbstractValidator<CallbackLoginSocialCommand>
+    {
+        public CallbackLoginSocialCommandValidator()
+        {
+            RuleFor(x => x.Provedor)
+                .NotEmpty().WithMessage("O provedor é obrigatório.");
+        }
+    }
+
+    /// <summary>Logout / revogação de sessão (REG-013). Revoga as sessões ativas do usuário autenticado.</summary>
+    public record EncerrarSessaoCommand(
+        Guid UsuarioId
+    ) : ICommand;
+
+    public class EncerrarSessaoCommandValidator : AbstractValidator<EncerrarSessaoCommand>
+    {
+        public EncerrarSessaoCommandValidator()
+        {
+            RuleFor(x => x.UsuarioId)
+                .NotEmpty().WithMessage("O ID do usuário é obrigatório.");
         }
     }
 }

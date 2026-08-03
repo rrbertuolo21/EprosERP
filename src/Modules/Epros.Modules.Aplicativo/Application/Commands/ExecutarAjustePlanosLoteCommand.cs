@@ -8,7 +8,7 @@ namespace Epros.Modules.Aplicativo.Application.Commands
         bool Simular = false
     ) : IComandoRisco
     {
-        public string ObterDescricao() => 
+        public string ObterDescricao() =>
             $"Ajuste em lote dos preços dos planos comerciais em {PercentualAjuste}%.";
     }
 }

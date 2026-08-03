@@ -61,5 +61,41 @@ namespace Epros.API.Controllers
             var result = await _mediator.Send(new AprovarInducaoCommand(id), ct);
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
+
+        // MAN-IND D4/D32-F — vinculo patrimonial (snapshot; depreciacao = valida-contador).
+        [HttpPost("equipamentos/{id:guid}/vinculo-patrimonial")]
+        [AbacAuthorize("ManutencaoEquipamentoConfig", "Alterar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> VincularPatrimonio(Guid id, [FromBody] VincularPatrimonioEquipamentoCommand command, CancellationToken ct)
+        {
+            if (id != command.EquipamentoId) return BadRequest("O ID da rota nao corresponde ao ID do corpo.");
+            var result = await _mediator.Send(command, ct);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        // MAN-IND D5 — servico aplicavel por equipamento.
+        [HttpPost("equipamentos/{id:guid}/servicos")]
+        [AbacAuthorize("ManutencaoEquipamentoConfig", "Alterar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> AdicionarServico(Guid id, [FromBody] AdicionarServicoEquipamentoCommand command, CancellationToken ct)
+        {
+            if (id != command.EquipamentoId) return BadRequest("O ID da rota nao corresponde ao ID do corpo.");
+            var result = await _mediator.Send(command, ct);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        // MAN-IND D5 — atributo livre de extensao.
+        [HttpPost("equipamentos/{id:guid}/atributos")]
+        [AbacAuthorize("ManutencaoEquipamentoConfig", "Alterar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> DefinirAtributo(Guid id, [FromBody] DefinirAtributoEquipamentoCommand command, CancellationToken ct)
+        {
+            if (id != command.EquipamentoId) return BadRequest("O ID da rota nao corresponde ao ID do corpo.");
+            var result = await _mediator.Send(command, ct);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
     }
 }

@@ -6,7 +6,8 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
     public record ProcessarWebhookPagamentoCommand(
         string Action,
         WebhookData Data,
-        string? Signature = null
+        string? Signature = null,
+        string? RequestId = null
     ) : ICommand;
 
     public record WebhookData(string Id);

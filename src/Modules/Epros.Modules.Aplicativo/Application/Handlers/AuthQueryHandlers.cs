@@ -54,4 +54,33 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             return resultado;
         }
     }
+
+    /// <summary>
+    /// Acesso multi-tenant (1.04 PASS 2): lista os tenants a que a identidade global tem acesso ativo
+    /// (memberships), com o nome do cliente e o papel por tenant. Leitura cross-tenant (bypass de RLS).
+    /// </summary>
+    public class ListarTenantsDisponiveisQueryHandler : IQueryHandler<ListarTenantsDisponiveisQuery, IEnumerable<TenantDisponivelDto>>
+    {
+        private readonly ContextAplicativo _contextAplicativo;
+        private readonly ContextGestaoClientes _contextGestaoClientes;
+
+        public ListarTenantsDisponiveisQueryHandler(
+            ContextAplicativo contextAplicativo,
+            ContextGestaoClientes contextGestaoClientes)
+        {
+            _contextAplicativo = contextAplicativo;
+            _contextGestaoClientes = contextGestaoClientes;
+        }
+
+        public async Task<IEnumerable<TenantDisponivelDto>> Handle(ListarTenantsDisponiveisQuery request, CancellationToken cancellationToken)
+        {
+            var acessos = await AcessoMultiTenant.LerAcessosAtivosAsync(_contextAplicativo, request.UsuarioId, cancellationToken);
+            if (!acessos.Any())
+            {
+                return Enumerable.Empty<TenantDisponivelDto>();
+            }
+
+            return await AcessoMultiTenant.MontarTenantsDtoAsync(_contextGestaoClientes, acessos, cancellationToken);
+        }
+    }
 }

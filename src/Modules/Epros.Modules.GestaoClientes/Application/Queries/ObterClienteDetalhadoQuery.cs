@@ -20,6 +20,9 @@ namespace Epros.Modules.GestaoClientes.Application.Queries
         public string? VendedorNome { get; set; }
         public int DiaVencimento { get; set; }
         public string StatusSaaS { get; set; } = string.Empty;
+        public int? CotaUsuarios { get; set; }
+        public int? CotaEmpresas { get; set; }
+        public int? CotaPermissoes { get; set; }
         public bool Ativo { get; set; }
         public string? Telefone { get; set; }
         public string? NomeContato { get; set; }
@@ -44,6 +47,7 @@ namespace Epros.Modules.GestaoClientes.Application.Queries
         public string? Complemento { get; set; }
         public string Bairro { get; set; } = string.Empty;
         public string? Referencia { get; set; }
+        public bool Principal { get; set; }
     }
 
     public class ClienteComposicaoDto

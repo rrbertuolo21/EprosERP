@@ -440,7 +440,7 @@ namespace Epros.Tests
             var planoResult = await criarPlano.Handle(new CriarPlanoDeContasFinanceiroCommand(
                 null, null, "Plano com Item", "9.9", null), CancellationToken.None);
             Assert.True(planoResult.Sucesso);
-            var planoId = (Guid)planoResult.Dados.GetType().GetProperty("Id")!.GetValue(planoResult.Dados)!;
+            var planoId = (Guid)planoResult.Dados!.GetType().GetProperty("Id")!.GetValue(planoResult.Dados)!;
 
             var criarItem = new CriarPlanoDeContasFinanceiroItemCommandHandler(context, tenant, user);
             var itemResult = await criarItem.Handle(new CriarPlanoDeContasFinanceiroItemCommand(

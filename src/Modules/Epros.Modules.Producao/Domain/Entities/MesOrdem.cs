@@ -22,6 +22,12 @@ namespace Epros.Modules.Producao.Domain.Entities
         public DateTime? DataTransacao { get; private set; }
         public Guid? LocalEstoqueId { get; private set; }
         public Guid? EstruturaId { get; private set; }
+        /// <summary>
+        /// T5 — Referência à ORDEM DE PRODUÇÃO CANÔNICA (<c>ordens_producao</c>). Convergência incremental:
+        /// a ordem canônica assume a identidade única da produção; a ordem MES referencia-a (não a duplica).
+        /// Null enquanto não houver vínculo (o legado segue como leitura). Ver DECISOES-PENDENTES-RAFAEL.md · T5.
+        /// </summary>
+        public Guid? OrdemProducaoRefId { get; private set; }
         public Guid? ProdutoAcabadoId { get; private set; }
         public Guid? VariacaoProdutoAcabadoId { get; private set; }
         public decimal CustoTotalPrevisto { get; private set; }
@@ -204,6 +210,22 @@ namespace Epros.Modules.Producao.Domain.Entities
             Termino = dataTransacao;
             Finalizada = true;
             Status = EStatusOrdemMes.Finalizado;
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>
+        /// T5 — Vincula esta ordem MES à ordem de produção canônica (<c>ordens_producao</c>), estabelecendo a
+        /// identidade única da produção sem duplicar dados. Idempotente: revincular ao mesmo id é no-op.
+        /// </summary>
+        public void VincularOrdemCanonica(Guid ordemProducaoRefId, string alteradoPor)
+        {
+            if (ordemProducaoRefId == Guid.Empty)
+            {
+                AddNotification(nameof(OrdemProducaoRefId), "A ordem de produção canônica é obrigatória para o vínculo. (T5)");
+                return;
+            }
+            if (OrdemProducaoRefId == ordemProducaoRefId) return;
+            OrdemProducaoRefId = ordemProducaoRefId;
             MarcarAlterado(alteradoPor);
         }
 

@@ -142,6 +142,25 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             Validar();
         }
 
+        /// <summary>
+        /// 1.07 — Default fiscal seguro: cria os parâmetros DF-e em ambiente de HOMOLOGAÇÃO para NF-e e
+        /// NFC-e (TipoAmbiente = 2 = <see cref="ETipoAmbiente.Homologacao"/>), NUNCA produção. Regra de
+        /// negócio (Especialista Fiscal): um emitente recém-criado jamais transmite documento em produção
+        /// sem configuração deliberada (certificado, CSC, séries). Ponto único de default caso os
+        /// parâmetros DF-e passem a ser semeados no onboarding ou em qualquer primeiro uso.
+        /// </summary>
+        public static EmpresaParametrosDfe CriarPadraoHomologacao(Guid empresaId, string tenantId, string criadoPor)
+            => new EmpresaParametrosDfe(
+                empresaId: empresaId,
+                destacarIcmsSt: false,
+                nfe: null,
+                nfceHomologacao: null,
+                nfceProducao: null,
+                tipoAmbienteNfce: ETipoAmbiente.Homologacao,
+                tipoAmbienteNfe: ETipoAmbiente.Homologacao,
+                tenantId: tenantId,
+                criadoPor: criadoPor);
+
         public void Alterar(bool destacarIcmsSt, ParametrosDfeNfe? nfe, ParametrosDfeNfceHomologacao? nfceHomologacao, ParametrosDfeNfceProducao? nfceProducao, ETipoAmbiente tipoAmbienteNfce, ETipoAmbiente tipoAmbienteNfe, string alteradoPor)
         {
             DestacarIcmsSt = destacarIcmsSt;

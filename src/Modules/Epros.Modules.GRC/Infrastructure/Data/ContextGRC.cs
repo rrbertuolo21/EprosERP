@@ -47,6 +47,9 @@ namespace Epros.Modules.GRC.Infrastructure.Data
         public DbSet<TesteControle> TestesControle => Set<TesteControle>();
         public DbSet<Achado> Achados => Set<Achado>();
         public DbSet<PlanoAcaoAuditoria> PlanosAcaoAuditoria => Set<PlanoAcaoAuditoria>();
+        public DbSet<AmostraAuditoria> AmostrasAuditoria => Set<AmostraAuditoria>();
+        public DbSet<TokenAcessoAuditoria> TokensAcessoAuditoria => Set<TokenAcessoAuditoria>();
+        public DbSet<EvidenciaAuditoria> EvidenciasAuditoria => Set<EvidenciaAuditoria>();
 
         // GRC-SOD (Segregacao de Funcoes)
         public DbSet<FuncaoSoD> FuncoesSoD => Set<FuncaoSoD>();
@@ -54,6 +57,18 @@ namespace Epros.Modules.GRC.Infrastructure.Data
         public DbSet<SimulacaoSoD> SimulacoesSoD => Set<SimulacaoSoD>();
         public DbSet<ViolacaoSoD> ViolacoesSoD => Set<ViolacaoSoD>();
         public DbSet<ExcecaoSoD> ExcecoesSoD => Set<ExcecaoSoD>();
+        public DbSet<BypassSoD> BypassesSoD => Set<BypassSoD>();
+
+        // GRC — Taxonomia normativa unica (D-TEC-05)
+        public DbSet<TaxonomiaNormativa> TaxonomiasNormativas => Set<TaxonomiaNormativa>();
+        public DbSet<TaxonomiaVinculo> TaxonomiaVinculos => Set<TaxonomiaVinculo>();
+
+        // GRC — Parametrizacao por tenant (D-TEC-04): os 5 grc_*_parametro que faltavam
+        public DbSet<PoliticaParametro> PoliticaParametros => Set<PoliticaParametro>();
+        public DbSet<ComplianceParametro> ComplianceParametros => Set<ComplianceParametro>();
+        public DbSet<RiscoParametro> RiscoParametros => Set<RiscoParametro>();
+        public DbSet<ControleParametro> ControleParametros => Set<ControleParametro>();
+        public DbSet<SegregacaoParametro> SegregacaoParametros => Set<SegregacaoParametro>();
 
         public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
@@ -271,6 +286,30 @@ namespace Epros.Modules.GRC.Infrastructure.Data
                 entity.HasIndex(p => new { p.ResponsavelId, p.Status });
             });
 
+            modelBuilder.Entity<AmostraAuditoria>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                entity.ToTable("grc_cia_amostra");
+                entity.HasIndex(a => a.TesteControleId);
+                entity.HasIndex(a => a.PlanoAuditoriaId);
+            });
+
+            modelBuilder.Entity<TokenAcessoAuditoria>(entity =>
+            {
+                entity.HasKey(t => t.Id);
+                entity.ToTable("grc_cia_token_acesso");
+                entity.HasIndex(t => t.PlanoAuditoriaId);
+                entity.HasIndex(t => new { t.TenantId, t.TokenHash }).IsUnique();
+            });
+
+            modelBuilder.Entity<EvidenciaAuditoria>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("grc_cia_evidencia");
+                entity.HasIndex(e => e.AchadoId);
+                entity.HasIndex(e => e.TesteControleId);
+            });
+
             // ===================== GRC-SOD =====================
             modelBuilder.Entity<FuncaoSoD>(entity =>
             {
@@ -304,6 +343,68 @@ namespace Epros.Modules.GRC.Infrastructure.Data
                 entity.HasKey(e => e.Id);
                 entity.ToTable("grc_sod_excecao");
                 entity.HasIndex(e => e.ViolacaoId);
+            });
+
+            modelBuilder.Entity<BypassSoD>(entity =>
+            {
+                entity.HasKey(b => b.Id);
+                entity.ToTable("grc_sod_bypass_admin");
+                entity.HasIndex(b => new { b.TenantId, b.RegraId });
+                entity.HasIndex(b => b.AtorId);
+            });
+
+            // ===================== GRC — Taxonomia normativa unica (D-TEC-05) =====================
+            modelBuilder.Entity<TaxonomiaNormativa>(entity =>
+            {
+                entity.HasKey(t => t.Id);
+                entity.ToTable("grc_taxonomia_normativa");
+                entity.HasIndex(t => new { t.TenantId, t.Codigo }).IsUnique();
+                entity.HasIndex(t => new { t.TenantId, t.Tipo });
+                entity.HasIndex(t => t.CatalogoPaiId);
+            });
+
+            modelBuilder.Entity<TaxonomiaVinculo>(entity =>
+            {
+                entity.HasKey(v => v.Id);
+                entity.ToTable("grc_taxonomia_vinculo");
+                entity.HasIndex(v => new { v.OrigemTipo, v.OrigemId });
+                entity.HasIndex(v => new { v.DestinoTipo, v.DestinoId });
+            });
+
+            // ===================== GRC — Parametros por tenant (D-TEC-04) =====================
+            modelBuilder.Entity<PoliticaParametro>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.ToTable("grc_pol_parametro");
+                entity.HasIndex(p => new { p.TenantId, p.Chave }).IsUnique();
+            });
+
+            modelBuilder.Entity<ComplianceParametro>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.ToTable("grc_reg_parametro");
+                entity.HasIndex(p => new { p.TenantId, p.Chave }).IsUnique();
+            });
+
+            modelBuilder.Entity<RiscoParametro>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.ToTable("grc_ris_parametro");
+                entity.HasIndex(p => new { p.TenantId, p.Chave }).IsUnique();
+            });
+
+            modelBuilder.Entity<ControleParametro>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.ToTable("grc_cia_parametro");
+                entity.HasIndex(p => new { p.TenantId, p.Chave }).IsUnique();
+            });
+
+            modelBuilder.Entity<SegregacaoParametro>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.ToTable("grc_sod_parametro");
+                entity.HasIndex(p => new { p.TenantId, p.Chave }).IsUnique();
             });
 
             modelBuilder.Entity<OutboxMessage>(entity =>

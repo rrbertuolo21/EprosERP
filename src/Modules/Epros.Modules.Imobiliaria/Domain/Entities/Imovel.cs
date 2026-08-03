@@ -85,6 +85,100 @@ namespace Epros.Modules.Imobiliaria.Domain.Entities
             _vistorias.Add(vistoria);
         }
 
+        /// <summary>
+        /// Atualiza os dados cadastrais do imovel (ID3/PRD-03). Auditoria antes→depois via T8.
+        /// </summary>
+        public void AtualizarDados(
+            string descricao,
+            Guid? municipioId,
+            string? cep,
+            string? logradouro,
+            string? numero,
+            string? complemento,
+            string? bairro,
+            string usuario)
+        {
+            Descricao = descricao;
+            MunicipioId = municipioId;
+            Cep = cep;
+            Logradouro = logradouro;
+            Numero = numero;
+            Complemento = complemento;
+            Bairro = bairro;
+            Validar();
+            if (!IsValid) return;
+            MarcarAlterado(usuario);
+        }
+
+        // ===== Ciclo de vida do imovel (ID1/PRD-01) — mapeado ao status canonico T3 =====
+
+        /// <summary>EmCadastro/Inativo → Disponivel. Exige cadastro valido (RN-001).</summary>
+        public void Disponibilizar(string usuario)
+        {
+            if (Status != EStatusImovel.EmCadastro && Status != EStatusImovel.Inativo)
+            {
+                AddNotification(nameof(Status),
+                    "Apenas imoveis em cadastro ou inativos podem ser disponibilizados.");
+                return;
+            }
+            Validar();
+            if (!IsValid) return;
+            Status = EStatusImovel.Disponivel;
+            MarcarAlterado(usuario);
+        }
+
+        /// <summary>Disponivel/EmCadastro → Inativo. Bloqueado se locado.</summary>
+        public void Inativar(string usuario)
+        {
+            if (Status == EStatusImovel.Locado)
+            {
+                AddNotification(nameof(Status), "Imovel locado nao pode ser inativado.");
+                return;
+            }
+            if (Status == EStatusImovel.Inativo) return; // idempotente
+            Status = EStatusImovel.Inativo;
+            MarcarAlterado(usuario);
+        }
+
+        /// <summary>Inativo → Disponivel (reativacao governada).</summary>
+        public void Reativar(string usuario) => Disponibilizar(usuario);
+
+        /// <summary>
+        /// Efeito colateral de locacao vigente (ID1): Disponivel → Locado.
+        /// Chamado pelo fluxo de formalizacao da locacao.
+        /// </summary>
+        public void MarcarLocado(string usuario)
+        {
+            if (Status == EStatusImovel.Locado) return; // idempotente
+            if (Status == EStatusImovel.Inativo)
+            {
+                AddNotification(nameof(Status), "Imovel inativo nao pode ser locado.");
+                return;
+            }
+            Status = EStatusImovel.Locado;
+            MarcarAlterado(usuario);
+        }
+
+        /// <summary>
+        /// Efeito colateral de encerramento/cancelamento da locacao (ID1): Locado → Disponivel.
+        /// </summary>
+        public void LiberarLocacao(string usuario)
+        {
+            if (Status != EStatusImovel.Locado) return; // idempotente/sem efeito
+            Status = EStatusImovel.Disponivel;
+            MarcarAlterado(usuario);
+        }
+
+        /// <summary>Mapa do ciclo proprio ao status canonico da plataforma (T3).</summary>
+        public Epros.Shared.Domain.Enums.ESituacaoCanonica SituacaoCanonica => Status switch
+        {
+            EStatusImovel.EmCadastro => Epros.Shared.Domain.Enums.ESituacaoCanonica.Rascunho,
+            EStatusImovel.Disponivel => Epros.Shared.Domain.Enums.ESituacaoCanonica.Ativo,
+            EStatusImovel.Locado => Epros.Shared.Domain.Enums.ESituacaoCanonica.Ativo,
+            EStatusImovel.Inativo => Epros.Shared.Domain.Enums.ESituacaoCanonica.Inativo,
+            _ => Epros.Shared.Domain.Enums.ESituacaoCanonica.Rascunho
+        };
+
         public void Validar()
         {
             Clear();

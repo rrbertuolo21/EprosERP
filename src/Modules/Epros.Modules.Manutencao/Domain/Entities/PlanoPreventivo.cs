@@ -202,6 +202,18 @@ namespace Epros.Modules.Manutencao.Domain.Entities
                     nameof(ContadorProximo),
                     "Periodicidade por contador exige o proximo marco."));
         }
+
+        // MAN-PRV D9: apos gerar/retornar a OT, avanca a base para o proximo vencimento.
+        public void AvancarVencimento(DateTime? proximaExecucao, decimal? proximoContador, string usuario)
+        {
+            if (proximaExecucao.HasValue) ProximaExecucao = proximaExecucao;
+            if (proximoContador.HasValue)
+            {
+                ContadorBase = ContadorProximo;
+                ContadorProximo = proximoContador;
+            }
+            MarcarAlterado(usuario);
+        }
     }
 
     /// <summary>MAN-PRV — Checklist item do plano. EF 11.4.</summary>

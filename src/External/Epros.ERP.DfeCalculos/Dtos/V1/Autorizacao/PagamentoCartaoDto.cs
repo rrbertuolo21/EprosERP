@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.DfeCalculos.Dtos.V1.Autorizacao
+namespace Epros.ERP.DfeCalculos.Dtos.V1.Autorizacao
 {
     public class PagamentoCartaoDto
     {

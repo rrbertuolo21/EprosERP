@@ -15,11 +15,11 @@ namespace Epros.Modules.Aplicativo.Domain.Entities
         protected LogExecucaoMassa() { } // EF Core
 
         public LogExecucaoMassa(
-            Guid executeQueryId, 
-            string targetTenantId, 
-            string status, 
+            Guid executeQueryId,
+            string targetTenantId,
+            string status,
             string? mensagem,
-            string tenantId, 
+            string tenantId,
             string criadoPor) : base(tenantId, criadoPor)
         {
             AddNotifications(new Contract<LogExecucaoMassa>()

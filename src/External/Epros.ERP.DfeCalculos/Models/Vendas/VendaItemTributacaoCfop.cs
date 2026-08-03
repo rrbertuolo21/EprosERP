@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.DfeCalculos.Models.Vendas
+namespace Epros.ERP.DfeCalculos.Models.Vendas
 {
     public class VendaItemTributacaoCfop
     {

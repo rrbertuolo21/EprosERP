@@ -7,6 +7,7 @@ using Epros.Shared.Application.Models;
 using Epros.Modules.Aplicativo.Application.Commands;
 using Epros.Modules.GestaoClientes.Domain.Entities;
 using Epros.Modules.GestaoClientes.Infrastructure.Data;
+using Epros.Modules.GestaoClientes.Application.Queries;
 using Microsoft.EntityFrameworkCore;
 
 namespace Epros.Modules.Aplicativo.Application.Handlers
@@ -56,7 +57,8 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 limiteUso: request.LimiteUso,
                 validoAte: request.ValidoAte,
                 tenantId: tenantId,
-                criadoPor: criadoPor
+                criadoPor: criadoPor,
+                nome: request.Nome
             );
 
             if (!cupom.IsValid)
@@ -126,6 +128,98 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 ValorBase = plano.Preco,
                 ValorFinal = valorFinal
             });
+        }
+    }
+
+    public class AtualizarCupomCommandHandler : ICommandHandler<AtualizarCupomCommand>
+    {
+        private readonly ContextGestaoClientes _context;
+        private readonly ICurrentUser _currentUser;
+        public AtualizarCupomCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser)
+        { _context = context; _currentUser = currentUser; }
+
+        public async Task<CommandResult> Handle(AtualizarCupomCommand request, CancellationToken cancellationToken)
+        {
+            var cupom = await _context.Cupons.FirstOrDefaultAsync(c => c.Id == request.Id && c.DeletadoEm == null, cancellationToken);
+            if (cupom == null) return CommandResult.Falha(new[] { "Cupom não encontrado." });
+            cupom.Atualizar(request.Nome, request.Tipo, request.ValorDesconto, request.LimiteUso, request.ValidoAte, _currentUser.GetUserId() ?? "system");
+            if (!cupom.IsValid) return CommandResult.Falha(cupom.Notifications.Select(n => n.Message));
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Cupom atualizado com sucesso!");
+        }
+    }
+
+    public class ExcluirCupomCommandHandler : ICommandHandler<ExcluirCupomCommand>
+    {
+        private readonly ContextGestaoClientes _context;
+        private readonly ICurrentUser _currentUser;
+        public ExcluirCupomCommandHandler(ContextGestaoClientes context, ICurrentUser currentUser)
+        { _context = context; _currentUser = currentUser; }
+
+        public async Task<CommandResult> Handle(ExcluirCupomCommand request, CancellationToken cancellationToken)
+        {
+            var cupom = await _context.Cupons.FirstOrDefaultAsync(c => c.Id == request.Id && c.DeletadoEm == null, cancellationToken);
+            if (cupom == null) return CommandResult.Falha(new[] { "Cupom não encontrado." });
+            cupom.Deletar(_currentUser.GetUserId() ?? "system");
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Cupom excluído com sucesso!");
+        }
+    }
+
+    public class ListarCuponsQueryHandler : IQueryHandler<ListarCuponsQuery, PagedQueryResult<CupomDto>>
+    {
+        private readonly ContextGestaoClientes _context;
+        public ListarCuponsQueryHandler(ContextGestaoClientes context) { _context = context; }
+
+        public async Task<PagedQueryResult<CupomDto>> Handle(ListarCuponsQuery request, CancellationToken cancellationToken)
+        {
+            var query = _context.Cupons.Where(c => c.DeletadoEm == null);
+            var total = await query.CountAsync(cancellationToken);
+            var totalPaginas = (int)Math.Ceiling(total / (double)request.TamanhoPagina);
+            var items = await query
+                .OrderByDescending(c => c.CriadoEm)
+                .Skip((request.Pagina - 1) * request.TamanhoPagina)
+                .Take(request.TamanhoPagina)
+                .Select(c => new CupomDto
+                {
+                    Id = c.Id,
+                    Nome = c.Nome,
+                    Codigo = c.Codigo,
+                    Tipo = c.Tipo,
+                    ValorDesconto = c.ValorDesconto,
+                    LimiteUso = c.LimiteUso,
+                    QuantidadeUsos = c.QuantidadeUsos,
+                    Ativo = c.Ativo,
+                    ValidoAte = c.ValidoAte,
+                    Global = c.TenantId == "system"
+                })
+                .ToListAsync(cancellationToken);
+            return new PagedQueryResult<CupomDto>(items, total, totalPaginas);
+        }
+    }
+
+    public class ObterCupomQueryHandler : IQueryHandler<ObterCupomQuery, CupomDto>
+    {
+        private readonly ContextGestaoClientes _context;
+        public ObterCupomQueryHandler(ContextGestaoClientes context) { _context = context; }
+
+        public async Task<CupomDto> Handle(ObterCupomQuery request, CancellationToken cancellationToken)
+        {
+            var c = await _context.Cupons.FirstOrDefaultAsync(x => x.Id == request.Id && x.DeletadoEm == null, cancellationToken);
+            if (c == null) return null!;
+            return new CupomDto
+            {
+                Id = c.Id,
+                Nome = c.Nome,
+                Codigo = c.Codigo,
+                Tipo = c.Tipo,
+                ValorDesconto = c.ValorDesconto,
+                LimiteUso = c.LimiteUso,
+                QuantidadeUsos = c.QuantidadeUsos,
+                Ativo = c.Ativo,
+                ValidoAte = c.ValidoAte,
+                Global = c.TenantId == "system"
+            };
         }
     }
 }

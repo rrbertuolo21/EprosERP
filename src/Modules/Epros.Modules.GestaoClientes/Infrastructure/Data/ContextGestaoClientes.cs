@@ -11,13 +11,22 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
         public DbSet<ModuloPlano> ModulosPlano => Set<ModuloPlano>();
         public DbSet<Cliente> Clientes => Set<Cliente>();
         public DbSet<Fatura> Faturas => Set<Fatura>();
+        public DbSet<FaturaItem> FaturaItens => Set<FaturaItem>();
+        // 1.08I — reconhecimento de receita por competência (diferimento) + apuração de comissão.
+        public DbSet<ReconhecimentoReceita> ReconhecimentosReceita => Set<ReconhecimentoReceita>();
+        public DbSet<ApuracaoComissao> ApuracoesComissao => Set<ApuracaoComissao>();
+        // 1.08J — necessidade de NFS-e da mensalidade SaaS por competência (mecanismo/hook; emissão real = dependência).
+        public DbSet<NfseMensalidade> NfseMensalidades => Set<NfseMensalidade>();
         public DbSet<GrupoPlano> GrupoPlanos => Set<GrupoPlano>();
         public DbSet<AssinaturaCliente> AssinaturasClientes => Set<AssinaturaCliente>();
+        public DbSet<AjusteProracao> AjustesProracao => Set<AjusteProracao>();
         public DbSet<PagamentoFatura> PagamentosFaturas => Set<PagamentoFatura>();
+        public DbSet<ReciboPagamento> RecibosPagamento => Set<ReciboPagamento>();
+        public DbSet<MeioPagamentoCliente> MeiosPagamentoClientes => Set<MeioPagamentoCliente>();
         public DbSet<ConfiguracaoGatewayPagamento> ConfiguracoesGatewayPagamento => Set<ConfiguracaoGatewayPagamento>();
         public DbSet<ComposicaoFaturamento> ComposicoesFaturamento => Set<ComposicaoFaturamento>();
         public DbSet<HistoricoReajuste> HistoricosReajustes => Set<HistoricoReajuste>();
-        
+
         // Novas tabelas do submódulo Pedidos e Cobrança SaaS (APP-TEN-006)
         public DbSet<Cupom> Cupons => Set<Cupom>();
         public DbSet<PedidoSaaS> PedidosSaaS => Set<PedidoSaaS>();
@@ -114,6 +123,9 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
         public DbSet<FusoHorario> FusosHorarios => Set<FusoHorario>();
         public DbSet<Moeda> Moedas => Set<Moeda>();
         public DbSet<UpgradePlano> UpgradesPlanos => Set<UpgradePlano>();
+
+        // 1.06 — Idempotência do webhook de pagamento (dedupe por id de evento/pagamento).
+        public DbSet<WebhookEventoProcessado> WebhookEventosProcessados => Set<WebhookEventoProcessado>();
         public DbSet<ExercicioFinanceiro> ExerciciosFinanceiros => Set<ExercicioFinanceiro>();
         public DbSet<Categoria> Categorias => Set<Categoria>();
         public DbSet<UnidadeMedida> UnidadesMedida => Set<UnidadeMedida>();
@@ -147,6 +159,8 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
             modelBuilder.Entity<Plano>(entity =>
             {
                 entity.HasKey(p => p.Id);
+                // 1.01 — Duration persistida como texto (vitalicia/mensal/anual).
+                entity.Property(p => p.Duration).HasConversion<string>().HasMaxLength(20);
                 entity.HasMany(p => p.Modulos)
                       .WithOne()
                       .HasForeignKey(m => m.PlanoId)
@@ -162,9 +176,23 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 entity.HasKey(m => m.Id);
             });
 
+            // 1.06 — Idempotência de webhook: índice único por (provedor, evento_id) garante que o
+            // mesmo pagamento não seja processado duas vezes mesmo sob concorrência/reentrega.
+            modelBuilder.Entity<WebhookEventoProcessado>(entity =>
+            {
+                entity.HasKey(w => w.Id);
+                entity.Property(w => w.Provedor).HasMaxLength(50);
+                entity.Property(w => w.EventoId).HasMaxLength(200);
+                entity.HasIndex(w => new { w.Provedor, w.EventoId })
+                      .IsUnique()
+                      .HasDatabaseName("ux__webhook_evento_provedor_evento_id");
+            });
+
             modelBuilder.Entity<Cliente>(entity =>
             {
                 entity.HasKey(c => c.Id);
+                // 1.01 — StatusSaaS como enum tipado, persistido como texto (coluna "status_saa_s" inalterada).
+                entity.Property(c => c.StatusSaaS).HasConversion<string>();
                 entity.HasOne<Revenda>()
                       .WithMany()
                       .HasForeignKey(c => c.RevendaId)
@@ -180,6 +208,68 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 entity.HasKey(f => f.Id);
                 // Status como enum tipado, persistido como texto (coluna varchar inalterada).
                 entity.Property(f => f.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(f => f.Numero).HasMaxLength(50);
+                // Itens/composição da fatura emitida (1.01 / EF 11.8).
+                entity.HasMany(f => f.Itens)
+                      .WithOne()
+                      .HasForeignKey(i => i.FaturaId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<FaturaItem>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.Descricao).HasMaxLength(200);
+            });
+
+            // 1.08I — Cronograma de reconhecimento de receita por competência (diferimento anual = 12 avos).
+            modelBuilder.Entity<ReconhecimentoReceita>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.Status).HasConversion<string>().HasMaxLength(20);
+                entity.HasOne<Fatura>()
+                      .WithMany()
+                      .HasForeignKey(r => r.FaturaId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(r => r.FaturaId)
+                      .HasDatabaseName("ix_reconhecimento_receita_fatura");
+                entity.HasIndex(r => new { r.Status, r.Competencia })
+                      .HasDatabaseName("ix_reconhecimento_receita_status_competencia");
+            });
+
+            // 1.08I — Apuração de comissão parametrizável (base bruto|líquido; momento competência|caixa).
+            modelBuilder.Entity<ApuracaoComissao>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                entity.Property(a => a.Base).HasConversion<string>().HasMaxLength(20);
+                entity.Property(a => a.Momento).HasConversion<string>().HasMaxLength(20);
+                entity.Property(a => a.MotivoEstorno).HasColumnType("text");
+                entity.HasOne<Fatura>()
+                      .WithMany()
+                      .HasForeignKey(a => a.FaturaId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(a => a.FaturaId)
+                      .HasDatabaseName("ix_apuracao_comissao_fatura");
+            });
+
+            // 1.08J — NFS-e da mensalidade SaaS por competência (mecanismo/hook). 1 por (fatura, competência).
+            modelBuilder.Entity<NfseMensalidade>(entity =>
+            {
+                entity.HasKey(n => n.Id);
+                entity.Property(n => n.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(n => n.Ambiente).HasConversion<string>().HasMaxLength(20);
+                entity.Property(n => n.Motivo).HasColumnType("text");
+                entity.Property(n => n.NumeroNfse).HasMaxLength(100);
+                entity.HasOne<Fatura>()
+                      .WithMany()
+                      .HasForeignKey(n => n.FaturaId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                // Idempotência do mecanismo: 1 NFS-e por competência/fatura.
+                entity.HasIndex(n => new { n.FaturaId, n.Competencia })
+                      .IsUnique()
+                      .HasDatabaseName("ix_nfse_mensalidade_fatura_competencia");
+                entity.HasIndex(n => new { n.Status, n.Competencia })
+                      .HasDatabaseName("ix_nfse_mensalidade_status_competencia");
             });
 
             modelBuilder.Entity<GrupoPlano>(entity =>
@@ -201,12 +291,36 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                       .WithMany()
                       .HasForeignKey(a => a.PlanoId)
                       .OnDelete(DeleteBehavior.Restrict);
+                // 1.08D — motivo de cancelamento pode ser longo (texto livre do cliente).
+                entity.Property(a => a.MotivoCancelamento).HasColumnType("text");
+                entity.Property(a => a.CanceladaPor).HasMaxLength(200);
+                // 1.08E — cupom recorrente vinculado à assinatura (SetNull: apagar o cupom não apaga a assinatura).
+                entity.HasOne<Cupom>()
+                      .WithMany()
+                      .HasForeignKey(a => a.CupomId)
+                      .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // 1.08D — Registro de proração por mudança de plano (mecanismo pro-rata por dias).
+            modelBuilder.Entity<AjusteProracao>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                entity.Property(a => a.Tipo).HasConversion<string>().HasMaxLength(20);
+                entity.Property(a => a.Observacao).HasColumnType("text");
+                entity.HasOne<AssinaturaCliente>()
+                      .WithMany()
+                      .HasForeignKey(a => a.AssinaturaClienteId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(a => a.AssinaturaClienteId)
+                      .HasDatabaseName("ix_ajustes_proracao_assinatura");
             });
 
             modelBuilder.Entity<PagamentoFatura>(entity =>
             {
                 entity.HasKey(p => p.Id);
                 entity.Property(p => p.Status).HasConversion<string>().HasMaxLength(20);
+                // Obs.: a precisão 18,3 de ValorTarifa é aplicada APÓS base.OnModelCreating (a convenção
+                // global reescreveria 18,2 aqui). Ver bloco no fim deste método.
                 entity.HasOne<Fatura>()
                       .WithMany()
                       .HasForeignKey(p => p.FaturaId)
@@ -218,6 +332,10 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 // Dados da cobrança PIX (payloads podem ser longos → text).
                 entity.Property(p => p.QrCode).HasColumnType("text");
                 entity.Property(p => p.QrCodeBase64).HasColumnType("text");
+                // 1.08B — dados de boleto (linha digitável / código de barras / URL do PDF).
+                entity.Property(p => p.LinhaDigitavel).HasMaxLength(100);
+                entity.Property(p => p.CodigoBarras).HasMaxLength(100);
+                entity.Property(p => p.UrlBoleto).HasColumnType("text");
             });
 
             modelBuilder.Entity<ConfiguracaoGatewayPagamento>(entity =>
@@ -233,6 +351,39 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 entity.Property(g => g.TenantAlvo).HasMaxLength(100);
                 entity.HasIndex(g => new { g.TenantAlvo, g.Provedor, g.Ativo })
                       .HasDatabaseName("ix_config_gateway_pagamento_tenant_provedor_ativo");
+            });
+
+            // 1.08A — Recibo de pagamento (documento simples; NFS-e é diferida). Número único por recibo.
+            modelBuilder.Entity<ReciboPagamento>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.Numero).HasMaxLength(40);
+                entity.Property(r => r.MeioPagamento).HasMaxLength(30);
+                entity.Property(r => r.PagadorNome).HasMaxLength(200);
+                entity.Property(r => r.PagadorDocumento).HasMaxLength(30);
+                entity.HasIndex(r => r.Numero).IsUnique().HasDatabaseName("ux_recibos_pagamento_numero");
+                entity.HasIndex(r => r.FaturaId).HasDatabaseName("ix_recibos_pagamento_fatura");
+                entity.HasOne<Fatura>()
+                      .WithMany()
+                      .HasForeignKey(r => r.FaturaId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // 1.08B — Meio de pagamento salvo do cliente (cartão-on-file tokenizado). Só metadados +
+            // identificadores opacos do gateway (PCI: nunca PAN/CVV).
+            modelBuilder.Entity<MeioPagamentoCliente>(entity =>
+            {
+                entity.HasKey(m => m.Id);
+                entity.Property(m => m.Tipo).HasMaxLength(20);
+                entity.Property(m => m.Bandeira).HasMaxLength(30);
+                entity.Property(m => m.UltimosQuatro).HasMaxLength(4);
+                entity.Property(m => m.CustomerIdGateway).HasMaxLength(100);
+                entity.Property(m => m.CardIdGateway).HasMaxLength(100);
+                entity.HasIndex(m => new { m.ClienteId, m.Ativo }).HasDatabaseName("ix_meios_pagamento_cliente_cliente_ativo");
+                entity.HasOne<Cliente>()
+                      .WithMany()
+                      .HasForeignKey(m => m.ClienteId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<Cupom>(entity =>
@@ -268,6 +419,11 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 entity.HasIndex(u => new { u.ClienteId, u.CupomId, u.PedidoId })
                       .IsUnique()
                       .HasDatabaseName("ix_usos_cupons_usuario_cupom_pedido");
+                // 1.08E — uso recorrente por fatura: um registro por (cliente, cupom, fatura) do ciclo.
+                entity.HasIndex(u => new { u.ClienteId, u.CupomId, u.FaturaId })
+                      .IsUnique()
+                      .HasDatabaseName("ix_usos_cupons_cliente_cupom_fatura")
+                      .HasFilter("fatura_id IS NOT NULL");
                 entity.HasOne<Cliente>()
                       .WithMany()
                       .HasForeignKey(u => u.ClienteId)
@@ -279,6 +435,11 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 entity.HasOne<PedidoSaaS>()
                       .WithMany()
                       .HasForeignKey(u => u.PedidoId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                // 1.08E — vínculo do uso recorrente à fatura do ciclo.
+                entity.HasOne<Fatura>()
+                      .WithMany()
+                      .HasForeignKey(u => u.FaturaId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
@@ -449,11 +610,16 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 {
                     cnpj.Property(c => c.Valor).HasColumnName("cnpj");
                 });
+                // E-01 (DECISOES_IMPLANTACAO_V1): razão social/fantasia unificadas em 250 (era 60).
+                // Enforcement no domínio (PessoaJuridica.Validar). Coluna permanece `text` (sem cap de
+                // varchar) para evitar migration text->varchar com risco de truncamento — ver
+                // especificacoes/CADASTROS_BASE/DECISOES-PENDENTES-RAFAEL.md.
             });
 
             modelBuilder.Entity<PessoaEstrangeiro>(entity =>
             {
                 entity.HasKey(pe => pe.PessoaId);
+                // E-03: identificação de estrangeiro 20 -> 30. Enforcement no domínio; coluna permanece `text`.
             });
 
             modelBuilder.Entity<PessoaCliente>(entity =>
@@ -503,6 +669,8 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
             modelBuilder.Entity<PessoaContato>(entity =>
             {
                 entity.HasKey(c => c.Id);
+                // E-02: fecha o gap de validação — e-mail de contato limitado a 150 no domínio
+                // (PessoaContato ctor), alinhando EmpresaContato/Vendedor. Coluna permanece `text`.
             });
 
             modelBuilder.Entity<PessoaVeiculo>(entity =>
@@ -909,7 +1077,7 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 entity.Property(pf => pf.ChequeNominalA).HasMaxLength(150);
                 entity.Property(pf => pf.Observacao).HasMaxLength(300);
                 entity.Property(pf => pf.ContaRemetente).HasMaxLength(50);
-                entity.HasOne<Pessoa>().WithOne().HasForeignKey<PessoaFornecedor>(pf => pf.PessoaId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne<Pessoa>().WithOne(p => p.PessoaFornecedor).HasForeignKey<PessoaFornecedor>(pf => pf.PessoaId).OnDelete(DeleteBehavior.Cascade);
                 entity.HasIndex(pf => pf.GrupoFornecedorId).HasDatabaseName("ix_pessoas_fornecedores_grupo");
                 entity.HasIndex(pf => pf.CompradorId).HasDatabaseName("ix_pessoas_fornecedores_comprador");
             });
@@ -917,14 +1085,14 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
             modelBuilder.Entity<PessoaComprador>(entity =>
             {
                 entity.HasKey(pc => pc.PessoaId);
-                entity.HasOne<Pessoa>().WithOne().HasForeignKey<PessoaComprador>(pc => pc.PessoaId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne<Pessoa>().WithOne(p => p.PessoaComprador).HasForeignKey<PessoaComprador>(pc => pc.PessoaId).OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<PessoaContador>(entity =>
             {
                 entity.HasKey(pc => pc.PessoaId);
                 entity.Property(pc => pc.Crc).HasMaxLength(15);
-                entity.HasOne<Pessoa>().WithOne().HasForeignKey<PessoaContador>(pc => pc.PessoaId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne<Pessoa>().WithOne(p => p.PessoaContador).HasForeignKey<PessoaContador>(pc => pc.PessoaId).OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<PessoaVendedor>(entity =>
@@ -935,7 +1103,7 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
                 entity.Property(pv => pv.FormaDesconto).HasMaxLength(50);
                 entity.Property(pv => pv.TipoDesconto).HasMaxLength(50);
                 entity.Property(pv => pv.Meta).HasPrecision(18, 2);
-                entity.HasOne<Pessoa>().WithOne().HasForeignKey<PessoaVendedor>(pv => pv.PessoaId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne<Pessoa>().WithOne(p => p.PessoaVendedor).HasForeignKey<PessoaVendedor>(pv => pv.PessoaId).OnDelete(DeleteBehavior.Cascade);
             });
 
             // ===================== CAD-PEM: governança =====================
@@ -1087,9 +1255,11 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
             {
                 entity.HasKey(up => up.Id);
                 entity.Property(up => up.ModelType).HasMaxLength(100);
-                entity.HasIndex(up => new { up.UsuarioId, up.PapelId })
+                // 1.09 — papel por empresa: a chave natural passa a incluir a empresa (nulo = todas as
+                // empresas do tenant). Permite o mesmo (usuário, papel) em empresas distintas.
+                entity.HasIndex(up => new { up.UsuarioId, up.PapelId, up.EmpresaId })
                       .IsUnique()
-                      .HasDatabaseName("ix_usuarios_papeis_usuario_papel");
+                      .HasDatabaseName("ix_usuarios_papeis_usuario_papel_empresa");
             });
 
             // ===================== APP-TEN-003: auditoria e segurança de usuário =====================
@@ -1160,6 +1330,27 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
 
             // Aplica as convenções globais de ContextBase (snake_case, RLS, Precision(18,2), unique sync_id index, etc.)
             base.OnModelCreating(modelBuilder);
+
+            // 1.01 — Plano HÍBRIDO: sobrepõe o filtro de tenant padrão (aplicado por ContextBase) para que o
+            // catálogo GLOBAL do Siser (TenantId == "system") seja visível a todos os tenants, além do plano
+            // custom do próprio tenant. A criação sob contexto landlord ("system") gera catálogo; sob contexto
+            // de tenant gera custom (ProcessarEntidadesSaaS). Não quebra dados existentes: planos com TenantId
+            // real continuam visíveis apenas ao seu tenant.
+            modelBuilder.Entity<Plano>().HasQueryFilter(p =>
+                (p.TenantId == _tenantProvider.GetTenantId() || p.TenantId == "system") && p.DeletadoEm == null);
+
+            // 1.01 — tarifa do PagamentoFatura com precisão 18,3 (EF 11.9). Definido após base.OnModelCreating
+            // porque a convenção global de decimais (Precision 18,2) sobrescreveria qualquer valor definido antes.
+            modelBuilder.Entity<PagamentoFatura>().Property(p => p.ValorTarifa).HasPrecision(18, 3);
+
+            // 1.02 — Cupom HÍBRIDO (mesmo padrão do Plano): cupom global do Siser ("system") visível a todos
+            // os tenants + cupom custom do próprio tenant. Não quebra dados existentes.
+            modelBuilder.Entity<Cupom>().HasQueryFilter(c =>
+                (c.TenantId == _tenantProvider.GetTenantId() || c.TenantId == "system") && c.DeletadoEm == null);
+
+            // 1.02 — unicidade de catálogos globais: Moeda por CodigoISO, Pais por Nome (REG-006).
+            modelBuilder.Entity<Moeda>().HasIndex(m => m.CodigoISO).IsUnique();
+            modelBuilder.Entity<Pais>().HasIndex(p => p.Nome).IsUnique();
         }
     }
 }

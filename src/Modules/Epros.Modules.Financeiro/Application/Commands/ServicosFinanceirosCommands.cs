@@ -73,4 +73,28 @@ namespace Epros.Modules.Financeiro.Application.Commands
         string? LinkExterno, string? Observacao, string? Emails) : IRequest<CommandResult>;
 
     public record TransicionarCobrancaEmailCommand(Guid Id, string Acao, string? Comprovante) : IRequest<CommandResult>;
+
+    // ----- Gateway de Pagamento / Webhook (estrutura de baixa por webhook) -----
+    public record RegistrarGatewayPagamentoCommand(
+        EProvedorPagamento Provedor, string Nome, string ChaveAssinatura, string? IdentificadorExterno) : IRequest<CommandResult>;
+
+    public record AlterarGatewayPagamentoCommand(
+        Guid Id, string Nome, string ChaveAssinatura, string? IdentificadorExterno) : IRequest<CommandResult>;
+
+    public record AtivarGatewayPagamentoCommand(Guid Id, bool Ativar) : IRequest<CommandResult>;
+
+    /// <summary>
+    /// Processa um webhook de pagamento: valida a assinatura (HMAC), aplica idempotência/dedup por
+    /// (gateway x id de evento) e, quando válido, dá baixa na fatura pelo nosso número. NÃO chama o
+    /// provedor externo — a confirmação junto ao provedor real é // valida-ambiente.
+    /// </summary>
+    public record ProcessarWebhookPagamentoCommand(
+        Guid GatewayPagamentoId,
+        string EventoExternoId,
+        string? TipoEvento,
+        long? NossoNumero,
+        decimal? Valor,
+        DateTime? DataPagamento,
+        string PayloadRaw,
+        string? Assinatura) : IRequest<CommandResult>;
 }

@@ -63,6 +63,11 @@ namespace Epros.Modules.Producao.Infrastructure.Data
         public DbSet<MrpPlanejamento> MrpPlanejamentos => Set<MrpPlanejamento>();
         public DbSet<MrpPlanejamentoHistorico> MrpHistoricos => Set<MrpPlanejamentoHistorico>();
         public DbSet<MrpPlanejamentoAnexo> MrpAnexos => Set<MrpPlanejamentoAnexo>();
+        public DbSet<MrpNecessidade> MrpNecessidades => Set<MrpNecessidade>();
+        public DbSet<MrpSugestao> MrpSugestoes => Set<MrpSugestao>();
+
+        // PRD-CTR — Centro de Trabalho (base de capacidade)
+        public DbSet<CentroTrabalho> CentrosTrabalho => Set<CentroTrabalho>();
 
         // PRD-ESC — Escalonamento e Programação
         public DbSet<EscProgramacao> EscProgramacoes => Set<EscProgramacao>();
@@ -87,7 +92,7 @@ namespace Epros.Modules.Producao.Infrastructure.Data
                 entity.HasKey(l => l.Id);
                 entity.ToTable("listas_materiais");
                 entity.HasIndex(l => new { l.TenantId, l.ProdutoAcabadoSku });
-                
+
                 entity.HasMany(l => l.Itens)
                     .WithOne()
                     .HasForeignKey(i => i.ListaMateriaisId)
@@ -152,6 +157,13 @@ namespace Epros.Modules.Producao.Infrastructure.Data
                 entity.ToTable("prd_bom_componente");
                 entity.HasIndex(e => new { e.TenantId, e.EstruturaId });
                 entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.TipoComponente).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.Quantidade).HasPrecision(18, 6);
+                entity.Property(e => e.MultiplicadorUnidade).HasPrecision(18, 6);
+                entity.Property(e => e.PercentualDesperdicio).HasPrecision(9, 4);
+                entity.Property(e => e.QuantidadeFinal).HasPrecision(18, 6);
+                entity.Property(e => e.CustoUnitarioComImpostos).HasPrecision(18, 6);
+                entity.Property(e => e.CustoLinha).HasPrecision(18, 6);
             });
 
             modelBuilder.Entity<BomGrupoComponente>(entity =>
@@ -415,6 +427,8 @@ namespace Epros.Modules.Producao.Infrastructure.Data
                 entity.HasIndex(e => new { e.TenantId, e.Referencia });
                 entity.HasIndex(e => new { e.TenantId, e.Status });
                 entity.HasIndex(e => new { e.TenantId, e.EmpresaId });
+                // T5 — vínculo com a ordem de produção canônica (ordens_producao); indexado para lookup reverso.
+                entity.HasIndex(e => new { e.TenantId, e.OrdemProducaoRefId });
                 entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
                 entity.Property(e => e.Referencia).HasMaxLength(80);
                 entity.Property(e => e.TipoCustoProducao).HasMaxLength(50);
@@ -552,6 +566,48 @@ namespace Epros.Modules.Producao.Infrastructure.Data
                 entity.HasIndex(e => new { e.TenantId, e.PlanejamentoId });
                 entity.Property(e => e.Descricao).HasMaxLength(500);
                 entity.Property(e => e.UsuarioId).HasMaxLength(100);
+            });
+
+            modelBuilder.Entity<MrpNecessidade>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_mrp_necessidade");
+                entity.HasIndex(e => new { e.TenantId, e.PlanejamentoId });
+                entity.HasIndex(e => new { e.TenantId, e.ItemId });
+                entity.Property(e => e.NecessidadeBruta).HasPrecision(18, 6);
+                entity.Property(e => e.Disponibilidade).HasPrecision(18, 6);
+                entity.Property(e => e.RecebimentosProgramados).HasPrecision(18, 6);
+                entity.Property(e => e.EstoqueSeguranca).HasPrecision(18, 6);
+                entity.Property(e => e.NecessidadeLiquida).HasPrecision(18, 6);
+            });
+
+            modelBuilder.Entity<MrpSugestao>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_mrp_sugestao");
+                entity.HasIndex(e => new { e.TenantId, e.PlanejamentoId });
+                entity.HasIndex(e => new { e.TenantId, e.ItemId });
+                entity.HasIndex(e => new { e.TenantId, e.Estado });
+                entity.Property(e => e.Tipo).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.Estado).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.Quantidade).HasPrecision(18, 6);
+                entity.Property(e => e.MotivoCancelamento).HasMaxLength(1000);
+            });
+
+            // ===================== PRD-CTR =====================
+            modelBuilder.Entity<CentroTrabalho>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.ToTable("prd_ctr_centro_trabalho");
+                entity.HasIndex(e => new { e.TenantId, e.Codigo }).IsUnique();
+                entity.HasIndex(e => new { e.TenantId, e.Status });
+                entity.Property(e => e.Codigo).HasMaxLength(50);
+                entity.Property(e => e.Nome).HasMaxLength(200);
+                entity.Property(e => e.Descricao).HasMaxLength(1000);
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.MinutosPorTurno).HasPrecision(18, 4);
+                entity.Property(e => e.EficienciaPercentual).HasPrecision(9, 4);
+                entity.Property(e => e.MotivoRejeicao).HasMaxLength(1000);
             });
 
             // ===================== PRD-ESC =====================

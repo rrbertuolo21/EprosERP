@@ -98,7 +98,7 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Jobs
 
                     var payloadJson = JsonSerializer.Serialize(payload);
                     var outboxMessage = new OutboxMessage(fatura.TenantId, "FaturaAlertaCobrancaEvent", payloadJson);
-                    
+
                     _context.OutboxMessages.Add(outboxMessage);
                     await _context.SaveChangesAsync();
 

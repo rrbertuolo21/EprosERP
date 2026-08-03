@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using Epros.Modules.Aplicativo.Application.Commands;
 using Epros.Modules.Aplicativo.Application.Queries;
+using Epros.Modules.GestaoClientes.Application.Commands;
+using Epros.Modules.GestaoClientes.Application.Queries;
 using Epros.Shared.Application.Models;
 
 namespace Epros.API.Controllers
@@ -48,6 +50,55 @@ namespace Epros.API.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// 1.08D — Mudança de plano SELF-SERVICE (upgrade/downgrade) com proração pro-rata por dias.
+        /// Reavalia limites/entitlement (não apaga excedente) e gera o ajuste (fatura de diferença no
+        /// débito, crédito registrado para a próxima fatura). ⚠️ política de proração = valida contador.
+        /// </summary>
+        [HttpPost("mudar-plano")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> MudarPlano([FromBody] MudarPlanoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            if (!result.Sucesso)
+            {
+                return UnprocessableEntity(result);
+            }
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// 1.08D — Cancelamento self-service GOVERNADO. Entra na janela somente-leitura/export de 30 dias
+        /// (REG-021); registra motivo/quem/quando. Reversível via <c>reativar</c> dentro da janela.
+        /// </summary>
+        [HttpPost("cancelar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Cancelar([FromBody] CancelarAssinaturaCommand command)
+        {
+            var result = await _mediator.Send(command);
+            if (!result.Sucesso)
+            {
+                return UnprocessableEntity(result);
+            }
+            return Ok(result);
+        }
+
+        /// <summary>1.08D — Reativação self-service dentro da janela de 30 dias (volta a Ativo).</summary>
+        [HttpPost("reativar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> Reativar()
+        {
+            var result = await _mediator.Send(new ReativarAssinaturaCommand());
+            if (!result.Sucesso)
+            {
+                return UnprocessableEntity(result);
+            }
+            return Ok(result);
+        }
+
         [HttpGet("faturas")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> ListarFaturas([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 50)
@@ -68,6 +119,64 @@ namespace Epros.API.Controllers
             {
                 return UnprocessableEntity(result);
             }
+            return Ok(result);
+        }
+
+        /// <summary>1.08B — Emite o BOLETO real da fatura (concilia pelo webhook unificado do MP).</summary>
+        [HttpPost("faturas/{faturaId:guid}/boleto")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> GerarBoleto(Guid faturaId)
+        {
+            var result = await _mediator.Send(new GerarBoletoCommand(faturaId));
+            if (!result.Sucesso) return UnprocessableEntity(result);
+            return Ok(result);
+        }
+
+        // ===== 1.08B — Meios de pagamento salvos (cartão-on-file) do cliente =====
+
+        /// <summary>Lista os cartões salvos do cliente do tenant corrente.</summary>
+        [HttpGet("meios-pagamento")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> ListarMeiosPagamento()
+        {
+            var result = await _mediator.Send(new ListarMeiosPagamentoQuery());
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Adiciona um cartão salvo. ⛔ PCI: o corpo carrega apenas o TOKEN do cartão gerado no FRONT pela
+        /// lib do Mercado Pago — PAN/CVV nunca chegam ao backend.
+        /// </summary>
+        [HttpPost("meios-pagamento")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> AdicionarCartao([FromBody] AdicionarCartaoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            if (!result.Sucesso) return UnprocessableEntity(result);
+            return Ok(result);
+        }
+
+        /// <summary>Remove (desativa) um cartão salvo.</summary>
+        [HttpDelete("meios-pagamento/{meioId:guid}")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> RemoverMeioPagamento(Guid meioId)
+        {
+            var result = await _mediator.Send(new RemoverMeioPagamentoCommand(meioId));
+            if (!result.Sucesso) return UnprocessableEntity(result);
+            return Ok(result);
+        }
+
+        /// <summary>Define um cartão salvo como padrão (débito automático).</summary>
+        [HttpPost("meios-pagamento/{meioId:guid}/padrao")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<ActionResult<CommandResult>> DefinirPadrao(Guid meioId)
+        {
+            var result = await _mediator.Send(new DefinirMeioPagamentoPadraoCommand(meioId));
+            if (!result.Sucesso) return UnprocessableEntity(result);
             return Ok(result);
         }
     }

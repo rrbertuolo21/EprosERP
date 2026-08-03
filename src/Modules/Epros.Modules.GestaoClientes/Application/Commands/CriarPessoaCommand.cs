@@ -21,7 +21,8 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
         string? LinhaEndereco1 = null,
         string? LinhaEndereco2 = null,
         decimal? Latitude = null,
-        decimal? Longitude = null
+        decimal? Longitude = null,
+        bool Principal = false
     );
 
     public record ContatoDto(
@@ -52,7 +53,7 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
         ETipoPix? TipoPix,
         string? ChavePix,
         string? Observacoes,
-        
+
         // Fisica
         string? FisicaCpf,
         string? FisicaNome,
@@ -61,7 +62,7 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
         string? RgOrgaoEmissor,
         ETipoGenero? TipoGenero,
         DateTime? DataNascimento,
-        
+
         // Juridica
         string? JuridicaCnpj,
         string? RazaoSocial,
@@ -69,11 +70,11 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
         string? InscricaoEstadual,
         string? InscricaoMunicipal,
         string? Cnae,
-        
+
         // Estrangeiro
         string? EstrangeiroNome,
         string? IdentificacaoEstrangeiro,
-        
+
         // Roles flags
         bool EhCliente,
         bool EhFornecedor,
@@ -82,7 +83,7 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
         bool EhPrestadorServico,
         bool EhFuncionario,
         bool EhProdutorRural,
-        
+
         // Role data
         bool? ClienteEhConsumidorFinal,
         ETipoContribuinte? ClienteTipoContribuinte,
@@ -96,7 +97,7 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
         string? TransportadoraCiot,
         string? TransportadoraRntrc,
         string? PrestadorCei,
-        
+
         // Collections
         List<EnderecoDto>? Enderecos,
         List<ContatoDto>? Contatos,

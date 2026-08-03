@@ -75,6 +75,14 @@ namespace Epros.Modules.Financeiro.Application.EventHandlers
                 return;
 
             _context.ContasAPagarAgregado.Add(conta);
+
+            // Wiring evento→ledger (TEC-8): lançamento contábil automático (partida dobrada) via de-para.
+            await Services.ContabilizacaoEventoService.GerarLancamentoAsync(
+                _context, notification.TenantId, "system",
+                Epros.Shared.Domain.Events.CatalogoEventosIntegracao.Compras.CompraLancada,
+                notification.CompraId, notification.ValorTotal,
+                $"Compra NF {notification.NumeroNota}", cancellationToken);
+
             await _context.SaveChangesAsync(cancellationToken);
         }
     }

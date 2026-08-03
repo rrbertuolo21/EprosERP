@@ -77,10 +77,61 @@ namespace Epros.Tests
 
             // Assertiva
             Assert.True(result.Sucesso);
-            
+
             var atualizado = await context.Colaboradores.FindAsync(colaborador.Id);
             Assert.Equal("Desligado", atualizado!.Status);
             Assert.Equal(demissaoData, atualizado.DataDemissao);
+        }
+
+        [Fact]
+        public async Task Deve_Desligar_E_Apurar_Rescisao_Pelo_Motor()
+        {
+            var options = new DbContextOptionsBuilder<ContextRH>()
+                .UseInMemoryDatabase("db_rh_rescisao_motor")
+                .Options;
+
+            var tenantProvider = new TestTenantProvider("tenant-1");
+            var currentUser = new TestCurrentUser("user-1");
+            using var context = new ContextRH(options, tenantProvider, currentUser);
+
+            var admissao = new DateTime(2024, 1, 10);
+            var colaborador = new Colaborador("Ana Souza", "22233344455", "ana@epros.com.br", "Analista", "TI", 3000m, admissao, "tenant-1", "user-1");
+            context.Colaboradores.Add(colaborador);
+            await context.SaveChangesAsync();
+
+            var handler = new DesligarColaboradorCommandHandler(context, currentUser);
+            var demissao = new DateTime(2026, 6, 20);
+            var command = new DesligarColaboradorCommand(
+                colaborador.Id,
+                demissao,
+                TipoDesligamento: Epros.Modules.RH.Domain.Folha.Calculo.TipoDesligamento.SemJustaCausaEmpregador,
+                SaldoFgtsDepositado: 5000m,
+                TemFeriasVencidas: false);
+
+            var result = await handler.Handle(command, CancellationToken.None);
+
+            Assert.True(result.Sucesso);
+
+            // Colaborador desligado.
+            var atualizado = await context.Colaboradores.FindAsync(colaborador.Id);
+            Assert.Equal("Desligado", atualizado!.Status);
+
+            // Rescisão persistida pelo motor (multa 40% do FGTS = 2000; aviso proporcional > 30 dias).
+            var rescisoes = await context.FolRescisaos.ToListAsync();
+            Assert.Single(rescisoes);
+            Assert.Equal(colaborador.Id, rescisoes[0].ColaboradorId);
+            Assert.Equal(2000m, rescisoes[0].FgtsValorRescisao);
+            Assert.True(rescisoes[0].DiasAvisoPrevio >= 30);
+
+            // Confere contra o motor diretamente (verbas por tipo).
+            var esperado = Epros.Modules.RH.Domain.Folha.Calculo.MotorRescisao.Calcular(
+                new Epros.Modules.RH.Domain.Folha.Calculo.EntradaRescisao(
+                    Epros.Modules.RH.Domain.Folha.Calculo.TipoDesligamento.SemJustaCausaEmpregador,
+                    3000m, admissao, demissao, demissao.Day, SaldoFgtsDepositado: 5000m),
+                Epros.Modules.RH.Domain.Folha.Calculo.TabelasFolha.Vigente(2026));
+            Assert.Equal(esperado.DiasAvisoPrevio, rescisoes[0].DiasAvisoPrevio);
+            Assert.Equal(esperado.MultaFgts, rescisoes[0].FgtsValorRescisao);
+            Assert.True(esperado.TemDireitoSeguroDesemprego);
         }
 
         [Fact]
@@ -154,14 +205,74 @@ namespace Epros.Tests
             Assert.Single(folhas);
             Assert.Equal(6, folhas[0].MesCompetencia);
             Assert.Equal(2026, folhas[0].AnoCompetencia);
-            // Líquido = 5000 (base) + 500 (bônus) - 200 (VR) = 5300
-            Assert.Equal(5300m, folhas[0].SalarioLiquido);
-            Assert.Equal(2, folhas[0].Verbas.Count);
+
+            // O líquido agora vem do MOTOR LEGAL (INSS/IRRF descontados), não mais de bruto − verbas.
+            // Bruto = 5000 (base) + 500 (bônus) = 5500; descontos = INSS + IRRF + VR (200).
+            var esperado = Epros.Modules.RH.Domain.Folha.Calculo.MotorFolhaMensal.Calcular(
+                new Epros.Modules.RH.Domain.Folha.Calculo.EntradaFolhaMensal(
+                    5000m,
+                    ProventosAdicionais: new List<Epros.Modules.RH.Domain.Folha.Calculo.ItemProvento>
+                    {
+                        new("P001", "Bônus", 500m)
+                    },
+                    DescontosDiversos: new List<Epros.Modules.RH.Domain.Folha.Calculo.ItemDesconto>
+                    {
+                        new("D001", "Vale Refeição", 200m)
+                    }),
+                Epros.Modules.RH.Domain.Folha.Calculo.TabelasFolha.Vigente(2026));
+
+            Assert.Equal(5500m, folhas[0].SalarioBruto);
+            Assert.Equal(esperado.Liquido, folhas[0].SalarioLiquido);
+            Assert.True(folhas[0].SalarioLiquido < 5300m, "O líquido do motor deve refletir INSS/IRRF, ficando abaixo do bruto − verbas manuais.");
+            // Rubricas persistidas: bônus, INSS, VR e o encargo FGTS (salário-base é o seed do bruto).
+            Assert.Contains(folhas[0].Verbas, v => v.Descricao == "Bônus" && v.Tipo == "Provento");
+            Assert.Contains(folhas[0].Verbas, v => v.Descricao == "INSS" && v.Tipo == "Desconto");
+            Assert.Contains(folhas[0].Verbas, v => v.Descricao == "Vale Refeição" && v.Tipo == "Desconto");
+            Assert.Contains(folhas[0].Verbas, v => v.Tipo == "Encargo");
 
             var outboxMsg = await context.OutboxMessages.FirstOrDefaultAsync();
             Assert.NotNull(outboxMsg);
             Assert.Equal("FolhaProcessada", outboxMsg!.EventType);
-            Assert.Contains("5300", outboxMsg.Payload);
+            Assert.Contains(esperado.Liquido.ToString(System.Globalization.CultureInfo.InvariantCulture), outboxMsg.Payload);
+        }
+
+        [Fact]
+        public async Task Deve_Processar_Folha_Com_Jornada_E_Sst_Como_Proventos()
+        {
+            var options = new DbContextOptionsBuilder<ContextRH>()
+                .UseInMemoryDatabase("db_rh_folha_jornada_sst")
+                .Options;
+
+            var tenantProvider = new TestTenantProvider("tenant-1");
+            var currentUser = new TestCurrentUser("user-1");
+            using var context = new ContextRH(options, tenantProvider, currentUser);
+
+            var colaborador = new Colaborador("Bruno Lima", "33344455566", "bruno@epros.com.br", "Operador", "Produção", 2000m, DateTime.UtcNow.AddDays(-100), "tenant-1", "user-1");
+            context.Colaboradores.Add(colaborador);
+            await context.SaveChangesAsync();
+
+            var handler = new ProcessarFolhaPagamentoCommandHandler(context, tenantProvider, currentUser);
+
+            // Periculosidade (30% de 2000 = 600) + 10 horas extras a 50%.
+            var command = new ProcessarFolhaPagamentoCommand(
+                colaborador.Id, 6, 2026, new List<FolhaPagamentoVerbaInput>(),
+                HorasExtras: 10m,
+                AdicionalHorasExtras: 0.5m,
+                TemPericulosidade: true);
+
+            var result = await handler.Handle(command, CancellationToken.None);
+            Assert.True(result.Sucesso);
+
+            var folha = await context.FolhasPagamento.Include(f => f.Verbas).FirstAsync();
+
+            // valor-hora = 2000/220 = 9,090909; HE = 9,090909 × 1,5 × 10 = 136,36.
+            var valorHora = Epros.Modules.RH.Domain.Jornada.Calculo.MotorJornada.ValorHora(2000m);
+            var heEsperado = Epros.Modules.RH.Domain.Jornada.Calculo.MotorJornada.HorasExtras(valorHora, 10m, 0.5m);
+
+            Assert.Contains(folha.Verbas, v => v.Descricao == "Adicional Periculosidade" && v.Tipo == "Provento" && v.Valor == 600m);
+            Assert.Contains(folha.Verbas, v => v.Descricao == "Horas extras" && v.Tipo == "Provento" && v.Valor == heEsperado);
+            // Bruto = 2000 + 600 (pericul.) + HE.
+            Assert.Equal(2000m + 600m + heEsperado, folha.SalarioBruto);
         }
 
         [Fact]

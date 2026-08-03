@@ -161,6 +161,25 @@ namespace Epros.Modules.Estoque.Application.Handlers
                 return CommandResult.Falha("Produto não encontrado.");
             }
 
+            // GUARDA DE USO (espelha a exclusão de Pessoa): não permite soft-delete de produto que já
+            // participa de compra, tem saldo em estoque ou já gerou movimento/kardex. O produto deve ser
+            // INATIVADO, nunca excluído, para preservar a integridade histórica (compras, custo, valorização).
+            var emCompra = await _context.CompraItens.AnyAsync(ci => ci.ProdutoId == request.Id, cancellationToken);
+            if (emCompra)
+                return CommandResult.Falha("Não é possível excluir um produto com compras vinculadas. Ele deve ser inativado.");
+
+            var temSaldo = await _context.EstoqueProdutos.AnyAsync(e => e.ProdutoId == request.Id && e.QuantidadeSaldoEstoque != 0m, cancellationToken);
+            if (temSaldo)
+                return CommandResult.Falha("Não é possível excluir um produto com saldo em estoque. Zere o saldo e inative o produto.");
+
+            // Movimento/kardex: MovimentosEstoque registra as saídas/entradas físicas (inclui as de VENDA
+            // faturada e de compra); as fichas são o kardex valorizado. Qualquer histórico bloqueia a exclusão.
+            var temMovimento = await _context.MovimentosEstoque.AnyAsync(m => m.ProdutoId == request.Id, cancellationToken);
+            var temFichaEntrada = await _context.ProdutoFichaEstoqueEntradas.AnyAsync(f => f.ProdutoId == request.Id, cancellationToken);
+            var temFichaSaida = await _context.ProdutoFichaEstoqueSaidas.AnyAsync(f => f.ProdutoId == request.Id, cancellationToken);
+            if (temMovimento || temFichaEntrada || temFichaSaida)
+                return CommandResult.Falha("Não é possível excluir um produto com movimentações de estoque (histórico/kardex). Ele deve ser inativado.");
+
             produto.Deletar(usuario);
             await _context.SaveChangesAsync(cancellationToken);
 

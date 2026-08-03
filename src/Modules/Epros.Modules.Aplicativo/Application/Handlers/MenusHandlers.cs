@@ -37,8 +37,8 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             // Validar descrição duplicada
             var descricaoLower = request.Descricao.Trim().ToLower();
             var duplicado = await _context.PerfisAcessos
-                .AnyAsync(p => p.TenantId == tenantId && 
-                               p.Descricao.ToLower() == descricaoLower && 
+                .AnyAsync(p => p.TenantId == tenantId &&
+                               p.Descricao.ToLower() == descricaoLower &&
                                p.DeletadoEm == null, cancellationToken);
 
             if (duplicado)
@@ -113,9 +113,9 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             // Validar descrição duplicada
             var descricaoLower = request.Descricao.Trim().ToLower();
             var duplicado = await _context.PerfisAcessos
-                .AnyAsync(p => p.TenantId == tenantId && 
-                               p.Id != request.Id && 
-                               p.Descricao.ToLower() == descricaoLower && 
+                .AnyAsync(p => p.TenantId == tenantId &&
+                               p.Id != request.Id &&
+                               p.Descricao.ToLower() == descricaoLower &&
                                p.DeletadoEm == null, cancellationToken);
 
             if (duplicado)

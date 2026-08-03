@@ -22,7 +22,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
         private readonly ISegredoCofreService _cofreService;
 
         public ObterConfiguracaoGlobalQueryHandler(
-            ContextGestaoClientes context, 
+            ContextGestaoClientes context,
             ITenantProvider tenantProvider,
             IConfiguracaoGlobalCache cache,
             ISegredoCofreService cofreService)

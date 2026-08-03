@@ -7,11 +7,11 @@ using FluentValidation;
 namespace Epros.Modules.Aplicativo.Application.Commands
 {
     public record UsuarioEmpresaInput(
-        Guid EmpresaId, 
-        Guid? PerfilUsuarioId, 
-        bool EhAdmin, 
-        string Cargo, 
-        string Departamento, 
+        Guid EmpresaId,
+        Guid? PerfilUsuarioId,
+        bool EhAdmin,
+        string Cargo,
+        string Departamento,
         decimal LimiteDesconto
     );
 
@@ -119,6 +119,31 @@ namespace Epros.Modules.Aplicativo.Application.Commands
         public EncerrarImpersonacaoCommandValidator()
         {
             RuleFor(x => x.SessaoImpersonacaoId).NotEmpty().WithMessage("O ID da sessão de impersonação é obrigatório.");
+        }
+    }
+
+    // Landlord — Acesso de suporte da Siser a um tenant cliente (1.04 Pass 4)
+    // O portador (usuário Siser com perfil de suporte) abre uma sessão de suporte num cliente.
+    public record IniciarAcessoSuporteCommand(string TenantAlvo, Guid UsuarioAlvoId, Guid? EmpresaId, string Motivo) : ICommand;
+
+    public class IniciarAcessoSuporteCommandValidator : AbstractValidator<IniciarAcessoSuporteCommand>
+    {
+        public IniciarAcessoSuporteCommandValidator()
+        {
+            RuleFor(x => x.TenantAlvo).NotEmpty().WithMessage("O tenant do cliente alvo é obrigatório.");
+            RuleFor(x => x.UsuarioAlvoId).NotEmpty().WithMessage("O ID do usuário alvo é obrigatório.");
+            RuleFor(x => x.Motivo).NotEmpty().WithMessage("O motivo do acesso de suporte é obrigatório.");
+        }
+    }
+
+    // Landlord — Definir o perfil de suporte (papel de sistema da Siser) de um usuário interno.
+    public record DefinirPerfilSuporteInternoCommand(Guid UsuarioInternoId, PerfilSuporteSiser PerfilSuporte) : ICommand;
+
+    public class DefinirPerfilSuporteInternoCommandValidator : AbstractValidator<DefinirPerfilSuporteInternoCommand>
+    {
+        public DefinirPerfilSuporteInternoCommandValidator()
+        {
+            RuleFor(x => x.UsuarioInternoId).NotEmpty().WithMessage("O ID do usuário interno é obrigatório.");
         }
     }
 

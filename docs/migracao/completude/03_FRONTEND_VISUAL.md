@@ -3,7 +3,7 @@
 **Eixo mais crítico da migração:** o cliente NÃO PODE sentir a mudança visual. O sistema novo deve ficar visualmente igual ao legado.
 
 - **Legado (verdade visual):** `Epros/epros_erp_front-main/app` — Nuxt 3 + **Vuetify 3**, tema **claro fixo**, fonte **Manrope**, primária **`#14325a` (azul-marinho)**.
-- **Novo:** `EprosERP/Epros.App` — Nuxt 3, **CSS custom (SEM Vuetify)**, tema **ESCURO por padrão** (glassmorphism), fonte **Plus Jakarta Sans**, primária **`#6366f1` (indigo)**.
+- **Novo:** `EprosERP/EprosApp` — Nuxt 3, **CSS custom (SEM Vuetify)**, tema **ESCURO por padrão** (glassmorphism), fonte **Plus Jakarta Sans**, primária **`#6366f1` (indigo)**.
 
 Auditoria READ-ONLY, cética. Método: mapeamento de todas as pages do legado, comparação campo-a-campo/coluna-a-coluna/botão-a-botão com a equivalente no novo, mais análise do "chrome" global (shell, sidebar, header, tabela, diálogos, campos) que aparece em TODAS as telas.
 

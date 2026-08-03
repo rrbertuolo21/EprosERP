@@ -11,6 +11,8 @@ using Epros.Shared.Application.Models;
 using Epros.Shared.Domain.Enums;
 using Epros.Shared.Domain.Events;
 using Epros.Modules.Estoque.Application.Commands;
+using Epros.Modules.Estoque.Application.Security;
+using Epros.Modules.Estoque.Application.Services;
 using Epros.Modules.Estoque.Domain.Entities;
 using Epros.Modules.Estoque.Domain.Enums;
 using Epros.Modules.Estoque.Infrastructure.Data;
@@ -39,6 +41,11 @@ namespace Epros.Modules.Estoque.Application.Handlers
             if (!compra.IsValid)
                 return (null, CommandResult.Falha(compra.Notifications.Select(n => n.Message), "Dados de cabeçalho da nota fiscal são inválidos."));
 
+            // Entrada de estoque via MOTOR ÚNICO (kardex, D1).
+            var motor = new MotorMovimentacaoEstoque(context, tenantId, usuario);
+            var fato = new FatoGeradorEstoque(null, compra.Id, null, EOrigemFatoGeradorEstoque.EntradaFiscal, tenantId, usuario, referenciaExterna: $"{descricaoMovimento} NF {numeroNota}");
+            context.FatosGeradoresEstoque.Add(fato);
+
             foreach (var itemInput in itens)
             {
                 var produto = await context.Produtos.FirstOrDefaultAsync(p => p.Sku == itemInput.Sku, cancellationToken);
@@ -50,9 +57,16 @@ namespace Epros.Modules.Estoque.Application.Handlers
                     context.Produtos.Add(produto);
                 }
 
-                produto.LancarEntradaEstoque(itemInput.Quantidade, itemInput.PrecoUnitario, usuario);
-                if (!produto.IsValid)
-                    return (null, CommandResult.Falha(produto.Notifications.Select(n => n.Message), $"Erro ao lançar entrada de estoque para o SKU {itemInput.Sku}."));
+                var custeioPadrao = await context.EstoqueProdutos
+                    .Where(e => e.EmpresaId == MotorMovimentacaoEstoque.EmpresaPadrao && e.ProdutoId == produto.Id)
+                    .Select(e => (ETipoCusteioEstoque?)e.TipoCusteioEstoque)
+                    .FirstOrDefaultAsync(cancellationToken) ?? ETipoCusteioEstoque.CustoMedio;
+
+                var resEntrada = await motor.AplicarEntradaAsync(
+                    MotorMovimentacaoEstoque.EmpresaPadrao, produto.Id, ETipoEstoque.Geral, itemInput.Quantidade, itemInput.PrecoUnitario,
+                    fato.Id, null, null, null, custeioPadrao, cancellationToken);
+                if (!resEntrada.Sucesso)
+                    return (null, CommandResult.Falha(resEntrada.Erro ?? $"Erro ao lançar entrada de estoque para o SKU {itemInput.Sku}."));
 
                 var movimento = new MovimentoEstoque(produto.Id, itemInput.Quantidade, "Entrada", $"{descricaoMovimento} - NF-e nº {numeroNota}", tenantId, usuario);
                 if (!movimento.IsValid)
@@ -145,6 +159,10 @@ namespace Epros.Modules.Estoque.Application.Handlers
             var tenantId = _tenantProvider.GetTenantId();
             var usuario = _currentUser.GetUserId() ?? "system";
 
+            // CD3/SRC-008: se a origem está sob alçada, só efetiva com o pedido de aprovação APROVADO.
+            var erroAlcada = await AlcadaCompraGate.GarantirAprovadaAsync(_context, request.AprovacaoOrigemId, cancellationToken);
+            if (erroAlcada != null) return erroAlcada;
+
             var compra = new Compra(
                 request.Emitente.Cnpj ?? request.Emitente.Cpf ?? string.Empty,
                 request.Emitente.RazaoSocial,
@@ -205,6 +223,10 @@ namespace Epros.Modules.Estoque.Application.Handlers
         {
             var tenantId = _tenantProvider.GetTenantId();
             var usuario = _currentUser.GetUserId() ?? "system";
+
+            // CD3/SRC-008: se a origem está sob alçada, só efetiva com o pedido de aprovação APROVADO.
+            var erroAlcada = await AlcadaCompraGate.GarantirAprovadaAsync(_context, request.AprovacaoOrigemId, cancellationToken);
+            if (erroAlcada != null) return erroAlcada;
 
             var notaExistente = await _context.Compras.AnyAsync(c => c.ChaveAcesso == request.ChaveAcesso, cancellationToken);
             if (notaExistente)

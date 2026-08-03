@@ -45,6 +45,18 @@ namespace Epros.API.Controllers
         [AbacAuthorize("ConcessionariasFinancas", "Consultar")]
         public async Task<IActionResult> ListarSimulacoes() => Ok(await _mediator.Send(new ObterSimulacoesFinQuery()));
 
+        /// <summary>
+        /// NF-01 — Motor F&amp;I: simula o financiamento (Price/SAC + IOF + CET) e persiste o resultado.
+        /// Cálculo aterra a skill Negocio-acumulado/financeiro/credito. Idempotente por chave.
+        /// </summary>
+        [HttpPost("simulacoes/calcular")]
+        [AbacAuthorize("ConcessionariasFinancas", "Editar")]
+        public async Task<ActionResult<CommandResult>> CalcularSimulacao([FromBody] SimularFinanciamentoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
         [HttpPost("contratos")]
         [AbacAuthorize("ConcessionariasFinancas", "Editar")]
         public async Task<ActionResult<CommandResult>> CriarContrato([FromBody] CriarContratoFinCommand command)
@@ -56,5 +68,31 @@ namespace Epros.API.Controllers
         [HttpGet("contratos")]
         [AbacAuthorize("ConcessionariasFinancas", "Consultar")]
         public async Task<IActionResult> ListarContratos() => Ok(await _mediator.Send(new ObterContratosFinQuery()));
+
+        // ----- Transições de Jornada / Contrato (D-02) -----
+
+        [HttpPost("jornadas/{id}/encerrar")]
+        [AbacAuthorize("ConcessionariasFinancas", "Editar")]
+        public async Task<ActionResult<CommandResult>> EncerrarJornada(System.Guid id)
+        {
+            var result = await _mediator.Send(new EncerrarJornadaFinCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("contratos/{id}/liquidar")]
+        [AbacAuthorize("ConcessionariasFinancas", "Editar")]
+        public async Task<ActionResult<CommandResult>> LiquidarContrato(System.Guid id)
+        {
+            var result = await _mediator.Send(new LiquidarContratoFinCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("contratos/{id}/cancelar")]
+        [AbacAuthorize("ConcessionariasFinancas", "Editar")]
+        public async Task<ActionResult<CommandResult>> CancelarContrato(System.Guid id)
+        {
+            var result = await _mediator.Send(new CancelarContratoFinCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
     }
 }

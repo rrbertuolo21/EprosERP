@@ -81,7 +81,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                     cliente.TenantId,
                     alteradoPor
                 );
-                
+
                 contrato.DefinirValorRecorrenteManual(request.ValorRecorrente, alteradoPor);
                 contrato.AprovarManualmente(request.Operador, request.Justificativa, alteradoPor);
 
@@ -110,13 +110,13 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             // REG-007 & REG-008: Atualiza qualquer assinatura em status Aguardando
             var assinatura = await _context.AssinaturasClientes
                 .IgnoreQueryFilters()
-                .FirstOrDefaultAsync(a => a.ClienteId == request.ClienteId && a.Status == AssinaturaStatus.Aguardando && a.DeletadoEm == null, cancellationToken);
+                .FirstOrDefaultAsync(a => a.ClienteId == request.ClienteId && a.Status == AssinaturaStatus.AguardandoAprovacao && a.DeletadoEm == null, cancellationToken);
 
             if (assinatura != null)
             {
                 assinatura.AprovarManualmente(request.Operador, request.Justificativa, alteradoPor);
                 _context.AssinaturasClientes.Update(assinatura);
-                
+
                 // Associa o plano ativo ao cliente
                 cliente.AlterarPlano(assinatura.PlanoId, alteradoPor);
             }

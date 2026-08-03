@@ -78,7 +78,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             // Verifica se há alguma assinatura ativa do cliente
             var assinaturaAtiva = await _contextGestao.AssinaturasClientes
                 .IgnoreQueryFilters()
-                .Where(a => a.ClienteId == cliente.Id && a.Status == AssinaturaStatus.Aprovada && a.DeletadoEm == null && !a.Arquivada)
+                .Where(a => a.ClienteId == cliente.Id && a.Status == AssinaturaStatus.Ativa && a.DeletadoEm == null && !a.Arquivada)
                 .OrderByDescending(a => a.DataFim)
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -97,7 +97,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             {
                 dataInicio = DateTime.UtcNow;
                 dataFim = plano.Preco == 0 ? (DateTime?)null : DateTime.UtcNow.AddDays(30);
-                statusInicial = plano.Preco == 0 ? AssinaturaStatus.Aprovada : AssinaturaStatus.Aguardando;
+                statusInicial = plano.Preco == 0 ? AssinaturaStatus.Ativa : AssinaturaStatus.AguardandoAprovacao;
             }
 
             // Snapshot do plano
@@ -119,7 +119,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 dataFim: dataFim,
                 trialAte: plano.Preco == 0 ? DateTime.UtcNow.AddDays(15) : (DateTime?)null, // Simula período trial para gratuito
                 metodoPagamento: request.MetodoPagamento,
-                transacaoId: statusInicial == AssinaturaStatus.Aprovada ? "zero-transaction-" + Guid.NewGuid() : null,
+                transacaoId: statusInicial == AssinaturaStatus.Ativa ? "zero-transaction-" + Guid.NewGuid() : null,
                 detalhesPacoteJson: jsonSnapshot,
                 tenantId: tenantId,
                 criadoPor: criadoPor
@@ -128,13 +128,13 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             _contextGestao.AssinaturasClientes.Add(novaAssinatura);
 
             // Atualiza o PlanoId no Cliente
-            if (statusInicial == AssinaturaStatus.Aprovada)
+            if (statusInicial == AssinaturaStatus.Ativa)
             {
                 cliente.AlterarPlano(plano.Id, criadoPor);
             }
 
             // Se for assinatura paga pendente, gera uma fatura de cobrança
-            if (plano.Preco > 0 && statusInicial == AssinaturaStatus.Aguardando)
+            if (plano.Preco > 0 && statusInicial == AssinaturaStatus.AguardandoAprovacao)
             {
                 var fatura = new Fatura(
                     clienteId: cliente.Id,

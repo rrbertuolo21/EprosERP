@@ -144,4 +144,57 @@ namespace Epros.Modules.Estoque.Application.Handlers
             return CommandResult.Ok("Transporte da compra cancelado com sucesso!");
         }
     }
+
+    /// <summary>
+    /// NF-04 — rateia o frete de entrada sobre os itens da compra, compondo o custo (motor de custeio D1).
+    /// Valor factual (CT-e); apropriação estrutural via RateioLandedCalculadora. Idempotente por compra.
+    /// </summary>
+    public class RatearFreteCompraCommandHandler : ICommandHandler<RatearFreteCompraCommand>
+    {
+        private readonly ContextEstoque _context;
+        private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
+
+        public RatearFreteCompraCommandHandler(ContextEstoque context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        {
+            _context = context;
+            _tenantProvider = tenantProvider;
+            _currentUser = currentUser;
+        }
+
+        public async Task<CommandResult> Handle(RatearFreteCompraCommand request, CancellationToken cancellationToken)
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var usuario = _currentUser.GetUserId() ?? "system";
+
+            if (request.ValorFrete <= 0m)
+                return CommandResult.Falha("O valor do frete deve ser maior que zero [TMS-030].");
+
+            var compra = await _context.Compras.Include(c => c.Itens)
+                .FirstOrDefaultAsync(c => c.Id == request.CompraId, cancellationToken);
+            if (compra == null)
+                return CommandResult.Falha("Compra não encontrada.");
+            if (!compra.Itens.Any())
+                return CommandResult.Falha("Compra sem itens para ratear o frete.");
+
+            // Idempotência por compra (não rateia o frete duas vezes).
+            var jaRateado = await _context.OutboxMessages.AnyAsync(
+                o => o.EventType == CatalogoEventosIntegracao.Estoque.TmsFreteRateado
+                  && o.Payload.Contains(compra.Id.ToString()), cancellationToken);
+            if (jaRateado)
+                return CommandResult.Falha("O frete desta compra já foi rateado (idempotência TMS-031).");
+
+            var baseItens = compra.Itens
+                .Select(i => new Domain.Services.RateioLandedItem(i.Id, i.ValorTotal, i.Quantidade, i.Quantidade))
+                .ToList();
+            var rateio = Domain.Services.RateioLandedCalculadora.Ratear(baseItens, request.ValorFrete, request.Metodo);
+            var itensPayload = rateio.Select(r => new { itemId = r.ItemId, r.ValorBase, freteRateado = r.ParcelaLanded, custo = r.CustoFinal }).ToList();
+
+            _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Estoque.TmsFreteRateado,
+                JsonSerializer.Serialize(new { compraId = compra.Id, request.ValorFrete, metodo = request.Metodo.ToString(), idempotencia = $"tms-frete:{compra.Id}", itens = itensPayload, usuario })));
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Frete rateado sobre os itens — composição de custo publicada.", new { compra.Id, request.ValorFrete, itens = itensPayload.Count });
+        }
+    }
 }

@@ -9,6 +9,9 @@ namespace Epros.Modules.Aplicativo.Domain.Entities
         public string Nome { get; private set; } = string.Empty;
         public string Email { get; private set; } = string.Empty;
         public string? Telefone { get; private set; }
+        // 1.07 — Tipo do telefone informado no cadastro (Fixo/Celular/Comercial/Whatsapp). Antes era
+        // validado e descartado; agora é persistido junto do número (nulo honesto quando não informado).
+        public string? TelefoneTipo { get; private set; }
         public string? Endereco { get; private set; }
         public int TimeZoneId { get; private set; }
         public string DateFormat { get; private set; } = "DD-MM-YYYY";
@@ -38,7 +41,8 @@ namespace Epros.Modules.Aplicativo.Domain.Entities
             string? footerText,
             string? logo,
             string? favicon,
-            string criadoPor)
+            string criadoPor,
+            string? telefoneTipo = null)
             : base(tenantId, criadoPor)
         {
             if (empresaId == Guid.Empty)
@@ -62,6 +66,7 @@ namespace Epros.Modules.Aplicativo.Domain.Entities
             Nome = nome;
             Email = email;
             Telefone = telefone;
+            TelefoneTipo = telefoneTipo;
             Endereco = endereco;
             TimeZoneId = timeZoneId;
             DateFormat = dateFormat ?? "DD-MM-YYYY";
@@ -88,7 +93,8 @@ namespace Epros.Modules.Aplicativo.Domain.Entities
             string? footerText,
             string? logo,
             string? favicon,
-            string alteradoPor)
+            string alteradoPor,
+            string? telefoneTipo = null)
         {
             if (string.IsNullOrWhiteSpace(nome))
                 AddNotification(nameof(Nome), "O Nome da empresa é obrigatório.");
@@ -110,6 +116,9 @@ namespace Epros.Modules.Aplicativo.Domain.Entities
                 Nome = nome;
                 Email = email;
                 Telefone = telefone;
+                // Preserva o tipo de telefone gravado no onboarding quando a atualização não o informa
+                // (o comando de configuração geral não gerencia esse campo). Só sobrescreve se vier valor.
+                if (telefoneTipo != null) TelefoneTipo = telefoneTipo;
                 Endereco = endereco;
                 TimeZoneId = timeZoneId;
                 DateFormat = dateFormat;

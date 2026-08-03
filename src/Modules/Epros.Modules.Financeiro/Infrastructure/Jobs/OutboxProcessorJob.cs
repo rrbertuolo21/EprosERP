@@ -33,10 +33,13 @@ namespace Epros.Modules.Financeiro.Infrastructure.Jobs
         {
             Console.WriteLine("[Quartz] Iniciando OutboxProcessorJob para o módulo Financeiro...");
 
-            // Busca mensagens do outbox do Estoque (estoque.outbox_messages) não processadas do tipo CompraLancada ou CompraCancelada
+            // Busca mensagens do outbox do Estoque (estoque.outbox_messages) não processadas.
+            // Relay central: CompraLancada/CompraCancelada -> Financeiro; MercadoriaRecebida -> Qualidade (inspeção de entrada).
             var messages = await _context.OutboxMessages
                 .IgnoreQueryFilters()
-                .Where(m => (m.EventType == "CompraLancada" || m.EventType == "CompraCancelada") && m.ProcessadoEm == null && m.Tentativas < 5)
+                .Where(m => (m.EventType == "CompraLancada" || m.EventType == "CompraCancelada"
+                             || m.EventType == CatalogoEventosIntegracao.Estoque.MercadoriaRecebida)
+                            && m.ProcessadoEm == null && m.Tentativas < 5)
                 .OrderBy(m => m.CriadoEm)
                 .ToListAsync();
 
@@ -75,7 +78,7 @@ namespace Epros.Modules.Financeiro.Infrastructure.Jobs
                             {
                                 // Criar novo fornecedor na tabela compartilhada
                                 fornecedorId = Guid.NewGuid();
-                                
+
                                 var novaPessoa = new PessoaLookup
                                 {
                                     Id = fornecedorId,
@@ -140,6 +143,26 @@ namespace Epros.Modules.Financeiro.Infrastructure.Jobs
                             await _mediator.Publish(notification);
                         }
                     }
+                    else if (message.EventType == CatalogoEventosIntegracao.Estoque.MercadoriaRecebida)
+                    {
+                        var payload = JsonSerializer.Deserialize<MercadoriaRecebidaPayload>(message.Payload, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        if (payload != null)
+                        {
+                            var notification = new MercadoriaRecebidaEventNotification(
+                                EntradaId: payload.EntradaId,
+                                CompraId: payload.CompraId,
+                                FornecedorId: payload.FornecedorId,
+                                DocumentoId: payload.DocumentoId,
+                                ChaveAcesso: payload.ChaveAcesso,
+                                Numero: payload.Numero,
+                                ValorTotal: payload.ValorTotal,
+                                TenantId: message.TenantId,
+                                Itens: (payload.Itens ?? new System.Collections.Generic.List<MercadoriaRecebidaItemPayload>())
+                                    .Select(i => new MercadoriaRecebidaItemNotification(i.ProdutoId, i.QuantidadeDocumento, i.ValorItem)).ToList()
+                            );
+                            await _mediator.Publish(notification);
+                        }
+                    }
 
                     message.MarcarProcessado();
                 }
@@ -188,6 +211,25 @@ namespace Epros.Modules.Financeiro.Infrastructure.Jobs
             public string FornecedorCnpj { get; set; } = string.Empty;
             public string NumeroNota { get; set; } = string.Empty;
             public decimal ValorTotal { get; set; }
+        }
+
+        private class MercadoriaRecebidaPayload
+        {
+            public Guid EntradaId { get; set; }
+            public Guid? CompraId { get; set; }
+            public Guid? FornecedorId { get; set; }
+            public Guid? DocumentoId { get; set; }
+            public string? ChaveAcesso { get; set; }
+            public string? Numero { get; set; }
+            public decimal ValorTotal { get; set; }
+            public System.Collections.Generic.List<MercadoriaRecebidaItemPayload> Itens { get; set; } = new();
+        }
+
+        private class MercadoriaRecebidaItemPayload
+        {
+            public Guid? ProdutoId { get; set; }
+            public decimal QuantidadeDocumento { get; set; }
+            public decimal? ValorItem { get; set; }
         }
     }
 }

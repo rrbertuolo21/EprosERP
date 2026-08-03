@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
 using Epros.Modules.Aplicativo.Application.Commands;
+using Epros.Modules.GestaoClientes.Application.Services;
 using Epros.Modules.GestaoClientes.Domain.Entities;
 using Epros.Modules.GestaoClientes.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -93,7 +94,8 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     return CommandResult.Falha(new[] { "Este cupom está expirado, inativo ou com limite de usos esgotado." });
                 }
 
-                desconto = cupom.CalcularDesconto(plano.Preco);
+                // 1.08E — reusa o cálculo de desconto compartilhado com a renovação (fonte única).
+                desconto = AplicacaoCupom.Calcular(cupom, plano.Preco).Desconto;
             }
 
             var valorTotal = Math.Max(0, plano.Preco - desconto);
@@ -130,7 +132,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             // Verifica se há alguma assinatura ativa do cliente para encadeamento
             var assinaturaAtiva = await _context.AssinaturasClientes
                 .IgnoreQueryFilters()
-                .Where(a => a.ClienteId == cliente.Id && a.Status == AssinaturaStatus.Aprovada && a.DeletadoEm == null && !a.Arquivada)
+                .Where(a => a.ClienteId == cliente.Id && a.Status == AssinaturaStatus.Ativa && a.DeletadoEm == null && !a.Arquivada)
                 .OrderByDescending(a => a.DataFim)
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -148,7 +150,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             {
                 dataInicio = DateTime.UtcNow;
                 dataFim = valorTotal == 0 ? (DateTime?)null : DateTime.UtcNow.AddDays(30);
-                statusInicial = valorTotal == 0 ? AssinaturaStatus.Aprovada : AssinaturaStatus.Aguardando;
+                statusInicial = valorTotal == 0 ? AssinaturaStatus.Ativa : AssinaturaStatus.AguardandoAprovacao;
             }
 
             // Snapshot do plano
@@ -170,7 +172,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 dataFim: dataFim,
                 trialAte: valorTotal == 0 ? DateTime.UtcNow.AddDays(15) : (DateTime?)null,
                 metodoPagamento: request.MetodoPagamento,
-                transacaoId: statusInicial == AssinaturaStatus.Aprovada ? "free-pedido-" + Guid.NewGuid() : null,
+                transacaoId: statusInicial == AssinaturaStatus.Ativa ? "free-pedido-" + Guid.NewGuid() : null,
                 detalhesPacoteJson: jsonSnapshot,
                 tenantId: tenantId,
                 criadoPor: criadoPor
@@ -179,7 +181,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             _context.AssinaturasClientes.Add(novaAssinatura);
 
             // Se foi liquidado de imediato (plano gratuito ou 100% de desconto)
-            if (statusInicial == AssinaturaStatus.Aprovada)
+            if (statusInicial == AssinaturaStatus.Ativa)
             {
                 pedido.Liquidar(novaAssinatura.Id, criadoPor);
                 cliente.AlterarPlano(plano.Id, criadoPor);
@@ -198,7 +200,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 );
                 _context.PagamentosGlobais.Add(pagamentoGlobal);
             }
-            else if (statusInicial == AssinaturaStatus.Aguardando)
+            else if (statusInicial == AssinaturaStatus.AguardandoAprovacao)
             {
                 // Se for pago e pendente, gera uma fatura mensal de cobrança
                 var fatura = new Fatura(
@@ -224,20 +226,30 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
         }
     }
 
+    /// <summary>
+    /// 1.08B — Checkout online REAL (substitui o stub). Cria uma preferência de Checkout Pro no gateway
+    /// (Mercado Pago): o cliente escolhe o método (PIX/cartão/boleto) e paga na tela HOSPEDADA do gateway;
+    /// o retorno concilia pelo webhook unificado (external_reference = Id da Fatura do pedido).
+    /// ⛔ PCI: nenhum dado de cartão passa pelo backend — o pagamento acontece no ambiente do gateway.
+    /// Fail-closed: sem gateway configurado, o checkout não é iniciado.
+    /// </summary>
     public class IniciarCheckoutCommandHandler : ICommandHandler<IniciarCheckoutCommand>
     {
         private readonly ContextGestaoClientes _context;
         private readonly ITenantProvider _tenantProvider;
         private readonly ICurrentUser _currentUser;
+        private readonly Epros.Modules.GestaoClientes.Application.Interfaces.IPaymentGateway _paymentGateway;
 
         public IniciarCheckoutCommandHandler(
             ContextGestaoClientes context,
             ITenantProvider tenantProvider,
-            ICurrentUser currentUser)
+            ICurrentUser currentUser,
+            Epros.Modules.GestaoClientes.Application.Interfaces.IPaymentGateway paymentGateway)
         {
             _context = context;
             _tenantProvider = tenantProvider;
             _currentUser = currentUser;
+            _paymentGateway = paymentGateway;
         }
 
         public async Task<CommandResult> Handle(IniciarCheckoutCommand request, CancellationToken cancellationToken)
@@ -277,6 +289,39 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 return CommandResult.Falha(new[] { "Assinatura do pedido correspondente não foi encontrada." });
             }
 
+            // Resolve a config do gateway (por tenant, senão global). Fail-closed.
+            var config = await _context.ConfiguracoesGatewayPagamento
+                .Where(c => c.Ativo && (c.TenantAlvo == tenantId || c.TenantAlvo == null))
+                .OrderByDescending(c => c.TenantAlvo == tenantId)
+                .ThenByDescending(c => c.CriadoEm)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (config == null)
+                return CommandResult.Falha(new[] { "Gateway de pagamento não configurado." }, "Gateway não configurado");
+
+            // Fatura de referência do pedido (external_reference do checkout). Se não existir, gera uma.
+            var fatura = await _context.Faturas
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(f => f.ClienteId == pedido.ClienteId && f.Valor == pedido.ValorTotal
+                                          && f.Status == FaturaStatus.Pendente && f.DeletadoEm == null, cancellationToken);
+            if (fatura == null)
+            {
+                fatura = new Fatura(pedido.ClienteId, pedido.ValorTotal, DateTime.UtcNow.AddDays(5), tenantId, criadoPor);
+                if (!fatura.IsValid)
+                    return CommandResult.Falha(fatura.Notifications.Select(n => n.Message), "Falha ao gerar a fatura do checkout");
+                _context.Faturas.Add(fatura);
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+
+            var cliente = await _context.Clientes.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(c => c.Id == pedido.ClienteId && c.DeletadoEm == null, cancellationToken);
+            var pagador = new Epros.Modules.GestaoClientes.Application.Interfaces.DadosPagador(
+                cliente?.Email ?? "sem-email@epros.com", cliente?.RazaoSocial, cliente?.Cnpj);
+
+            var pref = await _paymentGateway.CriarPreferenciaCheckoutAsync(
+                fatura, config, $"Assinatura Epros (pedido {pedido.Id})", pagador, null, cancellationToken);
+            if (!pref.Sucesso || pref.Dados is not Epros.Modules.GestaoClientes.Application.Interfaces.PreferenciaCheckoutResultado dto)
+                return pref;
+
             var sessaoExistente = await _context.SessoesPagamentos
                 .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(s => s.PedidoId == pedido.Id && s.Status == SessaoPagamentoStatus.Pending && s.DeletadoEm == null, cancellationToken);
@@ -284,7 +329,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             if (sessaoExistente == null)
             {
                 sessaoExistente = new SessaoPagamento(
-                    gatewayRef: "gateway-session-" + Guid.NewGuid().ToString("N"),
+                    gatewayRef: dto.PreferenceId,
                     assinaturaId: assinatura.Id,
                     pedidoId: pedido.Id,
                     tenantId: tenantId,
@@ -297,8 +342,10 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             return CommandResult.Ok("Sessão de checkout iniciada com sucesso!", new
             {
                 PedidoId = pedido.Id,
+                FaturaId = fatura.Id,
                 SessaoId = sessaoExistente.Id,
-                CheckoutUrl = "https://checkout.epros.com/session/" + sessaoExistente.GatewayRef,
+                PreferenceId = dto.PreferenceId,
+                CheckoutUrl = dto.InitPoint,
                 Status = sessaoExistente.Status
             });
         }
@@ -463,7 +510,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     if (pedido != null)
                     {
                         var cliente = await _context.Clientes.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Id == pedido.ClienteId, cancellationToken);
-                        
+
                         var assinatura = await _context.AssinaturasClientes
                             .IgnoreQueryFilters()
                             .Where(a => a.ClienteId == pedido.ClienteId && a.PlanoId == pedido.PlanoId && a.DeletadoEm == null && !a.Arquivada)
@@ -475,10 +522,11 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                             assinatura.Ativar(alteradoPor);
                             assinaturaId = assinatura.Id;
                             pedido.Liquidar(assinatura.Id, alteradoPor);
-                            
+
                             if (cliente != null)
                             {
                                 cliente.AlterarPlano(pedido.PlanoId, alteradoPor);
+                                cliente.AtualizarStatusSaaS(StatusSaaS.Ativo, alteradoPor);
                             }
                         }
                     }
@@ -509,6 +557,10 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                         );
                         _context.PagamentosFaturas.Add(pgFatura);
 
+                        // 1.08A — recibo do pagamento offline (transferência/comprovante).
+                        _context.RecibosPagamento.Add(ReciboPagamento.Emitir(
+                            fatura, pgFatura.Id, pagamento.Valor, "Transferencia", null, null, alteradoPor));
+
                         // Se ainda não ativou a assinatura
                         if (assinaturaId == null)
                         {
@@ -527,6 +579,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                                 if (cliente != null)
                                 {
                                     cliente.AlterarPlano(assinatura.PlanoId, alteradoPor);
+                                    cliente.AtualizarStatusSaaS(StatusSaaS.Ativo, alteradoPor);
                                 }
                             }
                         }
@@ -620,7 +673,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 var fatura = await _context.Faturas
                     .IgnoreQueryFilters()
                     .FirstOrDefaultAsync(f => f.Id == request.FaturaId.Value && f.DeletadoEm == null, cancellationToken);
-                
+
                 if (fatura != null)
                 {
                     tenantId = fatura.TenantId;
@@ -631,9 +684,13 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                         .IgnoreQueryFilters()
                         .FirstOrDefaultAsync(p => p.FaturaId == fatura.Id && p.DeletadoEm == null, cancellationToken);
 
+                    // 1.08A — caminho INTERNO/simulado (não é o webhook real do MP). A tarifa REAL só é
+                    // conhecida consultando o gateway, o que acontece no motor unificado
+                    // (GestaoClientes.ProcessarWebhookPagamentoCommandHandler / webhook mercadopago). Aqui NÃO
+                    // fabricamos tarifa: registramos tarifa desconhecida (null) → líquido = bruto.
                     if (pagFatura != null)
                     {
-                        pagFatura.Liquidar(request.Valor, 0.75m, alteradoPor);
+                        pagFatura.Liquidar(request.Valor, null, alteradoPor);
                     }
                     else
                     {
@@ -642,7 +699,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                             tipoPagamento: request.Gateway,
                             status: PagamentoFaturaStatus.Paid,
                             valorPago: request.Valor,
-                            valorTarifa: 0.75m,
+                            valorTarifa: null,
                             identificadorPagamento: request.TransactionId,
                             pagoManualmente: false,
                             dataPagamento: DateTime.UtcNow,
@@ -651,6 +708,10 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                         );
                         _context.PagamentosFaturas.Add(pagFatura);
                     }
+
+                    // 1.08A — recibo de pagamento (documento simples; NFS-e diferida).
+                    _context.RecibosPagamento.Add(ReciboPagamento.Emitir(
+                        fatura, pagFatura.Id, request.Valor, request.Gateway, null, null, alteradoPor));
 
                     // Ativa a assinatura
                     var assinatura = await _context.AssinaturasClientes
@@ -668,6 +729,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                         if (cliente != null)
                         {
                             cliente.AlterarPlano(assinatura.PlanoId, alteradoPor);
+                            cliente.AtualizarStatusSaaS(StatusSaaS.Ativo, alteradoPor); // §12: awaiting-payment → active
                         }
                     }
                 }
@@ -700,6 +762,7 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                         if (cliente != null)
                         {
                             cliente.AlterarPlano(pedido.PlanoId, alteradoPor);
+                            cliente.AtualizarStatusSaaS(StatusSaaS.Ativo, alteradoPor); // §12: awaiting-payment → active
                         }
                     }
 
@@ -712,12 +775,13 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                     {
                         faturaVinculada.Baixar(alteradoPor);
 
+                        // 1.08A — tarifa desconhecida no caminho interno (null), NÃO fabricada.
                         var pagFatura = new PagamentoFatura(
                             faturaId: faturaVinculada.Id,
                             tipoPagamento: request.Gateway,
                             status: PagamentoFaturaStatus.Paid,
                             valorPago: request.Valor,
-                            valorTarifa: 0.75m,
+                            valorTarifa: null,
                             identificadorPagamento: request.TransactionId,
                             pagoManualmente: false,
                             dataPagamento: DateTime.UtcNow,
@@ -725,6 +789,10 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                             criadoPor: alteradoPor
                         );
                         _context.PagamentosFaturas.Add(pagFatura);
+
+                        // 1.08A — recibo de pagamento (documento simples; NFS-e diferida).
+                        _context.RecibosPagamento.Add(ReciboPagamento.Emitir(
+                            faturaVinculada, pagFatura.Id, request.Valor, request.Gateway, null, null, alteradoPor));
                     }
                 }
             }

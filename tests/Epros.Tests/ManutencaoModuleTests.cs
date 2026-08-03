@@ -170,9 +170,9 @@ namespace Epros.Tests
             var currentUser = new TestCurrentUser("user-1");
             using var contextEstoque = new ContextEstoque(optionsEstoque, tenantProvider, currentUser);
             var produtoPeca = new Produto("MANG-01", "Mangueira Hidráulica", 50m, "tenant-1", "user-1");
-            produtoPeca.LancarEntradaEstoque(10m, 25m, "user-1");
             contextEstoque.Produtos.Add(produtoPeca);
             await contextEstoque.SaveChangesAsync();
+            await EstoqueTestSeed.SemearSaldoAsync(contextEstoque, "tenant-1", "user-1", produtoPeca.Id, 10m, 25m);
 
             var handler = new OrdemManutencaoConcluidaEstoqueHandler(contextEstoque);
 

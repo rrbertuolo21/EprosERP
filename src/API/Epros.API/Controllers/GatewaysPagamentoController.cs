@@ -15,6 +15,8 @@ namespace Epros.API.Controllers
     [Route("api/v1/plataforma/gateways-pagamento")]
     [Produces("application/json")]
     [AbacAuthorize("SuperAdmin", "Configurar")]
+    // 1.11 decisão #5 — área comercial: faixa de Suporte Negócio (SuporteTecnico é negado; PrimaryAdmin passa).
+    [AbacAuthorize(SuperAdminSeguranca.RecursoSuporteComercial, "Configurar")]
     public class GatewaysPagamentoController : ControllerBase
     {
         private readonly IMediator _mediator;

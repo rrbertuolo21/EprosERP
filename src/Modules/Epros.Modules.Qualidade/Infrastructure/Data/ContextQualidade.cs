@@ -31,6 +31,7 @@ namespace Epros.Modules.Qualidade.Infrastructure.Data
         public DbSet<AmostraInspecionada> AmostrasInspecionadas => Set<AmostraInspecionada>();
         public DbSet<Medicao> Medicoes => Set<Medicao>();
         public DbSet<ResultadoInspecao> ResultadosInspecao => Set<ResultadoInspecao>();
+        public DbSet<EstadoComutacaoInspecao> EstadosComutacaoInspecao => Set<EstadoComutacaoInspecao>();
 
         // --- QLD-ACR (Analise de Aceitacao e Rejeicao) ---
         public DbSet<AcrAnalise> AcrAnalises => Set<AcrAnalise>();
@@ -64,6 +65,33 @@ namespace Epros.Modules.Qualidade.Infrastructure.Data
         public DbSet<AtrHistorico> AtrHistoricos => Set<AtrHistorico>();
         public DbSet<AtrAnexo> AtrAnexos => Set<AtrAnexo>();
         public DbSet<AtrParametro> AtrParametros => Set<AtrParametro>();
+
+        // --- QLD-QPS (Qualidade de Fornecedor) ---
+        public DbSet<QpsRegistro> QpsRegistros => Set<QpsRegistro>();
+        public DbSet<QpsDocumento> QpsDocumentos => Set<QpsDocumento>();
+        public DbSet<QpsScorecard> QpsScorecards => Set<QpsScorecard>();
+        public DbSet<QpsIndicador> QpsIndicadores => Set<QpsIndicador>();
+        public DbSet<QpsBloqueio> QpsBloqueios => Set<QpsBloqueio>();
+        public DbSet<QpsPlano8d> QpsPlanos8d => Set<QpsPlano8d>();
+        public DbSet<QpsAcao8d> QpsAcoes8d => Set<QpsAcao8d>();
+        public DbSet<QpsAnexo> QpsAnexos => Set<QpsAnexo>();
+        public DbSet<QpsHistorico> QpsHistoricos => Set<QpsHistorico>();
+        public DbSet<QpsParametro> QpsParametros => Set<QpsParametro>();
+        public DbSet<QpsEvento> QpsEventos => Set<QpsEvento>();
+
+        // --- QLD-RST (Rastreabilidade e Recall) ---
+        public DbSet<RstCampanha> RstCampanhas => Set<RstCampanha>();
+        public DbSet<RstOrigem> RstOrigens => Set<RstOrigem>();
+        public DbSet<RstItemAfetado> RstItensAfetados => Set<RstItemAfetado>();
+        public DbSet<RstGenealogiaNo> RstGenealogiaNos => Set<RstGenealogiaNo>();
+        public DbSet<RstBloqueio> RstBloqueios => Set<RstBloqueio>();
+        public DbSet<RstComunicacao> RstComunicacoes => Set<RstComunicacao>();
+        public DbSet<RstRecolhimento> RstRecolhimentos => Set<RstRecolhimento>();
+        public DbSet<RstDisposicao> RstDisposicoes => Set<RstDisposicao>();
+        public DbSet<RstAnexo> RstAnexos => Set<RstAnexo>();
+        public DbSet<RstHistorico> RstHistoricos => Set<RstHistorico>();
+        public DbSet<RstParametro> RstParametros => Set<RstParametro>();
+        public DbSet<RstEvento> RstEventos => Set<RstEvento>();
 
         public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
@@ -246,6 +274,15 @@ namespace Epros.Modules.Qualidade.Infrastructure.Data
                 e.Property(x => x.CriterioAceiteAplicado).HasMaxLength(2000);
                 e.Property(x => x.Conclusao).HasMaxLength(4000);
                 e.HasIndex(x => new { x.TenantId, x.ExecucaoId }).IsUnique();
+            });
+            modelBuilder.Entity<EstadoComutacaoInspecao>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_ins_comutacao_estado");
+                e.Property(x => x.Aql).HasMaxLength(20);
+                e.Property(x => x.JanelaNormalRejeicoes).HasMaxLength(50);
+                // Um estado por (fornecedor x produto x AQL) por tenant — chave da persistencia entre lotes.
+                e.HasIndex(x => new { x.TenantId, x.FornecedorId, x.ProdutoId, x.Aql }).IsUnique();
             });
 
             // ===== QLD-ACR =====
@@ -504,6 +541,205 @@ namespace Epros.Modules.Qualidade.Infrastructure.Data
                 e.ToTable("qld_atr_parametro");
                 e.Property(x => x.Chave).HasMaxLength(150);
                 e.HasIndex(x => new { x.TenantId, x.Chave }).IsUnique();
+            });
+
+            // ===== QLD-QPS =====
+            modelBuilder.Entity<QpsRegistro>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_registro");
+                e.Property(x => x.Codigo).HasMaxLength(30);
+                e.Property(x => x.NomeParceiro).HasMaxLength(255);
+                e.Property(x => x.MotivoBloqueio).HasMaxLength(1000);
+                e.Property(x => x.ScoreAtual).HasPrecision(9, 2);
+                e.HasIndex(x => new { x.TenantId, x.Codigo }).IsUnique();
+                e.HasIndex(x => new { x.TenantId, x.ParceiroId });
+                e.HasIndex(x => new { x.TenantId, x.StatusHomologacao });
+            });
+            modelBuilder.Entity<QpsDocumento>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_documento");
+                e.Property(x => x.Titulo).HasMaxLength(255);
+                e.Property(x => x.Numero).HasMaxLength(100);
+                e.HasIndex(x => new { x.TenantId, x.RegistroId });
+            });
+            modelBuilder.Entity<QpsScorecard>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_scorecard");
+                e.Property(x => x.Periodo).HasMaxLength(50);
+                e.Property(x => x.Score).HasPrecision(9, 2);
+                e.Property(x => x.Observacao).HasMaxLength(2000);
+                e.HasIndex(x => new { x.TenantId, x.RegistroId, x.Periodo });
+            });
+            modelBuilder.Entity<QpsIndicador>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_indicador");
+                e.Property(x => x.Codigo).HasMaxLength(50);
+                e.Property(x => x.Valor).HasPrecision(18, 4);
+                e.Property(x => x.Peso).HasPrecision(9, 4);
+                e.Property(x => x.Fonte).HasMaxLength(255);
+                e.HasIndex(x => new { x.TenantId, x.ScorecardId });
+            });
+            modelBuilder.Entity<QpsBloqueio>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_bloqueio");
+                e.Property(x => x.Motivo).HasMaxLength(1000);
+                e.HasIndex(x => new { x.TenantId, x.RegistroId, x.Ativo });
+            });
+            modelBuilder.Entity<QpsPlano8d>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_plano_8d");
+                e.Property(x => x.Titulo).HasMaxLength(255);
+                e.Property(x => x.Conclusao).HasMaxLength(4000);
+                e.HasIndex(x => new { x.TenantId, x.RegistroId });
+            });
+            modelBuilder.Entity<QpsAcao8d>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_acao_8d");
+                e.Property(x => x.Descricao).HasMaxLength(2000);
+                e.HasIndex(x => new { x.TenantId, x.PlanoId });
+            });
+            modelBuilder.Entity<QpsAnexo>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_anexo");
+                e.Property(x => x.TipoAnexo).HasMaxLength(50);
+                e.HasIndex(x => new { x.TenantId, x.RegistroId });
+            });
+            modelBuilder.Entity<QpsHistorico>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_historico");
+                e.Property(x => x.Entidade).HasMaxLength(100);
+                e.Property(x => x.Motivo).HasMaxLength(1000);
+                e.HasIndex(x => new { x.TenantId, x.RegistroId });
+            });
+            modelBuilder.Entity<QpsParametro>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_parametro");
+                e.Property(x => x.Chave).HasMaxLength(150);
+                e.HasIndex(x => new { x.TenantId, x.Chave }).IsUnique();
+            });
+            modelBuilder.Entity<QpsEvento>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_qps_evento");
+                e.Property(x => x.TipoEvento).HasMaxLength(150);
+                e.HasIndex(x => new { x.TenantId, x.RegistroId });
+            });
+
+            // ===== QLD-RST =====
+            modelBuilder.Entity<RstCampanha>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_rst_campanha");
+                e.Property(x => x.Codigo).HasMaxLength(30);
+                e.Property(x => x.Titulo).HasMaxLength(255);
+                e.Property(x => x.Descricao).HasMaxLength(4000);
+                e.Property(x => x.Conclusao).HasMaxLength(4000);
+                e.Property(x => x.MotivoCancelamento).HasMaxLength(1000);
+                e.Property(x => x.QuantidadeMercado).HasPrecision(18, 4);
+                e.HasIndex(x => new { x.TenantId, x.Codigo }).IsUnique();
+                e.HasIndex(x => new { x.TenantId, x.Status, x.Etapa });
+                e.HasIndex(x => new { x.TenantId, x.NcrId });
+            });
+            modelBuilder.Entity<RstOrigem>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_rst_origem");
+                e.Property(x => x.TipoOrigem).HasMaxLength(50);
+                e.Property(x => x.ReferenciaId).HasMaxLength(100);
+                e.Property(x => x.Observacao).HasMaxLength(1000);
+                e.HasIndex(x => new { x.TenantId, x.CampanhaId });
+            });
+            modelBuilder.Entity<RstItemAfetado>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_rst_item_afetado");
+                e.Property(x => x.Lote).HasMaxLength(100);
+                e.Property(x => x.Serial).HasMaxLength(100);
+                e.Property(x => x.Localizacao).HasMaxLength(255);
+                e.Property(x => x.Quantidade).HasPrecision(18, 4);
+                e.HasIndex(x => new { x.TenantId, x.CampanhaId });
+            });
+            modelBuilder.Entity<RstGenealogiaNo>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_rst_genealogia_no");
+                e.Property(x => x.Lote).HasMaxLength(100);
+                e.Property(x => x.Serial).HasMaxLength(100);
+                e.Property(x => x.Justificativa).HasMaxLength(2000);
+                e.HasIndex(x => new { x.TenantId, x.CampanhaId });
+                e.HasIndex(x => new { x.TenantId, x.PaiId });
+            });
+            modelBuilder.Entity<RstBloqueio>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_rst_bloqueio");
+                e.Property(x => x.Lote).HasMaxLength(100);
+                e.Property(x => x.Serial).HasMaxLength(100);
+                e.Property(x => x.Motivo).HasMaxLength(1000);
+                e.Property(x => x.Quantidade).HasPrecision(18, 4);
+                e.HasIndex(x => new { x.TenantId, x.CampanhaId, x.Ativo });
+            });
+            modelBuilder.Entity<RstComunicacao>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_rst_comunicacao");
+                e.Property(x => x.Conteudo).HasMaxLength(4000);
+                e.HasIndex(x => new { x.TenantId, x.CampanhaId });
+            });
+            modelBuilder.Entity<RstRecolhimento>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_rst_recolhimento");
+                e.Property(x => x.QuantidadePrevista).HasPrecision(18, 4);
+                e.Property(x => x.QuantidadeRecolhida).HasPrecision(18, 4);
+                e.HasIndex(x => new { x.TenantId, x.CampanhaId });
+            });
+            modelBuilder.Entity<RstDisposicao>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_rst_disposicao");
+                e.Property(x => x.Quantidade).HasPrecision(18, 4);
+                e.Property(x => x.Observacao).HasMaxLength(2000);
+                e.HasIndex(x => new { x.TenantId, x.CampanhaId });
+            });
+            modelBuilder.Entity<RstAnexo>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_rst_anexo");
+                e.Property(x => x.TipoAnexo).HasMaxLength(50);
+                e.HasIndex(x => new { x.TenantId, x.CampanhaId });
+            });
+            modelBuilder.Entity<RstHistorico>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_rst_historico");
+                e.Property(x => x.Entidade).HasMaxLength(100);
+                e.Property(x => x.Motivo).HasMaxLength(1000);
+                e.HasIndex(x => new { x.TenantId, x.CampanhaId });
+            });
+            modelBuilder.Entity<RstParametro>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_rst_parametro");
+                e.Property(x => x.Chave).HasMaxLength(150);
+                e.HasIndex(x => new { x.TenantId, x.Chave }).IsUnique();
+            });
+            modelBuilder.Entity<RstEvento>(e =>
+            {
+                e.HasKey(x => x.Id);
+                e.ToTable("qld_rst_evento");
+                e.Property(x => x.TipoEvento).HasMaxLength(150);
+                e.HasIndex(x => new { x.TenantId, x.CampanhaId });
             });
 
             modelBuilder.Entity<OutboxMessage>(entity =>

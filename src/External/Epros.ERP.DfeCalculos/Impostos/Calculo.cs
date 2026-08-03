@@ -1,4 +1,4 @@
-﻿using Epros.ERP.DfeCalculos.Impostos.Cofins;
+using Epros.ERP.DfeCalculos.Impostos.Cofins;
 using Epros.ERP.DfeCalculos.Impostos.IbsCbss;
 using Epros.ERP.DfeCalculos.Impostos.Icms;
 using Epros.ERP.DfeCalculos.Impostos.Icms.Csosns;

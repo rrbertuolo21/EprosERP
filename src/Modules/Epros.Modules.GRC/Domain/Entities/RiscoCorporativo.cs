@@ -14,8 +14,17 @@ namespace Epros.Modules.GRC.Domain.Entities
         public int NivelRisco { get; private set; } // Probabilidade * Impacto
         public string Status { get; private set; } = "Identificado"; // Identificado, Mitigado, Inaceitavel
         public string AcoesMitigadoras { get; private set; } = string.Empty;
+        // D-TEC-05 — FK opcional para o catálogo normativo único (nunca duplicar catálogo).
+        public Guid? TaxonomiaNormativaId { get; private set; }
 
         protected RiscoCorporativo() { } // EF Core
+
+        /// <summary>D-TEC-05 — classifica o risco num nó da taxonomia normativa única.</summary>
+        public void Classificar(Guid taxonomiaNormativaId, string usuario)
+        {
+            TaxonomiaNormativaId = taxonomiaNormativaId;
+            MarcarAlterado(usuario);
+        }
 
         public RiscoCorporativo(
             string titulo,

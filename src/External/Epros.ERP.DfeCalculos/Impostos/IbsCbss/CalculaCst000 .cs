@@ -1,4 +1,4 @@
-﻿using Epros.ERP.DfeCalculos.Impostos.Abstracts;
+using Epros.ERP.DfeCalculos.Impostos.Abstracts;
 using Epros.ERP.DfeCalculos.Impostos.IbsCbss;
 using Epros.ERP.DfeCalculos.Models.Vendas;
 using Epros.ERP.Shared.Extensions;
@@ -20,7 +20,7 @@ namespace Epros.ERP.DfeCalculos.Impostos.Ipis
                     // CBS
                     ibsCbs.AliquotaCbs = aliquotaCbs;
 
-                    var retirarValorImpostos = 
+                    var retirarValorImpostos =
                         (vendaItem.Imposto?.Icms?.ValorImpostoDevido ?? decimal.Zero) +
                         (vendaItem.Imposto?.Icms?.ValorImpostoDevidoFcp ?? decimal.Zero) +
                         (vendaItem.Imposto?.Icms?.ValorImpostoDevidoDifal ?? decimal.Zero) +
@@ -28,22 +28,22 @@ namespace Epros.ERP.DfeCalculos.Impostos.Ipis
                         (vendaItem.Imposto?.Pis?.ValorImpostoDevido ?? decimal.Zero) +
                         (vendaItem.Imposto?.Cofins?.ValorImpostoDevido ?? decimal.Zero);
 
-                    ibsCbs.ValorBaseDeCalculo = vendaItem.ValorItem + 
-                        vendaItem.ObterAdicionaisAEmbutirBaseCalculoIcms() - 
-                        vendaItem.ObterDescontosAEmbutirBaseCalculoIcms() - 
+                    ibsCbs.ValorBaseDeCalculo = vendaItem.ValorItem +
+                        vendaItem.ObterAdicionaisAEmbutirBaseCalculoIcms() -
+                        vendaItem.ObterDescontosAEmbutirBaseCalculoIcms() -
                         retirarValorImpostos;
 
                     ibsCbs.ValorImpostoDevidoCbs = ((ibsCbs.ValorBaseDeCalculo * (aliquotaCbs / 100))).Arredonda2();
 
                     // IBS Estadual
                     ibsCbs.AliquotaEstadual = aliquotaIbsEstadual;
-             
+
 
                     ibsCbs.ValorImpostoDevidoEstadual = (ibsCbs.ValorBaseDeCalculo * (aliquotaIbsEstadual / 100)).Arredonda2();
 
                     // IBS Municipal
                     ibsCbs.AliquotaMunicipal = aliquotaIbsMunicipal;
-                    
+
                     ibsCbs.ValorImpostoDevidoMunicipal = (ibsCbs.ValorBaseDeCalculo * (aliquotaIbsMunicipal / 100)).Arredonda2();
                     return ibsCbs;
                 default:

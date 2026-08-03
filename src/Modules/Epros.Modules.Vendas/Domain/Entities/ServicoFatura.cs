@@ -180,14 +180,45 @@ namespace Epros.Modules.Vendas.Domain.Entities
         }
 
         /// <summary>EF §7.2: cancelamento; faturas faturadas devem estornar lançamentos vinculados (EF §13.5).</summary>
+        /// <summary>
+        /// EF §7.2 (EC-08): Cancelar é transição de fatura NÃO faturada (Rascunho/Confirmado → Cancelado).
+        /// Fatura já faturada não se cancela — usa-se <see cref="Estornar"/> (reverte efeitos financeiros).
+        /// </summary>
         public void Cancelar(string alteradoPor)
         {
+            Clear(); // transição independente: reavalia notificações do zero.
             if (Status == EServicoFaturaStatus.Cancelado || Status == EServicoFaturaStatus.Estornado)
             {
                 AddNotification(nameof(Status), "A fatura já está cancelada ou estornada. [Origem: ServicoFatura]");
                 return;
             }
-            Status = Status == EServicoFaturaStatus.Faturado ? EServicoFaturaStatus.Estornado : EServicoFaturaStatus.Cancelado;
+            if (Status == EServicoFaturaStatus.Faturado)
+            {
+                AddNotification(nameof(Status), "Fatura já faturada não pode ser cancelada — utilize Estornar. [Origem: ServicoFatura EC-08]");
+                return;
+            }
+            Status = EServicoFaturaStatus.Cancelado;
+            MarcarAlterado(alteradoPor);
+        }
+
+        /// <summary>
+        /// EF §7.2 (EC-08): Estornar é transição de fatura FATURADA (Faturado → Estornado), revertendo os
+        /// lançamentos financeiros (feito no handler via referências de integração — T-06).
+        /// </summary>
+        public void Estornar(string alteradoPor)
+        {
+            Clear(); // transição independente: reavalia notificações do zero.
+            if (Status == EServicoFaturaStatus.Cancelado || Status == EServicoFaturaStatus.Estornado)
+            {
+                AddNotification(nameof(Status), "A fatura já está cancelada ou estornada. [Origem: ServicoFatura]");
+                return;
+            }
+            if (Status != EServicoFaturaStatus.Faturado)
+            {
+                AddNotification(nameof(Status), "Somente fatura faturada pode ser estornada — use Cancelar. [Origem: ServicoFatura EC-08]");
+                return;
+            }
+            Status = EServicoFaturaStatus.Estornado;
             MarcarAlterado(alteradoPor);
         }
 

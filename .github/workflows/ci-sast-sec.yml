@@ -1,15 +1,30 @@
 name: CI/CD Pipeline - Epros ERP
 
+# - pull_request: gate antes do merge
+# - push em main/develop: push direto (hotfix etc.)
+# - workflow_dispatch: reexecução manual
+# Merge via UI do GitHub (committer web-flow) NÃO reexecuta — o PR já validou.
 on:
-  push:
-    branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-sast-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
     name: Build & Unit Tests
+    if: >
+      github.event_name == 'pull_request' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.event.head_commit.committer.username != 'web-flow')
     runs-on: ubuntu-latest
+    # Suite completa costuma < 10 min; 20 min evita runner preso por hang de Testcontainers/xUnit.
+    timeout-minutes: 20
 
     steps:
     - name: Checkout Repository
@@ -29,11 +44,26 @@ jobs:
     - name: Build Solution
       run: dotnet build --configuration Release --no-restore -warnaserror
 
+    # Falha cedo se o registry/Docker estiver ruim (em vez de pendurar no StartAsync do Testcontainers).
+    - name: Pre-pull Postgres (Testcontainers)
+      run: docker pull postgres:16-alpine
+      timeout-minutes: 5
+
     - name: Run Unit & Integration Tests
-      run: dotnet test --configuration Release --no-build --verbosity normal
+      timeout-minutes: 15
+      env:
+        # Ryuk às vezes atrasa/limpa cedo em runners efêmeros; o job já isola o ambiente.
+        TESTCONTAINERS_RYUK_DISABLED: true
+      run: >
+        dotnet test --configuration Release --no-build --verbosity normal
+        --blame-hang --blame-hang-timeout 5m
 
   security-sast:
     name: Security SAST & Secrets Scan
+    if: >
+      github.event_name == 'pull_request' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.event.head_commit.committer.username != 'web-flow')
     runs-on: ubuntu-latest
     needs: build-and-test
 

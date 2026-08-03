@@ -79,5 +79,75 @@ namespace Epros.API.Controllers
             var result = await _mediator.Send(new DuplicarProjetoCommand(id));
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
+
+        // ===== MM-d: workflow do mestre (status canônico T3) =====
+
+        [HttpPost("{id:guid}/submeter")]
+        [AbacAuthorize("ProjetosDefinicao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        public async Task<ActionResult<CommandResult>> Submeter(Guid id)
+        {
+            var result = await _mediator.Send(new SubmeterProjetoCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("{id:guid}/aprovar")]
+        [AbacAuthorize("ProjetosDefinicao", "Aprovar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        public async Task<ActionResult<CommandResult>> Aprovar(Guid id)
+        {
+            var result = await _mediator.Send(new AprovarProjetoCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("{id:guid}/suspender")]
+        [AbacAuthorize("ProjetosDefinicao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        public async Task<ActionResult<CommandResult>> Suspender(Guid id)
+        {
+            var result = await _mediator.Send(new SuspenderProjetoCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("{id:guid}/retomar")]
+        [AbacAuthorize("ProjetosDefinicao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        public async Task<ActionResult<CommandResult>> Retomar(Guid id)
+        {
+            var result = await _mediator.Send(new RetomarProjetoCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("{id:guid}/encerrar")]
+        [AbacAuthorize("ProjetosDefinicao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        public async Task<ActionResult<CommandResult>> Encerrar(Guid id, [FromBody] EncerrarProjetoRequest request)
+        {
+            var result = await _mediator.Send(new EncerrarProjetoCommand(id, request.Motivo));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        public record EncerrarProjetoRequest(string Motivo);
+
+        [HttpPost("{id:guid}/inativar")]
+        [AbacAuthorize("ProjetosDefinicao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        public async Task<ActionResult<CommandResult>> Inativar(Guid id)
+        {
+            var result = await _mediator.Send(new InativarProjetoCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        /// <summary>RN-DEF-012/013: converte o projeto em template ou de volta em projeto normal.</summary>
+        [HttpPost("{id:guid}/template")]
+        [AbacAuthorize("ProjetosDefinicao", "Editar")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        public async Task<ActionResult<CommandResult>> ConverterTemplate(Guid id, [FromBody] ConverterTemplateRequest request)
+        {
+            var result = await _mediator.Send(new ConverterProjetoTemplateCommand(id, request.ParaTemplate));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        public record ConverterTemplateRequest(bool ParaTemplate);
     }
 }

@@ -1,0 +1,26 @@
+# Shell scripts must use LF so Linux containers can execute shebangs.
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Backend / .NET
+*.cs text eol=lf
+*.csx text eol=lf
+*.csproj text eol=lf
+*.sln text eol=lf
+*.props text eol=lf
+*.targets text eol=lf
+
+# Frontend (Nuxt / TypeScript / Vue)
+*.ts text eol=lf
+*.tsx text eol=lf
+*.vue text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+
+.editorconfig text eol=lf
+.vscode/** text eol=lf

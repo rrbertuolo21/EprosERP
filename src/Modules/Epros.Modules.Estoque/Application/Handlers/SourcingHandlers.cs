@@ -246,4 +246,42 @@ namespace Epros.Modules.Estoque.Application.Handlers
             return CommandResult.Ok("Pedido de compra criado com sucesso!", new { pedido.Id });
         }
     }
+
+    /// <summary>
+    /// CD2 — escolhe o fornecedor vencedor da cotação após o mapa comparativo. Valida a pertinência do
+    /// fornecedor (SRC-021), transiciona a cotação para DECIDIDA e publica evento (apta a originar o pedido).
+    /// </summary>
+    public class SelecionarVencedorCotacaoCommandHandler : ICommandHandler<SelecionarVencedorCotacaoCommand>
+    {
+        private readonly ContextEstoque _context;
+        private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
+
+        public SelecionarVencedorCotacaoCommandHandler(ContextEstoque context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        {
+            _context = context;
+            _tenantProvider = tenantProvider;
+            _currentUser = currentUser;
+        }
+
+        public async Task<CommandResult> Handle(SelecionarVencedorCotacaoCommand request, CancellationToken cancellationToken)
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var usuario = _currentUser.GetUserId() ?? "system";
+
+            var cotacao = await _context.ScCotacoes.Include(c => c.Fornecedores)
+                .FirstOrDefaultAsync(c => c.Id == request.CotacaoId && c.DeletadoEm == null, cancellationToken);
+            if (cotacao == null)
+                return CommandResult.Falha("Cotação não encontrada.");
+
+            if (!cotacao.SelecionarVencedor(request.FornecedorId, usuario))
+                return CommandResult.Falha(cotacao.Notifications.Select(n => n.Message), "Não foi possível escolher o vencedor.");
+
+            _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Estoque.ScCotacaoDecidida,
+                JsonSerializer.Serialize(new { cotacaoId = cotacao.Id, cotacao.FornecedorVencedorId, cotacao.DecididaEm, usuario })));
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Fornecedor vencedor escolhido — cotação decidida.", new { cotacao.Id, cotacao.FornecedorVencedorId, cotacao.Situacao });
+        }
+    }
 }

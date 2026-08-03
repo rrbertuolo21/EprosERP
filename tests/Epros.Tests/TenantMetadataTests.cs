@@ -66,11 +66,12 @@ namespace Epros.Tests
         {
             // Arrange
             var dbName = "db_test_criar_cliente_metadata_" + Guid.NewGuid();
-            var (provider, tenantProvider, currentUser) = CreateServiceProvider(dbName, "system-tenant");
+            // 1.11 fix #2 — criar cliente é operação landlord: exige operador interno (tenant="system").
+            var (provider, tenantProvider, currentUser) = CreateServiceProvider(dbName, "system");
             var context = provider.GetRequiredService<ContextGestaoClientes>();
 
             var planoId = Guid.NewGuid();
-            var plano = new Plano("Plano Premium", 299.90m, null, 20, 10, "Todos", "system-tenant", "system-test");
+            var plano = new Plano("Plano Premium", 299.90m, null, 20, 10, "Todos", "system", "system-test");
             typeof(Epros.Shared.Domain.Entities.EntidadeSaaSBase)
                 .GetField("<Id>k__BackingField", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
                 .SetValue(plano, planoId);
@@ -114,7 +115,7 @@ namespace Epros.Tests
             var plano = new Plano("Plano Teste", 100m, null, 10, 5, null, "tenant-test", "system");
             contextGestao.Planos.Add(plano);
 
-            var cliente = new Cliente("Razao Social", "12345678000195", "cliente@teste.com", plano.Id, null, null, 10, "Active", "tenant-test", "system");
+            var cliente = new Cliente("Razao Social", "12345678000195", "cliente@teste.com", plano.Id, null, null, 10, StatusSaaS.Ativo, "tenant-test", "system");
             contextGestao.Clientes.Add(cliente);
             await contextGestao.SaveChangesAsync();
 
@@ -148,7 +149,7 @@ namespace Epros.Tests
             var plano = new Plano("Plano Demo", 0m, null, 100, 100, null, "tenant-demo", "system");
             contextGestao.Planos.Add(plano);
 
-            var cliente = new Cliente("Empresa Demo", "12345678000195", "demo@teste.com", plano.Id, null, null, 10, "Active", "tenant-demo", "system", isDemo: true);
+            var cliente = new Cliente("Empresa Demo", "12345678000195", "demo@teste.com", plano.Id, null, null, 10, StatusSaaS.Ativo, "tenant-demo", "system", isDemo: true);
             contextGestao.Clientes.Add(cliente);
             await contextGestao.SaveChangesAsync();
 

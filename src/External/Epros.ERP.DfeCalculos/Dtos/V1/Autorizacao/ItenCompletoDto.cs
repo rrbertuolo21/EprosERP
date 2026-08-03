@@ -1,4 +1,4 @@
-﻿using Epros.ERP.DfeCalculos.Models.Vendas;
+using Epros.ERP.DfeCalculos.Models.Vendas;
 
 namespace Epros.ERP.DfeCalculos.Dtos.V1.Autorizacao
 {

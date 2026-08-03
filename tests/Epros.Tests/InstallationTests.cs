@@ -137,10 +137,11 @@ namespace Epros.Tests
         {
             // Arrange
             var dbName = "db_test_upgrade_flow_" + Guid.NewGuid();
-            var (provider, _, currentUser) = CreateServiceProvider(dbName);
+            var (provider, tenantProvider, currentUser) = CreateServiceProvider(dbName);
             var context = provider.GetRequiredService<ContextAplicativo>();
 
-            var handler = new ExecutarAtualizacaoCommandHandler(context, provider, currentUser);
+            // 1.11 fix #3 — o handler exige operador interno (tenant="system", default do provedor de teste).
+            var handler = new ExecutarAtualizacaoCommandHandler(context, provider, currentUser, tenantProvider);
             var command = new ExecutarAtualizacaoCommand("v2026.06.18.1");
 
             // Act
@@ -154,7 +155,7 @@ namespace Epros.Tests
             var logs = (await logsQueryHandler.Handle(new ListarUpdateLogsQuery(), CancellationToken.None)).ToList();
 
             Assert.NotEmpty(logs);
-            Assert.Equal(1, logs.Count);
+            Assert.Single(logs);
             Assert.Equal("v2026.06.18.1", logs[0].VersaoAlvo);
             Assert.True(logs[0].Sucesso);
             Assert.Equal("system-installer", logs[0].ExecutadoPor);

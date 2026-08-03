@@ -28,9 +28,18 @@ namespace Epros.Modules.Fiscal.Application.Queries
 
         internal static object ProjetarDto(Domain.Entities.ConfiguracaoImpressaoNfce c) => new
         {
-            c.Id, c.EmpresaId, c.DetalheVendaNormal, c.DetalheVendaContingencia,
-            c.ImprimeDescontoItem, c.ImprimeFoneEmitente, c.MargemEsquerda, c.MargemDireita,
-            c.ModoImpressao, c.NfceLayoutQrCode, c.VersaoQrCode, c.SegundaViaContingencia
+            c.Id,
+            c.EmpresaId,
+            c.DetalheVendaNormal,
+            c.DetalheVendaContingencia,
+            c.ImprimeDescontoItem,
+            c.ImprimeFoneEmitente,
+            c.MargemEsquerda,
+            c.MargemDireita,
+            c.ModoImpressao,
+            c.NfceLayoutQrCode,
+            c.VersaoQrCode,
+            c.SegundaViaContingencia
         };
     }
 

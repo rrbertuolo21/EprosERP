@@ -87,6 +87,7 @@ namespace Epros.Tests
 
         private static Guid GetIdFromCommandResult(CommandResult result)
         {
+            Assert.NotNull(result.Dados);
             var prop = result.Dados.GetType().GetProperty("Id");
             if (prop != null) return (Guid)prop.GetValue(result.Dados)!;
             prop = result.Dados.GetType().GetProperty("id");

@@ -1,4 +1,4 @@
-﻿using Epros.ERP.Shared.Enums;
+using Epros.ERP.Shared.Enums;
 
 namespace Epros.ERP.Shared.ValueObjects.Documentos
 {

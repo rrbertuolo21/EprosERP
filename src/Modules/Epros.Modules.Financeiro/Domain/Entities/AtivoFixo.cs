@@ -124,6 +124,24 @@ namespace Epros.Modules.Financeiro.Domain.Entities
             Validar();
         }
 
+        /// <summary>
+        /// Calcula a cota de depreciação do mês pelas fórmulas universais (não persiste; motor em
+        /// <see cref="Domain.Services.CalculoDepreciacao"/>). Usa a taxa/vida útil informadas no ativo
+        /// (fato legal RFB → // valida-contador). Retorna 0 se o ativo não deprecia.
+        /// </summary>
+        public decimal CalcularCotaDepreciacaoMensal(decimal valorResidual = 0m, int? vidaUtilMeses = null, int? periodoCorrente = null)
+        {
+            if (!Deprecia || Status != EStatusAtivoFixo.Ativo) return 0m;
+            return Domain.Services.CalculoDepreciacao.CotaMensal(
+                TipoDepreciacao ?? ETipoDepreciacaoAtivo.Linear,
+                ValorCompra,
+                ValorAtualizado ?? ValorCompra,
+                valorResidual,
+                TaxaMensal,
+                vidaUtilMeses,
+                periodoCorrente);
+        }
+
         /// <summary>Registra depreciação do mês (atualiza valor contábil e última competência).</summary>
         public void AplicarDepreciacao(decimal valorDepreciacao, DateTime competencia, string usuario)
         {

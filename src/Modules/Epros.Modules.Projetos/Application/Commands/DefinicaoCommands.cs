@@ -19,4 +19,15 @@ namespace Epros.Modules.Projetos.Application.Commands
 
     /// <summary>RN-DEF-015/016: duplicar projeto com nome derivado.</summary>
     public record DuplicarProjetoCommand(Guid ProjetoOrigemId) : ICommand;
+
+    // ===== MM-d: workflow do mestre exposto (submeter/aprovar/suspender/retomar/encerrar/inativar) =====
+    public record SubmeterProjetoCommand(Guid ProjetoId) : ICommand;
+    public record AprovarProjetoCommand(Guid ProjetoId) : ICommand;
+    public record SuspenderProjetoCommand(Guid ProjetoId) : ICommand;
+    public record RetomarProjetoCommand(Guid ProjetoId) : ICommand;
+    public record EncerrarProjetoCommand(Guid ProjetoId, string Motivo) : ICommand;
+    public record InativarProjetoCommand(Guid ProjetoId) : ICommand;
+
+    /// <summary>RN-DEF-012/013: converte o projeto em template (ParaTemplate=true) ou de volta em projeto normal.</summary>
+    public record ConverterProjetoTemplateCommand(Guid ProjetoId, bool ParaTemplate) : ICommand;
 }

@@ -11,8 +11,11 @@ using Microsoft.EntityFrameworkCore;
 namespace Epros.Modules.GestaoClientes.Application.Queries
 {
     /// <summary>
-    /// APP-TEN-008 (account/obter-acessos): monta a árvore de menu permitida (AcessosResponse)
-    /// para a empresa selecionada, aplicando a matriz do perfil ou bypass de administrador.
+    /// LEGADO (matriz PerfilAcessoMenu). Monta a árvore de menu pela matriz do perfil / bypass de admin.
+    /// ⚠️ 1.10: NÃO é mais exposto via corpo de requisição. O endpoint <c>catalogo-menus/acessos</c> foi
+    /// repontado para a projeção por CAPACIDADE (ObterMenuDoUsuarioQuery), derivando identidade/empresa do
+    /// token — fechando o furo do <see cref="IsAdmin"/> caller-supplied. Mantido apenas para os testes de
+    /// handler existentes; qualquer construção deste query com IsAdmin vem de origem confiável (não do body).
     /// </summary>
     public record ObterAcessosUsuarioQuery(
         Guid? PerfilAcessoId,
@@ -118,23 +121,38 @@ namespace Epros.Modules.GestaoClientes.Application.Queries
                         if (!request.IsAdmin && !n2Flags.r) continue;
                         itensN2.Add(new AcessoItemDto
                         {
-                            sub = n2.Descricao, icon = n2.Icon, to = n2.To, ordem = n2.Ordem,
-                            r = n2Flags.r, u = n2Flags.u, d = n2Flags.d
+                            sub = n2.Descricao,
+                            icon = n2.Icon,
+                            to = n2.To,
+                            ordem = n2.Ordem,
+                            r = n2Flags.r,
+                            u = n2Flags.u,
+                            d = n2Flags.d
                         });
                     }
 
                     if (!request.IsAdmin && !n1Flags.r && itensN2.Count == 0) continue;
                     itensN1.Add(new AcessoItemDto
                     {
-                        sub = n1.Descricao, icon = n1.Icon, to = n1.To, ordem = n1.Ordem,
-                        r = n1Flags.r, u = n1Flags.u, d = n1Flags.d, itens = itensN2
+                        sub = n1.Descricao,
+                        icon = n1.Icon,
+                        to = n1.To,
+                        ordem = n1.Ordem,
+                        r = n1Flags.r,
+                        u = n1Flags.u,
+                        d = n1Flags.d,
+                        itens = itensN2
                     });
                 }
 
                 if (!request.IsAdmin && !menuFlags.r && itensN1.Count == 0) continue;
                 arvore.Add(new AcessoDto
                 {
-                    menu = menu.Descricao, icon = menu.Icon, to = menu.To, ordem = menu.Ordem, itens = itensN1
+                    menu = menu.Descricao,
+                    icon = menu.Icon,
+                    to = menu.To,
+                    ordem = menu.Ordem,
+                    itens = itensN1
                 });
             }
 

@@ -193,5 +193,87 @@ namespace Epros.API.Controllers
             var result = await _mediator.Send(command);
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
+
+        // ---------- Atividades / Agenda (CRM-029..037) ----------
+
+        [HttpPost("atividades")]
+        [AbacAuthorize("CrmAtividades", "Criar")]
+        public async Task<IActionResult> CriarAtividade([FromBody] CriarCrmAtividadeCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Created(string.Empty, result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("atividades/{id:guid}/concluir")]
+        [AbacAuthorize("CrmAtividades", "Editar")]
+        public async Task<IActionResult> ConcluirAtividade(Guid id, [FromBody] ConcluirCrmAtividadeCommand command)
+        {
+            if (id != command.Id) return BadRequest(CommandResult.Falha("Id da rota diferente do corpo."));
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        // ---------- Webforms (CRM-018..024) ----------
+
+        [HttpPost("webforms")]
+        [AbacAuthorize("CrmWebforms", "Criar")]
+        public async Task<IActionResult> CriarWebform([FromBody] CriarCrmWebformCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Created(string.Empty, result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("webforms/{identificador}/submissoes")]
+        [AbacAuthorize("CrmWebforms", "Editar")]
+        public async Task<IActionResult> SubmeterWebform(string identificador)
+        {
+            var result = await _mediator.Send(new RegistrarSubmissaoCrmWebformCommand(identificador));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        // ---------- Fidelização (CRM-066/067) ----------
+
+        [HttpPost("fidelizacao/clientes")]
+        [AbacAuthorize("CrmFidelizacao", "Criar")]
+        public async Task<IActionResult> CriarClienteFidelizado([FromBody] CriarCrmClienteFidelizadoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Created(string.Empty, result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("fidelizacao/pontuacoes")]
+        [AbacAuthorize("CrmFidelizacao", "Criar")]
+        public async Task<IActionResult> RegistrarPontuacao([FromBody] RegistrarPontuacaoFidelizacaoCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Created(string.Empty, result) : UnprocessableEntity(result);
+        }
+
+        // ---------- Pix relacional (CRM-069..071) ----------
+
+        [HttpPut("pix/configuracao")]
+        [AbacAuthorize("CrmPix", "Editar")]
+        public async Task<IActionResult> SalvarConfiguracaoPix([FromBody] SalvarCrmConfiguracaoPixRelacionalCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("pix/pagamentos")]
+        [AbacAuthorize("CrmPix", "Criar")]
+        public async Task<IActionResult> CriarPagamentoPix([FromBody] CriarCrmPagamentoPixRelacionalCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Created(string.Empty, result) : UnprocessableEntity(result);
+        }
+
+        [HttpPost("pix/pagamentos/{id:guid}/status")]
+        [AbacAuthorize("CrmPix", "Editar")]
+        public async Task<IActionResult> AtualizarStatusPagamentoPix(Guid id, [FromBody] AtualizarStatusCrmPagamentoPixCommand command)
+        {
+            if (id != command.Id) return BadRequest(CommandResult.Falha("Id da rota diferente do corpo."));
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
     }
 }

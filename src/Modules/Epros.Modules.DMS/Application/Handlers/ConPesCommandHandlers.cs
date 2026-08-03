@@ -1,8 +1,10 @@
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
+using Epros.Shared.Domain.Events;
 using Epros.Modules.DMS.Application.Commands;
 using Epros.Modules.DMS.Domain.Entities;
 using Epros.Modules.DMS.Infrastructure.Data;
@@ -131,6 +133,13 @@ namespace Epros.Modules.DMS.Application.Handlers
             }
 
             _context.ReservasPeca.Add(reserva);
+
+            // CON-PES: a baixa/consumo real de estoque é do motor único de saldo (EST) e é decisão
+            // pendente (D-07/T-09); este evento apenas confirma a reserva para esse consumidor.
+            _context.OutboxMessages.Add(new OutboxMessage(tenantId,
+                CatalogoEventosIntegracao.Concessionarias.PesReservaConfirmada,
+                JsonSerializer.Serialize(new { reservaId = reserva.Id, demandaId = reserva.DemandaId, pecaId = reserva.PecaId, quantidade = reserva.QuantidadeReservada, tenantId })));
+
             await _context.SaveChangesAsync(cancellationToken);
 
             return CommandResult.Ok("Reserva de peça registrada com sucesso!", new { reserva.Id });

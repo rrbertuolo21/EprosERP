@@ -59,7 +59,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                     try
                     {
                         var dataVencimento = new DateTime(referencia.Year, referencia.Month, contrato.DiaVencimento);
-                        
+
                         var fatura = new Fatura(
                             contrato.ClienteId,
                             contrato.ValorRecorrente,
@@ -73,7 +73,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                             _context.Faturas.Add(fatura);
                             contrato.AtualizarFaturamento(referencia, criadoPor);
                             faturasGeradas++;
-                            
+
                             Console.WriteLine($"[Billing] Fatura recorrente de R$ {contrato.ValorRecorrente} gerada para o Cliente {contrato.ClienteId} com vencimento em {dataVencimento}");
                         }
                         else

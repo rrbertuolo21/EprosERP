@@ -60,14 +60,13 @@ namespace Epros.Modules.Estoque.Domain.Entities
 
         public void AtualizarValorCustoMedio()
         {
-            if ((ValorSaldo == decimal.Zero && QuantidadeSaldoEstoque == decimal.Zero) || QuantidadeSaldoEstoque == decimal.Zero)
-            {
-                ValorCustoMedio = decimal.Zero;
-            }
-            else
-            {
-                ValorCustoMedio = ValorSaldo / QuantidadeSaldoEstoque;
-            }
+            // D13 (ESTOQUE EST01, valida-contador): com quantidade zero (ou negativa, quando o produto
+            // permite estoque negativo) NUNCA divide por zero e MANTÉM o último custo unitário. A próxima
+            // entrada sobre saldo zero assume naturalmente o custo dessa entrada (ValorSaldo/Quantidade).
+            if (QuantidadeSaldoEstoque <= decimal.Zero)
+                return;
+
+            ValorCustoMedio = ValorSaldo / QuantidadeSaldoEstoque;
         }
 
         public void SomarQuantidadeEstoqueReservado(decimal quantidade)

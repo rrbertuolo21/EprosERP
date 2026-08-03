@@ -47,13 +47,13 @@ namespace Epros.Tests
             // Act
             var planoSemNome = new Plano("", 100m, "tenant-1", "user-admin");
             var planoPrecoNegativo = new Plano("Plano Teste", -10m, "tenant-1", "user-admin");
- 
-             // Assert
-             Assert.False(planoSemNome.IsValid);
-             Assert.Contains(planoSemNome.Notifications, n => n.Key == "Nome");
- 
-             Assert.False(planoPrecoNegativo.IsValid);
-             Assert.Contains(planoPrecoNegativo.Notifications, n => n.Key == "Preco");
+
+            // Assert
+            Assert.False(planoSemNome.IsValid);
+            Assert.Contains(planoSemNome.Notifications, n => n.Key == "Nome");
+
+            Assert.False(planoPrecoNegativo.IsValid);
+            Assert.Contains(planoPrecoNegativo.Notifications, n => n.Key == "Preco");
         }
 
         [Fact]
@@ -211,7 +211,7 @@ namespace Epros.Tests
 
             // Assert
             Assert.True(result.Sucesso);
-            
+
             var faturaSalva = await context.Faturas.FirstOrDefaultAsync();
             Assert.NotNull(faturaSalva);
             Assert.Equal(cliente.Id, faturaSalva.ClienteId);
@@ -295,7 +295,7 @@ namespace Epros.Tests
             // Assert: deve retornar ambos os clientes (um ativo e um deletado)
             var lista = result.ToList();
             Assert.Equal(2, lista.Count);
-            
+
             var DtoAtivo = lista.FirstOrDefault(c => c.Id == cliente1.Id);
             Assert.NotNull(DtoAtivo);
             Assert.False(DtoAtivo.Deletado);
@@ -306,59 +306,105 @@ namespace Epros.Tests
         }
 
         [Fact]
-        public async Task Deve_Processar_Webhook_Mercado_Pago_E_Baixar_Fatura()
+        public async Task Deve_Processar_Webhook_Mercado_Pago_Real_E_Conciliar_Pix_Com_Tarifa_Real()
         {
-            // Arrange
+            // 1.08A — motor unificado: valida x-signature real do MP, lê data.id como payment id,
+            // consulta o gateway (tarifa REAL) e resolve a fatura por external_reference.
             var dbName = Guid.NewGuid().ToString();
             using var context = CreateInMemoryContext(dbName, "tenant-webhook", "user-webhook");
 
-            // Segredo do webhook precisa estar configurado (fail-closed): sem ele o webhook é rejeitado.
-            var configSecret = new ConfiguracaoGlobal("webhook_secret", "meusegredo", false, "Segredo do Webhook", "tenant-webhook", "user-webhook");
-            context.ConfiguracoesGlobais.Add(configSecret);
+            const string secret = "meusegredo-cifrado"; // cofre identidade nos testes
+            var config = new ConfiguracaoGatewayPagamento(
+                EProvedorGateway.MercadoPago, EAmbienteGateway.Sandbox,
+                accessTokenCifrado: "token-cifrado", publicKey: null, webhookSecretCifrado: secret,
+                moeda: "BRL", notificationUrl: null, tenantAlvo: null, ativo: true, criadoPor: "user-webhook");
+            context.ConfiguracoesGatewayPagamento.Add(config);
 
             var fatura = new Fatura(Guid.NewGuid(), 150.00m, DateTime.UtcNow.AddDays(5), "tenant-webhook", "user-webhook");
             context.Faturas.Add(fatura);
             await context.SaveChangesAsync();
 
-            var currentUser = new TestCurrentUser("user-webhook");
+            const string paymentId = "1234567890";
+            // O gateway devolve o external_reference = Id da fatura, com tarifa real do MP.
+            var gateway = new FakePaymentGateway(status: "approved", valor: 150.00m, tarifa: 4.35m,
+                externalReference: fatura.Id.ToString(), liquido: 145.65m);
+            var cofre = new IdentitySegredoCofre();
 
-            // Configura o MediatR real em memória para o teste
-            var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
-            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(BaixarFaturaCommandHandler).Assembly));
-            services.AddSingleton(context);
-            services.AddSingleton<ICurrentUser>(currentUser);
+            var handler = new ProcessarWebhookPagamentoCommandHandler(context, gateway, cofre);
 
-            var serviceProvider = services.BuildServiceProvider();
-            var mediator = serviceProvider.GetRequiredService<IMediator>();
+            var command = BuildWebhookCommand(secret, paymentId, "payment.updated");
 
-            var handler = new ProcessarWebhookPagamentoCommandHandler(context, mediator);
-
-            var action = "payment.updated";
-            var secretKey = "meusegredo";
-            var payloadToHash = $"{action}:{fatura.Id}";
-            string signature;
-            using (var hmac = new System.Security.Cryptography.HMACSHA256(System.Text.Encoding.UTF8.GetBytes(secretKey)))
-            {
-                var hashBytes = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(payloadToHash));
-                signature = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-            }
-
-            var command = new ProcessarWebhookPagamentoCommand(
-                action,
-                new WebhookData(fatura.Id.ToString()),
-                signature
-            );
-
-            // Act
             var result = await handler.Handle(command, CancellationToken.None);
 
-            // Assert
-            Assert.True(result.Sucesso);
+            Assert.True(result.Sucesso, string.Join(",", result.Erros ?? new List<string>()));
 
             var faturaAtualizada = await context.Faturas.FindAsync(fatura.Id);
-            Assert.NotNull(faturaAtualizada);
-            Assert.Equal(FaturaStatus.Paga, faturaAtualizada.Status);
+            Assert.Equal(FaturaStatus.Paga, faturaAtualizada!.Status);
             Assert.NotNull(faturaAtualizada.DataPagamento);
+
+            // Tarifa REAL registrada (não o antigo 0.75 hardcoded).
+            var pg = await context.PagamentosFaturas.FirstOrDefaultAsync(p => p.FaturaId == fatura.Id);
+            Assert.NotNull(pg);
+            Assert.Equal(PagamentoFaturaStatus.Paid, pg!.Status);
+            Assert.Equal(4.35m, pg.ValorTarifa);
+            Assert.Equal(145.65m, pg.ValorRecebido);
+            Assert.Equal(paymentId, pg.IdentificadorPagamento);
+
+            // Recibo gerado.
+            var recibo = await context.RecibosPagamento.FirstOrDefaultAsync(r => r.FaturaId == fatura.Id);
+            Assert.NotNull(recibo);
+        }
+
+        [Fact]
+        public async Task Webhook_Mercado_Pago_Deve_Ser_Idempotente_Por_PaymentId()
+        {
+            var dbName = Guid.NewGuid().ToString();
+            using var context = CreateInMemoryContext(dbName, "tenant-webhook", "user-webhook");
+
+            const string secret = "s3cr3t";
+            context.ConfiguracoesGatewayPagamento.Add(new ConfiguracaoGatewayPagamento(
+                EProvedorGateway.MercadoPago, EAmbienteGateway.Sandbox,
+                "tok", null, secret, "BRL", null, null, true, "user-webhook"));
+
+            var fatura = new Fatura(Guid.NewGuid(), 90.00m, DateTime.UtcNow.AddDays(5), "tenant-webhook", "user-webhook");
+            context.Faturas.Add(fatura);
+            await context.SaveChangesAsync();
+
+            const string paymentId = "99887766";
+            var gateway = new FakePaymentGateway("approved", 90.00m, 2.00m, fatura.Id.ToString(), 88.00m);
+            var handler = new ProcessarWebhookPagamentoCommandHandler(context, gateway, new IdentitySegredoCofre());
+            var command = BuildWebhookCommand(secret, paymentId, "payment.updated");
+
+            var r1 = await handler.Handle(command, CancellationToken.None);
+            var r2 = await handler.Handle(command, CancellationToken.None);
+
+            Assert.True(r1.Sucesso);
+            Assert.True(r2.Sucesso);
+            Assert.Contains("idempot", r2.Mensagem, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(1, await context.PagamentosFaturas.CountAsync(p => p.FaturaId == fatura.Id));
+            Assert.Equal(1, await context.RecibosPagamento.CountAsync(r => r.FaturaId == fatura.Id));
+        }
+
+        [Fact]
+        public async Task Webhook_Mercado_Pago_Deve_Rejeitar_Assinatura_Invalida()
+        {
+            var dbName = Guid.NewGuid().ToString();
+            using var context = CreateInMemoryContext(dbName, "tenant-webhook", "user-webhook");
+
+            context.ConfiguracoesGatewayPagamento.Add(new ConfiguracaoGatewayPagamento(
+                EProvedorGateway.MercadoPago, EAmbienteGateway.Sandbox,
+                "tok", null, "segredo-certo", "BRL", null, null, true, "user-webhook"));
+            await context.SaveChangesAsync();
+
+            var gateway = new FakePaymentGateway("approved", 10m, 0.5m, Guid.NewGuid().ToString(), 9.5m);
+            var handler = new ProcessarWebhookPagamentoCommandHandler(context, gateway, new IdentitySegredoCofre());
+
+            // Assinatura calculada com o segredo ERRADO → deve ser rejeitada.
+            var command = BuildWebhookCommand("segredo-errado", "5555", "payment.updated");
+            var result = await handler.Handle(command, CancellationToken.None);
+
+            Assert.False(result.Sucesso);
+            Assert.Contains(result.Erros, e => e.Contains("inválida", StringComparison.OrdinalIgnoreCase));
         }
 
 
@@ -367,7 +413,7 @@ namespace Epros.Tests
         {
             // Arrange
             var perfil = new PerfilColaborador("usr-99", "João Da Silva", "joao@epros.com", "Vendedor", "Comercial", 10.00m, "tenant-1", "user-admin");
-            
+
             // Act
             perfil.AdicionarPermissao("Vendas", "Ler", true, "user-admin");
             perfil.AdicionarPermissao("Vendas", "Criar", false, "user-admin");
@@ -384,13 +430,39 @@ namespace Epros.Tests
         }
 
         [Fact]
+        public async Task Deve_Negar_Operador_System_Sem_Permissao_No_AbacFilter()
+        {
+            // Tenant "system" sem PerfilUsuario libera (UsuarioInterno). Com perfil Operador,
+            // ABAC deve aplicar ACL e negar SuperAdmin:Configurar sem permissão explícita.
+            var dbName = Guid.NewGuid().ToString();
+            using var context = CreateInMemoryContext(dbName, "system", "operator-siser");
+
+            var perfil = new PerfilColaborador("operator-siser", "Op Siser", "op@siser.com", "Operador", "TI", 0m, "system", "system");
+            context.PerfisUsuarios.Add(perfil);
+            await context.SaveChangesAsync();
+
+            var currentUser = new TestCurrentUser("operator-siser");
+            var tenantProvider = new TestTenantProvider("system");
+            var filter = new AbacFilter("SuperAdmin", "Configurar", context, currentUser, tenantProvider);
+
+            var actionContext = new ActionContext(new DefaultHttpContext(), new RouteData(), new ActionDescriptor());
+            var filterContext = new AuthorizationFilterContext(actionContext, new List<IFilterMetadata>());
+
+            await filter.OnAuthorizationAsync(filterContext);
+
+            Assert.NotNull(filterContext.Result);
+            Assert.IsType<ForbidResult>(filterContext.Result);
+        }
+
+        [Fact]
         public async Task Deve_Negar_Acesso_Se_Perfil_Inexistente_Ou_Inativo_No_AbacFilter()
         {
             // Arrange
             var dbName = Guid.NewGuid().ToString();
             using var context = CreateInMemoryContext(dbName, "tenant-abac", "user-none");
             var currentUser = new TestCurrentUser("user-none");
-            var filter = new AbacFilter("Faturas", "Cancelar", context, currentUser);
+            var tenantProvider = new TestTenantProvider("tenant-abac");
+            var filter = new AbacFilter("Faturas", "Cancelar", context, currentUser, tenantProvider);
 
             var actionContext = new ActionContext(new DefaultHttpContext(), new RouteData(), new ActionDescriptor());
             var filterContext = new AuthorizationFilterContext(actionContext, new List<IFilterMetadata>());
@@ -409,13 +481,14 @@ namespace Epros.Tests
             // Arrange
             var dbName = Guid.NewGuid().ToString();
             using var context = CreateInMemoryContext(dbName, "tenant-abac", "user-admin");
-            
+
             var perfil = new PerfilColaborador("user-admin", "Admin User", "admin@epros.com", "Administrador", "TI", 100.00m, "tenant-abac", "system");
             context.PerfisUsuarios.Add(perfil);
             await context.SaveChangesAsync();
 
             var currentUser = new TestCurrentUser("user-admin");
-            var filter = new AbacFilter("Faturas", "Cancelar", context, currentUser);
+            var tenantProvider = new TestTenantProvider("tenant-abac");
+            var filter = new AbacFilter("Faturas", "Cancelar", context, currentUser, tenantProvider);
 
             var actionContext = new ActionContext(new DefaultHttpContext(), new RouteData(), new ActionDescriptor());
             var filterContext = new AuthorizationFilterContext(actionContext, new List<IFilterMetadata>());
@@ -433,7 +506,7 @@ namespace Epros.Tests
             // Arrange
             var dbName = Guid.NewGuid().ToString();
             using var context = CreateInMemoryContext(dbName, "tenant-abac", "user-vendedor");
-            
+
             var perfil = new PerfilColaborador("user-vendedor", "Vendedor 1", "vendedor@epros.com", "Vendedor", "Comercial", 10.00m, "tenant-abac", "system");
             // Adiciona permissão para aplicar desconto
             perfil.AdicionarPermissao("Desconto", "Aplicar", true, "system");
@@ -441,13 +514,14 @@ namespace Epros.Tests
             await context.SaveChangesAsync();
 
             var currentUser = new TestCurrentUser("user-vendedor");
+            var tenantProvider = new TestTenantProvider("tenant-abac");
 
             // Caso 1: Desconto dentro do limite (5%)
             var httpContextOk = new DefaultHttpContext();
             httpContextOk.Request.QueryString = new QueryString("?percentual=5");
             var actionContextOk = new ActionContext(httpContextOk, new RouteData(), new ActionDescriptor());
             var filterContextOk = new AuthorizationFilterContext(actionContextOk, new List<IFilterMetadata>());
-            var filterOk = new AbacFilter("Desconto", "Aplicar", context, currentUser);
+            var filterOk = new AbacFilter("Desconto", "Aplicar", context, currentUser, tenantProvider);
 
             // Act 1
             await filterOk.OnAuthorizationAsync(filterContextOk);
@@ -460,7 +534,7 @@ namespace Epros.Tests
             httpContextNegado.Request.QueryString = new QueryString("?percentual=15");
             var actionContextNegado = new ActionContext(httpContextNegado, new RouteData(), new ActionDescriptor());
             var filterContextNegado = new AuthorizationFilterContext(actionContextNegado, new List<IFilterMetadata>());
-            var filterNegado = new AbacFilter("Desconto", "Aplicar", context, currentUser);
+            var filterNegado = new AbacFilter("Desconto", "Aplicar", context, currentUser, tenantProvider);
 
             // Act 2
             await filterNegado.OnAuthorizationAsync(filterContextNegado);
@@ -504,7 +578,7 @@ namespace Epros.Tests
             // Assert
             Assert.True(result.Sucesso);
             var menus = Assert.IsType<List<MenuDinamicoDto>>(result.Dados);
-            
+
             // Deve conter Financeiro (pois está no plano e tem permissão)
             Assert.Contains(menus, m => m.Modulo == "Financeiro");
             // Não deve conter Estoque (está no plano mas não tem permissão)
@@ -549,7 +623,7 @@ namespace Epros.Tests
             var tenantProvider = new TestTenantProvider("tenant-contrato");
             var currentUser = new TestCurrentUser("user-1");
             var context = CreateInMemoryContext("db_contrato_handler", "tenant-contrato", "user-1");
-            
+
             // Adiciona cliente para poder associar o contrato
             var cliente = new Cliente("Cliente Contrato", "00.000.000/0001-00", "cliente@contrato.com", Guid.NewGuid(), "tenant-contrato", "user-1");
             context.Clientes.Add(cliente);
@@ -573,7 +647,7 @@ namespace Epros.Tests
 
             // Assert
             Assert.True(result.Sucesso);
-            
+
             var contratoSalvo = await context.Contratos.Include(c => c.Itens).FirstOrDefaultAsync();
             Assert.NotNull(contratoSalvo);
             Assert.Equal(cliente.Id, contratoSalvo.ClienteId);
@@ -666,9 +740,11 @@ namespace Epros.Tests
         public async Task Deve_Criar_Cliente_Via_Handler_Com_Sucesso()
         {
             // Arrange
-            var tenantProvider = new TestTenantProvider("tenant-h");
+            // 1.11 fix #2 — criar tenant é operação landlord: só o operador interno (tenant="system").
+            // Antes o teste usava um tenant comum ("tenant-h"), o que hoje é bloqueado pelo guard.
+            var tenantProvider = new TestTenantProvider("system");
             var currentUser = new TestCurrentUser("user-h");
-            using var context = CreateInMemoryContext("db_cliente_handler_success", "tenant-h", "user-h");
+            using var context = CreateInMemoryContext("db_cliente_handler_success", "system", "user-h");
             var handler = new CriarClienteCommandHandler(context, tenantProvider, currentUser);
             var planoId = Guid.NewGuid();
             var command = new CriarClienteCommand("Inquilino S.A.", "12.345.678/0001-99", "admin@inquilino.com", planoId);
@@ -686,7 +762,7 @@ namespace Epros.Tests
             Assert.Equal("12.345.678/0001-99", clienteSalvo.Cnpj);
             Assert.Equal("admin@inquilino.com", clienteSalvo.Email);
             Assert.Equal(planoId, clienteSalvo.PlanoId);
-            Assert.Equal("tenant-h", clienteSalvo.TenantId);
+            Assert.Equal("system", clienteSalvo.TenantId);
             Assert.Equal("user-h", clienteSalvo.CriadoPor);
         }
 
@@ -694,9 +770,10 @@ namespace Epros.Tests
         public async Task Nao_Deve_Criar_Cliente_Via_Handler_Se_Invalido()
         {
             // Arrange
-            var tenantProvider = new TestTenantProvider("tenant-h");
+            // 1.11 fix #2 — operador interno (tenant="system") para passar do guard e alcançar a validação.
+            var tenantProvider = new TestTenantProvider("system");
             var currentUser = new TestCurrentUser("user-h");
-            using var context = CreateInMemoryContext("db_cliente_handler_fail", "tenant-h", "user-h");
+            using var context = CreateInMemoryContext("db_cliente_handler_fail", "system", "user-h");
             var handler = new CriarClienteCommandHandler(context, tenantProvider, currentUser);
             // Email inválido
             var command = new CriarClienteCommand("Inquilino S.A.", "12.345.678/0001-99", "email-invalido", Guid.NewGuid());
@@ -715,6 +792,81 @@ namespace Epros.Tests
         #endregion
 
         #region Helpers e Doubles de Teste
+
+        private static ProcessarWebhookPagamentoCommand BuildWebhookCommand(string secret, string paymentId, string action)
+        {
+            var ts = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+            var requestId = Guid.NewGuid().ToString();
+            var header = Epros.Modules.GestaoClientes.Infrastructure.Gateways.MercadoPagoWebhookSignature
+                .MontarHeader(secret, paymentId, requestId, ts);
+            return new ProcessarWebhookPagamentoCommand(action, new WebhookData(paymentId), header, requestId);
+        }
+
+        private sealed class IdentitySegredoCofre : ISegredoCofreService
+        {
+            public Task<string> CriptografarAsync(string valor) => Task.FromResult(valor);
+            public Task<string> DescriptografarAsync(string ciphertext) => Task.FromResult(ciphertext);
+        }
+
+        private sealed class FakePaymentGateway : Epros.Modules.GestaoClientes.Application.Interfaces.IPaymentGateway
+        {
+            private readonly string _status;
+            private readonly decimal _valor;
+            private readonly decimal? _tarifa;
+            private readonly string? _externalReference;
+            private readonly decimal? _liquido;
+
+            public FakePaymentGateway(string status, decimal valor, decimal? tarifa, string? externalReference, decimal? liquido)
+            {
+                _status = status; _valor = valor; _tarifa = tarifa; _externalReference = externalReference; _liquido = liquido;
+            }
+
+            public Task<Epros.Shared.Application.Models.CommandResult> ConsultarPagamentoAsync(
+                string paymentId, ConfiguracaoGatewayPagamento config, CancellationToken cancellationToken = default)
+                => Task.FromResult(Epros.Shared.Application.Models.CommandResult.Ok("ok",
+                    new Epros.Modules.GestaoClientes.Application.Interfaces.ConsultaPagamentoResultado(
+                        paymentId, _status, _valor, _tarifa, DateTime.UtcNow, _externalReference, _liquido)));
+
+            public Task<Epros.Shared.Application.Models.CommandResult> GerarCobrancaPixAsync(
+                Fatura fatura, ConfiguracaoGatewayPagamento config,
+                Epros.Modules.GestaoClientes.Application.Interfaces.DadosPagador pagador, CancellationToken cancellationToken = default)
+                => Task.FromResult(Epros.Shared.Application.Models.CommandResult.Ok("ok"));
+
+            public Task<Epros.Shared.Application.Models.CommandResult> TestarConexaoAsync(
+                ConfiguracaoGatewayPagamento config, CancellationToken cancellationToken = default)
+                => Task.FromResult(Epros.Shared.Application.Models.CommandResult.Ok("ok"));
+
+            public Task<Epros.Shared.Application.Models.CommandResult> GerarBoletoAsync(
+                Fatura fatura, ConfiguracaoGatewayPagamento config,
+                Epros.Modules.GestaoClientes.Application.Interfaces.DadosPagador pagador, DateTime dataVencimento, CancellationToken cancellationToken = default)
+                => Task.FromResult(Epros.Shared.Application.Models.CommandResult.Ok("ok",
+                    new Epros.Modules.GestaoClientes.Application.Interfaces.CobrancaBoletoResultado(
+                        "boleto-" + Guid.NewGuid().ToString("N"), "00190500954014481606906809350314337370000000100", "03399", dataVencimento, "https://mp/boleto.pdf", "pending")));
+
+            public Task<Epros.Shared.Application.Models.CommandResult> CriarCartaoOnFileAsync(
+                ConfiguracaoGatewayPagamento config, Epros.Modules.GestaoClientes.Application.Interfaces.DadosPagador pagador, string cardToken, CancellationToken cancellationToken = default)
+                => Task.FromResult(Epros.Shared.Application.Models.CommandResult.Ok("ok",
+                    new Epros.Modules.GestaoClientes.Application.Interfaces.CartaoOnFileResultado("cus_1", "card_1", "visa", "4242", 12, 2030)));
+
+            public Task<Epros.Shared.Application.Models.CommandResult> CobrarCartaoAsync(
+                Fatura fatura, ConfiguracaoGatewayPagamento config, string customerId, string cardId,
+                Epros.Modules.GestaoClientes.Application.Interfaces.DadosPagador pagador, CancellationToken cancellationToken = default)
+                => Task.FromResult(Epros.Shared.Application.Models.CommandResult.Ok("ok",
+                    new Epros.Modules.GestaoClientes.Application.Interfaces.ConsultaPagamentoResultado(
+                        "cardpay-" + Guid.NewGuid().ToString("N"), _status, _valor, _tarifa, DateTime.UtcNow, fatura.Id.ToString(), _liquido)));
+
+            public Task<Epros.Shared.Application.Models.CommandResult> CriarPreferenciaCheckoutAsync(
+                Fatura fatura, ConfiguracaoGatewayPagamento config, string descricao,
+                Epros.Modules.GestaoClientes.Application.Interfaces.DadosPagador pagador, string? urlRetorno, CancellationToken cancellationToken = default)
+                => Task.FromResult(Epros.Shared.Application.Models.CommandResult.Ok("ok",
+                    new Epros.Modules.GestaoClientes.Application.Interfaces.PreferenciaCheckoutResultado("pref-123", "https://mp/checkout/pref-123")));
+
+            public Task<Epros.Shared.Application.Models.CommandResult> EstornarPagamentoAsync(
+                string paymentId, ConfiguracaoGatewayPagamento config, decimal? valor, CancellationToken cancellationToken = default)
+                => Task.FromResult(Epros.Shared.Application.Models.CommandResult.Ok("ok",
+                    new Epros.Modules.GestaoClientes.Application.Interfaces.EstornoResultado(
+                        "refund-" + Guid.NewGuid().ToString("N"), paymentId, valor, "approved")));
+        }
 
         private ContextGestaoClientes CreateInMemoryContext(string databaseName, string tenantId, string userId)
         {

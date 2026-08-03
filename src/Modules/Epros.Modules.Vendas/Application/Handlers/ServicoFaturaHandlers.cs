@@ -40,12 +40,23 @@ namespace Epros.Modules.Vendas.Application.Handlers
         }
 
         /// <summary>
-        /// Resolve o percentual e o tipo de imposto configurados para a empresa (EF §11.3/§11.4).
-        /// Sem inventar alíquota: default conservador 0% Exclusivo até existir o lookup de configuração
-        /// fiscal da empresa no Context de Vendas.
+        /// Resolve o percentual e o tipo do ISS para a fatura de serviço (EF §11.3/§11.4).
+        ///
+        /// valida-contador (NF-03 / INV-02): a alíquota de ISS depende de município e atividade e NÃO é
+        /// inventada aqui. Ela entra como PARÂMETRO (<paramref name="aliquotaParametro"/> +
+        /// <paramref name="tipoParametro"/>) vindo do comando — a fonte de config fiscal (ISS por
+        /// município/atividade) é definida pelo contador. Quando o parâmetro não é informado, mantém-se
+        /// o STUB explícito 0% Exclusivo (sem calcular imposto) — nunca vai a produção sem a alíquota real.
         /// </summary>
-        protected virtual (decimal percentual, ETipoImpostoServico tipo) ResolverConfiguracaoImposto(Guid empresaId)
-            => (0m, ETipoImpostoServico.Exclusivo);
+        protected virtual (decimal percentual, ETipoImpostoServico tipo) ResolverConfiguracaoImposto(
+            Guid empresaId, decimal? aliquotaParametro, ETipoImpostoServico? tipoParametro)
+        {
+            if (aliquotaParametro.HasValue && aliquotaParametro.Value > 0m)
+                return (aliquotaParametro.Value, tipoParametro ?? ETipoImpostoServico.Exclusivo);
+
+            // valida-contador: sem parâmetro de alíquota ISS → stub 0% (não inventar alíquota).
+            return (0m, tipoParametro ?? ETipoImpostoServico.Exclusivo);
+        }
 
         protected ServicoFaturaLinha MontarLinha(ServicoFaturaLinhaInput input, string tenantId, string usuario)
             => new ServicoFaturaLinha(
@@ -80,7 +91,7 @@ namespace Epros.Modules.Vendas.Application.Handlers
                 fatura.AdicionarLinha(linha);
             }
 
-            var (pct, tipo) = ResolverConfiguracaoImposto(request.EmpresaId);
+            var (pct, tipo) = ResolverConfiguracaoImposto(request.EmpresaId, request.AliquotaIssPercentual, request.TipoImpostoIss);
             fatura.Recalcular(pct, tipo);
 
             _context.ServicoFaturas.Add(fatura);
@@ -131,7 +142,7 @@ namespace Epros.Modules.Vendas.Application.Handlers
                 fatura.AdicionarLinha(linha);
             }
 
-            var (pct, tipo) = ResolverConfiguracaoImposto(fatura.EmpresaId);
+            var (pct, tipo) = ResolverConfiguracaoImposto(fatura.EmpresaId, request.AliquotaIssPercentual, request.TipoImpostoIss);
             fatura.Recalcular(pct, tipo);
             fatura.Validar();
             if (!fatura.IsValid)
@@ -211,21 +222,40 @@ namespace Epros.Modules.Vendas.Application.Handlers
             var fatura = await _context.ServicoFaturas.FirstOrDefaultAsync(f => f.TenantId == tenantId && f.Id == request.Id, cancellationToken);
             if (fatura == null) return CommandResult.Falha("Fatura de serviço não encontrada.");
 
-            var eraFaturada = fatura.Status == EServicoFaturaStatus.Faturado;
+            // EC-08: Cancelar só vale para fatura NÃO faturada. Faturada → usar Estornar.
             fatura.Cancelar(usuario);
             if (!fatura.IsValid) return CommandResult.Falha(fatura.Notifications.Select(n => n.Message), "Não foi possível cancelar a fatura.");
 
-            // EF §13.5: cancelamento de fatura com lançamentos deve estornar os efeitos financeiros.
-            if (eraFaturada)
-            {
-                var refs = await _context.ServicoLancamentoFinanceiroRefs
-                    .Where(r => r.TenantId == tenantId && r.FaturaId == fatura.Id)
-                    .ToListAsync(cancellationToken);
-                foreach (var r in refs) r.MarcarEstornado(usuario);
-            }
-
             await _context.SaveChangesAsync(cancellationToken);
             return CommandResult.Ok("Fatura cancelada com sucesso!", new { fatura.Id, Status = fatura.Status.ToString() });
+        }
+    }
+
+    /// <summary>EC-08: estorno de fatura FATURADA — transição distinta de Cancelar, reverte os lançamentos financeiros (T-06).</summary>
+    public class EstornarServicoFaturaCommandHandler : ServicoFaturaHandlerBase, ICommandHandler<EstornarServicoFaturaCommand>
+    {
+        public EstornarServicoFaturaCommandHandler(ContextVendas context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+            : base(context, tenantProvider, currentUser) { }
+
+        public async Task<CommandResult> Handle(EstornarServicoFaturaCommand request, CancellationToken cancellationToken)
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var usuario = _currentUser.GetUserId() ?? "system";
+
+            var fatura = await _context.ServicoFaturas.FirstOrDefaultAsync(f => f.TenantId == tenantId && f.Id == request.Id, cancellationToken);
+            if (fatura == null) return CommandResult.Falha("Fatura de serviço não encontrada.");
+
+            fatura.Estornar(usuario);
+            if (!fatura.IsValid) return CommandResult.Falha(fatura.Notifications.Select(n => n.Message), "Não foi possível estornar a fatura.");
+
+            // EF §13.5: estorno reverte os efeitos financeiros dos lançamentos gerados no faturamento.
+            var refs = await _context.ServicoLancamentoFinanceiroRefs
+                .Where(r => r.TenantId == tenantId && r.FaturaId == fatura.Id)
+                .ToListAsync(cancellationToken);
+            foreach (var r in refs) r.MarcarEstornado(usuario);
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Fatura estornada com sucesso!", new { fatura.Id, Status = fatura.Status.ToString() });
         }
     }
 

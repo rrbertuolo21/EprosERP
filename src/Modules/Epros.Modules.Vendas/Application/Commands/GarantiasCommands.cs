@@ -11,14 +11,18 @@ namespace Epros.Modules.Vendas.Application.Commands
         string? Nome,
         string? Descricao,
         int Duracao,
-        EGarantiaTipoDuracao TipoDuracao) : ICommand;
+        EGarantiaTipoDuracao TipoDuracao,
+        decimal? LimiteUso = null,
+        EGarantiaUnidadeUso UnidadeUso = EGarantiaUnidadeUso.Nenhuma) : ICommand;
 
     public record AtualizarGarantiaPoliticaCommand(
         Guid Id,
         string? Nome,
         string? Descricao,
         int Duracao,
-        EGarantiaTipoDuracao TipoDuracao) : ICommand;
+        EGarantiaTipoDuracao TipoDuracao,
+        decimal? LimiteUso = null,
+        EGarantiaUnidadeUso UnidadeUso = EGarantiaUnidadeUso.Nenhuma) : ICommand;
 
     public record InativarGarantiaPoliticaCommand(Guid Id) : ICommand;
 
@@ -30,5 +34,9 @@ namespace Epros.Modules.Vendas.Application.Commands
         Guid? ClienteId,
         string? NumeroSerieLote,
         DateTime? DataOrigem,
-        string? Observacao) : ICommand;
+        string? Observacao,
+        decimal? UsoOrigem = null) : ICommand;
+
+    /// <summary>GAR-016: registra nova leitura de uso (km/horas) numa cobertura, reapurando a situação.</summary>
+    public record RegistrarUsoGarantiaCoberturaCommand(Guid Id, decimal UsoAtual) : ICommand;
 }

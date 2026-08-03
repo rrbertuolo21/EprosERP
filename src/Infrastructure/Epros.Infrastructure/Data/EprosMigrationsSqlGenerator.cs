@@ -51,8 +51,13 @@ namespace Epros.Infrastructure.Data
                 builder.AppendLine($"ALTER TABLE {fullTableName} ENABLE ROW LEVEL SECURITY;");
                 builder.AppendLine($"ALTER TABLE {fullTableName} FORCE ROW LEVEL SECURITY;");
 
-                // 2. Cria a política de isolamento de tenant baseada em session variable
-                builder.AppendLine($"CREATE POLICY tenant_isolation_policy ON {fullTableName} USING (tenant_id = current_setting('app.current_tenant_id', true));");
+                // 2. Cria a política de isolamento de tenant baseada em session variable.
+                //    USING protege a LEITURA (SELECT/UPDATE/DELETE enxergam só o tenant corrente);
+                //    WITH CHECK explícito protege a ESCRITA (INSERT/UPDATE não podem gravar linha de
+                //    outro tenant). O Postgres reaproveitaria o USING como WITH CHECK implicitamente,
+                //    mas declarar explicitamente documenta a intenção e evita regressão silenciosa se
+                //    a policy for futuramente restringida a FOR SELECT.
+                builder.AppendLine($"CREATE POLICY tenant_isolation_policy ON {fullTableName} USING (tenant_id = current_setting('app.current_tenant_id', true)) WITH CHECK (tenant_id = current_setting('app.current_tenant_id', true));");
 
                 builder.EndCommand();
             }

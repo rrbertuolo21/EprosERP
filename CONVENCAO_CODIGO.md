@@ -2,11 +2,11 @@
 
 > **Documento CANÔNICO e obrigatório para humanos e agentes de IA** que alteram este repositório.
 > Leia **antes** de escrever qualquer linha. Em caso de dúvida, **copie um arquivo existente do mesmo módulo** — não invente padrão novo.
-> Este é a **fonte única de convenção**. O `PADRAO_PORTE_LEGADO.md` contém apenas o *molde campo a campo* do porte e se subordina a este documento. Em qualquer divergência, **este arquivo prevalece**.
+> Este é a **fonte única de convenção**. O [`docs/migracao/PADRAO_PORTE_LEGADO.md`](docs/migracao/PADRAO_PORTE_LEGADO.md) contém apenas o *molde campo a campo* do porte e se subordina a este documento. Em qualquer divergência, **este arquivo prevalece**.
 
 **Documentos complementares (ordem de leitura):**
 1. Este arquivo (`CONVENCAO_CODIGO.md`) — regras gerais, anti-alucinação e fonte única
-2. `PADRAO_PORTE_LEGADO.md` — molde campo a campo do legado → novo (só o template)
+2. [`docs/migracao/PADRAO_PORTE_LEGADO.md`](docs/migracao/PADRAO_PORTE_LEGADO.md) — molde campo a campo do legado → novo (só o template)
 3. Legado fonte da verdade: `../Epros/epros_erp-main/src/Epros.ERP.Domain/`
 
 ---
@@ -98,8 +98,8 @@ EprosERP/
 │       ├── Epros.Modules.Fiscal/
 │       └── ... (Qualidade, Producao, RH, Projetos, Manutencao, GRC, ESG, DMS)
 ├── tests/Epros.Tests/
-├── Epros.App/                      ← Frontend Nuxt (plataforma/admin)
-└── PADRAO_PORTE_LEGADO.md
+├── EprosApp/                      ← Frontend Nuxt (plataforma/admin)
+└── docs/migracao/PADRAO_PORTE_LEGADO.md
 ```
 
 ### Layout interno de cada módulo
@@ -447,7 +447,7 @@ dotnet test EprosERP/tests/Epros.Tests/Epros.Tests.csproj
 
 ---
 
-## 11. Frontend (Epros.App / Nuxt 3)
+## 11. Frontend (EprosApp / Nuxt 3)
 
 | Regra | Detalhe |
 |-------|---------|
@@ -522,7 +522,7 @@ Cada agente escreve **somente dentro do seu módulo**. Referência cross-module 
 |--------|-------------------|
 | Operacional | GestaoClientes, Estoque, Vendas, Financeiro |
 | Fiscal | Fiscal (+ adaptadores DFe em Infrastructure) |
-| Plataforma/Front/ETL | Aplicativo, Epros.App, tests, scripts |
+| Plataforma/Front/ETL | Aplicativo, EprosApp, tests, scripts |
 
 > No porte automatizado atual, cada **módulo** tem 1 agente dono do seu `Context*.cs`, evitando conflito de arquivo.
 
@@ -553,7 +553,7 @@ Para cada entidade/controller legado (**Modo Porte**):
 6. Mapping inline no Context (**sem** migration no Modo Porte)
 7. Commands espelhando **cada** action do controller legado
 8. Controller fino
-9. Conferir com `PADRAO_PORTE_LEGADO.md`
+9. Conferir com `docs/migracao/PADRAO_PORTE_LEGADO.md`
 
 No **Modo Consolidação**, retomar cada módulo para: migrations serializadas → testes → build/test verde → auditoria De→Para.
 
@@ -578,7 +578,7 @@ using Flunt.Validations;
 
 ```
 Você está no repositório EprosERP. OBRIGATÓRIO:
-1. Ler CONVENCAO_CODIGO.md (canônico) e PADRAO_PORTE_LEGADO.md (molde) antes de codar.
+1. Ler CONVENCAO_CODIGO.md (canônico) e docs/migracao/PADRAO_PORTE_LEGADO.md (molde) antes de codar.
 2. Fonte da verdade funcional: ../Epros/epros_erp-main (legado).
 3. PORTE FIEL — não inventar campos, módulos ou padrões. Nenhum campo do legado pode sumir.
 4. Entidades SaaS: EntidadeSaaSBase + Guid + Flunt Validar().

@@ -101,6 +101,13 @@ namespace Epros.Tests
 
             var handler = new CompraLancadaESGHandler(context);
 
+            // NF-01/A-01: fator vem do catalogo versionado esg.ghg_fator_emissao (nao mais hardcoded 1.5).
+            // valida-humano (base oficial GHG Protocol/IPCC/DEFRA) — aqui semeamos um fator de teste.
+            context.FatoresEmissaoGee.Add(new FatorEmissaoGee(
+                GhgFatorCodigos.BensAdquiridosPorPeca, "2026.1", "TESTE — base oficial pendente de homologacao",
+                1.5m, "PC", "kgCO2e", new DateTime(2026, 1, 1), null, "tenant-1", "user-1"));
+            await context.SaveChangesAsync();
+
             var itens = new List<CompraLancadaItemNotification>
             {
                 new("SKU-1", "Aço Inox", 100m, 20m)
@@ -125,9 +132,68 @@ namespace Epros.Tests
             Assert.Single(emissoes);
             Assert.Equal(3, emissoes[0].Escopo);
             Assert.Equal("BensEServicosAdquiridos", emissoes[0].CategoriaGhg);
-            // 100 itens * 1.5 fator = 150 kg CO2e
+            // 100 itens * 1.5 (fator do catalogo) = 150 kg CO2e
             Assert.Equal(150m, emissoes[0].TotalCo2e);
+            Assert.False(emissoes[0].FatorPendente);
+            Assert.Equal(GhgFatorCodigos.BensAdquiridosPorPeca, emissoes[0].FatorCodigo);
+            Assert.Equal("2026.1", emissoes[0].FatorVersao);
             Assert.Contains("Aço Inox", emissoes[0].FonteEmissao);
+        }
+
+        [Fact]
+        public async Task Compra_Sem_Fator_No_Catalogo_Fica_Pendente_Sem_Numero_Inventado()
+        {
+            // Regra #0 (NF-01/A-01): sem fator oficial vigente no catalogo, a emissao NAO recebe
+            // numero inventado — entra como "pendente de fator" com TotalCo2e = 0.
+            var options = new DbContextOptionsBuilder<ContextESG>()
+                .UseInMemoryDatabase("db_esg_compra_pendente")
+                .Options;
+
+            var tenantProvider = new TestTenantProvider("tenant-1");
+            var currentUser = new TestCurrentUser("user-1");
+            using var context = new ContextESG(options, tenantProvider, currentUser);
+
+            var handler = new CompraLancadaESGHandler(context);
+            var notification = new CompraLancadaEventNotification(
+                CompraId: Guid.NewGuid(), FornecedorId: Guid.NewGuid(), ValorTotal: 2000m,
+                DataVencimento: DateTime.UtcNow.AddDays(30), NumeroNota: "NF-1", TenantId: "tenant-1",
+                UserId: "user-1", Itens: new List<CompraLancadaItemNotification> { new("SKU-1", "Aço Inox", 100m, 20m) });
+
+            await handler.Handle(notification, CancellationToken.None);
+
+            var emissoes = await context.EmissoesCarbono.ToListAsync();
+            Assert.Single(emissoes);
+            Assert.True(emissoes[0].FatorPendente);
+            Assert.Equal(0m, emissoes[0].TotalCo2e);       // Regra #0: nao inventa numero
+            Assert.Equal(0m, emissoes[0].FatorEmissao);
+            Assert.Equal(GhgFatorCodigos.BensAdquiridosPorPeca, emissoes[0].FatorCodigo);
+            Assert.Null(emissoes[0].FatorVersao);
+        }
+
+        [Fact]
+        public async Task Venda_Sem_Fator_No_Catalogo_Fica_Pendente_Sem_Numero_Inventado()
+        {
+            var options = new DbContextOptionsBuilder<ContextESG>()
+                .UseInMemoryDatabase("db_esg_venda_pendente")
+                .Options;
+
+            var tenantProvider = new TestTenantProvider("tenant-1");
+            var currentUser = new TestCurrentUser("user-1");
+            using var context = new ContextESG(options, tenantProvider, currentUser);
+
+            var handler = new VendaFaturadaESGHandler(context);
+            var notification = new VendaFaturadaEventNotification(
+                VendaId: Guid.NewGuid(), TenantId: "tenant-1", Total: 950m, CriadoEm: DateTime.UtcNow,
+                Itens: new List<VendaFaturadaItemNotification> { new(Guid.NewGuid(), 50m, 10m), new(Guid.NewGuid(), 30m, 15m) },
+                UserId: "user-1");
+
+            await handler.Handle(notification, CancellationToken.None);
+
+            var emissoes = await context.EmissoesCarbono.ToListAsync();
+            Assert.Single(emissoes);
+            Assert.True(emissoes[0].FatorPendente);
+            Assert.Equal(0m, emissoes[0].TotalCo2e);       // Regra #0: nao inventa numero
+            Assert.Equal(GhgFatorCodigos.TransporteDistribuicaoDownstreamPorPeca, emissoes[0].FatorCodigo);
         }
 
         [Fact]
@@ -144,6 +210,12 @@ namespace Epros.Tests
 
             var handler = new VendaFaturadaESGHandler(context);
 
+            // NF-01/A-01: fator do catalogo versionado (nao mais hardcoded 0.8). valida-humano.
+            context.FatoresEmissaoGee.Add(new FatorEmissaoGee(
+                GhgFatorCodigos.TransporteDistribuicaoDownstreamPorPeca, "2026.1", "TESTE — base oficial pendente de homologacao",
+                0.8m, "PC", "kgCO2e", new DateTime(2026, 1, 1), null, "tenant-1", "user-1"));
+            await context.SaveChangesAsync();
+
             var itens = new List<VendaFaturadaItemNotification>
             {
                 new(Guid.NewGuid(), 50m, 10m),
@@ -154,7 +226,7 @@ namespace Epros.Tests
                 VendaId: Guid.NewGuid(),
                 TenantId: "tenant-1",
                 Total: 950m,
-                CriadoEm: DateTime.UtcNow,
+                CriadoEm: new DateTime(2026, 6, 1),
                 Itens: itens,
                 UserId: "user-1"
             );
@@ -167,8 +239,10 @@ namespace Epros.Tests
             Assert.Single(emissoes);
             Assert.Equal(3, emissoes[0].Escopo);
             Assert.Equal("TransporteEDistribuicaoDownstream", emissoes[0].CategoriaGhg);
-            // (50 + 30) itens * 0.8 fator = 64 kg CO2e
+            // (50 + 30) itens * 0.8 (fator do catalogo) = 64 kg CO2e
             Assert.Equal(64m, emissoes[0].TotalCo2e);
+            Assert.False(emissoes[0].FatorPendente);
+            Assert.Equal("2026.1", emissoes[0].FatorVersao);
             Assert.Contains(notification.VendaId.ToString(), emissoes[0].FonteEmissao);
         }
 

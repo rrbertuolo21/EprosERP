@@ -7,34 +7,48 @@ using Epros.Shared.Application.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql;
+using Testcontainers.PostgreSql;
 
 namespace Epros.Tests
 {
     /// <summary>
-    /// Provisiona um banco PostgreSQL real e isolado por teste, usando o container já em execução
-    /// (localhost:5433, database "epros"). Os fluxos de autenticação/RLS usam métodos relacionais
-    /// (ExecuteSqlRaw, transações, current_setting) que o provider InMemory não suporta; por isso
-    /// estes testes precisam de um Postgres de verdade.
+    /// Provisiona um banco PostgreSQL real e isolado por teste via Testcontainers.
+    /// Os fluxos de autenticação/RLS usam métodos relacionais (ExecuteSqlRaw, transações,
+    /// current_setting) que o provider InMemory não suporta; por isso estes testes precisam
+    /// de um Postgres de verdade.
     ///
-    /// Estratégia: um "template" é migrado uma única vez (todos os schemas/tabelas + políticas RLS);
-    /// cada teste recebe um database próprio criado por cópia do template (CREATE DATABASE ... TEMPLATE),
-    /// garantindo isolamento total sem re-rodar as migrations a cada teste. Reexecuções recriam o
-    /// database do zero (DROP ... WITH (FORCE)), evitando acúmulo/colisão entre runs.
+    /// Estratégia: um container Postgres sobe uma vez por processo de teste; um "template" é
+    /// migrado uma única vez (schemas/tabelas + políticas RLS); cada teste recebe um database
+    /// próprio criado por cópia do template (CREATE DATABASE ... TEMPLATE), garantindo
+    /// isolamento total sem re-rodar as migrations a cada teste.
     /// </summary>
     public static class PostgresTestDb
     {
-        private const string Host = "localhost";
-        private const int Port = 5433;
-        private const string User = "epros";
-        private const string Password = "epros";
         private const string MaintenanceDb = "epros";
         private const string TemplateDb = "epros_rlstpl";
+        private static readonly TimeSpan ContainerStartTimeout = TimeSpan.FromMinutes(3);
 
+        // Init do container separado do gate de CREATE DATABASE: evita deadlock
+        // (StartAsync sync-over-async enquanto outras threads esperam o mesmo lock).
+        private static readonly object _initGate = new object();
         private static readonly object _gate = new object();
+        private static PostgreSqlContainer? _container;
         private static bool _templateReady;
 
-        private static string ConnFor(string database) =>
-            $"Host={Host};Port={Port};Database={database};Username={User};Password={Password};Pooling=false";
+        private static string ConnFor(string database)
+        {
+            if (_container is null)
+            {
+                throw new InvalidOperationException("Container Postgres de teste ainda não foi iniciado.");
+            }
+
+            var builder = new NpgsqlConnectionStringBuilder(_container.GetConnectionString())
+            {
+                Database = database,
+                Pooling = false
+            };
+            return builder.ConnectionString;
+        }
 
         /// <summary>
         /// Cria (recriando se já existir) um database isolado para o teste e devolve a connection string.
@@ -43,6 +57,8 @@ namespace Epros.Tests
         public static string CreateDatabase(string logicalName)
         {
             var dbName = Sanitize(logicalName);
+
+            EnsureContainer();
 
             lock (_gate)
             {
@@ -55,6 +71,41 @@ namespace Epros.Tests
             }
 
             return ConnFor(dbName);
+        }
+
+        private static void EnsureContainer()
+        {
+            if (_container is not null) return;
+
+            lock (_initGate)
+            {
+                if (_container is not null) return;
+
+                var container = new PostgreSqlBuilder()
+                    .WithImage("postgres:16-alpine")
+                    .WithDatabase(MaintenanceDb)
+                    .WithUsername("epros")
+                    .WithPassword("epros")
+                    .Build();
+
+                try
+                {
+                    Console.WriteLine($"[PostgresTestDb] Iniciando postgres:16-alpine (timeout {ContainerStartTimeout.TotalMinutes:0} min)...");
+                    using var cts = new CancellationTokenSource(ContainerStartTimeout);
+                    container.StartAsync(cts.Token).ConfigureAwait(false).GetAwaiter().GetResult();
+                    Console.WriteLine("[PostgresTestDb] Container Postgres pronto.");
+                    _container = container;
+                }
+                catch (Exception ex)
+                {
+                    try { container.DisposeAsync().AsTask().GetAwaiter().GetResult(); } catch { /* ignore */ }
+                    throw new InvalidOperationException(
+                        "Não foi possível iniciar o PostgreSQL via Testcontainers em " +
+                        $"{ContainerStartTimeout.TotalMinutes:0} min. " +
+                        "Verifique se o Docker está em execução. Detalhe: " + ex.Message,
+                        ex);
+                }
+            }
         }
 
         private static void EnsureTemplate()

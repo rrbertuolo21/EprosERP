@@ -18,15 +18,18 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
         private readonly ContextGestaoClientes _context;
         private readonly ITenantProvider _tenantProvider;
         private readonly ICurrentUser _currentUser;
+        private readonly ISegredoCofreService _cofreService;
 
         public UpdateEmpresaCommandHandler(
             ContextGestaoClientes context,
             ITenantProvider tenantProvider,
-            ICurrentUser currentUser)
+            ICurrentUser currentUser,
+            ISegredoCofreService cofreService)
         {
             _context = context;
             _tenantProvider = tenantProvider;
             _currentUser = currentUser;
+            _cofreService = cofreService;
         }
 
         public async Task<CommandResult> Handle(AtualizarEmpresaCommand request, CancellationToken cancellationToken)
@@ -70,6 +73,14 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 request.Endereco.Estado
             );
 
+            // T-01/P1-2: preserva o segredo cifrado quando a UI devolve a máscara (ou vazio); só cifra e
+            // substitui quando um NOVO token é informado. Empresa.Atualizar sempre sobrescreve o campo, então
+            // aqui garantimos que o valor persistido seja o ciphertext atual ou o novo ciphertext — nunca claro.
+            var tokenAlterado = !string.IsNullOrEmpty(request.TokenMercadoPagoPix) && request.TokenMercadoPagoPix != Empresa.MascaraTokenPix;
+            var tokenParaPersistir = tokenAlterado
+                ? await _cofreService.CriptografarAsync(request.TokenMercadoPagoPix!)
+                : empresa.TokenMercadoPagoPix;
+
             // Atualiza Empresa
             empresa.Atualizar(
                 request.RazaoSocial,
@@ -88,7 +99,7 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 request.CertificadoDigitalId,
                 request.EmpresaParametrosDfeId,
                 request.LinkWebApiAppVendas,
-                request.TokenMercadoPagoPix,
+                tokenParaPersistir,
                 request.Logo,
                 endereco,
                 alteradoPor,

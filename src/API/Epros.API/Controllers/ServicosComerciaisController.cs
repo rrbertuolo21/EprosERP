@@ -127,6 +127,15 @@ namespace Epros.API.Controllers
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
 
+        /// <summary>EC-08: estorna fatura já faturada (transição distinta de cancelar), revertendo lançamentos.</summary>
+        [HttpPost("faturas/{id:guid}/estornar")]
+        [AbacAuthorize("ServicosComerciaisFaturas", "Editar")]
+        public async Task<IActionResult> EstornarFatura(Guid id)
+        {
+            var result = await _mediator.Send(new EstornarServicoFaturaCommand(id));
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
         [HttpDelete("faturas/{id:guid}")]
         [AbacAuthorize("ServicosComerciaisFaturas", "Excluir")]
         public async Task<IActionResult> ExcluirFatura(Guid id)

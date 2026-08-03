@@ -50,7 +50,7 @@ namespace Epros.Tests
 
             // Assert
             Assert.True(result.Sucesso);
-            
+
             var pedido = await context.PedidosSaaS.FirstOrDefaultAsync(p => p.ClienteId == cliente.Id);
             Assert.NotNull(pedido);
             Assert.Equal(1000.00m, pedido.ValorBase);
@@ -130,7 +130,7 @@ namespace Epros.Tests
             var resultPedido = await criarPedidoHandler.Handle(new CriarPedidoSaaSCommand(plano.Id, null, "Gateway"), CancellationToken.None);
             Assert.True(resultPedido.Sucesso);
 
-            var pedidoId = (Guid)resultPedido.Dados.GetType().GetProperty("PedidoId")!.GetValue(resultPedido.Dados)!;
+            var pedidoId = (Guid)resultPedido.Dados!.GetType().GetProperty("PedidoId")!.GetValue(resultPedido.Dados)!;
             var assinaturaId = (Guid)resultPedido.Dados.GetType().GetProperty("AssinaturaId")!.GetValue(resultPedido.Dados)!;
 
             // Busca a fatura gerada automaticamente
@@ -154,7 +154,7 @@ namespace Epros.Tests
 
             // Assert 1: Deve liquidar com sucesso
             Assert.True(result1.Sucesso);
-            
+
             var faturaDB1 = await context.Faturas.FindAsync(fatura.Id);
             Assert.Equal(FaturaStatus.Paga, faturaDB1!.Status);
 
@@ -162,7 +162,7 @@ namespace Epros.Tests
             Assert.Equal(PedidoSaaSStatus.Succeeded, pedidoDB1!.Status);
 
             var assinaturaDB1 = await context.AssinaturasClientes.FindAsync(assinaturaId);
-            Assert.Equal(AssinaturaStatus.Aprovada, assinaturaDB1!.Status);
+            Assert.Equal(AssinaturaStatus.Ativa, assinaturaDB1!.Status);
 
             var totalPagamentosGlobais = await context.PagamentosGlobais.CountAsync();
             Assert.Equal(1, totalPagamentosGlobais);
@@ -205,7 +205,7 @@ namespace Epros.Tests
             var resultPedido = await criarPedidoHandler.Handle(new CriarPedidoSaaSCommand(plano.Id, null, "Transferencia"), CancellationToken.None);
             Assert.True(resultPedido.Sucesso);
 
-            var pedidoId = (Guid)resultPedido.Dados.GetType().GetProperty("PedidoId")!.GetValue(resultPedido.Dados)!;
+            var pedidoId = (Guid)resultPedido.Dados!.GetType().GetProperty("PedidoId")!.GetValue(resultPedido.Dados)!;
             var assinaturaId = (Guid)resultPedido.Dados.GetType().GetProperty("AssinaturaId")!.GetValue(resultPedido.Dados)!;
 
             var registrarTransfHandler = new RegistrarTransferenciaCommandHandler(context, tenantProvider, currentUser);
@@ -224,7 +224,7 @@ namespace Epros.Tests
 
             // Assert 1: Comprovante registrado com status pendente
             Assert.True(resultRegistrar.Sucesso);
-            var pagamentoTransfId = (Guid)resultRegistrar.Dados.GetType().GetProperty("PagamentoTransferenciaId")!.GetValue(resultRegistrar.Dados)!;
+            var pagamentoTransfId = (Guid)resultRegistrar.Dados!.GetType().GetProperty("PagamentoTransferenciaId")!.GetValue(resultRegistrar.Dados)!;
 
             var pagamentoDB = await context.PagamentosTransferencias.FindAsync(pagamentoTransfId);
             Assert.NotNull(pagamentoDB);
@@ -250,7 +250,7 @@ namespace Epros.Tests
             Assert.Equal(PedidoSaaSStatus.Succeeded, pedidoDB!.Status);
 
             var assinaturaDB = await context.AssinaturasClientes.FindAsync(assinaturaId);
-            Assert.Equal(AssinaturaStatus.Aprovada, assinaturaDB!.Status);
+            Assert.Equal(AssinaturaStatus.Ativa, assinaturaDB!.Status);
 
             var clienteDB = await context.Clientes.FindAsync(cliente.Id);
             Assert.Equal(plano.Id, clienteDB!.PlanoId); // Plano atualizado no cliente
@@ -283,7 +283,7 @@ namespace Epros.Tests
             var resultPedido = await criarPedidoHandler.Handle(new CriarPedidoSaaSCommand(plano.Id, null, "Transferencia"), CancellationToken.None);
             Assert.True(resultPedido.Sucesso);
 
-            var pedidoId = (Guid)resultPedido.Dados.GetType().GetProperty("PedidoId")!.GetValue(resultPedido.Dados)!;
+            var pedidoId = (Guid)resultPedido.Dados!.GetType().GetProperty("PedidoId")!.GetValue(resultPedido.Dados)!;
 
             var registrarTransfHandler = new RegistrarTransferenciaCommandHandler(context, tenantProvider, currentUser);
             var cmdRegistrar = new RegistrarTransferenciaCommand(
@@ -296,7 +296,7 @@ namespace Epros.Tests
                 DataComprovante: DateTime.UtcNow
             );
             var resultRegistrar = await registrarTransfHandler.Handle(cmdRegistrar, CancellationToken.None);
-            var pagamentoTransfId = (Guid)resultRegistrar.Dados.GetType().GetProperty("PagamentoTransferenciaId")!.GetValue(resultRegistrar.Dados)!;
+            var pagamentoTransfId = (Guid)resultRegistrar.Dados!.GetType().GetProperty("PagamentoTransferenciaId")!.GetValue(resultRegistrar.Dados)!;
 
             var analisarHandler = new AnalisarTransferenciaCommandHandler(context, currentUser);
 

@@ -36,6 +36,8 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public Guid? EmpresaParametrosDfeId { get; private set; }
 
         public string? LinkWebApiAppVendas { get; private set; }
+        // T-01 (hardening de segredos, P1-2): persistido CIFRADO no cofre (ISegredoCofreService) pelos
+        // command handlers; a UI recebe apenas a máscara (MascaraTokenPix), nunca o ciphertext nem o claro.
         public string? TokenMercadoPagoPix { get; private set; }
         public string? Logo { get; private set; }
         public string DateFormat { get; private set; } = "MM-DD-YYYY";
@@ -54,6 +56,19 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
         public IReadOnlyCollection<EmpresaContato> Contatos => _contatos.AsReadOnly();
         private readonly List<IeSt> _ieSts = new();
         public IReadOnlyCollection<IeSt> IeSts => _ieSts.AsReadOnly();
+
+        /// <summary>Máscara devolvida à UI no lugar do segredo (REG-069). Recebê-la de volta = segredo inalterado.</summary>
+        public const string MascaraTokenPix = "••••••••";
+
+        /// <summary>
+        /// T-01/P1-2: substitui o TokenMercadoPagoPix (armazenado cifrado) pela máscara antes de serializar
+        /// para a UI, garantindo que nem o ciphertext nem o texto plano trafeguem na resposta. No-op quando vazio.
+        /// </summary>
+        public void MascararTokenPixParaLeitura()
+        {
+            if (!string.IsNullOrEmpty(TokenMercadoPagoPix))
+                TokenMercadoPagoPix = MascaraTokenPix;
+        }
 
         protected Empresa() { } // EF Core
 
@@ -93,7 +108,6 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
             AddNotifications(new Contract<Empresa>()
                 .Requires()
                 .IsNotNullOrEmpty(razaoSocial, nameof(RazaoSocial), "Razão Social é obrigatória")
-                .IsNotNullOrEmpty(cnpj, nameof(Cnpj), "CNPJ é obrigatório")
                 .IsNotNull(endereco, nameof(Endereco), "Endereço é obrigatório")
                 .HasMaxLen(razaoSocial, 250, nameof(RazaoSocial), "Razão Social deve ter no máximo 250 caracteres")
                 .HasMaxLen(nomeFantasia ?? string.Empty, 250, nameof(NomeFantasia), "Nome Fantasia deve ter no máximo 250 caracteres")
@@ -105,11 +119,30 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
                 .HasMaxLen(logo ?? string.Empty, 500, nameof(Logo), "Logo deve ter no máximo 500 caracteres")
             );
 
-            // Validar CNPJ
-            var cnpjVo = new Cnpj(cnpj);
-            if (!cnpjVo.IsValid)
+            // 1.07 — Emitente PJ (CNPJ) ou PF (somente CPF: autônomo/produtor rural/MEI). Exige-se ao
+            // menos UM documento fiscal íntegro. O CNPJ, quando informado, é validado por dígito; a PF
+            // mantém o CNPJ vazio (nulo deliberado — nunca placeholder). O dígito do CPF é conferido no
+            // fluxo de aplicação (self-register), preservando a integridade fiscal (REG-036).
+            var possuiCnpj = !string.IsNullOrWhiteSpace(cnpj);
+            var possuiCpf = !string.IsNullOrWhiteSpace(cpf);
+            var cnpjValor = string.Empty;
+
+            if (!possuiCnpj && !possuiCpf)
             {
-                AddNotifications(cnpjVo.Notifications);
+                AddNotifications(new Contract<Empresa>().Requires()
+                    .IsTrue(false, nameof(Cnpj), "Informe um documento fiscal: CNPJ (pessoa jurídica) ou CPF (pessoa física)."));
+            }
+            else if (possuiCnpj)
+            {
+                var cnpjVo = new Cnpj(cnpj);
+                if (!cnpjVo.IsValid)
+                {
+                    AddNotifications(cnpjVo.Notifications);
+                }
+                else
+                {
+                    cnpjValor = cnpjVo.Valor;
+                }
             }
 
             if (endereco != null)
@@ -119,7 +152,7 @@ namespace Epros.Modules.GestaoClientes.Domain.Entities
 
             RazaoSocial = razaoSocial;
             NomeFantasia = nomeFantasia;
-            Cnpj = cnpjVo.Valor;
+            Cnpj = cnpjValor;
             InscricaoEstadual = inscricaoEstadual;
             InscricaoMunicipal = inscricaoMunicipal;
             InscricaoSuframa = inscricaoSuframa;

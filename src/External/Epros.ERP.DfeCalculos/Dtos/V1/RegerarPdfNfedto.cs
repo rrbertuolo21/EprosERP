@@ -1,4 +1,4 @@
-﻿namespace Epros.ERP.DfeCalculos.Dtos.V1
+namespace Epros.ERP.DfeCalculos.Dtos.V1
 {
     public class RegerarPdfNfedto
     {

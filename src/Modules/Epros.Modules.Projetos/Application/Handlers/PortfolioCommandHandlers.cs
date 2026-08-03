@@ -261,4 +261,114 @@ namespace Epros.Modules.Projetos.Application.Handlers
             return CommandResult.Ok("Portfolio reativado.", new { portfolio.Id });
         }
     }
+
+    /// <summary>DP-PRT-score: recalcula scores dos itens por média ponderada e consolida ScoreTotal.</summary>
+    public class RecalcularScorePortfolioCommandHandler : ICommandHandler<RecalcularScorePortfolioCommand>
+    {
+        private readonly ContextProjetos _context;
+        private readonly ICurrentUser _currentUser;
+
+        public RecalcularScorePortfolioCommandHandler(ContextProjetos context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
+
+        public async Task<CommandResult> Handle(RecalcularScorePortfolioCommand request, CancellationToken cancellationToken)
+        {
+            var usuario = _currentUser.GetUserId() ?? "system";
+            var portfolio = await _context.Portfolios.Include(p => p.Itens).FirstOrDefaultAsync(p => p.Id == request.PortfolioId, cancellationToken);
+            if (portfolio == null) return CommandResult.Falha("Portfolio nao encontrado.");
+
+            var padrao = PesosPortfolio.Padrao;
+            var pesos = new PesosPortfolio(
+                request.PesoNpv ?? padrao.PesoNpv,
+                request.PesoPayback ?? padrao.PesoPayback,
+                request.PesoAlinhamento ?? padrao.PesoAlinhamento,
+                request.PesoRisco ?? padrao.PesoRisco);
+
+            portfolio.RecalcularScores(pesos, usuario);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            return CommandResult.Ok("Scores recalculados com sucesso!", new
+            {
+                portfolio.Id,
+                portfolio.ScoreTotal,
+                Itens = portfolio.Itens
+                    .Where(i => i.Ativo)
+                    .OrderByDescending(i => i.Score)
+                    .Select(i => new { i.Id, i.Sequencia, i.Titulo, i.Score })
+            });
+        }
+    }
+
+    // ===== T-PRG (Programa) =====
+
+    public class CriarProgramaCommandHandler : ICommandHandler<CriarProgramaCommand>
+    {
+        private readonly ContextProjetos _context;
+        private readonly ITenantProvider _tenantProvider;
+        private readonly ICurrentUser _currentUser;
+
+        public CriarProgramaCommandHandler(ContextProjetos context, ITenantProvider tenantProvider, ICurrentUser currentUser)
+        {
+            _context = context;
+            _tenantProvider = tenantProvider;
+            _currentUser = currentUser;
+        }
+
+        public async Task<CommandResult> Handle(CriarProgramaCommand request, CancellationToken cancellationToken)
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var usuario = _currentUser.GetUserId() ?? "system";
+
+            var codigoExiste = await _context.Programas.AnyAsync(p => p.Codigo == request.Codigo, cancellationToken);
+            if (codigoExiste)
+                return CommandResult.Falha("Ja existe programa com este codigo para o tenant.");
+
+            var programa = new Programa(request.Codigo, request.Nome, request.Descricao, request.ResponsavelId, request.PortfolioId, tenantId, usuario);
+            if (!programa.IsValid)
+                return CommandResult.Falha(programa.Notifications.Select(n => n.Message));
+
+            _context.Programas.Add(programa);
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Programa criado com sucesso!", new { programa.Id });
+        }
+    }
+
+    public class AtivarProgramaCommandHandler : ICommandHandler<AtivarProgramaCommand>
+    {
+        private readonly ContextProjetos _context;
+        private readonly ICurrentUser _currentUser;
+        public AtivarProgramaCommandHandler(ContextProjetos context, ICurrentUser currentUser) { _context = context; _currentUser = currentUser; }
+
+        public async Task<CommandResult> Handle(AtivarProgramaCommand request, CancellationToken cancellationToken)
+        {
+            var usuario = _currentUser.GetUserId() ?? "system";
+            var programa = await _context.Programas.FirstOrDefaultAsync(p => p.Id == request.ProgramaId, cancellationToken);
+            if (programa == null) return CommandResult.Falha("Programa nao encontrado.");
+            programa.Ativar(usuario);
+            if (!programa.IsValid) return CommandResult.Falha(programa.Notifications.Select(n => n.Message));
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Programa ativado.", new { programa.Id });
+        }
+    }
+
+    public class EncerrarProgramaCommandHandler : ICommandHandler<EncerrarProgramaCommand>
+    {
+        private readonly ContextProjetos _context;
+        private readonly ICurrentUser _currentUser;
+        public EncerrarProgramaCommandHandler(ContextProjetos context, ICurrentUser currentUser) { _context = context; _currentUser = currentUser; }
+
+        public async Task<CommandResult> Handle(EncerrarProgramaCommand request, CancellationToken cancellationToken)
+        {
+            var usuario = _currentUser.GetUserId() ?? "system";
+            var programa = await _context.Programas.FirstOrDefaultAsync(p => p.Id == request.ProgramaId, cancellationToken);
+            if (programa == null) return CommandResult.Falha("Programa nao encontrado.");
+            programa.Encerrar(usuario);
+            if (!programa.IsValid) return CommandResult.Falha(programa.Notifications.Select(n => n.Message));
+            await _context.SaveChangesAsync(cancellationToken);
+            return CommandResult.Ok("Programa encerrado.", new { programa.Id });
+        }
+    }
 }

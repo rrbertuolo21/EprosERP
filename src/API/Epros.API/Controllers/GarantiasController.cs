@@ -71,5 +71,15 @@ namespace Epros.API.Controllers
         [AbacAuthorize("GarantiaCoberturas", "Ler")]
         public async Task<IActionResult> ConsultarCobertura([FromQuery] Guid? vendaId, [FromQuery] Guid? produtoId, [FromQuery] Guid? clienteId, [FromQuery] string? numeroSerieLote)
             => Ok(await _mediator.Send(new ConsultarGarantiaCoberturaQuery(vendaId, produtoId, clienteId, numeroSerieLote)));
+
+        /// <summary>GAR-016: registra leitura de uso (km/horas) numa cobertura e reapura a situação (vencimento por uso).</summary>
+        [HttpPost("coberturas/{id:guid}/registrar-uso")]
+        [AbacAuthorize("GarantiaCoberturas", "Editar")]
+        public async Task<IActionResult> RegistrarUso(Guid id, [FromBody] RegistrarUsoGarantiaCoberturaCommand command)
+        {
+            if (id != command.Id) return BadRequest(CommandResult.Falha("Id da rota diferente do corpo."));
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
     }
 }

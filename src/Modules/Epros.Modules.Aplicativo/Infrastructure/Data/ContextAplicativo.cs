@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Epros.Modules.Aplicativo.Infrastructure.Data
 {
-    public class ContextAplicativo : ContextBase
+    public partial class ContextAplicativo : ContextBase
     {
         public DbSet<UsuarioInterno> UsuariosInternos => Set<UsuarioInterno>();
         public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
@@ -22,6 +22,8 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
         public DbSet<LogExecucaoMassa> LogsExecucaoMassa => Set<LogExecucaoMassa>();
         public DbSet<Usuario> Usuarios => Set<Usuario>();
         public DbSet<UsuarioEmpresa> UsuariosEmpresas => Set<UsuarioEmpresa>();
+        public DbSet<AcessoUsuarioTenant> AcessosUsuarioTenant => Set<AcessoUsuarioTenant>();
+        public DbSet<IdentidadeExterna> IdentidadesExternas => Set<IdentidadeExterna>();
         public DbSet<SessaoUsuario> SessoesUsuarios => Set<SessaoUsuario>();
         public DbSet<PersonalAccessToken> PersonalAccessTokens => Set<PersonalAccessToken>();
         public DbSet<HistoricoLogin> HistoricosLogin => Set<HistoricoLogin>();
@@ -36,6 +38,12 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
         // RBAC/Menu (Menu, MenuItemNivel1/2, PerfilUsuario, PerfilUsuarioAcesso) DEPRECADO no Aplicativo.
         // Dono único = GestaoClientes (PerfilAcesso + PerfilAcessoMenu + Menu, schema plataforma). Ver CONVENCAO_CODIGO.md §1.2.
         public DbSet<Epros.Shared.Domain.Events.OutboxMessage> OutboxMessages => Set<Epros.Shared.Domain.Events.OutboxMessage>();
+
+        // ===== TRANSVERSAIS COMPARTILHADAS (kernel) — casa de implementação na plataforma =====
+        // T9 numeração central · T8 auditoria imutável central · T10 GED canônico (documento central).
+        public DbSet<Epros.Shared.Domain.Entities.SequenciaNumeracao> SequenciasNumeracao => Set<Epros.Shared.Domain.Entities.SequenciaNumeracao>();
+        public DbSet<Epros.Shared.Domain.Entities.RegistroAuditoria> RegistrosAuditoria => Set<Epros.Shared.Domain.Entities.RegistroAuditoria>();
+        public DbSet<Epros.Shared.Domain.Entities.DocumentoGed> DocumentosGed => Set<Epros.Shared.Domain.Entities.DocumentoGed>();
 
         // Governança de upgrade/versão (Super Admin — APP-TEN-010)
         public DbSet<SolicitacaoUpgradeVersao> SolicitacoesUpgradeVersao => Set<SolicitacaoUpgradeVersao>();
@@ -93,7 +101,7 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
             modelBuilder.Entity<UsuarioInterno>(entity =>
             {
                 entity.HasKey(u => u.Id);
-                
+
                 // Email único (REG-013)
                 entity.HasIndex(u => u.Email)
                       .IsUnique()
@@ -219,10 +227,29 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
                 entity.Property(ue => ue.PerfilAcessoId).HasColumnName("perfil_usuario_id");
             });
 
+            modelBuilder.Entity<AcessoUsuarioTenant>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                // Membership N:N: um vínculo por (identidade global, tenant concedido).
+                entity.HasIndex(a => new { a.UsuarioId, a.TenantId }).IsUnique().HasDatabaseName("ix_acessos_usuario_tenant_usuario_tenant");
+            });
+
+            modelBuilder.Entity<IdentidadeExterna>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.Property(i => i.SubjectId).HasMaxLength(255);
+                entity.Property(i => i.EmailProvedor).HasMaxLength(320);
+                // Login social (1.04 PASS 3): o par (provedor, sub) identifica unicamente a conta social.
+                entity.HasIndex(i => new { i.Provedor, i.SubjectId }).IsUnique().HasDatabaseName("ix_identidades_externas_provedor_subject");
+                // Lookup por usuário (listar/gerir vínculos sociais de uma identidade).
+                entity.HasIndex(i => i.UsuarioId).HasDatabaseName("ix_identidades_externas_usuario");
+            });
+
             modelBuilder.Entity<SessaoUsuario>(entity =>
             {
                 entity.HasKey(s => s.Id);
                 entity.HasIndex(s => s.TokenSessao).IsUnique().HasDatabaseName("ix_sessoes_token");
+                entity.HasIndex(s => s.Jti).HasDatabaseName("ix_sessoes_jti");
             });
 
             modelBuilder.Entity<PersonalAccessToken>(entity =>
@@ -277,6 +304,62 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
             {
                 entity.ToTable("outbox_messages", "aplicativo");
                 entity.HasKey(o => o.Id);
+            });
+
+            // ===== TRANSVERSAIS COMPARTILHADAS (kernel) =====
+
+            // T9 — numeração central: uma linha por (tenant, tipo). O índice único é o alvo do
+            // UPSERT atômico (ON CONFLICT) do NumeracaoService — sem ele não há garantia de gapless.
+            modelBuilder.Entity<Epros.Shared.Domain.Entities.SequenciaNumeracao>(entity =>
+            {
+                entity.ToTable("sequencias_numeracao", "aplicativo");
+                entity.HasKey(s => s.Id);
+                entity.Property(s => s.TipoDocumento).HasMaxLength(100);
+                entity.HasIndex(s => new { s.TenantId, s.TipoDocumento })
+                      .IsUnique()
+                      .HasDatabaseName("ix_sequencias_numeracao_tenant_tipo");
+            });
+
+            // T8 — auditoria imutável central (append-only). POCO (não EntidadeSaaSBase): sem
+            // soft-delete/xmin; a imutabilidade vem da entidade (sem mutadores). RLS por tenant é
+            // aplicada automaticamente pelo gerador de SQL (coluna tenant_id).
+            modelBuilder.Entity<Epros.Shared.Domain.Entities.RegistroAuditoria>(entity =>
+            {
+                entity.ToTable("registros_auditoria", "aplicativo");
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.TenantId).IsRequired();
+                entity.Property(r => r.Entidade).HasMaxLength(150);
+                entity.Property(r => r.EntidadeId).HasMaxLength(100);
+                entity.Property(r => r.Acao).HasMaxLength(100);
+                entity.Property(r => r.Usuario).HasMaxLength(150);
+                entity.Property(r => r.IpOrigem).HasMaxLength(64);
+                entity.HasIndex(r => new { r.TenantId, r.Entidade, r.EntidadeId })
+                      .HasDatabaseName("ix_registros_auditoria_tenant_entidade");
+                entity.HasIndex(r => r.OcorridoEm)
+                      .HasDatabaseName("ix_registros_auditoria_ocorrido_em");
+                // Isolamento por tenant no nível de aplicação (espelha o filtro de EntidadeSaaSBase):
+                // não é EntidadeSaaSBase, então o filtro global não é aplicado automaticamente pelo
+                // ContextBase. A RLS (coluna tenant_id) permanece como defesa em profundidade no banco.
+                entity.HasQueryFilter(r => r.TenantId == _tenantProvider.GetTenantId());
+            });
+
+            // T10 — documento do GED canônico único (metadados + versão + estado de assinatura).
+            modelBuilder.Entity<Epros.Shared.Domain.Entities.DocumentoGed>(entity =>
+            {
+                entity.ToTable("documentos_ged", "aplicativo");
+                entity.HasKey(d => d.Id);
+                entity.Property(d => d.Nome).HasMaxLength(400);
+                entity.Property(d => d.TipoDocumento).HasMaxLength(100);
+                entity.Property(d => d.Hash).HasMaxLength(128);
+                entity.Property(d => d.MimeType).HasMaxLength(150);
+                entity.Property(d => d.StorageRef).HasMaxLength(1000);
+                entity.Property(d => d.ModuloOrigem).HasMaxLength(100);
+                entity.Property(d => d.EntidadeOrigemTipo).HasMaxLength(150);
+                entity.Property(d => d.EntidadeOrigemId).HasMaxLength(100);
+                entity.HasIndex(d => new { d.TenantId, d.Hash })
+                      .HasDatabaseName("ix_documentos_ged_tenant_hash");
+                entity.HasIndex(d => new { d.EntidadeOrigemTipo, d.EntidadeOrigemId })
+                      .HasDatabaseName("ix_documentos_ged_origem");
             });
 
             modelBuilder.Entity<InstalacaoState>(entity =>
@@ -601,6 +684,13 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
                 entity.Property(h => h.IpOrigem).HasMaxLength(64);
                 entity.HasIndex(h => new { h.Entidade, h.EntidadeIdReferencia }).HasDatabaseName("ix_upl_historicos_entidade");
             });
+
+            // ===== PLATAFORMA COMPARTILHADA (PLT) — submódulos spec-only (GED/Assinatura/Analytics/
+            // Conectores/Wizards/IoT/SDK). Configuração no arquivo parcial ContextAplicativo.Plataforma.cs =====
+            ConfigurarPlataforma(modelBuilder);
         }
+
+        // Implementada em ContextAplicativo.Plataforma.cs (parcial).
+        partial void ConfigurarPlataforma(ModelBuilder modelBuilder);
     }
 }

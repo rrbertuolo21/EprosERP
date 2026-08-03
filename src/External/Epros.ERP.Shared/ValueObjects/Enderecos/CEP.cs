@@ -1,4 +1,4 @@
-﻿using Epros.ERP.Shared.Formatting.Documentos;
+using Epros.ERP.Shared.Formatting.Documentos;
 using Flunt.Notifications;
 using ProsisPDV.Domain.ValueObjects.Geral;
 

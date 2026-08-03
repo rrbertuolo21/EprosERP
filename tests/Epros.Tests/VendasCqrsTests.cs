@@ -53,12 +53,12 @@ namespace Epros.Tests
             var abrirCmd = new AbrirCaixaCommand("operador-1", 100.00m);
             var abrirResult = await abrirHandler.Handle(abrirCmd, CancellationToken.None);
             Assert.True(abrirResult.Sucesso);
-            var caixaId = (Guid)abrirResult.Dados.GetType().GetProperty("CaixaId")!.GetValue(abrirResult.Dados)!;
+            var caixaId = (Guid)abrirResult.Dados!.GetType().GetProperty("CaixaId")!.GetValue(abrirResult.Dados)!;
 
             // 2. Verificar Status do Caixa (Deve estar Aberto)
             var statusResult = await caixaStatusQueryHandler.Handle(new ObterCaixaStatusQuery("operador-1"), CancellationToken.None);
             Assert.True(statusResult.Sucesso);
-            var statusDados = statusResult.Dados;
+            var statusDados = statusResult.Dados!;
             var status = (string)statusDados.GetType().GetProperty("Status")!.GetValue(statusDados)!;
             Assert.Equal("Aberto", status);
 
@@ -101,7 +101,7 @@ namespace Epros.Tests
 
             var registrarResult = await registrarHandler.Handle(registrarCmd, CancellationToken.None);
             Assert.True(registrarResult.Sucesso);
-            var vendaId = (Guid)registrarResult.Dados.GetType().GetProperty("VendaId")!.GetValue(registrarResult.Dados)!;
+            var vendaId = (Guid)registrarResult.Dados!.GetType().GetProperty("VendaId")!.GetValue(registrarResult.Dados)!;
 
             // Assert - Verificar se o Mediator publicou o evento VendaFaturadaEventNotification
             Assert.Single(fakeMediator.PublishedEvents);
@@ -111,14 +111,14 @@ namespace Epros.Tests
             // 4. Obter Caixa Detalhado (Deve ter faturamento em Dinheiro e saldo atualizado)
             var detalhadoResult = await caixaDetalhadoQueryHandler.Handle(new ObterCaixaDetalhadoQuery(caixaId), CancellationToken.None);
             Assert.True(detalhadoResult.Sucesso);
-            var detalhadoDados = detalhadoResult.Dados;
+            var detalhadoDados = detalhadoResult.Dados!;
             var saldoCalculado = (decimal)detalhadoDados.GetType().GetProperty("SaldoCalculadoDinheiro")!.GetValue(detalhadoDados)!;
             Assert.Equal(150.00m, saldoCalculado); // 100 Abertura + 50 Venda Dinheiro
 
             // 5. Listar Vendas
             var listResult = await listVendasQueryHandler.Handle(new ListarVendasQuery(null, 1, 10), CancellationToken.None);
             Assert.True(listResult.Sucesso);
-            var listDados = listResult.Dados;
+            var listDados = listResult.Dados!;
             var totalVendas = (int)listDados.GetType().GetProperty("Total")!.GetValue(listDados)!;
             Assert.Equal(1, totalVendas);
 
@@ -179,7 +179,7 @@ namespace Epros.Tests
             var abrirHandler = new AbrirCaixaCommandHandler(context, tenant, user);
             var abrirResult = await abrirHandler.Handle(new AbrirCaixaCommand(operador, 100.00m), CancellationToken.None);
             Assert.True(abrirResult.Sucesso);
-            return (Guid)abrirResult.Dados.GetType().GetProperty("CaixaId")!.GetValue(abrirResult.Dados)!;
+            return (Guid)abrirResult.Dados!.GetType().GetProperty("CaixaId")!.GetValue(abrirResult.Dados)!;
         }
 
         // -----------------------------------------------------------------
@@ -293,7 +293,7 @@ namespace Epros.Tests
             var registrarHandler = new RegistrarVendaCommandHandler(context, tenant, user, new FakeMediator());
             var registrarResult = await registrarHandler.Handle(
                 NovaVendaCmd(caixaId.ToString(), "Emitida", UmItemValido()), CancellationToken.None);
-            var vendaId = (Guid)registrarResult.Dados.GetType().GetProperty("VendaId")!.GetValue(registrarResult.Dados)!;
+            var vendaId = (Guid)registrarResult.Dados!.GetType().GetProperty("VendaId")!.GetValue(registrarResult.Dados)!;
 
             var cancelarHandler = new CancelarVendaCommandHandler(context, tenant, user);
             var result = await cancelarHandler.Handle(new CancelarVendaCommand(vendaId, "cliente desistiu"), CancellationToken.None);
@@ -316,7 +316,7 @@ namespace Epros.Tests
             var registrarHandler = new RegistrarVendaCommandHandler(context, tenant, user, new FakeMediator());
             var registrarResult = await registrarHandler.Handle(
                 NovaVendaCmd(caixaId.ToString(), "Emitida", UmItemValido()), CancellationToken.None);
-            var vendaId = (Guid)registrarResult.Dados.GetType().GetProperty("VendaId")!.GetValue(registrarResult.Dados)!;
+            var vendaId = (Guid)registrarResult.Dados!.GetType().GetProperty("VendaId")!.GetValue(registrarResult.Dados)!;
 
             var cancelarHandler = new CancelarVendaCommandHandler(context, tenant, user);
             Assert.True((await cancelarHandler.Handle(new CancelarVendaCommand(vendaId, "1"), CancellationToken.None)).Sucesso);

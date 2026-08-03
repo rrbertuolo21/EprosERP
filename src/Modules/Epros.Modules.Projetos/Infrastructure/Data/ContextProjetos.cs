@@ -29,6 +29,7 @@ namespace Epros.Modules.Projetos.Infrastructure.Data
         // PRJ-ORC
         public DbSet<OrcamentoProjeto> Orcamentos => Set<OrcamentoProjeto>();
         public DbSet<MarcoOrcamentario> MarcosOrcamentarios => Set<MarcoOrcamentario>();
+        public DbSet<BaselineOrcamento> BaselinesOrcamento => Set<BaselineOrcamento>();
 
         // PRJ-REC
         public DbSet<RecursoTimesheet> RecursoTimesheets => Set<RecursoTimesheet>();
@@ -68,6 +69,7 @@ namespace Epros.Modules.Projetos.Infrastructure.Data
         public DbSet<HistoricoPortfolio> HistoricosPortfolio => Set<HistoricoPortfolio>();
         public DbSet<AnexoPortfolio> AnexosPortfolio => Set<AnexoPortfolio>();
         public DbSet<ParametroPortfolio> ParametrosPortfolio => Set<ParametroPortfolio>();
+        public DbSet<Programa> Programas => Set<Programa>();
 
         public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
@@ -89,7 +91,9 @@ namespace Epros.Modules.Projetos.Infrastructure.Data
                 entity.ToTable("projetos");
                 entity.HasIndex(p => new { p.TenantId, p.ClienteId });
                 entity.Property(p => p.Nome).HasMaxLength(255);
-                entity.Property(p => p.Status).HasMaxLength(30);
+                // MM-a: status canônico persistido como string (mesma coluna varchar(30)).
+                entity.Property(p => p.Status).HasConversion<string>().HasMaxLength(30);
+                entity.Property(p => p.Tipo).HasConversion<string>().HasMaxLength(30);
 
                 entity.HasMany(p => p.ItensWbs)
                     .WithOne()
@@ -184,6 +188,16 @@ namespace Epros.Modules.Projetos.Infrastructure.Data
                 entity.Property(x => x.Resumo).HasMaxLength(2000);
                 entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(30);
                 entity.HasIndex(x => new { x.TenantId, x.ProjetoId });
+            });
+
+            // DP-ORC-002: baseline versionada imutável (snapshot).
+            modelBuilder.Entity<BaselineOrcamento>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_orcamento_baseline");
+                entity.Property(x => x.MarcosSnapshotJson).HasColumnType("text");
+                entity.Property(x => x.Motivo).HasMaxLength(1000);
+                entity.HasIndex(x => new { x.TenantId, x.OrcamentoProjetoId, x.NumeroBaseline }).IsUnique();
             });
 
             // ===================== PRJ-REC =====================
@@ -498,6 +512,19 @@ namespace Epros.Modules.Projetos.Infrastructure.Data
                 entity.ToTable("prj_portfolio_parametro");
                 entity.Property(x => x.Chave).HasMaxLength(120);
                 entity.HasIndex(x => new { x.TenantId, x.Chave }).IsUnique();
+            });
+
+            // T-PRG: Programa (hierarquia Portfólio > Programa > Projeto).
+            modelBuilder.Entity<Programa>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.ToTable("prj_programa");
+                entity.Property(x => x.Codigo).HasMaxLength(30);
+                entity.Property(x => x.Nome).HasMaxLength(255);
+                entity.Property(x => x.Descricao).HasMaxLength(2000);
+                entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(30);
+                entity.HasIndex(x => new { x.TenantId, x.Codigo }).IsUnique();
+                entity.HasIndex(x => new { x.TenantId, x.PortfolioId });
             });
 
             modelBuilder.Entity<OutboxMessage>(entity =>

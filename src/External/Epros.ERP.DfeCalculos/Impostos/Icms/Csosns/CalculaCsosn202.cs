@@ -1,4 +1,4 @@
-﻿using Epros.ERP.DfeCalculos.Impostos.Abstracts;
+using Epros.ERP.DfeCalculos.Impostos.Abstracts;
 using Epros.ERP.DfeCalculos.Models.Vendas;
 using Epros.ERP.Shared.Extensions;
 using NFe.Classes.Informacoes.Detalhe.Tributacao.Estadual.Tipos;

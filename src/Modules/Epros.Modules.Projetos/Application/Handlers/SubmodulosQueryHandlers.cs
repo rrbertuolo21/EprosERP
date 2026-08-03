@@ -2,6 +2,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Epros.Modules.Projetos.Application.Queries;
+using Epros.Modules.Projetos.Domain.Services;
 using Epros.Modules.Projetos.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
 using Epros.Shared.Application.Models;
@@ -38,6 +39,62 @@ namespace Epros.Modules.Projetos.Application.Handlers
             if (orcamento == null)
                 return CommandResult.Falha("Orcamento nao encontrado.");
             return CommandResult.Ok("Orcamento carregado com sucesso!", orcamento);
+        }
+    }
+
+    public class ObterBaselinesOrcamentoQueryHandler : IQueryHandler<ObterBaselinesOrcamentoQuery, CommandResult>
+    {
+        private readonly ContextProjetos _context;
+        public ObterBaselinesOrcamentoQueryHandler(ContextProjetos context) => _context = context;
+
+        public async Task<CommandResult> Handle(ObterBaselinesOrcamentoQuery request, CancellationToken cancellationToken)
+        {
+            var dados = await _context.BaselinesOrcamento
+                .Where(b => b.OrcamentoProjetoId == request.OrcamentoProjetoId)
+                .OrderByDescending(b => b.NumeroBaseline)
+                .ToListAsync(cancellationToken);
+            return CommandResult.Ok("Baselines listadas com sucesso!", dados);
+        }
+    }
+
+    /// <summary>
+    /// DP-ORC-004/005 — EVM do orçamento. BAC = budget da última baseline congelada (ou budget corrente
+    /// se não houver baseline). EV/PV derivados de percentuais; AC informado. Método de EV = valida-contador.
+    /// </summary>
+    public class ObterEvmOrcamentoQueryHandler : IQueryHandler<ObterEvmOrcamentoQuery, CommandResult>
+    {
+        private readonly ContextProjetos _context;
+        public ObterEvmOrcamentoQueryHandler(ContextProjetos context) => _context = context;
+
+        public async Task<CommandResult> Handle(ObterEvmOrcamentoQuery request, CancellationToken cancellationToken)
+        {
+            var orcamento = await _context.Orcamentos
+                .Include(o => o.Marcos)
+                .FirstOrDefaultAsync(o => o.Id == request.OrcamentoProjetoId, cancellationToken);
+            if (orcamento == null)
+                return CommandResult.Falha("Orcamento nao encontrado.");
+
+            var baseline = await _context.BaselinesOrcamento
+                .Where(b => b.OrcamentoProjetoId == request.OrcamentoProjetoId)
+                .OrderByDescending(b => b.NumeroBaseline)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            var bac = baseline?.BudgetSnapshot ?? orcamento.Budget;
+
+            // % concluído: usa o informado, senão média de progresso dos marcos. % planejado: informado ou 100 (previsto até a data).
+            var pctConcluido = request.PercentualConcluido
+                ?? (orcamento.Marcos.Any() ? (decimal)orcamento.Marcos.Average(m => m.Progresso) : 0m);
+            var pctPlanejado = request.PercentualPlanejado ?? 100m;
+
+            var evm = EvmCalculadora.CalcularPorPercentual(bac, pctPlanejado, pctConcluido, request.ActualCost);
+            return CommandResult.Ok("EVM calculado com sucesso!", new
+            {
+                OrcamentoProjetoId = orcamento.Id,
+                BaselineNumero = baseline?.NumeroBaseline ?? 0,
+                PercentualPlanejado = pctPlanejado,
+                PercentualConcluido = pctConcluido,
+                Evm = evm
+            });
         }
     }
 

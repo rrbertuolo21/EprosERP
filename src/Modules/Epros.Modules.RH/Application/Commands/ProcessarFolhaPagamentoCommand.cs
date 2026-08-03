@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Epros.Shared.Application.Contracts;
+using Epros.Modules.RH.Domain.Sst.Calculo;
 using FluentValidation;
 
 namespace Epros.Modules.RH.Application.Commands
@@ -11,11 +12,25 @@ namespace Epros.Modules.RH.Application.Commands
         decimal Valor
     );
 
+    /// <summary>
+    /// Processa a folha mensal pelo motor legal. Além das verbas manuais, aceita entradas de
+    /// JORNADA (horas extras / adicional noturno) e SST (insalubridade / periculosidade) — os
+    /// serviços de domínio (MotorJornada, MotorAdicionalSst) convertem essas entradas em proventos
+    /// que compõem as bases (INSS/IRRF/FGTS) antes da apuração.
+    /// </summary>
     public record ProcessarFolhaPagamentoCommand(
         Guid ColaboradorId,
         int MesCompetencia,
         int AnoCompetencia,
-        List<FolhaPagamentoVerbaInput> Verbas
+        List<FolhaPagamentoVerbaInput> Verbas,
+        // Jornada (RH-PNT) — alimenta a folha como proventos.
+        decimal HorasExtras = 0m,
+        decimal AdicionalHorasExtras = 0.5m,
+        decimal HorasNoturnas = 0m,
+        decimal DivisorHoras = 220m,
+        // SST — insalubridade/periculosidade (grau enquadrado por laudo; o sistema só calcula).
+        GrauInsalubridade GrauInsalubridade = GrauInsalubridade.Nenhum,
+        bool TemPericulosidade = false
     ) : ICommand;
 
     public class ProcessarFolhaPagamentoCommandValidator : AbstractValidator<ProcessarFolhaPagamentoCommand>

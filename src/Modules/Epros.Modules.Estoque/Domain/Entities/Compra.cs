@@ -34,6 +34,13 @@ namespace Epros.Modules.Estoque.Domain.Entities
         public ETipoNFeCompra? TipoNota { get; private set; }
         public string? FormaPagamento { get; private set; }
 
+        // ===== Comércio Exterior / Importação (CD1 / EF COMERCIO_EXTERIOR §5.3, CEX-005) =====
+        // Dados factuais da operação de importação. Não alteram cálculo fiscal (valida-contador):
+        // incoterm, moeda estrangeira e taxa de câmbio da compra. Default: NaoInformado/null (nacional).
+        public EIncotermCompra Incoterm { get; private set; } = EIncotermCompra.NaoInformado;
+        public string? Moeda { get; private set; }
+        public decimal? TaxaCambio { get; private set; }
+
         public List<CompraItem> Itens { get; private set; } = new();
 
         // ================= Navegações do agregado (porte fiel do legado) =================
@@ -240,6 +247,25 @@ namespace Epros.Modules.Estoque.Domain.Entities
         {
             Cancelada = true;
             MarcarAlterado(usuario);
+        }
+
+        /// <summary>
+        /// Define os dados de comércio exterior da compra (CD1 / CEX-005): incoterm, moeda estrangeira e
+        /// taxa de câmbio. Dados factuais — não disparam cálculo fiscal (valida-contador). Câmbio, quando
+        /// informado, deve ser positivo.
+        /// </summary>
+        public bool DefinirComercioExterior(EIncotermCompra incoterm, string? moeda, decimal? taxaCambio, string usuario)
+        {
+            if (taxaCambio.HasValue && taxaCambio.Value <= 0)
+            {
+                AddNotification("TaxaCambio", "A taxa de câmbio, quando informada, deve ser maior que zero [CEX-005] [Origem: Compra]");
+                return false;
+            }
+            Incoterm = incoterm;
+            Moeda = string.IsNullOrWhiteSpace(moeda) ? null : moeda.Trim().ToUpperInvariant();
+            TaxaCambio = taxaCambio;
+            MarcarAlterado(usuario);
+            return true;
         }
     }
 }

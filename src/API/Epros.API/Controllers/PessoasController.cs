@@ -36,6 +36,19 @@ namespace Epros.API.Controllers
             return CreatedAtAction(nameof(ObterPorId), new { id = createdId }, result);
         }
 
+        /// <summary>
+        /// T-02/P1-3 — Importação em lote de pessoas (mapeamento + validação + processamento). Recebe as
+        /// linhas já parseadas; o parsing do layout oficial (colunas/versão) fica no adaptador de upload.
+        /// </summary>
+        [HttpPost("importar-lote")]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CommandResult), StatusCodes.Status422UnprocessableEntity)]
+        public async Task<IActionResult> ImportarLote([FromBody] ImportarPessoasLoteCommand command)
+        {
+            var result = await _mediator.Send(command);
+            return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
+        }
+
         [HttpPut("{id}")]
         [ProducesResponseType(typeof(CommandResult), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

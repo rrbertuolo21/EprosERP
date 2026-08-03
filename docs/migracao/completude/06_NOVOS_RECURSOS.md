@@ -1,8 +1,8 @@
 # 06 — Novos Recursos (Novo tem, Legado não tem)
 
-> Auditoria READ-ONLY inversa. Lista tudo que o sistema **NOVO** (`EprosERP` — backend `src/` + frontend `Epros.App`) possui e o **LEGADO** (`Epros/epros_erp-main` + `epros_erp_front-main`) não possui.
+> Auditoria READ-ONLY inversa. Lista tudo que o sistema **NOVO** (`EprosERP` — backend `src/` + frontend `EprosApp`) possui e o **LEGADO** (`Epros/epros_erp-main` + `epros_erp_front-main`) não possui.
 > Data: 2026-07. Escopo: módulos de negócio novos, recursos técnicos/cross-cutting, telas e endpoints sem correspondente no legado.
-> **Foco de ação:** a coluna "Proposta de alocação na tela" indica onde cada recurso ainda-não-exposto deveria aparecer, como evolução natural do menu atual (`Epros.App/components/menu.ts`), sem quebrar a familiaridade do cliente.
+> **Foco de ação:** a coluna "Proposta de alocação na tela" indica onde cada recurso ainda-não-exposto deveria aparecer, como evolução natural do menu atual (`EprosApp/components/menu.ts`), sem quebrar a familiaridade do cliente.
 
 ---
 
@@ -106,7 +106,7 @@ Nenhum existia no legado (confirmado). São transparentes ao usuário, mas algun
 | **Tratamento global de erros RFC 7807** — `ExcecaoGlobalMiddleware` (ProblemDetails + traceId) | Erros padronizados p/ correlação (Loki/Tempo) | Infra | N/A | — |
 | **Observabilidade (Serilog estruturado)** — enrich com TenantId, AUDIT_TRAIL p/ Grafana Loki | Logs estruturados | Infra | N/A | — |
 | **Jobs agendados (Quartz)** — VerificarFaturasVencidas, FaturamentoRecorrente, ReguaCobranca, ReajusteContrato, SincronizarGeografia, ExpiracaoSessoes | Automação de faturamento/cobrança/manutenção | Infra | Backoffice → "Jobs / Agendamentos" (status) | Baixa |
-| **OpenAPI / Swagger + codegen** — Swashbuckle + `Epros.App/openapi` (tipos gerados) | Contrato de API e tipos TS gerados | Swagger em Dev; tipos no front | N/A | — |
+| **OpenAPI / Swagger + codegen** — Swashbuckle + `EprosApp/openapi` (tipos gerados) | Contrato de API e tipos TS gerados | Swagger em Dev; tipos no front | N/A | — |
 
 **Ausentes no novo (não implementados):** HealthChecks/`MapHealthChecks`, OpenTelemetry instrumentado, `AddRateLimiter` nativo (há rate limit próprio só no `ApiKeyMiddleware`), versionamento de API formal (`Asp.Versioning`).
 

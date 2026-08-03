@@ -2,6 +2,9 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Epros.Modules.Estoque.Application.Services;
+using Epros.Modules.Estoque.Domain.Entities;
+using Epros.Modules.Estoque.Domain.Enums;
 using Epros.Modules.Estoque.Infrastructure.Data;
 using Epros.Shared.Domain.Events;
 using MediatR;
@@ -26,6 +29,11 @@ namespace Epros.Modules.Estoque.Application.Handlers
         {
             decimal custoTotalProducao = 0;
 
+            // Movimentação pelo MOTOR ÚNICO (kardex, D1).
+            var motor = new MotorMovimentacaoEstoque(_context, notification.TenantId, "system_production");
+            var fato = new FatoGeradorEstoque(null, null, null, EOrigemFatoGeradorEstoque.Producao, notification.TenantId, "system_production", referenciaExterna: $"OP {notification.OrdemProducaoId}");
+            _context.FatosGeradoresEstoque.Add(fato);
+
             // 1. Processar as baixas de cada insumo do estoque e calcular custo total
             foreach (var insumoConsumido in notification.InsumosConsumidos)
             {
@@ -34,16 +42,15 @@ namespace Epros.Modules.Estoque.Application.Handlers
 
                 if (insumo != null)
                 {
-                    // Acumula o custo baseado no custo médio atual do insumo no estoque
-                    custoTotalProducao += insumo.CustoMedio * insumoConsumido.QuantidadeConsumida;
+                    // Acumula o custo baseado no custo médio vigente do insumo no kardex
+                    var custoMedioInsumo = await _context.EstoqueProdutos
+                        .Where(e => e.EmpresaId == MotorMovimentacaoEstoque.EmpresaPadrao && e.ProdutoId == insumo.Id)
+                        .Select(e => (decimal?)e.ValorCustoMedio)
+                        .FirstOrDefaultAsync(cancellationToken) ?? insumo.CustoMedio;
+                    custoTotalProducao += custoMedioInsumo * insumoConsumido.QuantidadeConsumida;
 
-                    // Lança a saída do estoque
-                    insumo.LancarSaidaEstoque(insumoConsumido.QuantidadeConsumida, "system_production");
-                    
-                    if (insumo.IsValid)
-                    {
-                        _context.Produtos.Update(insumo);
-                    }
+                    // Lança a saída do estoque (kardex)
+                    await motor.AplicarSaidaAsync(MotorMovimentacaoEstoque.EmpresaPadrao, insumo.Id, insumoConsumido.QuantidadeConsumida, fato.Id, null, cancellationToken);
                 }
             }
 
@@ -58,13 +65,8 @@ namespace Epros.Modules.Estoque.Application.Handlers
                     // Custo unitário de fabricação do produto acabado
                     decimal precoUnitario = custoTotalProducao / notification.QuantidadeProduzida;
 
-                    // Lança a entrada do produto acabado no estoque
-                    produtoAcabado.LancarEntradaEstoque(notification.QuantidadeProduzida, precoUnitario, "system_production");
-                    
-                    if (produtoAcabado.IsValid)
-                    {
-                        _context.Produtos.Update(produtoAcabado);
-                    }
+                    // Lança a entrada do produto acabado no estoque (kardex)
+                    await motor.AplicarEntradaAsync(MotorMovimentacaoEstoque.EmpresaPadrao, produtoAcabado.Id, ETipoEstoque.Geral, notification.QuantidadeProduzida, precoUnitario, fato.Id, null, null, null, ETipoCusteioEstoque.CustoMedio, cancellationToken);
                 }
             }
 

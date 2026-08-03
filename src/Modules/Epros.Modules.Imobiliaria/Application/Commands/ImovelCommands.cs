@@ -46,4 +46,34 @@ namespace Epros.Modules.Imobiliaria.Application.Commands
             RuleFor(c => c.ImovelId).NotEmpty().WithMessage("Identificador do imovel invalido.");
         }
     }
+
+    /// <summary>Edita os dados cadastrais do imovel (ID3/PRD-03). Auditoria antes→depois (T8).</summary>
+    public record AlterarImovelCommand(
+        Guid ImovelId,
+        string Descricao,
+        Guid? MunicipioId,
+        string? Cep,
+        string? Logradouro,
+        string? Numero,
+        string? Complemento,
+        string? Bairro
+    ) : ICommand;
+
+    public class AlterarImovelCommandValidator : AbstractValidator<AlterarImovelCommand>
+    {
+        public AlterarImovelCommandValidator()
+        {
+            RuleFor(c => c.ImovelId).NotEmpty();
+            RuleFor(c => c.Descricao).NotEmpty().WithMessage("A descricao do imovel e obrigatoria.");
+        }
+    }
+
+    /// <summary>Disponibiliza o imovel (EmCadastro/Inativo → Disponivel) — ID1/PRD-01.</summary>
+    public record DisponibilizarImovelCommand(Guid ImovelId) : ICommand;
+
+    /// <summary>Inativa o imovel (bloqueado se locado) — ID1/PRD-01.</summary>
+    public record InativarImovelCommand(Guid ImovelId) : ICommand;
+
+    /// <summary>Reativa o imovel inativo (→ Disponivel) — ID1/PRD-01.</summary>
+    public record ReativarImovelCommand(Guid ImovelId) : ICommand;
 }

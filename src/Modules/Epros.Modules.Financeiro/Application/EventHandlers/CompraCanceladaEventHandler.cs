@@ -40,7 +40,17 @@ namespace Epros.Modules.Financeiro.Application.EventHandlers
                 conta.Cancelar("Cancelamento da compra de origem no Estoque.", notification.UserId);
 
                 if (conta.IsValid)
+                {
+                    // Wiring evento→ledger (TEC-8): estorno contábil do cancelamento da compra
+                    // (de-para = valida-contador). Idempotente por (evento + compraId).
+                    await Services.ContabilizacaoEventoService.GerarLancamentoAsync(
+                        _context, notification.TenantId, "system",
+                        Epros.Shared.Domain.Events.CatalogoEventosIntegracao.Financeiro.CompraCanceladaEstorno,
+                        notification.CompraId, conta.ValorTitulo,
+                        $"Estorno do cancelamento da compra {notification.CompraId}", cancellationToken);
+
                     await _context.SaveChangesAsync(cancellationToken);
+                }
             }
         }
     }

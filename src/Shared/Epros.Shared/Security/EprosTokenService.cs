@@ -25,16 +25,45 @@ namespace Epros.Shared.Security
     /// </summary>
     public interface IEprosTokenService
     {
-        string GerarCompleto(string tenantId, string usuarioId, string empresaId, string perfilId);
-        string GerarBasico(string tenantId, string usuarioId);
+        string GerarCompleto(string tenantId, string usuarioId, string empresaId, string perfilId, string? jti = null);
+        string GerarBasico(string tenantId, string usuarioId, string? jti = null);
+
+        /// <summary>
+        /// 1.11 — Emite o token do operador interno da Siser (landlord). Além do shape completo
+        /// (tenant="system", perfilId="interno"), carrega a FAIXA de suporte do operador:
+        /// claim "primaryAdmin" (Lord pleno) e "perfilSuporte" (SuporteTecnico/SuporteNegocio/Nenhum),
+        /// consumidas pelo AbacFilter para autorizar por menor privilégio (decisão #5).
+        /// </summary>
+        string GerarOperadorInterno(string usuarioId, bool primaryAdmin, string? perfilSuporte, string? jti = null);
         ClaimsPrincipal? Validar(string token);
+
+        /// <summary>Tempo de vida único do token emitido (fonte de verdade da expiração — REG-024).</summary>
+        TimeSpan Validade { get; }
+    }
+
+    /// <summary>
+    /// Convenção de revogação de sessão (logout — REG-013). O logout revoga as <c>SessaoUsuario</c>
+    /// ativas do usuário (registro persistente/auditoria) e grava em cache um marco "logout em T".
+    /// O handler de autenticação rejeita qualquer token cujo instante de emissão (nbf/iat) seja
+    /// ANTERIOR a esse marco — invalidando, na borda e para toda a API, todos os tokens (básico e
+    /// completo) emitidos antes do logout, sem depender de estado por-jti. Chave por usuário.
+    /// </summary>
+    public static class RevogacaoSessao
+    {
+        public static string ChaveCache(string usuarioId) => $"auth:logout-after:{usuarioId}";
     }
 
     public sealed class EprosTokenService : IEprosTokenService
     {
         public const string Issuer = "epros";
         public const string Audience = "epros";
-        private static readonly TimeSpan Validade = TimeSpan.FromHours(8);
+
+        // Fonte ÚNICA da expiração do token (8h). Antes o DTO/sessão anunciavam 10h enquanto o JWT
+        // expirava em 8h (REG-024 DIVERGENTE). Agora todos os pontos derivam desta propriedade.
+        private static readonly TimeSpan ValidadeToken = TimeSpan.FromHours(8);
+
+        /// <inheritdoc />
+        public TimeSpan Validade => ValidadeToken;
 
         private readonly SymmetricSecurityKey _chave;
         private readonly JwtSecurityTokenHandler _handler = new();
@@ -50,25 +79,25 @@ namespace Epros.Shared.Security
             _chave = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
         }
 
-        public string GerarBasico(string tenantId, string usuarioId)
+        public string GerarBasico(string tenantId, string usuarioId, string? jti = null)
         {
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, usuarioId),
                 new Claim("tenantId", tenantId),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                new Claim(JwtRegisteredClaimNames.Jti, string.IsNullOrWhiteSpace(jti) ? Guid.NewGuid().ToString() : jti)
             };
 
             return Gerar(claims);
         }
 
-        public string GerarCompleto(string tenantId, string usuarioId, string empresaId, string perfilId)
+        public string GerarCompleto(string tenantId, string usuarioId, string empresaId, string perfilId, string? jti = null)
         {
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, usuarioId),
                 new Claim("tenantId", tenantId),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                new Claim(JwtRegisteredClaimNames.Jti, string.IsNullOrWhiteSpace(jti) ? Guid.NewGuid().ToString() : jti)
             };
 
             if (!string.IsNullOrEmpty(empresaId) && empresaId != "null")
@@ -79,6 +108,22 @@ namespace Epros.Shared.Security
             {
                 claims.Add(new Claim("perfilId", perfilId));
             }
+
+            return Gerar(claims);
+        }
+
+        public string GerarOperadorInterno(string usuarioId, bool primaryAdmin, string? perfilSuporte, string? jti = null)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, usuarioId),
+                new Claim("tenantId", "system"),
+                new Claim("empresaId", "system"),
+                new Claim("perfilId", "interno"),
+                new Claim("primaryAdmin", primaryAdmin ? "true" : "false"),
+                new Claim("perfilSuporte", string.IsNullOrWhiteSpace(perfilSuporte) ? "Nenhum" : perfilSuporte),
+                new Claim(JwtRegisteredClaimNames.Jti, string.IsNullOrWhiteSpace(jti) ? Guid.NewGuid().ToString() : jti)
+            };
 
             return Gerar(claims);
         }
@@ -124,7 +169,7 @@ namespace Epros.Shared.Security
                 audience: Audience,
                 claims: claims,
                 notBefore: agora,
-                expires: agora.Add(Validade),
+                expires: agora.Add(ValidadeToken),
                 signingCredentials: credenciais);
 
             return _handler.WriteToken(token);

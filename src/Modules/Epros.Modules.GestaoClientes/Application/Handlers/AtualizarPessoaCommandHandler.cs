@@ -318,7 +318,8 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                         endDto.Latitude,
                         endDto.Longitude,
                         tenantId,
-                        alteradoPor
+                        alteradoPor,
+                        principal: endDto.Principal
                     );
                     pessoa.AdicionarEndereco(endereco);
                 }

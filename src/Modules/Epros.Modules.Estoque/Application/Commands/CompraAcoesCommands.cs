@@ -29,7 +29,9 @@ namespace Epros.Modules.Estoque.Application.Commands
         List<PagamentoCompraInput>? Pagamentos = null,
         string? InformacoesComplementares = null,
         string? InformacoesAdicionaisFisco = null,
-        DateTime? DataHoraSaida = null
+        DateTime? DataHoraSaida = null,
+        // CD3/SRC-008: origem sob alçada — efetiva só se aprovada. Opcional (ver AlcadaCompraGate).
+        Guid? AprovacaoOrigemId = null
     ) : ICommand;
 
     /// <summary>
@@ -56,7 +58,9 @@ namespace Epros.Modules.Estoque.Application.Commands
         List<PagamentoCompraInput>? Pagamentos = null,
         string? InformacoesComplementares = null,
         string? InformacoesAdicionaisFisco = null,
-        DateTime? DataHoraSaida = null
+        DateTime? DataHoraSaida = null,
+        // CD3/SRC-008: origem sob alçada — efetiva só se aprovada. Opcional (ver AlcadaCompraGate).
+        Guid? AprovacaoOrigemId = null
     ) : ICommand;
 
     /// <summary>

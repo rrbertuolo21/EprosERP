@@ -190,6 +190,45 @@ namespace Epros.Tests
             Assert.Equal(valorOriginalComum, configRecuperada!.Valor);
         }
 
+        [Fact]
+        public async Task Senha_SMTP_Deve_Ser_Cifrada_No_Banco_E_Preservada_Na_Mascara()
+        {
+            // T-01: a senha de e-mail (SMTP) nunca pode ficar em claro no banco.
+            var options = new DbContextOptionsBuilder<ContextGestaoClientes>()
+                .UseInMemoryDatabase("db_smtp_segredo_hardening")
+                .Options;
+
+            var tenantProvider = new TestTenantProvider("tenant-smtp");
+            var currentUser = new TestCurrentUser("user-smtp");
+            using var context = new ContextGestaoClientes(options, tenantProvider, currentUser);
+
+            using var httpClient = new HttpClient();
+            var cofreService = new VaultEncryptionService(httpClient, _configuration, _logger);
+            var handler = new AtualizarConfiguracaoEmailCommandHandler(context, tenantProvider, currentUser, cofreService);
+
+            var senhaOriginal = "S3nh@-SMTP-App-2026";
+            var salvar = new AtualizarConfiguracaoEmailCommand("smtp.epros.com.br", 587, "no-reply@epros.com.br", senhaOriginal, "no-reply@epros.com.br");
+            var resSalvar = await handler.Handle(salvar, CancellationToken.None);
+            Assert.True(resSalvar.Sucesso);
+
+            var noBanco = await context.ConfiguracoesEmail.FirstOrDefaultAsync(e => e.TenantId == "tenant-smtp");
+            Assert.NotNull(noBanco);
+            Assert.NotEqual(senhaOriginal, noBanco!.Password);              // não está em claro
+            Assert.False(string.IsNullOrEmpty(noBanco.Password));
+            var recuperada = await cofreService.DescriptografarAsync(noBanco.Password!);
+            Assert.Equal(senhaOriginal, recuperada);                        // decifra de volta
+
+            // Reenvio com a máscara (senha inalterada) preserva o ciphertext existente.
+            var ciphertextAntes = noBanco.Password;
+            var atualizarMascara = new AtualizarConfiguracaoEmailCommand("smtp.novo.com.br", 465, "no-reply@epros.com.br", "••••••••", "no-reply@epros.com.br");
+            var resMascara = await handler.Handle(atualizarMascara, CancellationToken.None);
+            Assert.True(resMascara.Sucesso);
+
+            var noBanco2 = await context.ConfiguracoesEmail.FirstOrDefaultAsync(e => e.TenantId == "tenant-smtp");
+            Assert.Equal(ciphertextAntes, noBanco2!.Password);              // senha preservada
+            Assert.Equal("smtp.novo.com.br", noBanco2.Host);               // demais campos atualizados
+        }
+
         // Classes de Teste Auxiliares
         private class TestLogger<T> : ILogger<T>
         {
@@ -202,7 +241,7 @@ namespace Epros.Tests
 
         private class FakeConfiguracaoGlobalCache : IConfiguracaoGlobalCache
         {
-            public Task<Epros.Modules.GestaoClientes.Application.Dtos.ConfiguracaoGlobalCacheDto?> ObterAsync(string chave, Func<Task<ConfiguracaoGlobal?>> factory) => 
+            public Task<Epros.Modules.GestaoClientes.Application.Dtos.ConfiguracaoGlobalCacheDto?> ObterAsync(string chave, Func<Task<ConfiguracaoGlobal?>> factory) =>
                 factory().ContinueWith(t => t.Result == null ? null : new Epros.Modules.GestaoClientes.Application.Dtos.ConfiguracaoGlobalCacheDto(t.Result.Id, t.Result.Chave, t.Result.Valor, t.Result.EhSegredo, t.Result.Descricao, t.Result.TenantId));
 
             public Task InvalidarAsync(string chave) => Task.CompletedTask;
