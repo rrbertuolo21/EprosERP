@@ -113,3 +113,24 @@ export function extrairDados<T>(resposta: unknown): T | undefined {
   }
   return resposta as T | undefined
 }
+
+/**
+ * Extrai uma LISTA de uma resposta, tolerando os dois contratos que a API usa:
+ *  - array cru em `dados`/`data` (endpoints que já devolvem lista);
+ *  - página no formato `{ total, pagina, itens }` (handlers de listagem paginada).
+ *
+ * Use este helper (em vez de `extrairDados<Array<...>>`) sempre que o consumo for uma
+ * lista de apoio para dropdown/autocomplete. Fazer `.map` direto no `dados` paginado
+ * gera `TypeError: .map is not a function` e quebra o formulário inteiro (Classe B).
+ * Retorna sempre um array (vazio quando não há dados), então é seguro encadear `.map`.
+ */
+export function extrairLista<T>(resposta: unknown): T[] {
+  const d = extrairDados<unknown>(resposta)
+  if (Array.isArray(d)) return d as T[]
+  if (d && typeof d === 'object') {
+    const o = d as { itens?: T[]; Itens?: T[] }
+    if (Array.isArray(o.itens)) return o.itens
+    if (Array.isArray(o.Itens)) return o.Itens
+  }
+  return []
+}

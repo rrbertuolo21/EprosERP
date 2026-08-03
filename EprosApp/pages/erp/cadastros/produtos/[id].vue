@@ -9,7 +9,7 @@
  * adicionais, balancas.
  */
 import { computed, onMounted, ref } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista } from '~/composables/useApi'
 import { useApiList, obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import PageToolbar from '~/components/shared/PageToolbar.vue'
@@ -55,7 +55,7 @@ const buscandoCest = ref(false)
 async function carregarListasApoio() {
   try {
     const respMarcas = await useApi('/marcas-produtos', { query: { tamanhoPagina: 200 } })
-    const marcas = extrairDados<Array<{ id: number; descricao: string }>>(respMarcas) ?? []
+    const marcas = extrairLista<{ id: number; descricao: string }>(respMarcas) ?? []
     marcasOpcoes.value = marcas.map((m) => ({ label: m.descricao, value: m.id }))
   } catch (e) {
     console.error('[produtos:[id]] falha ao carregar marcas', e)
@@ -63,7 +63,7 @@ async function carregarListasApoio() {
 
   try {
     const respCategorias = await useApi('/categorias-produtos', { query: { tamanhoPagina: 200 } })
-    const categorias = extrairDados<Array<{ id: number; descricao: string }>>(respCategorias) ?? []
+    const categorias = extrairLista<{ id: number; descricao: string }>(respCategorias) ?? []
     categoriasOpcoes.value = categorias.map((c) => ({ label: c.descricao, value: c.id }))
   } catch (e) {
     console.error('[produtos:[id]] falha ao carregar categorias', e)
@@ -71,7 +71,7 @@ async function carregarListasApoio() {
 
   try {
     const respUnidades = await useApi('/unidades-de-medidas-comercial', { query: { tamanhoPagina: 200 } })
-    const unidades = extrairDados<Array<{ id: number; descricao: string; unidadeMedida?: string }>>(respUnidades) ?? []
+    const unidades = extrairLista<{ id: number; descricao: string; unidadeMedida?: string }>(respUnidades) ?? []
     unidadesOpcoes.value = unidades.map((u) => ({
       label: `${(u.unidadeMedida ?? '').toUpperCase()} - ${u.descricao.toUpperCase()}`,
       value: u.id
@@ -82,7 +82,7 @@ async function carregarListasApoio() {
 
   try {
     const respBalancas = await useApi('/balancas', { query: { tamanhoPagina: 200 } })
-    const balancas = extrairDados<Array<{ id: number; nome: string }>>(respBalancas) ?? []
+    const balancas = extrairLista<{ id: number; nome: string }>(respBalancas) ?? []
     balancasOpcoes.value = balancas.map((b) => ({ label: b.nome, value: b.id }))
   } catch (e) {
     console.error('[produtos:[id]] falha ao carregar balanças', e)
@@ -90,21 +90,14 @@ async function carregarListasApoio() {
 
   try {
     const respAdicionais = await useApi('/adicionais', { query: { tamanhoPagina: 200 } })
-    adicionaisDisponiveis.value = extrairDados<Array<{ id: number; descricao: string }>>(respAdicionais) ?? []
+    adicionaisDisponiveis.value = extrairLista<{ id: number; descricao: string }>(respAdicionais) ?? []
   } catch (e) {
     console.error('[produtos:[id]] falha ao carregar adicionais', e)
   }
 
-  try {
-    const respUfs = await useApi('/cadastros/geografia/ufs')
-    const ufs = extrairDados<Array<{ sigla?: string; descricao?: string; id?: number | string }>>(respUfs) ?? []
-    ufsOpcoes.value = ufs.map((u) => ({
-      label: u.sigla ?? u.descricao ?? String(u.id ?? ''),
-      value: u.sigla ?? String(u.id ?? '')
-    }))
-  } catch (e) {
-    console.error('[produtos:[id]] falha ao carregar UFs (pode não existir rota exposta)', e)
-  }
+  // UF é dado de referência estático (não há rota /geografia/ufs na API) — usa a constante
+  // compartilhada `ufsBrasil` (auto-import de ~/utils/ufsBrasil), evitando o 404 (Classe C).
+  ufsOpcoes.value = ufsBrasil
 }
 
 async function buscarNcm(texto: string) {
@@ -116,7 +109,7 @@ async function buscarNcm(texto: string) {
   buscandoNcm.value = true
   try {
     const resp = await useApi('/fiscal/ncms', { query: { tamanhoPagina: 100, busca: texto } })
-    const itens = extrairDados<Array<{ id: number; descricao: string; codigoNcm?: string }>>(resp) ?? []
+    const itens = extrairLista<{ id: number; descricao: string; codigoNcm?: string }>(resp) ?? []
     ncmOpcoes.value = itens.map((n) => ({
       label: n.codigoNcm ? `${n.codigoNcm} - ${n.descricao}` : n.descricao,
       value: n.id
@@ -140,7 +133,7 @@ async function buscarCest(texto: string) {
     buscandoCest.value = true
     try {
       const resp = await useApi('/cests', { query: { tamanhoPagina: 100, busca: texto } })
-      const itens = extrairDados<Array<{ id: number; descricao: string; codigo?: string }>>(resp) ?? []
+      const itens = extrairLista<{ id: number; descricao: string; codigo?: string }>(resp) ?? []
       cestOpcoes.value = itens.map((c) => ({
         label: c.codigo ? `${c.codigo} - ${c.descricao}` : c.descricao,
         value: c.id

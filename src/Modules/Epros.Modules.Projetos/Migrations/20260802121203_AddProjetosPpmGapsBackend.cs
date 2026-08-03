@@ -20,15 +20,6 @@ namespace Epros.Modules.Projetos.Migrations
                 ELSE status END
                 WHERE status IN ('Planejado','EmAndamento','Concluido');");
 
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "wbs_itens",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
             migrationBuilder.AddColumn<string>(
                 name: "tipo",
                 schema: "projetos",
@@ -38,195 +29,6 @@ namespace Epros.Modules.Projetos.Migrations
                 nullable: false,
                 defaultValue: "");
 
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "projetos",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_rst_timer",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_rst_tarefa",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_rst_subtarefa",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_rst_reuniao",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_rst_estagio",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_rst_dependencia",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_risco_responsavel",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_risco_projeto",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_risco_parametro",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_risco_historico",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_risco_estagio",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_risco_comentario",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_risco_anexo",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_recurso_timesheet",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_recurso_alocacao",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_portfolio_parametro",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_portfolio_item",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_portfolio_historico",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_portfolio_anexo",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_portfolio",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
             migrationBuilder.AddColumn<int>(
                 name: "baseline_atual",
                 schema: "projetos",
@@ -235,24 +37,6 @@ namespace Epros.Modules.Projetos.Migrations
                 nullable: false,
                 defaultValue: 0);
 
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_orcamento_projeto",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_orcamento_marco",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
             migrationBuilder.AddColumn<bool>(
                 name: "reembolsavel",
                 schema: "projetos",
@@ -260,15 +44,6 @@ namespace Epros.Modules.Projetos.Migrations
                 type: "boolean",
                 nullable: false,
                 defaultValue: false);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_faturamento_projeto_item",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
 
             migrationBuilder.AddColumn<decimal>(
                 name: "valor_cofins",
@@ -343,114 +118,6 @@ namespace Epros.Modules.Projetos.Migrations
                 scale: 2,
                 nullable: false,
                 defaultValue: 0m);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_faturamento_projeto",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_enc_parametro",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_enc_encerramento_item",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_enc_encerramento_historico",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_enc_encerramento_anexo",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_enc_encerramento",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_def_tarefa_modelo",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_def_projeto_membro",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_def_projeto_cliente",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_def_projeto_atividade",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_def_projeto_arquivo",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
-
-            migrationBuilder.AddColumn<uint>(
-                name: "xmin",
-                schema: "projetos",
-                table: "alocacoes",
-                type: "xid",
-                rowVersion: true,
-                nullable: false,
-                defaultValue: 0u);
 
             migrationBuilder.CreateTable(
                 name: "prj_orcamento_baseline",
@@ -569,119 +236,9 @@ namespace Epros.Modules.Projetos.Migrations
                 schema: "projetos");
 
             migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "wbs_itens");
-
-            migrationBuilder.DropColumn(
                 name: "tipo",
                 schema: "projetos",
                 table: "projetos");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "projetos");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_rst_timer");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_rst_tarefa");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_rst_subtarefa");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_rst_reuniao");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_rst_estagio");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_rst_dependencia");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_risco_responsavel");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_risco_projeto");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_risco_parametro");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_risco_historico");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_risco_estagio");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_risco_comentario");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_risco_anexo");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_recurso_timesheet");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_recurso_alocacao");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_portfolio_parametro");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_portfolio_item");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_portfolio_historico");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_portfolio_anexo");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_portfolio");
 
             migrationBuilder.DropColumn(
                 name: "baseline_atual",
@@ -689,22 +246,7 @@ namespace Epros.Modules.Projetos.Migrations
                 table: "prj_orcamento_projeto");
 
             migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_orcamento_projeto");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_orcamento_marco");
-
-            migrationBuilder.DropColumn(
                 name: "reembolsavel",
-                schema: "projetos",
-                table: "prj_faturamento_projeto_item");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
                 schema: "projetos",
                 table: "prj_faturamento_projeto_item");
 
@@ -748,65 +290,6 @@ namespace Epros.Modules.Projetos.Migrations
                 schema: "projetos",
                 table: "prj_faturamento_projeto");
 
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_faturamento_projeto");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_enc_parametro");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_enc_encerramento_item");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_enc_encerramento_historico");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_enc_encerramento_anexo");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_enc_encerramento");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_def_tarefa_modelo");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_def_projeto_membro");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_def_projeto_cliente");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_def_projeto_atividade");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "prj_def_projeto_arquivo");
-
-            migrationBuilder.DropColumn(
-                name: "xmin",
-                schema: "projetos",
-                table: "alocacoes");
         }
     }
 }

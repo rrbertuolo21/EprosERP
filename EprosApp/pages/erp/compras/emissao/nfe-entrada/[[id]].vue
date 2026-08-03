@@ -29,7 +29,7 @@ import EntradaInformacoesCard from '~/components/compras-nfe-entrada/EntradaInfo
 import EntradaReferenciadasDialog from '~/components/compras-nfe-entrada/EntradaReferenciadasDialog.vue'
 import { useNfeEntrada } from '~/components/compras-nfe-entrada/useNfeEntrada'
 import { useToast } from '~/composables/useToast'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairLista } from '~/composables/useApi'
 import type { SelectOption } from '~/composables/useEnum'
 import type { EntradaItem } from '~/components/compras-nfe-entrada/tipos'
 
@@ -84,7 +84,7 @@ const cfopsOpcoes = ref<SelectOption[]>([])
 async function carregarCfops() {
   try {
     const resp = await useApi('/cfops', { query: { tamanhoPagina: 500 } })
-    const itens = extrairDados<Array<{ id: number; cfop?: string | number; descricao?: string }>>(resp) ?? []
+    const itens = extrairLista<{ id: number; cfop?: string | number; descricao?: string }>(resp) ?? []
     cfopsOpcoes.value = itens.map((c) => ({
       label: c.cfop ? `${c.cfop} - ${c.descricao ?? ''}`.trim() : c.descricao ?? String(c.id),
       value: c.id

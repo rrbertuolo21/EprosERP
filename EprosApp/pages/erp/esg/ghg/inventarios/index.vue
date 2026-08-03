@@ -14,7 +14,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useApiList, obterMensagemErro } from '~/composables/useApiList'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairLista } from '~/composables/useApi'
 import { useToast } from '~/composables/useToast'
 import DataTable, { type DataTableColumn } from '~/components/shared/DataTable.vue'
 import PageToolbar from '~/components/shared/PageToolbar.vue'
@@ -197,7 +197,7 @@ async function abrirCalcular() {
   if (opcoesFatores.value.length === 0) {
     try {
       const resp = await useApi('/esg/ghg/fatores')
-      const arr = extrairDados<Array<{ id: string; codigo?: string; versao?: string }>>(resp) ?? []
+      const arr = extrairLista<{ id: string; codigo?: string; versao?: string }>(resp) ?? []
       opcoesFatores.value = arr.map((f) => ({ label: `${f.codigo ?? f.id}${f.versao ? ' · ' + f.versao : ''}`, value: f.id }))
     } catch (e) {
       console.error('[inventarios] fatores', e)

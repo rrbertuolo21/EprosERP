@@ -8,7 +8,7 @@
  */
 import { ref, computed, reactive, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista } from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useMask } from '~/composables/useMask'
@@ -149,7 +149,7 @@ async function carregarPermissoesTransmissao() {
   carregandoPermissoes.value = true
   try {
     const resposta = await useApi('/contadores/permissoes-transmissao')
-    const lista = extrairDados<Array<{ id: number; descricaoFormatada?: string; descricao?: string }>>(resposta) ?? []
+    const lista = extrairLista<{ id: number; descricaoFormatada?: string; descricao?: string }>(resposta) ?? []
     opcoesPermissaoTransmissao.value = lista.map((p) => ({
       label: p.descricaoFormatada ?? p.descricao ?? String(p.id),
       value: p.id

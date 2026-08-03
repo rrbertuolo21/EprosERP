@@ -6,7 +6,7 @@
  */
 import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairLista } from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import TextField from '~/components/shared/fields/TextField.vue'
@@ -58,7 +58,7 @@ function validar(): boolean {
 async function carregarRegistros() {
   try {
     const resp = await useApi('/esg/ehs/registros')
-    const arr = extrairDados<Array<{ id: string; codigo?: string; descricao?: string }>>(resp) ?? []
+    const arr = extrairLista<{ id: string; codigo?: string; descricao?: string }>(resp) ?? []
     opcoesRegistros.value = arr.map((r) => ({ label: r.codigo ?? r.descricao ?? r.id, value: r.id }))
   } catch (e) {
     console.error('[licencas/[id]] registros', e)
