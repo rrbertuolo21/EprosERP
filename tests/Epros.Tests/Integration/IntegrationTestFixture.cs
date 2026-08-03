@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Epros.Modules.GestaoClientes.Infrastructure.Data;
 using Epros.Shared.Application.Contracts;
@@ -13,6 +14,8 @@ namespace Epros.Tests.Integration
 {
     public class IntegrationTestFixture : IAsyncLifetime
     {
+        private static readonly TimeSpan ContainerStartTimeout = TimeSpan.FromMinutes(3);
+
         private PostgreSqlContainer? _postgreSqlContainer;
         public bool DockerDisponivel { get; private set; }
         public string ConnectionString { get; private set; } = string.Empty;
@@ -29,7 +32,10 @@ namespace Epros.Tests.Integration
                     .WithPassword("epros_test_password")
                     .Build();
 
-                await _postgreSqlContainer.StartAsync();
+                Console.WriteLine($"[IntegrationTestFixture] Iniciando postgres:16-alpine (timeout {ContainerStartTimeout.TotalMinutes:0} min)...");
+                using var cts = new CancellationTokenSource(ContainerStartTimeout);
+                await _postgreSqlContainer.StartAsync(cts.Token);
+                Console.WriteLine("[IntegrationTestFixture] Container Postgres pronto.");
                 ConnectionString = _postgreSqlContainer.GetConnectionString();
                 DockerDisponivel = true;
 

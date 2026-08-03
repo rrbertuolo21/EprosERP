@@ -26,7 +26,11 @@ namespace Epros.Tests
     {
         private const string MaintenanceDb = "epros";
         private const string TemplateDb = "epros_rlstpl";
+        private static readonly TimeSpan ContainerStartTimeout = TimeSpan.FromMinutes(3);
 
+        // Init do container separado do gate de CREATE DATABASE: evita deadlock
+        // (StartAsync sync-over-async enquanto outras threads esperam o mesmo lock).
+        private static readonly object _initGate = new object();
         private static readonly object _gate = new object();
         private static PostgreSqlContainer? _container;
         private static bool _templateReady;
@@ -54,9 +58,10 @@ namespace Epros.Tests
         {
             var dbName = Sanitize(logicalName);
 
+            EnsureContainer();
+
             lock (_gate)
             {
-                EnsureContainer();
                 EnsureTemplate();
 
                 using var conn = new NpgsqlConnection(ConnFor(MaintenanceDb));
@@ -72,24 +77,34 @@ namespace Epros.Tests
         {
             if (_container is not null) return;
 
-            _container = new PostgreSqlBuilder()
-                .WithImage("postgres:16-alpine")
-                .WithDatabase(MaintenanceDb)
-                .WithUsername("epros")
-                .WithPassword("epros")
-                .Build();
+            lock (_initGate)
+            {
+                if (_container is not null) return;
 
-            try
-            {
-                _container.StartAsync().GetAwaiter().GetResult();
-            }
-            catch (Exception ex)
-            {
-                _container = null;
-                throw new InvalidOperationException(
-                    "Não foi possível iniciar o PostgreSQL via Testcontainers. " +
-                    "Verifique se o Docker está em execução. Detalhe: " + ex.Message,
-                    ex);
+                var container = new PostgreSqlBuilder()
+                    .WithImage("postgres:16-alpine")
+                    .WithDatabase(MaintenanceDb)
+                    .WithUsername("epros")
+                    .WithPassword("epros")
+                    .Build();
+
+                try
+                {
+                    Console.WriteLine($"[PostgresTestDb] Iniciando postgres:16-alpine (timeout {ContainerStartTimeout.TotalMinutes:0} min)...");
+                    using var cts = new CancellationTokenSource(ContainerStartTimeout);
+                    container.StartAsync(cts.Token).ConfigureAwait(false).GetAwaiter().GetResult();
+                    Console.WriteLine("[PostgresTestDb] Container Postgres pronto.");
+                    _container = container;
+                }
+                catch (Exception ex)
+                {
+                    try { container.DisposeAsync().AsTask().GetAwaiter().GetResult(); } catch { /* ignore */ }
+                    throw new InvalidOperationException(
+                        "Não foi possível iniciar o PostgreSQL via Testcontainers em " +
+                        $"{ContainerStartTimeout.TotalMinutes:0} min. " +
+                        "Verifique se o Docker está em execução. Detalhe: " + ex.Message,
+                        ex);
+                }
             }
         }
 
