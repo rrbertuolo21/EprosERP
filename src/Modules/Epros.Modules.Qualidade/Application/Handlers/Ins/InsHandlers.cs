@@ -333,10 +333,17 @@ namespace Epros.Modules.Qualidade.Application.Handlers.Ins
             _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Qualidade.InsInspecaoConcluida,
                 JsonSerializer.Serialize(new
                 {
-                    execucaoId = exec.Id, planoId = exec.PlanoId, resultadoId = res.Id,
-                    resultado = resultado.ToString(), totalAmostras, totalDesvios,
-                    referenciaTipo = exec.ReferenciaTipo.ToString(), referenciaId = exec.ReferenciaId,
-                    gerarAcr, gerarNcr, tenantId
+                    execucaoId = exec.Id,
+                    planoId = exec.PlanoId,
+                    resultadoId = res.Id,
+                    resultado = resultado.ToString(),
+                    totalAmostras,
+                    totalDesvios,
+                    referenciaTipo = exec.ReferenciaTipo.ToString(),
+                    referenciaId = exec.ReferenciaId,
+                    gerarAcr,
+                    gerarNcr,
+                    tenantId
                 })));
 
             if (gerarNcr)
@@ -344,8 +351,13 @@ namespace Epros.Modules.Qualidade.Application.Handlers.Ins
                 _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Qualidade.InsNcrSolicitada,
                     JsonSerializer.Serialize(new
                     {
-                        execucaoId = exec.Id, resultadoId = res.Id, resultado = resultado.ToString(),
-                        totalDesvios, referenciaTipo = exec.ReferenciaTipo.ToString(), referenciaId = exec.ReferenciaId, tenantId
+                        execucaoId = exec.Id,
+                        resultadoId = res.Id,
+                        resultado = resultado.ToString(),
+                        totalDesvios,
+                        referenciaTipo = exec.ReferenciaTipo.ToString(),
+                        referenciaId = exec.ReferenciaId,
+                        tenantId
                     })));
             }
 

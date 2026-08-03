@@ -78,7 +78,13 @@ namespace Epros.Modules.Financeiro.Application.Queries
                 saldoProjetadoFinal = baldes.Count > 0 ? baldes[^1].SaldoFinal : saldoInicial,
                 periodos = baldes.Select(b => new
                 {
-                    b.PeriodoInicio, b.PeriodoFim, b.SaldoInicial, b.Entradas, b.Saidas, b.FluxoLiquido, b.SaldoFinal
+                    b.PeriodoInicio,
+                    b.PeriodoFim,
+                    b.SaldoInicial,
+                    b.Entradas,
+                    b.Saidas,
+                    b.FluxoLiquido,
+                    b.SaldoFinal
                 })
             });
         }

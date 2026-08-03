@@ -57,8 +57,16 @@ namespace Epros.Modules.Estoque.Application.Queries
 
             return CommandResult.Ok("OK", new
             {
-                inv.Id, inv.EmpresaId, inv.DataContagem, inv.TipoInventario, inv.Situacao,
-                inv.Acuracidade, inv.EstoqueAtualizado, inv.Observacao, inv.CriadoEm, Itens = itens
+                inv.Id,
+                inv.EmpresaId,
+                inv.DataContagem,
+                inv.TipoInventario,
+                inv.Situacao,
+                inv.Acuracidade,
+                inv.EstoqueAtualizado,
+                inv.Observacao,
+                inv.CriadoEm,
+                Itens = itens
             });
         }
     }

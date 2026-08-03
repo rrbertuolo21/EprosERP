@@ -112,7 +112,12 @@ namespace Epros.Modules.Financeiro.Application.Handlers
 
             return CommandResult.Ok("Arquivo de remessa CNAB gerado.", new
             {
-                remessa.Id, remessa.NomeArquivo, remessa.Layout, remessa.QuantidadeTitulos, remessa.ValorTotal, Conteudo = conteudo
+                remessa.Id,
+                remessa.NomeArquivo,
+                remessa.Layout,
+                remessa.QuantidadeTitulos,
+                remessa.ValorTotal,
+                Conteudo = conteudo
             });
         }
     }
@@ -191,7 +196,11 @@ namespace Epros.Modules.Financeiro.Application.Handlers
             {
                 layout = retorno.Layout.ToString(),
                 ocorrencias = retorno.Ocorrencias.Count,
-                baixadas, rejeitadas, totalBaixado, retornoId = audit.Id, detalhes
+                baixadas,
+                rejeitadas,
+                totalBaixado,
+                retornoId = audit.Id,
+                detalhes
             });
         }
     }

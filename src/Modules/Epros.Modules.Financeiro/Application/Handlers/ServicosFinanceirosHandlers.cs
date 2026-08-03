@@ -373,7 +373,10 @@ namespace Epros.Modules.Financeiro.Application.Handlers
             if (jaRecebido != null)
                 return CommandResult.Ok("Webhook já processado (idempotente).", new
                 {
-                    jaRecebido.Id, Status = jaRecebido.Status.ToString(), Duplicado = true, jaRecebido.FaturaCobrancaId
+                    jaRecebido.Id,
+                    Status = jaRecebido.Status.ToString(),
+                    Duplicado = true,
+                    jaRecebido.FaturaCobrancaId
                 });
 
             var registro = new WebhookPagamentoRecebido(r.GatewayPagamentoId, r.EventoExternoId, r.TipoEvento,
@@ -425,14 +428,23 @@ namespace Epros.Modules.Financeiro.Application.Handlers
             _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Financeiro.WebhookPagamentoProcessado,
                 JsonSerializer.Serialize(new
                 {
-                    webhookId = registro.Id, gatewayId = gateway.Id, provedor = gateway.Provedor.ToString(),
-                    faturaId = fatura.Id, nossoNumero = r.NossoNumero, valorRecebido, tenantId
+                    webhookId = registro.Id,
+                    gatewayId = gateway.Id,
+                    provedor = gateway.Provedor.ToString(),
+                    faturaId = fatura.Id,
+                    nossoNumero = r.NossoNumero,
+                    valorRecebido,
+                    tenantId
                 })));
 
             await _context.SaveChangesAsync(ct);
             return CommandResult.Ok("Webhook processado; fatura baixada.", new
             {
-                registro.Id, FaturaId = fatura.Id, NossoNumero = r.NossoNumero, valorRecebido, Status = registro.Status.ToString()
+                registro.Id,
+                FaturaId = fatura.Id,
+                NossoNumero = r.NossoNumero,
+                valorRecebido,
+                Status = registro.Status.ToString()
             });
         }
     }

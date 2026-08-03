@@ -63,25 +63,25 @@ namespace Epros.Modules.Manutencao.Domain.Services
             switch (op)
             {
                 case ">":
-                {
-                    var t = limiteMaximo ?? limiteMinimo;
-                    return t.HasValue && valor > t.Value;
-                }
+                    {
+                        var t = limiteMaximo ?? limiteMinimo;
+                        return t.HasValue && valor > t.Value;
+                    }
                 case ">=":
-                {
-                    var t = limiteMaximo ?? limiteMinimo;
-                    return t.HasValue && valor >= t.Value;
-                }
+                    {
+                        var t = limiteMaximo ?? limiteMinimo;
+                        return t.HasValue && valor >= t.Value;
+                    }
                 case "<":
-                {
-                    var t = limiteMinimo ?? limiteMaximo;
-                    return t.HasValue && valor < t.Value;
-                }
+                    {
+                        var t = limiteMinimo ?? limiteMaximo;
+                        return t.HasValue && valor < t.Value;
+                    }
                 case "<=":
-                {
-                    var t = limiteMinimo ?? limiteMaximo;
-                    return t.HasValue && valor <= t.Value;
-                }
+                    {
+                        var t = limiteMinimo ?? limiteMaximo;
+                        return t.HasValue && valor <= t.Value;
+                    }
                 case "fora":
                 case "outside":
                     return (limiteMinimo.HasValue && valor < limiteMinimo.Value)

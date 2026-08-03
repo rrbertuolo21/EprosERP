@@ -128,9 +128,9 @@ namespace Epros.Modules.RH.Domain.Folha.Calculo
                 },
                 deducaoPorDependente: 189.59m,        // valida-contador — dedução por dependente/mês
                 descontoSimplificado: 607.20m,        // valida-contador — desconto simplificado/mês
-                // Redutor 2026 (Lei 15.270/2025). Faixas confirmadas na skill; o COEFICIENTE exato da
-                // redução linear entre piso e teto está marcado [REQUER VALIDAÇÃO] na skill → default
-                // adotado: redução linear proporcional que zera o IRRF no piso e some no teto.
+                                                      // Redutor 2026 (Lei 15.270/2025). Faixas confirmadas na skill; o COEFICIENTE exato da
+                                                      // redução linear entre piso e teto está marcado [REQUER VALIDAÇÃO] na skill → default
+                                                      // adotado: redução linear proporcional que zera o IRRF no piso e some no teto.
                 pisoRedutor: 5000.00m,                // valida-contador — rendimento até 5.000 → IRRF zero
                 tetoRedutor: 7350.00m);               // valida-contador — acima de 7.350 → sem redutor
 

@@ -233,8 +233,13 @@ namespace Epros.Modules.Estoque.Application.Queries
                         MelhorValorUnitario = melhor?.ValorUnitario,
                         Propostas = propostas.Select(p => new
                         {
-                            p.CotacaoFornecedorId, p.FornecedorId, p.PrazoEntrega, p.CondicoesPagamento,
-                            p.Quantidade, p.ValorUnitario, p.ValorTotal,
+                            p.CotacaoFornecedorId,
+                            p.FornecedorId,
+                            p.PrazoEntrega,
+                            p.CondicoesPagamento,
+                            p.Quantidade,
+                            p.ValorUnitario,
+                            p.ValorTotal,
                             MelhorPreco = melhor != null && p.CotacaoFornecedorId == melhor.CotacaoFornecedorId
                         })
                     };

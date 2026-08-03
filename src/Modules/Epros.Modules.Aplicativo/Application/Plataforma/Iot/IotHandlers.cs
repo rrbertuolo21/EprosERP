@@ -141,9 +141,14 @@ namespace Epros.Modules.Aplicativo.Application.Plataforma.Iot
             {
                 var payload = JsonSerializer.Serialize(new
                 {
-                    sensor.Id, sensor.Codigo, sensor.Grandeza, request.Valor,
-                    sensor.LimiteMin, sensor.LimiteMax,
-                    AtivoTipo = disp?.AtivoVinculadoTipo, AtivoId = disp?.AtivoVinculadoId
+                    sensor.Id,
+                    sensor.Codigo,
+                    sensor.Grandeza,
+                    request.Valor,
+                    sensor.LimiteMin,
+                    sensor.LimiteMax,
+                    AtivoTipo = disp?.AtivoVinculadoTipo,
+                    AtivoId = disp?.AtivoVinculadoId
                 });
                 _context.OutboxMessages.Add(new OutboxMessage(tenantId,
                     CatalogoEventosIntegracao.Plataforma.IotLeituraForaFaixa, payload));

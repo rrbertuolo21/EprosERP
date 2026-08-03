@@ -84,8 +84,17 @@ namespace Epros.Modules.Estoque.Application.Queries
 
             return CommandResult.Ok("OK", new
             {
-                p.Id, p.OrigemTipo, p.OrigemId, p.ValorTotal, p.CompradorId, p.CategoriaCompra,
-                p.Status, p.NivelAtual, p.QuantidadeNiveis, p.CriadoEm, p.DecididoEm,
+                p.Id,
+                p.OrigemTipo,
+                p.OrigemId,
+                p.ValorTotal,
+                p.CompradorId,
+                p.CategoriaCompra,
+                p.Status,
+                p.NivelAtual,
+                p.QuantidadeNiveis,
+                p.CriadoEm,
+                p.DecididoEm,
                 Niveis = p.Niveis.OrderBy(n => n.Nivel).Select(n => new { n.Id, n.Nivel, n.AprovadorId, n.PapelAprovador, n.ValorMinimo, n.ValorMaximo, n.Status, n.DecididoPor, n.DecididoEm, n.Justificativa })
             });
         }

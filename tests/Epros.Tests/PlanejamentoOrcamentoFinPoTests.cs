@@ -181,7 +181,8 @@ namespace Epros.Tests
 
             // Sem cliente.
             var semCliente = NovoOrcamentoCmd(
-                itens: new[] { new OrcamentoComercialItemInput(Guid.NewGuid(), 1m, 10m, null) }) with { ClienteId = Guid.Empty };
+                itens: new[] { new OrcamentoComercialItemInput(Guid.NewGuid(), 1m, 10m, null) }) with
+            { ClienteId = Guid.Empty };
             Assert.False((await new CriarOrcamentoComercialCommandHandler(ctx, tp, cu).Handle(semCliente, default)).Sucesso);
 
             // Item sem produto.

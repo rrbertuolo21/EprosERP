@@ -54,8 +54,20 @@ namespace Epros.Modules.Estoque.Application.Queries
             if (l == null) return CommandResult.Falha("Lote não encontrado.");
             return CommandResult.Ok("OK", new
             {
-                l.Id, l.EmpresaId, l.ProdutoId, l.LocalId, l.CodigoLote, l.DataFabricacao, l.DataValidade, l.DataRecebimento,
-                l.Origem, l.Status, l.QuantidadeRecebida, l.QuantidadeDisponivel, l.QuantidadeBloqueada, l.QuantidadeConsumida
+                l.Id,
+                l.EmpresaId,
+                l.ProdutoId,
+                l.LocalId,
+                l.CodigoLote,
+                l.DataFabricacao,
+                l.DataValidade,
+                l.DataRecebimento,
+                l.Origem,
+                l.Status,
+                l.QuantidadeRecebida,
+                l.QuantidadeDisponivel,
+                l.QuantidadeBloqueada,
+                l.QuantidadeConsumida
             });
         }
     }
@@ -150,7 +162,9 @@ namespace Epros.Modules.Estoque.Application.Queries
             return CommandResult.Ok("OK", new
             {
                 Lote = new { lote.Id, lote.ProdutoId, lote.CodigoLote, lote.FichaEntradaId, lote.DataValidade, lote.Status },
-                Seriais = seriais, Bloqueios = bloqueios, Recalls = recalls
+                Seriais = seriais,
+                Bloqueios = bloqueios,
+                Recalls = recalls
             });
         }
     }

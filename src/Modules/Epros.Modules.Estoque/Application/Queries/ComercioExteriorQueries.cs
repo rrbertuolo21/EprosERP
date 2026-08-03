@@ -37,8 +37,14 @@ namespace Epros.Modules.Estoque.Application.Queries
 
             return CommandResult.Ok("OK", new
             {
-                config.Id, config.EmpresaId, config.Habilitado, config.IncluirTributos,
-                config.IncluirFrete, config.IncluirDespesas, config.Metodo, Padrao = false
+                config.Id,
+                config.EmpresaId,
+                config.Habilitado,
+                config.IncluirTributos,
+                config.IncluirFrete,
+                config.IncluirDespesas,
+                config.Metodo,
+                Padrao = false
             });
         }
     }

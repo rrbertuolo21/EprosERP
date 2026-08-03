@@ -142,9 +142,16 @@ namespace Epros.Modules.Estoque.Application.Handlers
             _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Compras.ImportacaoNacionalizada,
                 JsonSerializer.Serialize(new
                 {
-                    compraId = compra.Id, compra.Incoterm, compra.Moeda, compra.TaxaCambio,
-                    landedAplicado, montanteLanded, metodo = metodo.ToString(),
-                    idempotencia = $"import-nac:{compra.Id}", itens = itensPayload, usuario
+                    compraId = compra.Id,
+                    compra.Incoterm,
+                    compra.Moeda,
+                    compra.TaxaCambio,
+                    landedAplicado,
+                    montanteLanded,
+                    metodo = metodo.ToString(),
+                    idempotencia = $"import-nac:{compra.Id}",
+                    itens = itensPayload,
+                    usuario
                 })));
 
             // Títulos financeiros de tributos/frete (fato gerador único, idempotente por compra).
@@ -153,8 +160,12 @@ namespace Epros.Modules.Estoque.Application.Handlers
                 _context.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Compras.ImportacaoTitulosFinanceiros,
                     JsonSerializer.Serialize(new
                     {
-                        compraId = compra.Id, request.MontanteTributos, request.MontanteFrete, request.MontanteDespesas,
-                        total = totalTitulos, idempotencia = $"import-titulos:{compra.Id}"
+                        compraId = compra.Id,
+                        request.MontanteTributos,
+                        request.MontanteFrete,
+                        request.MontanteDespesas,
+                        total = totalTitulos,
+                        idempotencia = $"import-titulos:{compra.Id}"
                     })));
 
             await _context.SaveChangesAsync(cancellationToken);

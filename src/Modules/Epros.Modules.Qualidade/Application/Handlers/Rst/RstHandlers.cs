@@ -297,7 +297,10 @@ namespace Epros.Modules.Qualidade.Application.Handlers.Rst
 
         private static object Projetar(NoArvoreGenealogia no) => new
         {
-            no.Id, no.Rotulo, no.Lacuna, no.Nivel,
+            no.Id,
+            no.Rotulo,
+            no.Lacuna,
+            no.Nivel,
             filhos = no.Filhos.Select(Projetar).ToList()
         };
     }

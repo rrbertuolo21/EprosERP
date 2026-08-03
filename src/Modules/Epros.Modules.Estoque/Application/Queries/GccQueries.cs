@@ -104,10 +104,15 @@ namespace Epros.Modules.Estoque.Application.Queries
 
             var itensPerf = itens.Select(i => new
             {
-                i.Id, i.ProdutoId, i.PrecoUnitario,
-                i.QuantidadeComprometida, i.QuantidadeConsumida, i.SaldoQuantidade,
+                i.Id,
+                i.ProdutoId,
+                i.PrecoUnitario,
+                i.QuantidadeComprometida,
+                i.QuantidadeConsumida,
+                i.SaldoQuantidade,
                 ValorComprometido = Math.Round(i.PrecoUnitario * i.QuantidadeComprometida, 2, MidpointRounding.AwayFromZero),
-                i.ValorConsumido, i.SaldoValor,
+                i.ValorConsumido,
+                i.SaldoValor,
                 AderenciaQuantidadePercent = Aderencia(i.QuantidadeComprometida, i.QuantidadeConsumida)
             }).ToList();
 
@@ -118,8 +123,12 @@ namespace Epros.Modules.Estoque.Application.Queries
 
             return CommandResult.Ok("OK", new
             {
-                c.Id, c.FornecedorId, c.NumeroContrato, c.Situacao,
-                c.VigenciaInicio, c.VigenciaFim,
+                c.Id,
+                c.FornecedorId,
+                c.NumeroContrato,
+                c.Situacao,
+                c.VigenciaInicio,
+                c.VigenciaFim,
                 VigenciaVencida = vencido,
                 DiasParaVencer = c.VigenciaFim.HasValue ? (int?)(c.VigenciaFim.Value.Date - agora.Date).TotalDays : null,
                 TotalComprometido = totalComprometido,

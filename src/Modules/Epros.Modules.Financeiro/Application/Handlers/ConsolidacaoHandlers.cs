@@ -228,7 +228,9 @@ namespace Epros.Modules.Financeiro.Application.Handlers
             if (pendentes.Count == 0)
                 return CommandResult.Ok("Nenhuma eliminação pendente para aplicar.", new
                 {
-                    balancete.Id, EliminacoesAplicadas = 0, balancete.TotalEliminacoes
+                    balancete.Id,
+                    EliminacoesAplicadas = 0,
+                    balancete.TotalEliminacoes
                 });
 
             var resultado = MotorEliminacaoConsolidacao.Aplicar(balancete, eliminacoes, tenantId, userId);

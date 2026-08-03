@@ -33,8 +33,16 @@ namespace Epros.Modules.Financeiro.Application.Queries
                 .Skip((pagina - 1) * tamanho).Take(tamanho)
                 .Select(c => new
                 {
-                    c.Id, c.Descricao, c.PessoaId, c.DataInicio, c.ValorContraprestacao, c.QuantidadeParcelas,
-                    c.TaxaIncrementalPeriodo, c.PassivoArrendamentoInicial, c.DireitoDeUsoInicial, c.Status
+                    c.Id,
+                    c.Descricao,
+                    c.PessoaId,
+                    c.DataInicio,
+                    c.ValorContraprestacao,
+                    c.QuantidadeParcelas,
+                    c.TaxaIncrementalPeriodo,
+                    c.PassivoArrendamentoInicial,
+                    c.DireitoDeUsoInicial,
+                    c.Status
                 }).ToListAsync(ct);
             return CommandResult.Ok("Arrendamentos listados.", new { total, pagina, tamanho, itens });
         }
@@ -45,9 +53,19 @@ namespace Epros.Modules.Financeiro.Application.Queries
             if (c == null) return CommandResult.Falha("Arrendamento não encontrado.");
             return CommandResult.Ok("Arrendamento localizado.", new
             {
-                c.Id, c.Descricao, c.PessoaId, c.DataInicio, c.ValorContraprestacao, c.QuantidadeParcelas,
-                c.TaxaIncrementalPeriodo, c.PagamentoAntecipado, c.CustosDiretosIniciais, c.IncentivosRecebidos,
-                c.PassivoArrendamentoInicial, c.DireitoDeUsoInicial, c.Status
+                c.Id,
+                c.Descricao,
+                c.PessoaId,
+                c.DataInicio,
+                c.ValorContraprestacao,
+                c.QuantidadeParcelas,
+                c.TaxaIncrementalPeriodo,
+                c.PagamentoAntecipado,
+                c.CustosDiretosIniciais,
+                c.IncentivosRecebidos,
+                c.PassivoArrendamentoInicial,
+                c.DireitoDeUsoInicial,
+                c.Status
             });
         }
 
@@ -68,8 +86,13 @@ namespace Epros.Modules.Financeiro.Application.Queries
                 TotalJuros = CalculoLeasing.TotalJuros(cronograma),
                 Parcelas = cronograma.Select(l => new
                 {
-                    l.Numero, l.Pagamento, l.Juros, l.AmortizacaoPrincipal,
-                    l.SaldoPassivo, l.DepreciacaoDireitoUso, l.SaldoDireitoUso
+                    l.Numero,
+                    l.Pagamento,
+                    l.Juros,
+                    l.AmortizacaoPrincipal,
+                    l.SaldoPassivo,
+                    l.DepreciacaoDireitoUso,
+                    l.SaldoDireitoUso
                 })
             });
         }

@@ -47,7 +47,10 @@ namespace Epros.Modules.Estoque.Application.Queries
                 var classe = percAcum <= 80m ? "A" : percAcum <= 95m ? "B" : "C";
                 return new
                 {
-                    x.FornecedorCnpj, x.FornecedorNome, x.Total, x.Compras,
+                    x.FornecedorCnpj,
+                    x.FornecedorNome,
+                    x.Total,
+                    x.Compras,
                     ParticipacaoPercent = totalGeral <= 0m ? 0m : Math.Round(x.Total / totalGeral * 100m, 2, MidpointRounding.AwayFromZero),
                     PercentualAcumulado = percAcum,
                     Classe = classe
@@ -82,7 +85,10 @@ namespace Epros.Modules.Estoque.Application.Queries
                 var media = props.Any() ? props.Average(f => f.Total) : 0m;
                 return new
                 {
-                    c.Id, c.Descricao, c.FornecedorVencedorId, c.DecididaEm,
+                    c.Id,
+                    c.Descricao,
+                    c.FornecedorVencedorId,
+                    c.DecididaEm,
                     Propostas = props.Count,
                     TotalVencedor = totalVencedor,
                     EconomiaVsMaisCaro = Math.Round(maisCaro - totalVencedor, 2, MidpointRounding.AwayFromZero),
@@ -151,7 +157,11 @@ namespace Epros.Modules.Estoque.Application.Queries
 
             return CommandResult.Ok("OK", new
             {
-                Total = total, Aprovados = aprovados, Reprovados = reprovados, Pendentes = pendentes, Cancelados = cancelados,
+                Total = total,
+                Aprovados = aprovados,
+                Reprovados = reprovados,
+                Pendentes = pendentes,
+                Cancelados = cancelados,
                 TaxaAprovacaoPercent = decididos == 0 ? 0m : Math.Round((decimal)aprovados / decididos * 100m, 2, MidpointRounding.AwayFromZero),
                 AprovadosComAlcadaMultinivel = comAlcadaMultinivel
             });

@@ -34,7 +34,9 @@ namespace Epros.Modules.Financeiro.Application.Handlers
             await _context.SaveChangesAsync(ct);
             return CommandResult.Ok("Arrendamento reconhecido (IFRS-16).", new
             {
-                contrato.Id, contrato.PassivoArrendamentoInicial, contrato.DireitoDeUsoInicial
+                contrato.Id,
+                contrato.PassivoArrendamentoInicial,
+                contrato.DireitoDeUsoInicial
             });
         }
     }

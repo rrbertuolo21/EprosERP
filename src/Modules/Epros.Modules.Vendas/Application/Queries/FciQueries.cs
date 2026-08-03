@@ -70,9 +70,23 @@ namespace Epros.Modules.Vendas.Application.Queries
             if (doc == null) return CommandResult.Falha("Documento comercial não encontrado.");
             return CommandResult.Ok("Documento comercial encontrado.", new
             {
-                doc.Id, doc.Numero, TipoDocumento = doc.TipoDocumento.ToString(), doc.DataDocumento, doc.ClienteId,
-                doc.Moeda, doc.TaxaCambio, doc.Incoterm, doc.TotalBruto, doc.DescontoDocumento, doc.TotalImposto,
-                doc.ValorFrete, doc.TotalLiquido, doc.TotalGeral, doc.ValorPago, doc.SaldoEmAberto, Status = doc.Status.ToString(),
+                doc.Id,
+                doc.Numero,
+                TipoDocumento = doc.TipoDocumento.ToString(),
+                doc.DataDocumento,
+                doc.ClienteId,
+                doc.Moeda,
+                doc.TaxaCambio,
+                doc.Incoterm,
+                doc.TotalBruto,
+                doc.DescontoDocumento,
+                doc.TotalImposto,
+                doc.ValorFrete,
+                doc.TotalLiquido,
+                doc.TotalGeral,
+                doc.ValorPago,
+                doc.SaldoEmAberto,
+                Status = doc.Status.ToString(),
                 Itens = doc.Itens.Select(i => new { i.Id, i.ProdutoId, i.Quantidade, i.ValorUnitario, i.ValorBruto, i.ValorImposto, i.ValorTotal })
             });
         }

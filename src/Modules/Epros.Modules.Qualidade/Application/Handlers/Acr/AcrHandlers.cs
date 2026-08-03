@@ -110,8 +110,12 @@ namespace Epros.Modules.Qualidade.Application.Handlers.Acr
             var criterio = new
             {
                 LetraCodigo = plano.LetraCodigo.ToString(),
-                plano.TamanhoAmostra, plano.NumeroAceitacao, plano.NumeroRejeicao,
-                r.Defeituosos, plano.InspecaoTotal, Decisao = decisao.ToString()
+                plano.TamanhoAmostra,
+                plano.NumeroAceitacao,
+                plano.NumeroRejeicao,
+                r.Defeituosos,
+                plano.InspecaoTotal,
+                Decisao = decisao.ToString()
             };
 
             return await AcrDecisao.RegistrarAsync(_ctx, _tenant.GetTenantId(), _user.GetUserId() ?? "system",
@@ -140,8 +144,13 @@ namespace Epros.Modules.Qualidade.Application.Handlers.Acr
             ctx.AcrEventosEstoque.Add(eventoEstoque);
             ctx.OutboxMessages.Add(new OutboxMessage(tenantId, eventoNome, JsonSerializer.Serialize(new
             {
-                analiseId = analise.Id, resultadoId = res.Id, tipo = tipoEvento.ToString(),
-                lote, quantidade = qtd, resultado = resultado.ToString(), tenantId
+                analiseId = analise.Id,
+                resultadoId = res.Id,
+                tipo = tipoEvento.ToString(),
+                lote,
+                quantidade = qtd,
+                resultado = resultado.ToString(),
+                tenantId
             })));
 
             // Gatilho de NCR (D13, default seguro): rejeicao SUGERE NCR (projecao + evento), nao cria a revelia.
@@ -152,8 +161,12 @@ namespace Epros.Modules.Qualidade.Application.Handlers.Acr
                 ctx.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Qualidade.AcrNcrSolicitada,
                     JsonSerializer.Serialize(new
                     {
-                        analiseId = analise.Id, resultadoId = res.Id, motivoId, severidade,
-                        gatilho = EGatilhoNcrAcr.Severidade.ToString(), tenantId
+                        analiseId = analise.Id,
+                        resultadoId = res.Id,
+                        motivoId,
+                        severidade,
+                        gatilho = EGatilhoNcrAcr.Severidade.ToString(),
+                        tenantId
                     })));
             }
 
@@ -163,8 +176,12 @@ namespace Epros.Modules.Qualidade.Application.Handlers.Acr
                 ctx.OutboxMessages.Add(new OutboxMessage(tenantId, CatalogoEventosIntegracao.Qualidade.AcrDevolucaoSolicitada,
                     JsonSerializer.Serialize(new
                     {
-                        analiseId = analise.Id, resultadoId = res.Id, lote, quantidade = qtd,
-                        documentoFiscalId = analise.DocumentoFiscalId, tenantId,
+                        analiseId = analise.Id,
+                        resultadoId = res.Id,
+                        lote,
+                        quantidade = qtd,
+                        documentoFiscalId = analise.DocumentoFiscalId,
+                        tenantId,
                         aviso = "valida-contador: CFOP/NCM/chave = modulo Fiscal + contador"
                     })));
             }

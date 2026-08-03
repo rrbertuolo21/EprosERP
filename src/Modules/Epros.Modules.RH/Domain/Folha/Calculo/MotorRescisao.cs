@@ -166,20 +166,20 @@ namespace Epros.Modules.RH.Domain.Folha.Calculo
 
         private static (bool devidoAviso, decimal avisoFator, bool devido13, bool devidoFeriasProp, decimal multaFator, bool seguro)
             Matriz(TipoDesligamento tipo) => tipo switch
-        {
-            // Sem justa causa (empregador): aviso indenizado, 13 prop, férias prop, multa 40%, seguro.
-            TipoDesligamento.SemJustaCausaEmpregador => (true, 1.0m, true, true, 0.40m, true),
-            // Pedido de demissão: sem aviso indenizado (devido ao empregador se não cumprir), 13 e férias prop, sem multa/seguro.
-            TipoDesligamento.PedidoDemissao => (false, 0m, true, true, 0m, false),
-            // Justa causa: só saldo + férias vencidas. Férias proporcionais NÃO devidas (Súmula 171 TST). // valida-contador
-            TipoDesligamento.JustaCausa => (false, 0m, false, false, 0m, false),
-            // Acordo 484-A: aviso 50%, 13 e férias prop, multa 20%, sem seguro.
-            TipoDesligamento.Acordo484A => (true, 0.5m, true, true, 0.20m, false),
-            // Fim de contrato por prazo determinado: 13 e férias prop; aviso conforme cláusula (default sem aviso);
-            // multa própria (não 40%). // valida-contador — cláusula do contrato a prazo.
-            TipoDesligamento.FimContratoPrazoDeterminado => (false, 0m, true, true, 0m, false),
-            _ => (false, 0m, false, false, 0m, false)
-        };
+            {
+                // Sem justa causa (empregador): aviso indenizado, 13 prop, férias prop, multa 40%, seguro.
+                TipoDesligamento.SemJustaCausaEmpregador => (true, 1.0m, true, true, 0.40m, true),
+                // Pedido de demissão: sem aviso indenizado (devido ao empregador se não cumprir), 13 e férias prop, sem multa/seguro.
+                TipoDesligamento.PedidoDemissao => (false, 0m, true, true, 0m, false),
+                // Justa causa: só saldo + férias vencidas. Férias proporcionais NÃO devidas (Súmula 171 TST). // valida-contador
+                TipoDesligamento.JustaCausa => (false, 0m, false, false, 0m, false),
+                // Acordo 484-A: aviso 50%, 13 e férias prop, multa 20%, sem seguro.
+                TipoDesligamento.Acordo484A => (true, 0.5m, true, true, 0.20m, false),
+                // Fim de contrato por prazo determinado: 13 e férias prop; aviso conforme cláusula (default sem aviso);
+                // multa própria (não 40%). // valida-contador — cláusula do contrato a prazo.
+                TipoDesligamento.FimContratoPrazoDeterminado => (false, 0m, true, true, 0m, false),
+                _ => (false, 0m, false, false, 0m, false)
+            };
 
         /// <summary>Anos completos de casa (para o aviso prévio proporcional).</summary>
         public static int AnosCompletos(DateTime admissao, DateTime desligamento)

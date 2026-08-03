@@ -111,7 +111,9 @@ namespace Epros.Modules.Qualidade.Application.Handlers.Ncr
             await _ctx.SaveChangesAsync(ct);
             return CommandResult.Ok("Verificacao de eficacia registrada.", new
             {
-                verif.Id, Resultado = r.Resultado.ToString(), Etapa = ncr.EtapaNcr.ToString()
+                verif.Id,
+                Resultado = r.Resultado.ToString(),
+                Etapa = ncr.EtapaNcr.ToString()
             });
         }
     }

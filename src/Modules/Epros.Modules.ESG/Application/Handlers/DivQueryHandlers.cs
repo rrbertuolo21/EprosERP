@@ -43,8 +43,14 @@ namespace Epros.Modules.ESG.Application.Handlers
                 .OrderByDescending(m => m.PeriodoInicio)
                 .Select(m => new
                 {
-                    m.Id, m.IndicadorId, m.Dimensao, m.PeriodoInicio, m.PeriodoFim,
-                    m.Suprimido, ValorAgregado = m.Suprimido ? null : m.ValorAgregado, m.Origem
+                    m.Id,
+                    m.IndicadorId,
+                    m.Dimensao,
+                    m.PeriodoInicio,
+                    m.PeriodoFim,
+                    m.Suprimido,
+                    ValorAgregado = m.Suprimido ? null : m.ValorAgregado,
+                    m.Origem
                 })
                 .ToListAsync(ct);
             return CommandResult.Ok("Medicoes sociais listadas.", dados);

@@ -143,7 +143,11 @@ namespace Epros.Modules.Qualidade.Application.Handlers.Qps
 
             return CommandResult.Ok("Score do fornecedor calculado.", new
             {
-                reg.Id, ScorecardId = scorecard.Id, resultado.Score, resultado.AbaixoLimite, resultado.LimiteBloqueio
+                reg.Id,
+                ScorecardId = scorecard.Id,
+                resultado.Score,
+                resultado.AbaixoLimite,
+                resultado.LimiteBloqueio
             });
         }
     }

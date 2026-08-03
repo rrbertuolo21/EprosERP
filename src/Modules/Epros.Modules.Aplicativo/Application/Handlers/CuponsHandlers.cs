@@ -182,9 +182,16 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
                 .Take(request.TamanhoPagina)
                 .Select(c => new CupomDto
                 {
-                    Id = c.Id, Nome = c.Nome, Codigo = c.Codigo, Tipo = c.Tipo,
-                    ValorDesconto = c.ValorDesconto, LimiteUso = c.LimiteUso, QuantidadeUsos = c.QuantidadeUsos,
-                    Ativo = c.Ativo, ValidoAte = c.ValidoAte, Global = c.TenantId == "system"
+                    Id = c.Id,
+                    Nome = c.Nome,
+                    Codigo = c.Codigo,
+                    Tipo = c.Tipo,
+                    ValorDesconto = c.ValorDesconto,
+                    LimiteUso = c.LimiteUso,
+                    QuantidadeUsos = c.QuantidadeUsos,
+                    Ativo = c.Ativo,
+                    ValidoAte = c.ValidoAte,
+                    Global = c.TenantId == "system"
                 })
                 .ToListAsync(cancellationToken);
             return new PagedQueryResult<CupomDto>(items, total, totalPaginas);
@@ -202,9 +209,16 @@ namespace Epros.Modules.Aplicativo.Application.Handlers
             if (c == null) return null!;
             return new CupomDto
             {
-                Id = c.Id, Nome = c.Nome, Codigo = c.Codigo, Tipo = c.Tipo,
-                ValorDesconto = c.ValorDesconto, LimiteUso = c.LimiteUso, QuantidadeUsos = c.QuantidadeUsos,
-                Ativo = c.Ativo, ValidoAte = c.ValidoAte, Global = c.TenantId == "system"
+                Id = c.Id,
+                Nome = c.Nome,
+                Codigo = c.Codigo,
+                Tipo = c.Tipo,
+                ValorDesconto = c.ValorDesconto,
+                LimiteUso = c.LimiteUso,
+                QuantidadeUsos = c.QuantidadeUsos,
+                Ativo = c.Ativo,
+                ValidoAte = c.ValidoAte,
+                Global = c.TenantId == "system"
             };
         }
     }

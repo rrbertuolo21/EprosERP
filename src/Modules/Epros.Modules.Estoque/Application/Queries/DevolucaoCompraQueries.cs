@@ -64,8 +64,20 @@ namespace Epros.Modules.Estoque.Application.Queries
 
             return CommandResult.Ok("OK", new
             {
-                d.Id, d.Numero, d.CompraOrigemId, d.FornecedorId, d.DataDevolucao, d.Tipo, d.Motivo,
-                d.Status, d.DocumentoFiscalId, d.Cfop, d.Total, d.CriadoEm, d.ConfirmadaEm, d.CanceladaEm,
+                d.Id,
+                d.Numero,
+                d.CompraOrigemId,
+                d.FornecedorId,
+                d.DataDevolucao,
+                d.Tipo,
+                d.Motivo,
+                d.Status,
+                d.DocumentoFiscalId,
+                d.Cfop,
+                d.Total,
+                d.CriadoEm,
+                d.ConfirmadaEm,
+                d.CanceladaEm,
                 Itens = d.Itens.Select(i => new { i.Id, i.CompraItemOrigemId, i.ProdutoId, i.Quantidade, i.ValorUnitario, i.ValorTotal })
             });
         }

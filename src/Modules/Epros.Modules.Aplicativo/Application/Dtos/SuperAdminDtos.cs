@@ -58,7 +58,7 @@ namespace Epros.Modules.Aplicativo.Application.Dtos
         // recorrente — tratamento documentado; não entra no MRR).
         decimal Arpu = 0m,                       // receita recorrente (MRR) / nº de clientes ativos
         decimal ConversaoTrialParaPago = 0m,     // % de trials (TrialAte != null) que converteram (TrialConvertidoEm != null)
-        // ⚠️ MÉTODO DE LTV = PARÂMETRO (há variantes). Aqui: LTV = ARPU / churn (fração). NÃO é verdade contábil.
+                                                 // ⚠️ MÉTODO DE LTV = PARÂMETRO (há variantes). Aqui: LTV = ARPU / churn (fração). NÃO é verdade contábil.
         decimal Ltv = 0m,
         decimal InadimplenciaValorTotal = 0m,    // soma do valor das faturas vencidas e não pagas na base
         int InadimplenciaQtdFaturas = 0          // nº de faturas vencidas e não pagas na base

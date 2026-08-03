@@ -29,9 +29,16 @@ namespace Epros.Modules.Estoque.Application.Queries
             var registros = await query
                 .Select(p => new
                 {
-                    p.Id, p.EmpresaId, p.ProdutoId,
-                    p.QuantidadeSaldoEstoque, p.QuantidadeEstoqueMinimo, p.QuantidadeEstoqueMaximo, p.QuantidadeEstoqueReservado,
-                    p.ValorSaldo, p.ValorCustoMedio, p.TipoCusteioEstoque
+                    p.Id,
+                    p.EmpresaId,
+                    p.ProdutoId,
+                    p.QuantidadeSaldoEstoque,
+                    p.QuantidadeEstoqueMinimo,
+                    p.QuantidadeEstoqueMaximo,
+                    p.QuantidadeEstoqueReservado,
+                    p.ValorSaldo,
+                    p.ValorCustoMedio,
+                    p.TipoCusteioEstoque
                 })
                 .ToListAsync(cancellationToken);
 
@@ -46,9 +53,17 @@ namespace Epros.Modules.Estoque.Application.Queries
                 else status = EStatusPlanejamentoEstoque.Normal;
                 return new
                 {
-                    p.Id, p.EmpresaId, p.ProdutoId,
-                    p.QuantidadeSaldoEstoque, p.QuantidadeEstoqueMinimo, p.QuantidadeEstoqueMaximo, p.QuantidadeEstoqueReservado,
-                    QuantidadeDisponivel = disponivel, p.ValorSaldo, p.ValorCustoMedio, p.TipoCusteioEstoque,
+                    p.Id,
+                    p.EmpresaId,
+                    p.ProdutoId,
+                    p.QuantidadeSaldoEstoque,
+                    p.QuantidadeEstoqueMinimo,
+                    p.QuantidadeEstoqueMaximo,
+                    p.QuantidadeEstoqueReservado,
+                    QuantidadeDisponivel = disponivel,
+                    p.ValorSaldo,
+                    p.ValorCustoMedio,
+                    p.TipoCusteioEstoque,
                     StatusPlanejamento = status
                 };
             });

@@ -51,8 +51,12 @@ namespace Epros.Tests
         {
             var dto = new FaturaDetalhadaDto
             {
-                Id = Guid.NewGuid(), ClienteRazaoSocial = "Cliente Teste", Valor = 199.90m,
-                DataVencimento = new DateTime(2026, 8, 10), Status = "Pendente", Numero = "FAT-2026-0001",
+                Id = Guid.NewGuid(),
+                ClienteRazaoSocial = "Cliente Teste",
+                Valor = 199.90m,
+                DataVencimento = new DateTime(2026, 8, 10),
+                Status = "Pendente",
+                Numero = "FAT-2026-0001",
                 Itens = { new FaturaItemDto { Descricao = "Plano Pro", Valor = 199.90m } }
             };
             var renderer = new QuestPdfDocumentoFinanceiroRenderer();
@@ -70,9 +74,15 @@ namespace Epros.Tests
         {
             var dto = new ReciboPagamentoDto
             {
-                Id = Guid.NewGuid(), Numero = "REC-20260801-ABCD1234", FaturaId = Guid.NewGuid(),
-                ClienteId = Guid.NewGuid(), Valor = 199.90m, DataPagamento = DateTime.UtcNow,
-                MeioPagamento = "PIX", PagadorNome = "Cliente Teste", PagadorDocumento = "00.000.000/0001-00"
+                Id = Guid.NewGuid(),
+                Numero = "REC-20260801-ABCD1234",
+                FaturaId = Guid.NewGuid(),
+                ClienteId = Guid.NewGuid(),
+                Valor = 199.90m,
+                DataPagamento = DateTime.UtcNow,
+                MeioPagamento = "PIX",
+                PagadorNome = "Cliente Teste",
+                PagadorDocumento = "00.000.000/0001-00"
             };
             var doc = new QuestPdfDocumentoFinanceiroRenderer().RenderRecibo(dto);
 
