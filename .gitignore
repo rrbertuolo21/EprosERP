@@ -73,3 +73,6 @@ secrets.json
 # ---------- Docker / Temporários ----------
 *.tmp
 *.temp
+
+# bundle gerado dos manuais de negócio (não versionar binário)
+MANUAIS-NEGOCIO-WORD/Manuais.zip
