@@ -177,6 +177,7 @@ export const erpMenu: MenuGroup[] = [
       { label: 'Certificado', to: '/erp/configuracoes/certificado' },
       { label: 'Usuários', to: '/erp/configuracoes/permissoes/usuarios' },
       { label: 'Perfis de Acesso', to: '/erp/configuracoes/permissoes/perfis' },
+      { label: 'Preferências', to: '/erp/configuracoes/preferencias' },
       { label: 'Importações', to: '/erp/configuracoes/importacoes' }
     ]
   },

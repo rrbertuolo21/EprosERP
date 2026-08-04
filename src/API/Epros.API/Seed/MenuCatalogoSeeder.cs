@@ -237,6 +237,7 @@ namespace Epros.API.Seed
                 new LeafDef("Certificado", "/erp/configuracoes/certificado", null),
                 new LeafDef("Usuários", "/erp/configuracoes/permissoes/usuarios", null), // gestão de usuários internos: gate próprio ainda ausente.
                 new LeafDef("Perfis de Acesso", "/erp/configuracoes/permissoes/perfis", "PerfilAcesso"),
+                new LeafDef("Preferências", "/erp/configuracoes/preferencias", null),
                 new LeafDef("Importações", "/erp/configuracoes/importacoes", "Importacao"),
             }),
 
