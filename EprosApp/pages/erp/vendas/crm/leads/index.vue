@@ -51,7 +51,7 @@ interface LeadFiltros {
 }
 
 const toast = useToast()
-const { getUser } = useAuth()
+const { getUserId } = useAuth()
 const confirmRef = ref<InstanceType<typeof ConfirmDialog>>()
 
 const lista = useApiList<Lead, LeadFiltros>('/vendas/crm/leads', {
@@ -101,7 +101,7 @@ async function salvar() {
         valorEstimado: form.valorEstimado ?? null,
         notas: form.notas || null,
         status: 0,
-        criadoPorUsuarioId: String(getUser()?.id ?? '')
+        criadoPorUsuarioId: getUserId()
       }
     })
     toast.success('Lead criado.')

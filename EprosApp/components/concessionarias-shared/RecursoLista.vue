@@ -85,7 +85,8 @@ const toast = useToast()
 
 const lista = useApiList<T, FiltroBusca>(props.path, {
   filtrosIniciais: { busca: '' },
-  tamanhoPaginaInicial: 25
+  tamanhoPaginaInicial: 25,
+  imediato: true // busca ao montar — sem isto a lista sobe vazia até o usuário mexer num filtro/cabeçalho
 })
 
 const camposFiltro: FilterField[] = props.comBusca

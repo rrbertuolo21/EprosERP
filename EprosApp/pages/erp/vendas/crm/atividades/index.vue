@@ -40,7 +40,7 @@ const PRIORIDADE = [
 ]
 
 const toast = useToast()
-const { getUser } = useAuth()
+const { getUserId } = useAuth()
 
 const salvando = ref(false)
 const form = reactive({
@@ -78,7 +78,7 @@ async function registrar() {
         hora: form.hora || null,
         prioridade: form.prioridade,
         descricao: form.descricao || null,
-        usuarioId: String(getUser()?.id ?? '')
+        usuarioId: getUserId()
       }
     })
     toast.success('Atividade registrada.')
