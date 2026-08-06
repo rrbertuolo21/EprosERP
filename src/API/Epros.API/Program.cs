@@ -189,7 +189,10 @@ try
     builder.Services.AddScoped<Epros.Modules.GestaoClientes.Application.Interfaces.ICobrancaRecorrenteGateway, Epros.Modules.GestaoClientes.Infrastructure.Gateways.CobrancaRecorrenteGatewayMercadoPago>();
 
     // Registra o serviço de notificações (Mock para homologação local) (REG-020)
-    builder.Services.AddScoped<INotificacaoService, Epros.Infrastructure.Services.MockNotificacaoService>();
+    // Auditoria APP C3: canal de e-mail REAL (SMTP por tenant). Antes era MockNotificacaoService (no-op):
+    // reset-de-senha/boas-vindas/cobrança eram gerados mas nunca chegavam. O SMTP loga WARNING explícito
+    // quando o tenant não tem ConfiguracaoEmail (fim do sumiço silencioso) e envia quando configurado.
+    builder.Services.AddScoped<INotificacaoService, Epros.Modules.GestaoClientes.Infrastructure.Services.SmtpNotificacaoService>();
 
     // Registra o cache de permissões do menu e gerenciador
     builder.Services.AddMemoryCache();
