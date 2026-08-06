@@ -7,7 +7,7 @@
  * `GET /api/v1/cadastros/pessoas/localizar-cliente?query=`.
  */
 import { ref } from 'vue'
-import { useApi, extrairDados, type CommandResult } from './useApi'
+import { useApi, extrairDados, type CommandResult, extrairLista} from './useApi'
 import { useApiList, obterMensagemErro } from './useApiList'
 
 export interface EnderecoPessoa {
@@ -198,7 +198,7 @@ export function usePessoa() {
     erro.value = null
     try {
       const resposta = await useApi<CommandResult<Pessoa[]>>('/cadastros/pessoas/localizar-cliente', { query: { query } })
-      return extrairDados<Pessoa[]>(resposta) ?? []
+      return extrairLista<Pessoa>(resposta) ?? []
     } catch (e) {
       erro.value = obterMensagemErro(e)
       console.error('[usePessoa.localizarCliente]', e)

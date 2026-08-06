@@ -14,7 +14,7 @@ import { useApi, extrairDados } from '~/composables/useApi'
 export async function carregarProjetosOpcoes(): Promise<SelectOption[]> {
   try {
     const resposta = await useApi('/projetos')
-    const dados = extrairDados<Array<{ id: string; nome?: string | null }>>(resposta) ?? []
+    const dados = extrairLista<{ id: string; nome?: string | null }>(resposta) ?? []
     return dados.map((p) => ({ label: p.nome ?? p.id, value: p.id }))
   } catch (e) {
     console.error('[projetos-shared] carregarProjetosOpcoes', e)

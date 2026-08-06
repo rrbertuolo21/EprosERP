@@ -14,7 +14,7 @@
  *     'update:destinatario': [valor]
  */
 import { ref } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { useMask } from '~/composables/useMask'
 import { useDocumento } from '~/composables/useDocumento'
 import { useToast } from '~/composables/useToast'
@@ -66,7 +66,7 @@ async function buscarPessoa() {
     const resposta = await useApi('/cadastros/pessoas', {
       query: { termo: q, pagina: 1, tamanhoPagina: 20 }
     })
-    resultados.value = extrairDados<PessoaBusca[]>(resposta) ?? []
+    resultados.value = extrairLista<PessoaBusca>(resposta) ?? []
   } catch (e) {
     erroBusca.value = 'Erro ao buscar clientes.'
     console.error('[ClienteCard.buscarPessoa]', e)

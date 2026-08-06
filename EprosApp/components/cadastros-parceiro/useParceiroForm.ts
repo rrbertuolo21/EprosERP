@@ -7,7 +7,7 @@
  * IO exclusivamente via `useApi` (composables/useApi.ts).
  */
 import { computed, reactive, ref } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useMask } from '~/composables/useMask'
@@ -167,7 +167,7 @@ export function useParceiroForm(idRota: string) {
       const resposta = await useApi<unknown>('/cadastros/geografia/municipios/obter-por-uf/{uf}', {
         params: { uf }
       })
-      const lista = extrairDados<MunicipioApi[]>(resposta) ?? (Array.isArray(resposta) ? (resposta as MunicipioApi[]) : [])
+      const lista = extrairLista<MunicipioApi>(resposta) ?? (Array.isArray(resposta) ? (resposta as MunicipioApi[]) : [])
       municipios.value = lista.map((m) => ({ id: String(m.id ?? ''), descricao: m.nome ?? m.descricao ?? '' }))
     } catch (e) {
       console.error('[useParceiroForm.carregarMunicipios]', e)

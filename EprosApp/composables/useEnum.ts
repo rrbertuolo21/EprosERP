@@ -1,6 +1,6 @@
 import { ref, type Ref } from 'vue'
 import { useState } from '#app'
-import { useApi, extrairDados } from './useApi'
+import { useApi, extrairDados, extrairLista} from './useApi'
 
 /** Item de enumeração de domínio retornado pela API. */
 export interface Enum {
@@ -67,7 +67,7 @@ export function useEnum() {
     }
     try {
       const resposta = await useApi(uri)
-      const lista = extrairDados<Enum[]>(resposta) ?? []
+      const lista = extrairLista<Enum>(resposta) ?? []
       cache.value = { ...cache.value, [uri]: lista }
       destino.value = lista
       return lista

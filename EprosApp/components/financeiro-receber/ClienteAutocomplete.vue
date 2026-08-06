@@ -10,7 +10,7 @@
  *   emits: 'update:modelValue', 'update:nomeSelecionado'
  */
 import { ref } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import TextField from '~/components/shared/fields/TextField.vue'
 import type { PessoaBusca } from './types'
 
@@ -43,7 +43,7 @@ async function buscar() {
   buscando.value = true
   try {
     const resposta = await useApi('/cadastros/pessoas', { query: { termo: q, pagina: 1, tamanhoPagina: 20 } })
-    resultados.value = extrairDados<PessoaBusca[]>(resposta) ?? []
+    resultados.value = extrairLista<PessoaBusca>(resposta) ?? []
   } catch (e) {
     console.error('[ClienteAutocomplete.buscar]', e)
     resultados.value = []

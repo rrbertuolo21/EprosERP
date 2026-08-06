@@ -16,7 +16,7 @@
  */
 import { computed, reactive, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useHelper } from '~/composables/useHelper'
@@ -222,7 +222,7 @@ async function removerEmpresa(vinculo: GrupoEmpresa) {
 async function carregarBalancetes() {
   try {
     const resposta = await useApi(`/consolidacao/grupos/{id}/balancetes`, { params: { id: idParam } })
-    balancetes.value = extrairDados<Balancete[]>(resposta) ?? []
+    balancetes.value = extrairLista<Balancete>(resposta) ?? []
   } catch (e) {
     console.error('[consolidacao/[id]] balancetes', e)
   }
@@ -291,7 +291,7 @@ async function publicarBalancete(item: Balancete) {
 async function carregarDemonstrativos() {
   try {
     const resposta = await useApi(`/consolidacao/grupos/{id}/demonstrativos`, { params: { id: idParam } })
-    demonstrativos.value = extrairDados<Demonstrativo[]>(resposta) ?? []
+    demonstrativos.value = extrairLista<Demonstrativo>(resposta) ?? []
   } catch (e) {
     console.error('[consolidacao/[id]] demonstrativos', e)
   }
@@ -363,7 +363,7 @@ async function publicarDemo(item: Demonstrativo) {
 async function carregarEliminacoes() {
   try {
     const resposta = await useApi(`/consolidacao/grupos/{id}/eliminacoes`, { params: { id: idParam } })
-    eliminacoes.value = extrairDados<Eliminacao[]>(resposta) ?? []
+    eliminacoes.value = extrairLista<Eliminacao>(resposta) ?? []
   } catch (e) {
     console.error('[consolidacao/[id]] eliminacoes', e)
   }

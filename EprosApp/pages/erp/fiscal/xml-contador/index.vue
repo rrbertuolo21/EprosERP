@@ -13,7 +13,7 @@
  * no MAPA_FRONTEND para esta fatia. Ver nota ao final do arquivo (FALTA_BACKEND).
  */
 import { ref, computed, onMounted } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useHelper } from '~/composables/useHelper'
@@ -91,7 +91,7 @@ async function buscar() {
     const resposta = await useApi('/fiscal/documentos', {
       query: { mes: Number(mes.value), ano: Number(ano.value), tamanhoPagina: 200 }
     })
-    documentos.value = extrairDados<DocumentoFiscal[]>(resposta) ?? []
+    documentos.value = extrairLista<DocumentoFiscal>(resposta) ?? []
     totalDocumentos.value = documentos.value.length
   } catch (e) {
     toast.error(obterMensagemErro(e))

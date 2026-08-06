@@ -11,7 +11,7 @@
  *            POST /aplicativo/assinaturas/faturas/{id}/boleto  (1.08B)
  */
 import { ref, onMounted, computed } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useAuth } from '~/composables/useAuth'
 import { useToast } from '~/composables/useToast'
@@ -76,7 +76,7 @@ async function buscarFaturasVencidas() {
         }
       }
     )
-    faturas.value = extrairDados<Fatura[]>(resposta) ?? []
+    faturas.value = extrairLista<Fatura>(resposta) ?? []
     total.value = resposta?.totalRegistros ?? faturas.value.length
   } catch (e) {
     toast.error(obterMensagemErro(e))

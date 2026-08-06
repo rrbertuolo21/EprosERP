@@ -7,7 +7,7 @@
  * Rota `novo` cria; qualquer outro valor numérico edita o registro existente.
  */
 import { computed, onMounted, ref } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import PageToolbar from '~/components/shared/PageToolbar.vue'
@@ -117,7 +117,7 @@ async function carregarUnidades() {
   carregandoUnidades.value = true
   try {
     const resposta = await useApi('/unidades-de-medidas-comercial', { query: { tamanhoPagina: 200 } })
-    unidades.value = extrairDados<UnidadeMedida[]>(resposta) ?? []
+    unidades.value = extrairLista<UnidadeMedida>(resposta) ?? []
   } catch (e) {
     console.error('[servicos/[id]] erro ao carregar unidades', e)
   } finally {
@@ -129,7 +129,7 @@ async function carregarCodigosSefaz() {
   carregandoCodigosSefaz.value = true
   try {
     const resposta = await useApi('/codigos-servicos-sefaz', { query: { tamanhoPagina: 200 } })
-    codigosSefaz.value = extrairDados<CodigoServicoSefaz[]>(resposta) ?? []
+    codigosSefaz.value = extrairLista<CodigoServicoSefaz>(resposta) ?? []
   } catch (e) {
     console.error('[servicos/[id]] erro ao carregar códigos SEFAZ', e)
   } finally {

@@ -11,7 +11,7 @@
  * O `tituloId` é um GUID de um título financeiro (não há endpoint de browse para escolhê-lo aqui).
  */
 import { computed, reactive, ref, onMounted } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useHelper } from '~/composables/useHelper'
@@ -72,7 +72,7 @@ async function carregarAuxiliares() {
     ])
     const dc = extrairDados<{ itens?: CentroOpcao[] } | CentroOpcao[]>(rc)
     centros.value = Array.isArray(dc) ? dc : dc?.itens ?? []
-    dimensoes.value = extrairDados<DimensaoOpcao[]>(rd) ?? []
+    dimensoes.value = extrairLista<DimensaoOpcao>(rd) ?? []
   } catch (e) {
     console.error('[contabilidade/alocacoes] auxiliares', e)
   }
@@ -86,7 +86,7 @@ async function consultar() {
   carregando.value = true
   try {
     const resposta = await useApi(`/contabilidade-gerencial/titulos/{tituloId}/alocacoes`, { params: { tituloId: tituloId.value.trim() } })
-    alocacoes.value = extrairDados<Alocacao[]>(resposta) ?? []
+    alocacoes.value = extrairLista<Alocacao>(resposta) ?? []
     consultado.value = true
   } catch (e) {
     toast.error(obterMensagemErro(e))

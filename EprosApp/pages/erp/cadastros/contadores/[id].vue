@@ -191,7 +191,7 @@ async function carregarMunicipiosPorUf(uf: string) {
   }
   try {
     const resposta = await useApi(`/cadastros/geografia/municipios/obter-por-uf/${uf}`)
-    municipios.value = extrairDados<Municipio[]>(resposta) ?? (Array.isArray(resposta) ? (resposta as Municipio[]) : [])
+    municipios.value = extrairLista<Municipio>(resposta) ?? (Array.isArray(resposta) ? (resposta as Municipio[]) : [])
   } catch (e) {
     console.error('[contadores/[id]] municipios-por-uf', e)
     municipios.value = []

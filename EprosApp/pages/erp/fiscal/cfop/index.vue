@@ -10,7 +10,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useApiList, obterMensagemErro } from '~/composables/useApiList'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { useToast } from '~/composables/useToast'
 import DataTable, { type DataTableColumn } from '~/components/shared/DataTable.vue'
 import PageToolbar from '~/components/shared/PageToolbar.vue'
@@ -150,7 +150,7 @@ async function buscarCfopsPadrao() {
     const resposta = await useApi('/cfop-padrao', {
       query: { localizar: buscaPadrao.localizar || undefined, tamanhoPagina: 100 }
     })
-    cfopsPadrao.value = extrairDados<CfopPadrao[]>(resposta) ?? []
+    cfopsPadrao.value = extrairLista<CfopPadrao>(resposta) ?? []
   } catch (e) {
     toast.error(obterMensagemErro(e))
     cfopsPadrao.value = []

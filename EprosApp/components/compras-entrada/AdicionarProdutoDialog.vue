@@ -14,7 +14,7 @@
  * Endpoint consumido: estoque-produtos (busca de produto).
  */
 import { computed, ref, watch } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { useToast } from '~/composables/useToast'
 import { useHelper } from '~/composables/useHelper'
 import AppDialog from '~/components/shared/AppDialog.vue'
@@ -146,7 +146,7 @@ async function buscarProdutos(termo: string) {
     const resposta = await useApi('/estoque-produtos', {
       query: { descricao: termo, ativo: true, pagina: 1, tamanhoPagina: 20 }
     })
-    resultados.value = extrairDados<ProdutoBusca[]>(resposta) ?? []
+    resultados.value = extrairLista<ProdutoBusca>(resposta) ?? []
   } catch (e) {
     resultados.value = []
     console.error('[AdicionarProdutoDialog] busca de produtos', e)

@@ -9,7 +9,7 @@
  */
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useHelper } from '~/composables/useHelper'
@@ -222,7 +222,7 @@ async function carregarPlanoContas() {
   carregandoPlanoContas.value = true
   try {
     const resposta = await useApi('/configuracao-codigo-naturezas-financeiras', { query: { tamanhoPagina: 1000 } })
-    const lista = extrairDados<PlanoDeContasItem[]>(resposta) ?? []
+    const lista = extrairLista<PlanoDeContasItem>(resposta) ?? []
     opcoesPlanoContas.value = lista.map((c) => ({ label: c.descricaoFormatada ?? c.descricao ?? String(c.id), value: c.id }))
   } catch (e) {
     console.error('[contas-a-receber/[id]] plano-contas', e)

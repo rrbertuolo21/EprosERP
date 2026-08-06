@@ -10,7 +10,7 @@
  */
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import DataTable, { type DataTableColumn } from '~/components/shared/DataTable.vue'
@@ -54,7 +54,7 @@ async function carregar() {
   carregando.value = true
   try {
     const resp = await useApi('/esg/relatorios/{relatorioId}/itens', { params: { relatorioId } })
-    itens.value = extrairDados<ItemRelatorio[]>(resp) ?? []
+    itens.value = extrairLista<ItemRelatorio>(resp) ?? []
     opcoesItens.value = itens.value.map((i) => ({
       label: `#${i.sequencia ?? '?'} · ${i.tipoConteudo ?? i.id}`,
       value: i.id

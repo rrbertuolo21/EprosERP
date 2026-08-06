@@ -19,7 +19,7 @@
  */
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useApi, extrairDados, type CommandResult } from '~/composables/useApi'
+import { useApi, extrairDados, type CommandResult, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import PageToolbar from '~/components/shared/PageToolbar.vue'
@@ -180,7 +180,7 @@ async function carregarMenusEPerfil(): Promise<void> {
   erroCarregamento.value = null
   try {
     const respostaMenu = await useApi<CommandResult<MenuBruto[]> | MenuBruto[]>('/plataforma/perfil/menu')
-    const menus = extrairDados<MenuBruto[]>(respostaMenu) ?? []
+    const menus = extrairLista<MenuBruto>(respostaMenu) ?? []
 
     if (isEditing.value) {
       try {

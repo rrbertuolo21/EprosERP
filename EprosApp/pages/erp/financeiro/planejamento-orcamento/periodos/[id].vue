@@ -8,7 +8,7 @@
  */
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useHelper } from '~/composables/useHelper'
@@ -61,7 +61,7 @@ async function carregarBudgets() {
   if (!isEdit.value) return
   try {
     const resposta = await useApi('/planejamento-orcamento/periodos/{id}/budgets', { params: { id: idParam } })
-    budgets.value = extrairDados<Budget[]>(resposta) ?? []
+    budgets.value = extrairLista<Budget>(resposta) ?? []
   } catch (e) {
     console.error('[periodos/[id]] budgets', e)
   }

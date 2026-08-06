@@ -13,7 +13,7 @@
  *   carregarParaEdicao(item)  — recarrega o formulário com um item removido da lista.
  */
 import { ref, computed } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { useHelper } from '~/composables/useHelper'
 import { useToast } from '~/composables/useToast'
 import TextField from '~/components/shared/fields/TextField.vue'
@@ -66,7 +66,7 @@ async function buscarProduto() {
     const resposta = await useApi('/estoque-produtos', {
       query: { termo: q, pagina: 1, tamanhoPagina: 20 }
     })
-    resultados.value = extrairDados<ProdutoBusca[]>(resposta) ?? []
+    resultados.value = extrairLista<ProdutoBusca>(resposta) ?? []
   } catch (e) {
     toast.error('Erro ao buscar produtos.')
     console.error('[ItemForm.buscarProduto]', e)

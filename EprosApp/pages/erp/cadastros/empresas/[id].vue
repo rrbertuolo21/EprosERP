@@ -13,7 +13,7 @@
  */
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from '#app'
-import { useApi, extrairDados, type CommandResult } from '~/composables/useApi'
+import { useApi, extrairDados, type CommandResult, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useMask } from '~/composables/useMask'
@@ -143,7 +143,7 @@ async function carregarEmpresa() {
       const respContatos = await useApi<CommandResult<EmpresaContato[]>>('/cadastros/empresas/{empresaId}/contatos', {
         params: { empresaId: idParam }
       })
-      contatos.value = extrairDados<EmpresaContato[]>(respContatos) ?? []
+      contatos.value = extrairLista<EmpresaContato>(respContatos) ?? []
     } catch {
       contatos.value = []
     }

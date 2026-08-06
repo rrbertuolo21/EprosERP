@@ -9,7 +9,7 @@
  * Emite `confirmar` com o item pronto; a página decide se adiciona ou atualiza.
  */
 import { ref, watch, computed } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import type { SelectOption } from '~/composables/useEnum'
 import AppDialog from '~/components/shared/AppDialog.vue'
 import TextField from '~/components/shared/fields/TextField.vue'
@@ -79,7 +79,7 @@ async function buscarProduto() {
     const resp = await useApi('/estoque-produtos', {
       query: { localizar: q, pagina: 1, tamanhoPagina: 20 }
     })
-    resultados.value = extrairDados<ProdutoResumo[]>(resp) ?? []
+    resultados.value = extrairLista<ProdutoResumo>(resp) ?? []
     mostrarResultados.value = true
   } catch (e) {
     console.error('[EntradaProdutoDialog] falha ao buscar produto', e)

@@ -7,7 +7,7 @@
  * As transições espelham a máquina de estado do backend; o front só dispara os comandos.
  */
 import { ref, computed, onMounted } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useHelper } from '~/composables/useHelper'
@@ -69,8 +69,8 @@ async function carregarApoios() {
       useApi('/imobiliaria/imoveis'),
       useApi('/cadastros/pessoas', { query: { tamanhoPagina: 500 } })
     ])
-    imoveis.value = extrairDados<Imovel[]>(ri) ?? []
-    pessoas.value = extrairDados<Pessoa[]>(rp) ?? []
+    imoveis.value = extrairLista<Imovel>(ri) ?? []
+    pessoas.value = extrairLista<Pessoa>(rp) ?? []
   } catch (e) {
     console.error('[propostas] apoios', e)
   }

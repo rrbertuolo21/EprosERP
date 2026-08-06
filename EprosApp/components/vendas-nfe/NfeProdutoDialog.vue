@@ -8,7 +8,7 @@
  * linha ao vivo. Ao confirmar, emite `confirmar` com o item pronto.
  */
 import { ref, computed, watch } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { useHelper } from '~/composables/useHelper'
 import AppDialog from '~/components/shared/AppDialog.vue'
 import TextField from '~/components/shared/fields/TextField.vue'
@@ -84,7 +84,7 @@ async function buscarProdutos(texto: string) {
   carregandoBusca.value = true
   try {
     const resp = await useApi('/estoque-produtos', { query: { busca: texto, tamanhoPagina: 20 } })
-    resultados.value = extrairDados<ProdutoResumo[]>(resp) ?? []
+    resultados.value = extrairLista<ProdutoResumo>(resp) ?? []
     abertoDropdown.value = resultados.value.length > 0
   } catch (e) {
     console.error('[NfeProdutoDialog] falha na busca de produtos', e)
