@@ -46,7 +46,7 @@ namespace Epros.Modules.Vendas.Application.Queries
             var itens = await query
                 .OrderByDescending(d => d.DataDocumento).ThenByDescending(d => d.Serial)
                 .Skip((request.Pagina - 1) * request.TamanhoPagina).Take(request.TamanhoPagina)
-                .Select(d => new { d.Id, d.Numero, d.DataDocumento, d.ClienteId, d.TotalGeral, d.SaldoEmAberto, Status = d.Status.ToString() })
+                .Select(d => new { d.Id, d.Numero, d.DataDocumento, d.ClienteId, d.TotalGeral, d.SaldoEmAberto, Status = (int)d.Status })
                 .ToListAsync(cancellationToken);
             return CommandResult.Ok("Documentos comerciais listados.", new { total, request.Pagina, request.TamanhoPagina, itens });
         }
@@ -72,7 +72,7 @@ namespace Epros.Modules.Vendas.Application.Queries
             {
                 doc.Id,
                 doc.Numero,
-                TipoDocumento = doc.TipoDocumento.ToString(),
+                TipoDocumento = (int)doc.TipoDocumento,
                 doc.DataDocumento,
                 doc.ClienteId,
                 doc.Moeda,
@@ -86,7 +86,7 @@ namespace Epros.Modules.Vendas.Application.Queries
                 doc.TotalGeral,
                 doc.ValorPago,
                 doc.SaldoEmAberto,
-                Status = doc.Status.ToString(),
+                Status = (int)doc.Status,
                 Itens = doc.Itens.Select(i => new { i.Id, i.ProdutoId, i.Quantidade, i.ValorUnitario, i.ValorBruto, i.ValorImposto, i.ValorTotal })
             });
         }
@@ -110,7 +110,7 @@ namespace Epros.Modules.Vendas.Application.Queries
             if (request.ClienteId.HasValue) query = query.Where(d => d.ClienteId == request.ClienteId.Value);
             var itens = await query
                 .OrderBy(d => d.ClienteId).ThenBy(d => d.DataDocumento)
-                .Select(d => new { d.Id, d.Numero, d.ClienteId, TipoDocumento = d.TipoDocumento.ToString(), d.TotalGeral, d.SaldoEmAberto, Status = d.Status.ToString() })
+                .Select(d => new { d.Id, d.Numero, d.ClienteId, TipoDocumento = (int)d.TipoDocumento, d.TotalGeral, d.SaldoEmAberto, Status = (int)d.Status })
                 .ToListAsync(cancellationToken);
             return CommandResult.Ok("Contas em aberto listadas.", new { itens });
         }
