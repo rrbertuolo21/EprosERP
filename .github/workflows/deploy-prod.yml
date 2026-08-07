@@ -24,6 +24,24 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'push' && github.event.head_commit.committer.username != 'web-flow')
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # Mesmo padrão do ci-sast-sec.yml — evita hang do Testcontainers no Actions.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: epros
+          POSTGRES_PASSWORD: epros
+          POSTGRES_DB: epros
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U epros -d epros"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -43,7 +61,13 @@ jobs:
         run: dotnet build --configuration Release --no-restore -warnaserror
 
       - name: Run Unit & Integration Tests
-        run: dotnet test --configuration Release --no-build --verbosity normal
+        timeout-minutes: 15
+        env:
+          EPROS_TEST_PG: Host=localhost;Port=5432;Username=epros;Password=epros;Database=epros
+          TESTCONTAINERS_RYUK_DISABLED: true
+        run: >
+          dotnet test --configuration Release --no-build --verbosity normal
+          --blame-hang --blame-hang-timeout 10m
 
   build-push:
     name: Build & Push GHCR
