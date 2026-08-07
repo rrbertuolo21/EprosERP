@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # Bootstrap inicial de VPS Ubuntu para deploy do EprosERP.
-# Execute como root: curl -fsSL ... | bash   OU   sudo bash scripts/server-bootstrap.sh
+# Execute como root:
+#   curl -fsSL https://raw.githubusercontent.com/rrbertuolo21/EprosERP/main/scripts/server-bootstrap.sh | bash
+#   OU: sudo bash scripts/server-bootstrap.sh
 set -euo pipefail
 
 DEPLOY_USER="${DEPLOY_USER:-deploy}"
-REPO_URL="${REPO_URL:-https://github.com/SEU_ORG/EprosERP.git}"
+REPO_URL="${REPO_URL:-https://github.com/rrbertuolo21/EprosERP.git}"
 INSTALL_DIR="${INSTALL_DIR:-/opt/epros}"
+BACKUP_CRON="${BACKUP_CRON:-0 2 * * *}"
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "Execute como root (sudo)."
@@ -18,7 +21,7 @@ apt-get update -y
 apt-get upgrade -y
 
 echo "==> Instalando dependências..."
-apt-get install -y ca-certificates curl gnupg ufw git
+apt-get install -y ca-certificates curl gnupg ufw git cron
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "==> Instalando Docker Engine..."
@@ -59,11 +62,23 @@ else
   echo "==> Repositório já existe em ${INSTALL_DIR}."
 fi
 
+chmod +x "${INSTALL_DIR}/scripts/deploy-prod.sh" "${INSTALL_DIR}/scripts/backup-prod.sh" 2>/dev/null || true
+
+echo "==> Configurando cron de backup diário..."
+CRON_LINE="${BACKUP_CRON} ${DEPLOY_USER} cd ${INSTALL_DIR} && ./scripts/backup-prod.sh >> /var/log/epros-backup.log 2>&1"
+CRON_FILE="/etc/cron.d/epros-backup"
+echo "${CRON_LINE}" > "${CRON_FILE}"
+chmod 644 "${CRON_FILE}"
+
 echo ""
 echo "==> Bootstrap concluído."
+echo ""
 echo "Próximos passos (como ${DEPLOY_USER}):"
-echo "  cd ${INSTALL_DIR}"
-echo "  cp .env.production.example .env.production"
-echo "  # Edite .env.production com domínios e senhas"
-echo "  docker compose -f docker-compose.prod.yml build"
-echo "  docker compose -f docker-compose.prod.yml up -d"
+echo "  1. Adicionar chave SSH pública do GitHub Actions em ~${DEPLOY_USER}/.ssh/authorized_keys"
+echo "  2. cd ${INSTALL_DIR}"
+echo "  3. cp .env.production.example .env.production"
+echo "  4. Editar .env.production (domínios, senhas, JWT, KEK, REGISTRY)"
+echo "  5. docker login ghcr.io  # PAT read:packages para pull das imagens"
+echo "  6. Primeiro deploy: ./scripts/deploy-prod.sh --build"
+echo ""
+echo "Autodeploy: configure secrets PROD_SSH_* no GitHub — ver docs/ops/INICIAR-SERVIDOR-PRODUCAO.md"

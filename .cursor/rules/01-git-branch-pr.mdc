@@ -1,0 +1,60 @@
+---
+description: "Fluxo Git obrigatório para a IA: nunca trabalhar em main; branch dedicada antes de qualquer alteração; PR para main ao finalizar."
+alwaysApply: true
+---
+
+# Git — branch dedicada + PR (obrigatório para a IA)
+
+> Branch longa / padrão: **`main`**. Toda entrega entra via PR.
+
+## Proibições absolutas
+
+- **NUNCA** faça commit, push ou edite arquivos com intenção de entrega estando em `main`.
+- **NUNCA** faça merge direto em `main`.
+- **NUNCA** use `--force` / `--force-with-lease` em `main`.
+- Se a sessão já estiver em `main` com working tree sujo: **pare**, avise o usuário e proponha criar/mover o trabalho para uma branch de task **antes** de continuar.
+
+## Antes de qualquer alteração de código
+
+1. `git status` + `git branch --show-current`.
+2. Se estiver em `main` (ou sem branch de task):
+   - `git fetch origin` e atualize a base (`git checkout main` + `git pull --ff-only`);
+   - crie a branch de trabalho **antes** do primeiro edit/commit.
+3. Base: **`main`**.
+4. Nomenclatura (Jira `EP-xxx` obrigatório quando existir task):
+
+| Prefixo | Uso |
+| --- | --- |
+| `feature/EP-123-descricao` | nova funcionalidade |
+| `bugfix/EP-123-descricao` | correção de bug |
+| `hotfix/EP-123-descricao` | correção urgente |
+| `refactor/EP-123-descricao` | refatoração |
+| `test/EP-123-descricao` | testes |
+| `chore/EP-123-descricao` | deps, config, CI |
+| `ci/descricao` | workflows / pipelines |
+| `sandbox/EP-123-descricao` | PoC |
+
+Slug: ASCII, kebab-case, sem acentos. Sem task Jira: prefixo adequado + descrição curta.
+
+## Commits
+
+- Só commit/push quando o usuário pedir (regra geral do projeto).
+- Mensagens: português (BR), Conventional Commits, curtas.
+- Não commitar secrets (`.env`, credenciais, etc.).
+
+## Ao finalizar a tarefa
+
+1. Confirme que **não** está em `main`.
+2. Push da branch de trabalho (`git push -u origin HEAD` se ainda não tiver upstream).
+3. Abra o **PR** com `gh pr create` — base **`main`**; título/corpo claros; checklist de teste quando couber.
+4. Devolva a **URL do PR** ao usuário.
+5. Não faça merge do PR a menos que o usuário peça explicitamente.
+
+## Checklist mental (toda sessão com código)
+
+```
+[ ] Branch atual ≠ main
+[ ] Nome no padrão feature|bugfix|hotfix|chore|ci|…/…
+[ ] Commits só na branch de task
+[ ] Ao fechar escopo → push + PR → main → URL entregue
+```

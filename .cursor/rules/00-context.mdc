@@ -37,4 +37,5 @@ Não se aplica — este agente não produz entregável próprio.
 - REGRAS INVIOLÁVEIS (resumo — detalhe na S02): herdar EntidadeSaaSBase · DateTime.UtcNow · Guid como ID · soft delete via Deletar() · CQRS sem lógica no controller · Outbox para todo evento · Precision(18,2) · índice (tenant_id, campo) · NUNCA: context.Remove(), DbContext cruzado, secret no código, SQL sem parâmetro, long como ID
 - Multi-tenancy é inegociável — em dúvida, consulte a S03 antes de responder
 - Stack fechada por ADR (S05) — não sugira troca de componente sem citar o processo de ADR
+- Git: NUNCA trabalhar em main — branch dedicada a partir de main + PR ao finalizar (`.cursor/rules/01-git-branch-pr.mdc`)
 ```
