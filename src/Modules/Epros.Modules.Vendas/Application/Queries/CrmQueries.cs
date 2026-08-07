@@ -80,6 +80,53 @@ namespace Epros.Modules.Vendas.Application.Queries
         }
     }
 
+    // ===================== Setup (pipelines/etapas) =====================
+
+    /// <summary>
+    /// Lista os pipelines ATIVOS do tenant com suas etapas ativas (ordenadas). Alimenta o seletor de
+    /// pipeline/etapa no cadastro de lead — sem pipeline/etapa o lead não gera oportunidade (regra de
+    /// domínio ConverterCrmLead). Antes só havia POST de setup; o front não tinha como listar.
+    /// </summary>
+    public record ListarCrmPipelinesQuery() : IQuery<CommandResult>;
+
+    public class ListarCrmPipelinesQueryHandler : IRequestHandler<ListarCrmPipelinesQuery, CommandResult>
+    {
+        private readonly ContextVendas _context;
+        private readonly ITenantProvider _tenantProvider;
+
+        public ListarCrmPipelinesQueryHandler(ContextVendas context, ITenantProvider tenantProvider)
+        {
+            _context = context; _tenantProvider = tenantProvider;
+        }
+
+        public async Task<CommandResult> Handle(ListarCrmPipelinesQuery request, CancellationToken cancellationToken)
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var pipelines = await _context.CrmPipelines.AsNoTracking()
+                .Where(p => p.TenantId == tenantId && p.Ativo)
+                .OrderBy(p => p.Nome)
+                .Select(p => new { p.Id, p.Nome })
+                .ToListAsync(cancellationToken);
+
+            var pipeIds = pipelines.Select(p => p.Id).ToList();
+            var etapas = await _context.CrmEtapas.AsNoTracking()
+                .Where(e => e.TenantId == tenantId && e.Ativo && pipeIds.Contains(e.PipelineId))
+                .OrderBy(e => e.Ordem)
+                .Select(e => new { e.Id, e.PipelineId, e.Nome, e.Ordem, TipoEtapa = (int)e.TipoEtapa })
+                .ToListAsync(cancellationToken);
+
+            var itens = pipelines.Select(p => new
+            {
+                p.Id,
+                p.Nome,
+                etapas = etapas.Where(e => e.PipelineId == p.Id)
+                    .Select(e => new { e.Id, e.Nome, e.Ordem, e.TipoEtapa }).ToList()
+            }).ToList();
+
+            return CommandResult.Ok("Pipelines listados.", new { itens });
+        }
+    }
+
     // ===================== Oportunidades =====================
 
     public record ListarCrmOportunidadesQuery(

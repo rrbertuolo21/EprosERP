@@ -41,6 +41,13 @@ namespace Epros.API.Controllers
             return result.Sucesso ? Created(string.Empty, result) : UnprocessableEntity(result);
         }
 
+        // Lista pipelines+etapas para alimentar o seletor no cadastro de lead. Autorização por CrmLeads
+        // (quem cadastra lead precisa ver os pipelines disponíveis), não por CrmSetup.
+        [HttpGet("pipelines")]
+        [AbacAuthorize("CrmLeads", "Ler")]
+        public async Task<IActionResult> ListarPipelines()
+            => Ok(await _mediator.Send(new ListarCrmPipelinesQuery()));
+
         [HttpPost("etiquetas")]
         [AbacAuthorize("CrmSetup", "Criar")]
         public async Task<IActionResult> CriarEtiqueta([FromBody] CriarCrmEtiquetaCommand command)
