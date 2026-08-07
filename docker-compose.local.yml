@@ -24,6 +24,20 @@ services:
       start_period: 20s
     networks: [epros-novo]
 
+  minio:
+    image: minio/minio:latest
+    container_name: epros-novo-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-epros_minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-epros_minio_password}
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - epros_novo_minio:/data
+    networks: [epros-novo]
+
   migrate:
     build:
       context: .
@@ -59,6 +73,13 @@ services:
       Cofre__KekLocal: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
       Seguranca__JwtSigningKey: "epros-local-dev-signing-key-0123456789-abcdef-xyz"
       CORS_ORIGINS: "http://localhost:3000"
+      # PLT · GED (T10) — storage documental real (MinIO). A presença de Storage__Minio__Endpoint
+      # liga o MinioArmazenamentoService no lugar do stub "não configurado".
+      Storage__Minio__Endpoint: "minio:9000"
+      Storage__Minio__AccessKey: "${MINIO_ROOT_USER:-epros_minio}"
+      Storage__Minio__SecretKey: "${MINIO_ROOT_PASSWORD:-epros_minio_password}"
+      Storage__Minio__Bucket: "${MINIO_BUCKET:-epros-ged}"
+      Storage__Minio__UseSSL: "false"
     ports:
       - "${API_PORT:-8080}:8080"
     depends_on:
@@ -66,6 +87,8 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      minio:
+        condition: service_started
     restart: unless-stopped
     networks: [epros-novo]
 
@@ -85,6 +108,7 @@ services:
 
 volumes:
   epros_novo_pg:
+  epros_novo_minio:
 
 networks:
   epros-novo:

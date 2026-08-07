@@ -162,9 +162,20 @@ try
     // GRC · D-SOD-03 — avaliador preventivo de Segregação de Funções ligado ao caminho de concessão
     // RBAC (GestaoClientes). Torna o bloqueio SoD EFETIVO em runtime (antes o handler existia sem caller).
     builder.Services.AddScoped<Epros.Shared.Application.Contracts.ISoDAvaliadorConcessao, Epros.Modules.GRC.Application.Services.SoDAvaliadorConcessaoService>();
-    // PLT · GED (T10) — storage documental atrás de abstração. Provider real (MinIO/S3/servidor de
-    // storage) entra por ambiente; sem ele, usa a implementação "não configurada" (// valida-ambiente).
-    builder.Services.AddScoped<Epros.Modules.Aplicativo.Application.Contracts.IArmazenamentoDocumentoService, Epros.Modules.Aplicativo.Infrastructure.Services.ArmazenamentoLocalNaoConfiguradoService>();
+    // PLT · GED (T10) — storage documental atrás de abstração. Se Storage:Minio estiver configurado
+    // (Endpoint+credenciais), liga o provider REAL MinIO (byte persistido/recuperável); senão, cai no
+    // stub "não configurado" (// valida-ambiente).
+    var minioOpts = new Epros.Modules.Aplicativo.Infrastructure.Services.MinioStorageOptions();
+    builder.Configuration.GetSection("Storage:Minio").Bind(minioOpts);
+    if (minioOpts.Configurado)
+    {
+        builder.Services.AddSingleton(minioOpts);
+        builder.Services.AddScoped<Epros.Modules.Aplicativo.Application.Contracts.IArmazenamentoDocumentoService, Epros.Modules.Aplicativo.Infrastructure.Services.MinioArmazenamentoService>();
+    }
+    else
+    {
+        builder.Services.AddScoped<Epros.Modules.Aplicativo.Application.Contracts.IArmazenamentoDocumentoService, Epros.Modules.Aplicativo.Infrastructure.Services.ArmazenamentoLocalNaoConfiguradoService>();
+    }
     // PLT · CONECTORES (ED-08) — dispatcher de webhook atrás de abstração. HTTP real ao endpoint
     // externo = ambiente; sem ele, a entrega fica pendente (// valida-ambiente).
     builder.Services.AddScoped<Epros.Modules.Aplicativo.Application.Contracts.IWebhookDispatchService, Epros.Modules.Aplicativo.Infrastructure.Services.WebhookDispatchNaoConfiguradoService>();
