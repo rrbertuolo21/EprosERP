@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY Epros.sln ./
@@ -39,7 +39,7 @@ RUN dotnet publish src/API/Epros.API/Epros.API.csproj \
     -o /app/publish \
     --no-restore
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS migrate
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS migrate
 WORKDIR /src
 
 RUN apt-get update \
