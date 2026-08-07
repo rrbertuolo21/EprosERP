@@ -25,19 +25,35 @@ namespace Epros.Tests.Integration
         {
             try
             {
-                _postgreSqlContainer = new PostgreSqlBuilder()
-                    .WithImage("postgres:16-alpine")
-                    .WithDatabase("epros_test")
-                    .WithUsername("epros")
-                    .WithPassword("epros_test_password")
-                    .Build();
+                var external = Environment.GetEnvironmentVariable(PostgresTestDb.ExternalConnectionEnv);
+                if (!string.IsNullOrWhiteSpace(external))
+                {
+                    Console.WriteLine($"[IntegrationTestFixture] Usando Postgres externo ({PostgresTestDb.ExternalConnectionEnv}).");
+                    ConnectionString = new NpgsqlConnectionStringBuilder(external)
+                    {
+                        Database = "epros_test",
+                        Pooling = false
+                    }.ConnectionString;
 
-                Console.WriteLine($"[IntegrationTestFixture] Iniciando postgres:16-alpine (timeout {ContainerStartTimeout.TotalMinutes:0} min)...");
-                using var cts = new CancellationTokenSource(ContainerStartTimeout);
-                await _postgreSqlContainer.StartAsync(cts.Token);
-                Console.WriteLine("[IntegrationTestFixture] Container Postgres pronto.");
-                ConnectionString = _postgreSqlContainer.GetConnectionString();
-                DockerDisponivel = true;
+                    await EnsureDatabaseExistsAsync(external, "epros_test");
+                    DockerDisponivel = true;
+                }
+                else
+                {
+                    _postgreSqlContainer = new PostgreSqlBuilder()
+                        .WithImage("postgres:16-alpine")
+                        .WithDatabase("epros_test")
+                        .WithUsername("epros")
+                        .WithPassword("epros_test_password")
+                        .Build();
+
+                    Console.WriteLine($"[IntegrationTestFixture] Iniciando postgres:16-alpine (timeout {ContainerStartTimeout.TotalMinutes:0} min)...");
+                    using var cts = new CancellationTokenSource(ContainerStartTimeout);
+                    await _postgreSqlContainer.StartAsync(cts.Token);
+                    Console.WriteLine("[IntegrationTestFixture] Container Postgres pronto.");
+                    ConnectionString = _postgreSqlContainer.GetConnectionString();
+                    DockerDisponivel = true;
+                }
 
                 // Cria o usuário da aplicação que não é superuser para testar RLS
                 using (var connection = new NpgsqlConnection(ConnectionString))
@@ -46,7 +62,11 @@ namespace Epros.Tests.Integration
                     using (var command = connection.CreateCommand())
                     {
                         command.CommandText = @"
-                            CREATE ROLE epros_app_user WITH LOGIN PASSWORD 'epros_app_password';
+                            DO $$ BEGIN
+                              IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'epros_app_user') THEN
+                                CREATE ROLE epros_app_user WITH LOGIN PASSWORD 'epros_app_password';
+                              END IF;
+                            END $$;
                             CREATE SCHEMA IF NOT EXISTS plataforma;
                             CREATE SCHEMA IF NOT EXISTS aplicativo;
                             GRANT USAGE, CREATE ON SCHEMA plataforma TO epros_app_user;
@@ -72,6 +92,28 @@ namespace Epros.Tests.Integration
                 // Docker não está ativo/disponível no host local
                 Console.WriteLine($"[AVISO] Docker está offline ou indisponível. Testes com Testcontainers serão pulados. Erro: {ex.Message}");
                 DockerDisponivel = false;
+            }
+        }
+
+        private static async Task EnsureDatabaseExistsAsync(string adminConnectionString, string databaseName)
+        {
+            var admin = new NpgsqlConnectionStringBuilder(adminConnectionString)
+            {
+                Database = "epros",
+                Pooling = false
+            };
+
+            await using var conn = new NpgsqlConnection(admin.ConnectionString);
+            await conn.OpenAsync();
+            await using var existsCmd = conn.CreateCommand();
+            existsCmd.CommandText = "SELECT 1 FROM pg_database WHERE datname = @n";
+            existsCmd.Parameters.AddWithValue("n", databaseName);
+            var exists = await existsCmd.ExecuteScalarAsync();
+            if (exists is null)
+            {
+                await using var createCmd = conn.CreateCommand();
+                createCmd.CommandText = $"CREATE DATABASE \"{databaseName}\";";
+                await createCmd.ExecuteNonQueryAsync();
             }
         }
 

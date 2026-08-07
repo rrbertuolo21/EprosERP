@@ -23,8 +23,24 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'push' && github.event.head_commit.committer.username != 'web-flow')
     runs-on: ubuntu-latest
-    # Suite completa costuma < 10 min; 20 min evita runner preso por hang de Testcontainers/xUnit.
+    # Suite completa costuma < 10 min; 20 min evita runner preso por hang.
     timeout-minutes: 20
+
+    # Postgres gerenciado pelo Actions (sem Testcontainers/Docker-in-Docker no job).
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: epros
+          POSTGRES_PASSWORD: epros
+          POSTGRES_DB: epros
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U epros -d epros"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
     - name: Checkout Repository
@@ -44,15 +60,11 @@ jobs:
     - name: Build Solution
       run: dotnet build --configuration Release --no-restore -warnaserror
 
-    # Falha cedo se o registry/Docker estiver ruim (em vez de pendurar no StartAsync do Testcontainers).
-    - name: Pre-pull Postgres (Testcontainers)
-      run: docker pull postgres:16-alpine
-      timeout-minutes: 5
-
     - name: Run Unit & Integration Tests
       timeout-minutes: 15
       env:
-        # Ryuk às vezes atrasa/limpa cedo em runners efêmeros; o job já isola o ambiente.
+        # Bypass Testcontainers — usa o service container acima.
+        EPROS_TEST_PG: Host=localhost;Port=5432;Username=epros;Password=epros;Database=epros
         TESTCONTAINERS_RYUK_DISABLED: true
       run: >
         dotnet test --configuration Release --no-build --verbosity normal
