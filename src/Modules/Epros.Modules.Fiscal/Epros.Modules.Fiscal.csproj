@@ -23,7 +23,7 @@
          QRCoder produz o PNG do QR a partir da URL de consulta (qrCode) que o motor Hercules já grava
          em infNFeSupl do XML autorizado — não fabricamos o hash CSC, apenas renderizamos a URL oficial.
          Sem dependência nativa. O Code128C da chave (DANFE NF-e) é desenhado por rotina própria. -->
-    <PackageReference Include="QRCoder" Version="1.6.0" />
+    <PackageReference Include="QRCoder" Version="1.8.0" />
   </ItemGroup>
 
   <ItemGroup>
