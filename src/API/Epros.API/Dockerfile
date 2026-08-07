@@ -57,7 +57,7 @@ RUN sed -i 's/\r$//' /src/scripts/migrate-all.sh \
 
 ENTRYPOINT ["/src/scripts/migrate-all.sh"]
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
 RUN apt-get update \
