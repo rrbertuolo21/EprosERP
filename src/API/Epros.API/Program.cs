@@ -176,9 +176,13 @@ try
     {
         builder.Services.AddScoped<Epros.Modules.Aplicativo.Application.Contracts.IArmazenamentoDocumentoService, Epros.Modules.Aplicativo.Infrastructure.Services.ArmazenamentoLocalNaoConfiguradoService>();
     }
-    // PLT · CONECTORES (ED-08) — dispatcher de webhook atrás de abstração. HTTP real ao endpoint
-    // externo = ambiente; sem ele, a entrega fica pendente (// valida-ambiente).
-    builder.Services.AddScoped<Epros.Modules.Aplicativo.Application.Contracts.IWebhookDispatchService, Epros.Modules.Aplicativo.Infrastructure.Services.WebhookDispatchNaoConfiguradoService>();
+    // PLT · CONECTORES (ED-08) — dispatcher de webhook REAL: POST HTTP ao endpoint externo do tenant
+    // (HttpClient nomeado com timeout curto; retry/backoff/dead-letter ficam no handler de entrega).
+    builder.Services.AddHttpClient(Epros.Modules.Aplicativo.Infrastructure.Services.WebhookDispatchHttpService.HttpClientName, c =>
+    {
+        c.Timeout = TimeSpan.FromSeconds(15);
+    });
+    builder.Services.AddScoped<Epros.Modules.Aplicativo.Application.Contracts.IWebhookDispatchService, Epros.Modules.Aplicativo.Infrastructure.Services.WebhookDispatchHttpService>();
 
     // Gateway de pagamento (outbound) — Mercado Pago. HttpClient nomeado + implementação.
     builder.Services.AddHttpClient(Epros.Modules.GestaoClientes.Infrastructure.Gateways.MercadoPagoGateway.HttpClientName, client =>
