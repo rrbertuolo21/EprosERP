@@ -164,6 +164,11 @@ function limparFiltros<F extends object>(filtros: F): Record<string, unknown> {
 export function obterMensagemErro(e: unknown): string {
   if (e && typeof e === 'object') {
     const err = e as { data?: CommandResult; message?: string }
+    // Prioriza `erros` (razão REAL da recusa de regra de negócio) sobre `mensagem` (genérica no
+    // back para Falha de string única). Sem isto, toda recusa aparecia como "Ocorreu um erro no
+    // processamento." e o operador não sabia o motivo — inviabilizava homologar.
+    const erros = err.data?.erros
+    if (Array.isArray(erros) && erros.length > 0) return erros.filter(Boolean).join('\n')
     const msg = err.data?.mensagem
     if (msg) return Array.isArray(msg) ? msg.join('\n') : String(msg)
     if (err.message) return err.message

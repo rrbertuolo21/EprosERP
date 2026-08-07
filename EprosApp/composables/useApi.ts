@@ -12,6 +12,12 @@ export interface CommandResult<T = unknown> {
   dados?: T
   /** Alias usado por algumas rotas ao invés de `dados`. */
   data?: T
+  /**
+   * Lista de erros específicos. Em `CommandResult.Falha(string)` o back coloca a razão REAL da
+   * recusa (regra de negócio) aqui, enquanto `mensagem` fica genérica ("Ocorreu um erro no
+   * processamento."). Para exibir o motivo ao usuário, priorize `erros` sobre `mensagem`.
+   */
+  erros?: string[] | null
   /** Total de registros no servidor, presente nas listagens paginadas. */
   totalRegistros?: number
 }
