@@ -19,6 +19,6 @@ ENV NUXT_PUBLIC_STORAGE_URI=$NUXT_PUBLIC_STORAGE_URI
 
 RUN npm run generate
 
-FROM alpine:3.20 AS export
+FROM alpine:3.24 AS export
 WORKDIR /srv
 COPY --from=build /app/.output/public/ /srv/
