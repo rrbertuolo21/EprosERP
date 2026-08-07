@@ -1,0 +1,106 @@
+# Dependabot — atualização automática de dependências
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+version: 2
+updates:
+  # .NET / NuGet (solution na raiz)
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - nuget
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      nuget-microsoft:
+        patterns:
+          - "Microsoft.*"
+          - "System.*"
+          - "AspNetCore.*"
+      nuget-efcore:
+        patterns:
+          - "Npgsql.*"
+          - "EFCore.*"
+          - "EntityFramework*"
+
+  # Frontend Nuxt (EprosApp)
+  - package-ecosystem: npm
+    directory: /EprosApp
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - npm
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      npm-nuxt:
+        patterns:
+          - "nuxt"
+          - "@nuxt/*"
+          - "vue"
+          - "vue-*"
+          - "@vue/*"
+      npm-dev:
+        dependency-type: development
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Docker — API
+  - package-ecosystem: docker
+    directory: /src/API/Epros.API
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - docker
+    commit-message:
+      prefix: chore(deps)
+
+  # Docker — Frontend
+  - package-ecosystem: docker
+    directory: /EprosApp
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - docker
+    commit-message:
+      prefix: chore(deps)
