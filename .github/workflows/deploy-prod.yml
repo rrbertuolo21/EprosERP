@@ -106,8 +106,8 @@ jobs:
       - name: Build and push Frontend image
         uses: docker/build-push-action@v6
         with:
-          context: ./Epros.App
-          file: Dockerfile
+          context: ./EprosApp
+          file: EprosApp/Dockerfile
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/epros-frontend:${{ github.sha }}
