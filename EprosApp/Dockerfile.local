@@ -1,6 +1,6 @@
 # Build local do front (SPA estático via Nuxt generate) servido por nginx.
 # Usado pelo docker-compose.local.yml (teste full-stack em localhost).
-FROM node:20-alpine AS build
+FROM node:25-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
