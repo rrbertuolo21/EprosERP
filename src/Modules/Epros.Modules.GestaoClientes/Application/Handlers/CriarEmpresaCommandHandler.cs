@@ -137,21 +137,9 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                     _context.OutboxMessages.Add(eventoEmpresaCriada);
                     await _context.SaveChangesAsync(cancellationToken);
 
-                    // Criar Plano Inicial (pega o primeiro plano ativo do Siser super admin, que tem tenant_id = "system")
-                    var plano = await _context.Planos.FirstOrDefaultAsync(p => p.Ativo, cancellationToken);
-                    var planoId = plano?.Id ?? Guid.Empty;
-                    if (planoId == Guid.Empty)
-                    {
-                        planoId = Guid.NewGuid();
-                    }
-                    var upgradePlano = new UpgradePlano(planoId, true, Guid.NewGuid().ToString("N"), tenantId, criadoPor);
-                    if (!upgradePlano.IsValid)
-                    {
-                        var errosPlano = upgradePlano.Notifications.Select(n => n.Message).Distinct();
-                        await transaction.RollbackAsync(cancellationToken);
-                        return CommandResult.Falha(errosPlano, "Falha ao criar o plano inicial do inquilino.");
-                    }
-                    _context.UpgradesPlanos.Add(upgradePlano);
+                    // Auditoria APP: removido o bloco "Criar Plano Inicial" que só gravava UpgradePlano (órfão —
+                    // ninguém lia). O plano real do tenant é atribuído no fluxo de onboarding SaaS
+                    // (OnboardingSaaSProvisioner / Cliente.PlanoId), não aqui.
 
                     // Criar Exercício Financeiro Inicial (365 dias)
                     var exercicio = new ExercicioFinanceiro(DateTime.UtcNow, DateTime.UtcNow.AddDays(365), null, "Aberto", tenantId, criadoPor);
