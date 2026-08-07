@@ -1,5 +1,7 @@
 using System;
+using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Epros.Infrastructure.Data;
 using Epros.Modules.Aplicativo.Infrastructure.Data;
 using Epros.Modules.GestaoClientes.Infrastructure.Data;
@@ -28,12 +30,30 @@ namespace Epros.Tests
         private const string TemplateDb = "epros_rlstpl";
         private static readonly TimeSpan ContainerStartTimeout = TimeSpan.FromMinutes(3);
 
-        // Init do container separado do gate de CREATE DATABASE: evita deadlock
-        // (StartAsync sync-over-async enquanto outras threads esperam o mesmo lock).
+        // Init via Task compartilhada (sem lock durante await): evita starvation/deadlock
+        // quando N testes paralelos fazem sync-over-async em lock + StartAsync.GetResult().
         private static readonly object _initGate = new object();
-        private static readonly object _gate = new object();
+        private static readonly object _createGate = new object();
+        private static Task? _initTask;
         private static PostgreSqlContainer? _container;
         private static bool _templateReady;
+
+        /// <summary>
+        /// Dispara o start do container o mais cedo possível (carga do assembly),
+        /// para o init ocorrer em paralelo com testes InMemory.
+        /// </summary>
+        [ModuleInitializer]
+        internal static void KickoffWarmup()
+        {
+            try
+            {
+                _ = GetOrStartInitTask();
+            }
+            catch
+            {
+                // Warmup best-effort; CreateDatabase propaga o erro real.
+            }
+        }
 
         private static string ConnFor(string database)
         {
@@ -58,12 +78,10 @@ namespace Epros.Tests
         {
             var dbName = Sanitize(logicalName);
 
-            EnsureContainer();
+            EnsureReady();
 
-            lock (_gate)
+            lock (_createGate)
             {
-                EnsureTemplate();
-
                 using var conn = new NpgsqlConnection(ConnFor(MaintenanceDb));
                 conn.Open();
                 Execute(conn, $"DROP DATABASE IF EXISTS \"{dbName}\" WITH (FORCE);");
@@ -73,39 +91,62 @@ namespace Epros.Tests
             return ConnFor(dbName);
         }
 
-        private static void EnsureContainer()
+        /// <summary>Bloqueia até container + template estarem prontos (útil em testes de sanidade).</summary>
+        public static void Warmup() => EnsureReady();
+
+        private static void EnsureReady()
         {
-            if (_container is not null) return;
+            GetOrStartInitTask().ConfigureAwait(false).GetAwaiter().GetResult();
+        }
+
+        private static Task GetOrStartInitTask()
+        {
+            if (_initTask is not null) return _initTask;
 
             lock (_initGate)
             {
-                if (_container is not null) return;
-
-                var container = new PostgreSqlBuilder()
-                    .WithImage("postgres:16-alpine")
-                    .WithDatabase(MaintenanceDb)
-                    .WithUsername("epros")
-                    .WithPassword("epros")
-                    .Build();
-
-                try
-                {
-                    Console.WriteLine($"[PostgresTestDb] Iniciando postgres:16-alpine (timeout {ContainerStartTimeout.TotalMinutes:0} min)...");
-                    using var cts = new CancellationTokenSource(ContainerStartTimeout);
-                    container.StartAsync(cts.Token).ConfigureAwait(false).GetAwaiter().GetResult();
-                    Console.WriteLine("[PostgresTestDb] Container Postgres pronto.");
-                    _container = container;
-                }
-                catch (Exception ex)
-                {
-                    try { container.DisposeAsync().AsTask().GetAwaiter().GetResult(); } catch { /* ignore */ }
-                    throw new InvalidOperationException(
-                        "Não foi possível iniciar o PostgreSQL via Testcontainers em " +
-                        $"{ContainerStartTimeout.TotalMinutes:0} min. " +
-                        "Verifique se o Docker está em execução. Detalhe: " + ex.Message,
-                        ex);
-                }
+                if (_initTask is not null) return _initTask;
+                _initTask = InitializeAsync();
+                return _initTask;
             }
+        }
+
+        private static async Task InitializeAsync()
+        {
+            // Nenhum lock detido durante os awaits — libera o thread pool para o Testcontainers.
+            Console.WriteLine($"[PostgresTestDb] Iniciando postgres:16-alpine (timeout {ContainerStartTimeout.TotalMinutes:0} min)...");
+            Console.Out.Flush();
+
+            var container = new PostgreSqlBuilder()
+                .WithImage("postgres:16-alpine")
+                .WithDatabase(MaintenanceDb)
+                .WithUsername("epros")
+                .WithPassword("epros")
+                .Build();
+
+            try
+            {
+                using var cts = new CancellationTokenSource(ContainerStartTimeout);
+                await container.StartAsync(cts.Token).ConfigureAwait(false);
+                _container = container;
+                Console.WriteLine("[PostgresTestDb] Container Postgres pronto.");
+                Console.Out.Flush();
+            }
+            catch (Exception ex)
+            {
+                try { await container.DisposeAsync().ConfigureAwait(false); } catch { /* ignore */ }
+                throw new InvalidOperationException(
+                    "Não foi possível iniciar o PostgreSQL via Testcontainers em " +
+                    $"{ContainerStartTimeout.TotalMinutes:0} min. " +
+                    "Verifique se o Docker está em execução. Detalhe: " + ex.Message,
+                    ex);
+            }
+
+            Console.WriteLine("[PostgresTestDb] Aplicando migrations no template...");
+            Console.Out.Flush();
+            await Task.Run(EnsureTemplate).ConfigureAwait(false);
+            Console.WriteLine("[PostgresTestDb] Template RLS pronto.");
+            Console.Out.Flush();
         }
 
         private static void EnsureTemplate()
