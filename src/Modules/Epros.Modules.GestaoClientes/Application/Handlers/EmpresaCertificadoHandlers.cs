@@ -196,18 +196,27 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
             if (!string.IsNullOrEmpty(password) && (password.StartsWith("vault:v1:") || password.StartsWith("local:v1:")))
                 password = await _cofreService.DescriptografarAsync(password);
 
-            // REG-PEM-097: Validar host, porta, SSL, credenciais e timeout
+            // REG-PEM-097: Validar host, porta, SSL, credenciais e timeout.
+            // ConnectAsync com CancellationToken (não WhenAny+Dispose): DNS lento + Dispose
+            // enquanto ConnectAsync pendente travava o testhost no CI (~5 min blame-hang).
             try
             {
-                using (var tcpClient = new System.Net.Sockets.TcpClient())
+                using (var tcpCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
                 {
-                    var connectTask = tcpClient.ConnectAsync(emailConfig.Host, emailConfig.Port.Value);
-                    var timeoutTask = Task.Delay(5000);
-                    var completedTask = await Task.WhenAny(connectTask, timeoutTask);
-                    if (completedTask == timeoutTask)
+                    tcpCts.CancelAfter(TimeSpan.FromSeconds(5));
+                    try
+                    {
+                        using var tcpClient = new System.Net.Sockets.TcpClient();
+                        await tcpClient.ConnectAsync(emailConfig.Host, emailConfig.Port.Value, tcpCts.Token);
+                    }
+                    catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                    {
                         return CommandResult.Falha(new[] { "Tempo limite excedido ao tentar conectar ao servidor SMTP (Timeout)." });
-                    if (connectTask.IsFaulted)
-                        return CommandResult.Falha(new[] { $"Falha na conexão TCP com o servidor SMTP: {connectTask.Exception?.InnerException?.Message ?? "Erro desconhecido"}" });
+                    }
+                    catch (System.Net.Sockets.SocketException ex)
+                    {
+                        return CommandResult.Falha(new[] { $"Falha na conexão TCP com o servidor SMTP: {ex.Message}" });
+                    }
                 }
 
                 var mailMessage = new System.Net.Mail.MailMessage

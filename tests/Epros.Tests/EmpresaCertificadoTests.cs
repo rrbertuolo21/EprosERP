@@ -268,8 +268,9 @@ namespace Epros.Tests
             var cofre = new FakeSegredoCofreService();
             var handler = new TestarEmailEmpresaCommandHandler(context, Tenant(), cofre);
 
-            // SMTP com host inválido para forçar SocketException/Timeout
-            var emailConfig = new ConfiguracaoEmail("smtp.host.inexistente.com.br", 25, "user", "pass", "remetente@teste.com", TenantId, UsuarioId);
+            // IP de loopback + porta fechada: ConnectionRefused imediato, sem DNS
+            // (host inexistente travava o CI em resolução DNS / Dispose de TcpClient pendente).
+            var emailConfig = new ConfiguracaoEmail("127.0.0.1", 1, "user", "pass", "remetente@teste.com", TenantId, UsuarioId);
             context.ConfiguracoesEmail.Add(emailConfig);
             await context.SaveChangesAsync();
 
