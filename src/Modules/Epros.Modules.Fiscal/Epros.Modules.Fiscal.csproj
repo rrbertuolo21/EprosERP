@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="11.9.0" />
-    <PackageReference Include="Hercules.NET.NFe.NFCe" Version="2026.3.15.14" />
+    <PackageReference Include="Hercules.NET.NFe.NFCe" Version="2026.7.30.1803" />
     <!-- Geração de PDF do DANFE (NF-e) / cupom (NFC-e). QuestPDF (licença Community, gratuita)
          gera um PDF real e legível a partir do documento autorizado — sem depender das DLLs
          FastReport/NFe.Danfe do legado (que não estão neste repositório). -->
