@@ -18,7 +18,7 @@
     <!-- Geração de PDF do DANFE (NF-e) / cupom (NFC-e). QuestPDF (licença Community, gratuita)
          gera um PDF real e legível a partir do documento autorizado — sem depender das DLLs
          FastReport/NFe.Danfe do legado (que não estão neste repositório). -->
-    <PackageReference Include="QuestPDF" Version="2024.12.3" />
+    <PackageReference Include="QuestPDF" Version="2026.7.2" />
     <!-- Geração do QR Code obrigatório da NFC-e (Anexo II do Ajuste SINIEF 07/05) desenhado no cupom.
          QRCoder produz o PNG do QR a partir da URL de consulta (qrCode) que o motor Hercules já grava
          em infNFeSupl do XML autorizado — não fabricamos o hash CSC, apenas renderizamos a URL oficial.
