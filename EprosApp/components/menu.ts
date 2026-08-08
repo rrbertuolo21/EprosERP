@@ -35,7 +35,8 @@ export const erpMenu: MenuGroup[] = [
       { label: 'Produtos', to: '/erp/cadastros/produtos' },
       { label: 'Empresas', to: '/erp/cadastros/empresas' },
       { label: 'Contadores', to: '/erp/cadastros/contadores' },
-      { label: 'Serviços', to: '/erp/cadastros/servicos' }
+      { label: 'Serviços', to: '/erp/cadastros/servicos' },
+      { label: 'Reajustes de Preço', to: '/erp/cadastros/produtos-reajustes' }
     ]
   },
   {
@@ -108,7 +109,8 @@ export const erpMenu: MenuGroup[] = [
       { label: 'Subcontratação', to: '/erp/compras/subcontratacao' },
       { label: 'TMS — Frete', to: '/erp/compras/tms' },
       { label: 'Comércio Exterior', to: '/erp/compras/comercio-exterior' },
-      { label: 'Importar XML', to: '/erp/integracao/importar-xml' }
+      { label: 'Importar XML', to: '/erp/integracao/importar-xml' },
+      { label: 'Relatórios', to: '/erp/compras/relatorios' }
     ]
   },
   {
@@ -124,7 +126,8 @@ export const erpMenu: MenuGroup[] = [
       { label: 'Rastreabilidade', to: '/erp/estoque/rastreabilidade' },
       { label: 'WMS — Armazéns', to: '/erp/estoque/wms' },
       { label: 'Análise & Planejamento', to: '/erp/estoque/analise' },
-      { label: 'Portal do Fornecedor', to: '/erp/estoque/portal-fornecedor' }
+      { label: 'Portal do Fornecedor', to: '/erp/estoque/portal-fornecedor' },
+      { label: 'Logística de Entrada', to: '/erp/estoque/logistica-entrada' }
     ]
   },
   {
@@ -173,7 +176,9 @@ export const erpMenu: MenuGroup[] = [
     itens: [
       { label: 'Certificado', to: '/erp/configuracoes/certificado' },
       { label: 'Usuários', to: '/erp/configuracoes/permissoes/usuarios' },
-      { label: 'Perfis de Acesso', to: '/erp/configuracoes/permissoes/perfis' }
+      { label: 'Perfis de Acesso', to: '/erp/configuracoes/permissoes/perfis' },
+      { label: 'Preferências', to: '/erp/configuracoes/preferencias' },
+      { label: 'Importações', to: '/erp/configuracoes/importacoes' }
     ]
   },
 
@@ -213,7 +218,8 @@ export const erpMenu: MenuGroup[] = [
       { label: 'Centros de Custo', to: '/erp/contabilidade/centros-custo' },
       { label: 'Dimensões', to: '/erp/contabilidade/dimensoes' },
       { label: 'Alocações', to: '/erp/contabilidade/alocacoes' },
-      { label: 'Consolidação', to: '/erp/contabilidade/consolidacao' }
+      { label: 'Consolidação', to: '/erp/contabilidade/consolidacao' },
+      { label: 'Ativos Fixos', to: '/erp/contabilidade/ativos-fixos' }
     ]
   },
   {

@@ -6,7 +6,7 @@
  */
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import DataTable, { type DataTableColumn } from '~/components/shared/DataTable.vue'
@@ -48,7 +48,7 @@ async function listar() {
   carregando.value = true
   try {
     const r = await useApi(`/projetos/orcamento/projeto/${projetoId.value}`)
-    const d = extrairDados<Orcamento[]>(r)
+    const d = extrairLista<Orcamento>(r)
     itens.value = Array.isArray(d) ? d : []
   } catch (e) { toast.error(obterMensagemErro(e)); itens.value = [] } finally { carregando.value = false }
 }

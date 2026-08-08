@@ -10,7 +10,7 @@
  */
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import TextField from '~/components/shared/fields/TextField.vue'
@@ -82,7 +82,7 @@ function validar(): boolean {
 async function carregarPessoas() {
   try {
     const resposta = await useApi('/cadastros/pessoas', { query: { tamanhoPagina: 500 } })
-    pessoas.value = extrairDados<Pessoa[]>(resposta) ?? []
+    pessoas.value = extrairLista<Pessoa>(resposta) ?? []
   } catch (e) {
     console.error('[contratos-servico/[id]] pessoas', e)
   }
@@ -91,7 +91,7 @@ async function carregarPessoas() {
 async function carregarImoveis() {
   try {
     const resposta = await useApi('/imobiliaria/imoveis')
-    imoveis.value = extrairDados<Imovel[]>(resposta) ?? []
+    imoveis.value = extrairLista<Imovel>(resposta) ?? []
   } catch (e) {
     console.error('[contratos-servico/[id]] imoveis', e)
   }

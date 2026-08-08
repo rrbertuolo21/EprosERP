@@ -8,7 +8,7 @@
  * nota, a troca de destinatário fica bloqueada e emite `solicitar-troca` para a página confirmar.
  */
 import { ref, computed, watch } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { useMask } from '~/composables/useMask'
 import SelectField from '~/components/shared/fields/SelectField.vue'
 import { TIPOS_ATENDIMENTO, type NfeForm } from './nfeTypes'
@@ -73,7 +73,7 @@ async function buscarPessoas(texto: string) {
   carregandoBusca.value = true
   try {
     const resp = await useApi('/cadastros/pessoas', { query: { busca: texto, tamanhoPagina: 20 } })
-    resultados.value = extrairDados<PessoaResumo[]>(resp) ?? []
+    resultados.value = extrairLista<PessoaResumo>(resp) ?? []
     abertoDropdown.value = resultados.value.length > 0
   } catch (e) {
     console.error('[NfeDestinatarioCard] falha na busca de pessoas', e)

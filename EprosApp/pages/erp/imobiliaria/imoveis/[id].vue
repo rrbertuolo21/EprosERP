@@ -15,7 +15,7 @@
  */
 import { ref, computed, reactive, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useMask } from '~/composables/useMask'
@@ -147,7 +147,7 @@ function removerCusto(i: number) {
 async function carregarPessoas() {
   try {
     const resposta = await useApi('/cadastros/pessoas', { query: { tamanhoPagina: 500 } })
-    pessoas.value = extrairDados<Pessoa[]>(resposta) ?? []
+    pessoas.value = extrairLista<Pessoa>(resposta) ?? []
   } catch (e) {
     console.error('[imoveis/[id]] pessoas', e)
     pessoas.value = []
@@ -161,7 +161,7 @@ async function carregarMunicipiosPorUf(sigla: string) {
   }
   try {
     const resposta = await useApi(`/cadastros/geografia/municipios/obter-por-uf/${sigla}`)
-    municipios.value = extrairDados<Municipio[]>(resposta) ?? (Array.isArray(resposta) ? (resposta as Municipio[]) : [])
+    municipios.value = extrairLista<Municipio>(resposta) ?? (Array.isArray(resposta) ? (resposta as Municipio[]) : [])
   } catch (e) {
     console.error('[imoveis/[id]] municipios', e)
     municipios.value = []

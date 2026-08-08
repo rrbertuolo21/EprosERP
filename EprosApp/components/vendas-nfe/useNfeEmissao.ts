@@ -114,7 +114,7 @@ export function useNfeEmissao() {
   async function carregarListasApoio(): Promise<void> {
     try {
       const resp = await useApi('/cfops', { query: { tamanhoPagina: 500 } })
-      const itens = extrairDados<Array<{ id: number; cfop?: string | number; descricao?: string }>>(resp) ?? []
+      const itens = extrairLista<{ id: number; cfop?: string | number; descricao?: string }>(resp) ?? []
       cfopsOpcoes.value = itens.map((c) => ({
         label: c.cfop ? `${c.cfop} - ${c.descricao ?? ''}`.trim() : c.descricao ?? String(c.id),
         value: c.id
@@ -125,7 +125,7 @@ export function useNfeEmissao() {
 
     try {
       const resp = await useApi('/tipos-operacoes-fiscais', { query: { tamanhoPagina: 200 } })
-      const itens = extrairDados<Array<{ id: number; descricao?: string; nome?: string }>>(resp) ?? []
+      const itens = extrairLista<{ id: number; descricao?: string; nome?: string }>(resp) ?? []
       tiposOperacaoOpcoes.value = itens.map((t) => ({
         label: t.descricao ?? t.nome ?? String(t.id),
         value: t.id

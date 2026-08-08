@@ -8,7 +8,7 @@
  * Busca produtos em `/estoque-produtos` (via useApi) e emite o item pronto para a lista.
  */
 import { computed, ref, watch } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import AppDialog from '~/components/shared/AppDialog.vue'
 import QuantityInput from '~/components/shared/fields/QuantityInput.vue'
 import MoneyInput from '~/components/shared/fields/MoneyInput.vue'
@@ -72,7 +72,7 @@ async function buscarProdutos() {
     const resposta = await useApi('/estoque-produtos', {
       query: { termo, pagina: 1, tamanhoPagina: 20 }
     })
-    produtos.value = extrairDados<ProdutoResumo[]>(resposta) ?? []
+    produtos.value = extrairLista<ProdutoResumo>(resposta) ?? []
   } catch (e) {
     erroBusca.value = 'Não foi possível buscar produtos.'
     produtos.value = []

@@ -7,7 +7,7 @@
  * `abrir` com o id da venda para a página navegar até a edição.
  */
 import { ref, watch } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useHelper } from '~/composables/useHelper'
 import AppDialog from '~/components/shared/AppDialog.vue'
@@ -52,7 +52,7 @@ async function buscar() {
     const query: Record<string, unknown> = { pagina: 1, tamanhoPagina: 20 }
     if (filtroSituacao.value) query.status = filtroSituacao.value
     const resp = await useApi('/vendas-fiscal', { query })
-    itens.value = extrairDados<VendaResumo[]>(resp) ?? []
+    itens.value = extrairLista<VendaResumo>(resp) ?? []
   } catch (e) {
     erro.value = obterMensagemErro(e)
     itens.value = []

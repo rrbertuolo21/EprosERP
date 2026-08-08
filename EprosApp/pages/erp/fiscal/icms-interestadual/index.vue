@@ -13,7 +13,7 @@
  * auxiliar ao final da tabela).
  */
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import PageToolbar from '~/components/shared/PageToolbar.vue'
@@ -65,7 +65,7 @@ async function carregar() {
       useApi('/fiscal/fcp-aliquotas-uf', { query: { tamanhoPagina: 100 } })
     ])
 
-    const aliquotas = extrairDados<IcmsAliquotaInterestadual[]>(respostaIcms) ?? []
+    const aliquotas = extrairLista<IcmsAliquotaInterestadual>(respostaIcms) ?? []
     const novaMatriz: LinhaMatriz[] = ufsBrasil.map((uf) => ({ ufOrigem: uf }))
     for (const item of aliquotas) {
       const linha = novaMatriz.find((l) => l.ufOrigem === item.ufOrigem)
@@ -73,7 +73,7 @@ async function carregar() {
     }
     matriz.value = novaMatriz
 
-    const fcps = extrairDados<FcpAliquotaUf[]>(respostaFcp) ?? []
+    const fcps = extrairLista<FcpAliquotaUf>(respostaFcp) ?? []
     const mapaFcp: Record<string, number> = {}
     for (const item of fcps) mapaFcp[item.uf] = item.valorPercentual
     fcpPorUf.value = mapaFcp

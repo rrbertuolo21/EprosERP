@@ -7,7 +7,7 @@
  * IO exclusivamente via `useApi` (composables/useApi.ts).
  */
 import { computed, reactive, ref } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useMask } from '~/composables/useMask'
@@ -167,7 +167,7 @@ export function useParceiroForm(idRota: string) {
       const resposta = await useApi<unknown>('/cadastros/geografia/municipios/obter-por-uf/{uf}', {
         params: { uf }
       })
-      const lista = extrairDados<MunicipioApi[]>(resposta) ?? (Array.isArray(resposta) ? (resposta as MunicipioApi[]) : [])
+      const lista = extrairLista<MunicipioApi>(resposta) ?? (Array.isArray(resposta) ? (resposta as MunicipioApi[]) : [])
       municipios.value = lista.map((m) => ({ id: String(m.id ?? ''), descricao: m.nome ?? m.descricao ?? '' }))
     } catch (e) {
       console.error('[useParceiroForm.carregarMunicipios]', e)
@@ -376,6 +376,29 @@ export function useParceiroForm(idRota: string) {
     return true
   }
 
+  /**
+   * Normaliza o payload do back para o shape do form (contrato assimétrico):
+   * a API serializa enum como NÚMERO (ex.: tipoPessoa 1/2/3) e CPF/CNPJ como value-object `{ valor }`,
+   * mas o form compara `tipoPessoa === 'PessoaFisica'` e faz v-model direto no cpf/cnpj string.
+   * Sem isto, ao EDITAR os campos de identidade (nome/CPF) não aparecem (a seção PF/PJ fica escondida).
+   */
+  function normalizarPessoaCarregada(d: Record<string, unknown>): void {
+    if (!d) return
+    const TP: Record<number, string> = { 1: 'PessoaFisica', 2: 'PessoaJuridica', 3: 'PessoaEstrangeira' }
+    if (typeof d.tipoPessoa === 'number') d.tipoPessoa = TP[d.tipoPessoa] ?? d.tipoPessoa
+    if (!['PessoaFisica', 'PessoaJuridica', 'PessoaEstrangeira'].includes(d.tipoPessoa as string)) {
+      if (d.pessoaFisica) d.tipoPessoa = 'PessoaFisica'
+      else if (d.pessoaJuridica) d.tipoPessoa = 'PessoaJuridica'
+      else if (d.pessoaEstrangeiro) d.tipoPessoa = 'PessoaEstrangeira'
+    }
+    const valor = (v: unknown) =>
+      v && typeof v === 'object' && 'valor' in (v as object) ? (v as { valor: unknown }).valor : v
+    const pf = d.pessoaFisica as Record<string, unknown> | null
+    const pj = d.pessoaJuridica as Record<string, unknown> | null
+    if (pf) pf.cpf = valor(pf.cpf)
+    if (pj) pj.cnpj = valor(pj.cnpj)
+  }
+
   // --- Carregar / Salvar ---
   async function carregar() {
     if (ehNovo.value) return
@@ -383,6 +406,7 @@ export function useParceiroForm(idRota: string) {
     try {
       const resposta = await useApi<unknown>('/cadastros/pessoas/{id}', { params: { id: idRota } })
       const dados = extrairDados<Partial<PessoaForm>>(resposta) ?? (resposta as Partial<PessoaForm>)
+      normalizarPessoaCarregada(dados as Record<string, unknown>)
       Object.assign(pessoa, pessoaFormPadrao(), dados)
     } catch (e) {
       toast.error(obterMensagemErro(e))

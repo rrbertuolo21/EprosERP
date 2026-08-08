@@ -17,7 +17,7 @@
  *   POST   /aplicativo/assinaturas/meios-pagamento/{id}/padrao
  */
 import { ref, onMounted } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import PageToolbar from '~/components/shared/PageToolbar.vue'
@@ -59,7 +59,7 @@ async function carregar() {
     const resposta = await useApi<{ dados?: MeioPagamento[]; data?: MeioPagamento[] }>(
       '/aplicativo/assinaturas/meios-pagamento'
     )
-    meios.value = extrairDados<MeioPagamento[]>(resposta) ?? []
+    meios.value = extrairLista<MeioPagamento>(resposta) ?? []
   } catch (e) {
     toast.error(obterMensagemErro(e))
     meios.value = []

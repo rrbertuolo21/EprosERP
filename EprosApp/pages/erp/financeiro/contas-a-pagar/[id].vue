@@ -9,7 +9,7 @@
  * Rota `novo` cria; qualquer outro valor numérico edita o registro existente.
  */
 import { computed, onMounted, ref } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useHelper } from '~/composables/useHelper'
@@ -103,7 +103,7 @@ async function carregarFornecedores() {
   try {
     // Fornecedores são pessoas cadastradas em cadastros/pessoas (mesmo cadastro de clientes).
     const resposta = await useApi('/cadastros/pessoas', { query: { tamanhoPagina: 200 } })
-    fornecedores.value = extrairDados<Fornecedor[]>(resposta) ?? []
+    fornecedores.value = extrairLista<Fornecedor>(resposta) ?? []
   } catch (e) {
     console.error('[contas-a-pagar/[id]] erro ao carregar fornecedores', e)
   } finally {
@@ -115,7 +115,7 @@ async function carregarNaturezas() {
   carregandoNaturezas.value = true
   try {
     const resposta = await useApi('/configuracao-codigo-naturezas-financeiras', { query: { tamanhoPagina: 200 } })
-    naturezas.value = extrairDados<NaturezaFinanceira[]>(resposta) ?? []
+    naturezas.value = extrairLista<NaturezaFinanceira>(resposta) ?? []
   } catch (e) {
     console.error('[contas-a-pagar/[id]] erro ao carregar naturezas financeiras', e)
   } finally {

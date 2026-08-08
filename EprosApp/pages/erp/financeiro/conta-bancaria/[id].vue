@@ -8,7 +8,7 @@
  */
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useMask } from '~/composables/useMask'
@@ -102,7 +102,7 @@ function validar(): boolean {
 async function carregarBancos() {
   try {
     const resposta = await useApi('/bancos', { query: { tamanhoPagina: 200 } })
-    bancos.value = extrairDados<Banco[]>(resposta) ?? []
+    bancos.value = extrairLista<Banco>(resposta) ?? []
   } catch (e) {
     console.error('[conta-bancaria/[id]] bancos', e)
     bancos.value = []

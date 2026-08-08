@@ -20,7 +20,7 @@
  * simulamos sucesso nem Blob fake.
  */
 import { ref } from 'vue'
-import { useApi, extrairDados, type CommandResult } from '~/composables/useApi'
+import { useApi, extrairDados, type CommandResult, extrairLista} from '~/composables/useApi'
 import { useApiList, obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import {
@@ -246,7 +246,7 @@ export function useTransmissoes() {
       const resp = await useApi<CommandResult<string[]>>('/vendas-fiscal/{id}/nfe/referenciadas', {
         params: { id: String(id) }
       })
-      return extrairDados<string[]>(resp) ?? []
+      return extrairLista<string>(resp) ?? []
     } catch (e) {
       console.error('[useTransmissoes] falha ao obter referenciadas', e)
       return []

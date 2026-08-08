@@ -6,7 +6,7 @@
  */
 import { reactive, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import TextField from '~/components/shared/fields/TextField.vue'
@@ -43,7 +43,7 @@ const salvando = ref(false)
 async function carregarCategorias() {
   try {
     const resposta = await useApi('/grc/denuncias/categorias')
-    const dados = extrairDados<Categoria[]>(resposta) ?? []
+    const dados = extrairLista<Categoria>(resposta) ?? []
     categorias.value = dados.map((c) => ({ label: c.nome ?? c.id, value: c.id }))
   } catch (e) {
     console.error('[grc/denuncias/[id]] categorias', e)

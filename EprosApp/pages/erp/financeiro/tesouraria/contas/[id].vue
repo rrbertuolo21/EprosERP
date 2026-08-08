@@ -6,7 +6,7 @@
  */
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useHelper } from '~/composables/useHelper'
@@ -99,7 +99,7 @@ async function carregarSaldo() {
 async function carregarTransacoes() {
   try {
     const resposta = await useApi('/tesouraria/contas/{id}/transacoes', { params: { id: idParam } })
-    transacoes.value = extrairDados<Transacao[]>(resposta) ?? []
+    transacoes.value = extrairLista<Transacao>(resposta) ?? []
   } catch (e) {
     console.error('[contas/[id]] transacoes', e)
   }

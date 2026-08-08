@@ -7,7 +7,7 @@
  */
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useHelper } from '~/composables/useHelper'
@@ -100,7 +100,7 @@ async function carregar() {
 async function carregarFaturas() {
   try {
     const resposta = await useApi('/contratos-financeiros/{id}/faturas', { params: { id: idParam } })
-    faturas.value = extrairDados<Fatura[]>(resposta) ?? []
+    faturas.value = extrairLista<Fatura>(resposta) ?? []
   } catch (e) {
     console.error('[contratos/[id]] faturas', e)
   }
@@ -108,7 +108,7 @@ async function carregarFaturas() {
 async function carregarReajustes() {
   try {
     const resposta = await useApi('/contratos-financeiros/{id}/reajustes', { params: { id: idParam } })
-    reajustes.value = extrairDados<Reajuste[]>(resposta) ?? []
+    reajustes.value = extrairLista<Reajuste>(resposta) ?? []
   } catch (e) {
     console.error('[contratos/[id]] reajustes', e)
   }

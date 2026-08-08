@@ -13,7 +13,7 @@
  */
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from '#app'
-import { useApi, extrairDados, type CommandResult } from '~/composables/useApi'
+import { useApi, extrairDados, type CommandResult, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useMask } from '~/composables/useMask'
@@ -66,6 +66,47 @@ const ufOpcoes = [
 const regimeSimplesNacional = computed(() => empresa.regimeTributario === 1)
 const exigeApuracao = computed(() => empresa.regimeTributario === 2 || empresa.regimeTributario === 3)
 
+// --- Certificado digital A1 (.pfx/.p12) — enviado ao endpoint da própria empresa ---
+const certSenha = ref('')
+const certArquivoBase64 = ref<string | null>(null)
+const certNomeArquivo = ref<string | null>(null)
+const enviandoCert = ref(false)
+
+function onCertificadoSelecionado(evento: Event): void {
+  const input = evento.target as HTMLInputElement
+  const arquivo = input.files?.[0]
+  if (!arquivo) return
+  certNomeArquivo.value = arquivo.name
+  const reader = new FileReader()
+  reader.onload = () => {
+    const resultado = String(reader.result)
+    certArquivoBase64.value = resultado.includes(',') ? resultado.split(',')[1] : resultado
+  }
+  reader.readAsDataURL(arquivo)
+}
+
+async function enviarCertificado(): Promise<void> {
+  if (criandoNova) { toast.error('Salve a empresa antes de enviar o certificado.'); return }
+  if (!certArquivoBase64.value) { toast.error('Selecione o arquivo do certificado (.pfx/.p12).'); return }
+  if (!certSenha.value) { toast.error('Informe a senha do certificado.'); return }
+  enviandoCert.value = true
+  try {
+    await useApi('/cadastros/empresas/{id}/certificados', {
+      method: 'POST',
+      params: { id: idParam },
+      body: { arquivoBase64: certArquivoBase64.value, senha: certSenha.value }
+    })
+    toast.success('Certificado enviado e armazenado com segurança.')
+    certArquivoBase64.value = null
+    certNomeArquivo.value = null
+    certSenha.value = ''
+  } catch (e) {
+    toast.error(obterMensagemErro(e))
+  } finally {
+    enviandoCert.value = false
+  }
+}
+
 /** Carrega a empresa (Identificação + Endereço), os Parâmetros DF-e e os Contatos. */
 async function carregarEmpresa() {
   if (criandoNova) return
@@ -79,6 +120,12 @@ async function carregarEmpresa() {
       Object.assign(empresa, dados)
       empresa.id = idParam
       cnpjDigitado.value = maskCpfCnpj(dados.cnpj ?? '')
+      // A empresa base pode devolver empresaParametrosDfe = null (sem parâmetros DF-e cadastrados).
+      // Object.assign sobrescreve o default por null e o EmpresaDfePanel quebraria ao ler
+      // `dfe.tipoAmbienteNfce` de null (TypeError no load). Garantir sempre um objeto válido.
+      if (!empresa.empresaParametrosDfe) {
+        empresa.empresaParametrosDfe = criarEmpresaFormInicial().empresaParametrosDfe
+      }
     }
 
     try {
@@ -96,7 +143,7 @@ async function carregarEmpresa() {
       const respContatos = await useApi<CommandResult<EmpresaContato[]>>('/cadastros/empresas/{empresaId}/contatos', {
         params: { empresaId: idParam }
       })
-      contatos.value = extrairDados<EmpresaContato[]>(respContatos) ?? []
+      contatos.value = extrairLista<EmpresaContato>(respContatos) ?? []
     } catch {
       contatos.value = []
     }
@@ -328,6 +375,26 @@ onMounted(() => {
 
         <section v-show="abaAtiva === 'NFCe/NFe'">
           <EmpresaDfePanel v-model="empresa.empresaParametrosDfe" :regime-simples-nacional="regimeSimplesNacional" />
+
+          <div class="cert-box">
+            <h4 class="cert-titulo">Certificado digital A1</h4>
+            <p class="cert-hint">
+              Arquivo <code>.pfx</code>/<code>.p12</code> + senha. Armazenado criptografado (cofre) e usado para
+              assinar/transmitir os documentos fiscais à SEFAZ. Envie após salvar a empresa.
+            </p>
+            <div class="cert-grid">
+              <label class="file-label">
+                <input type="file" accept=".pfx,.p12" class="file-input" @change="onCertificadoSelecionado" />
+                <span class="btn btn-secondary">Selecionar arquivo…</span>
+                <span class="file-nome">{{ certNomeArquivo ?? 'Nenhum arquivo selecionado' }}</span>
+              </label>
+              <TextField v-model="certSenha" type="password" label="Senha do certificado" />
+              <button type="button" class="btn btn-primary" :disabled="enviandoCert || criandoNova" @click="enviarCertificado">
+                <span v-if="enviandoCert" class="spinner"></span>
+                <span v-else>Enviar certificado</span>
+              </button>
+            </div>
+          </div>
         </section>
       </div>
     </div>
@@ -336,6 +403,14 @@ onMounted(() => {
 
 <style scoped>
 .empresa-form { padding: 8px 16px 20px; }
+.cert-box { margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.cert-titulo { margin: 0 0 4px; font-size: 14px; }
+.cert-hint { margin: 0 0 12px; font-size: 13px; color: var(--text-secondary); }
+.cert-hint code { background: rgba(255, 255, 255, 0.06); padding: 1px 5px; border-radius: 4px; }
+.cert-grid { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.file-label { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.file-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.file-nome { font-size: 13px; color: var(--text-secondary); }
 .tabs-nav {
   display: flex;
   gap: 4px;

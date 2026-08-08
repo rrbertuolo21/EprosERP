@@ -3,32 +3,50 @@
  */
 import type { PessoaListaItem } from './types'
 
-/** Nome de exibição da pessoa conforme o tipo. */
-export function nomeExibicao(item: PessoaListaItem): string {
-  switch (item.tipoPessoa) {
-    case 'PessoaFisica':
-      return [item.pessoaFisica?.nome, item.pessoaFisica?.sobrenome].filter(Boolean).join(' ')
-    case 'PessoaJuridica':
-      return item.pessoaJuridica?.razaoSocial || item.pessoaJuridica?.nomeFantasia || ''
-    case 'PessoaEstrangeira':
-      return item.pessoaEstrangeiro?.nome || ''
-    default:
-      return ''
+/**
+ * Extrai o valor textual de um documento que a API pode devolver como string crua
+ * OU como value-object serializado `{ valor }` (OwnsOne CPF/CNPJ). Tolera ambos.
+ */
+function valorDocumento(v: unknown): string {
+  if (typeof v === 'string') return v
+  if (v && typeof v === 'object' && 'valor' in v) {
+    const val = (v as { valor?: unknown }).valor
+    return val == null ? '' : String(val)
   }
+  return ''
 }
 
-/** CPF/CNPJ/identificação de exibição conforme o tipo. */
-export function documentoExibicao(item: PessoaListaItem, maskCpfCnpj: (v: string) => string): string {
-  switch (item.tipoPessoa) {
-    case 'PessoaFisica':
-      return item.pessoaFisica?.cpf ? maskCpfCnpj(item.pessoaFisica.cpf) : ''
-    case 'PessoaJuridica':
-      return item.pessoaJuridica?.cnpj ? maskCpfCnpj(item.pessoaJuridica.cnpj) : ''
-    case 'PessoaEstrangeira':
-      return item.pessoaEstrangeiro?.identificacaoEstrangeiro || ''
-    default:
-      return ''
+/**
+ * Nome de exibição da pessoa. Detecta o tipo pela sub-entidade presente
+ * (imune à representação do enum `tipoPessoa` — número no back, string no contrato do front).
+ */
+export function nomeExibicao(item: PessoaListaItem): string {
+  if (item.pessoaFisica) {
+    return [item.pessoaFisica.nome, item.pessoaFisica.sobrenome].filter(Boolean).join(' ')
   }
+  if (item.pessoaJuridica) {
+    return item.pessoaJuridica.razaoSocial || item.pessoaJuridica.nomeFantasia || ''
+  }
+  if (item.pessoaEstrangeiro) {
+    return item.pessoaEstrangeiro.nome || ''
+  }
+  return ''
+}
+
+/** CPF/CNPJ/identificação de exibição — detecta pela sub-entidade e tolera string ou `{ valor }`. */
+export function documentoExibicao(item: PessoaListaItem, maskCpfCnpj: (v: string) => string): string {
+  if (item.pessoaFisica) {
+    const cpf = valorDocumento(item.pessoaFisica.cpf)
+    return cpf ? maskCpfCnpj(cpf) : ''
+  }
+  if (item.pessoaJuridica) {
+    const cnpj = valorDocumento(item.pessoaJuridica.cnpj)
+    return cnpj ? maskCpfCnpj(cnpj) : ''
+  }
+  if (item.pessoaEstrangeiro) {
+    return item.pessoaEstrangeiro.identificacaoEstrangeiro || ''
+  }
+  return ''
 }
 
 /** Endereço principal da pessoa (tipoEndereco === 'Principal'), quando existir. */

@@ -6,6 +6,7 @@ using Epros.Modules.Aplicativo.Application.Commands;
 using Epros.Modules.Aplicativo.Application.Queries;
 using Epros.Modules.Aplicativo.Domain.Enums;
 using Epros.Shared.Application.Models;
+using Epros.API.Security;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -88,10 +89,12 @@ namespace Epros.API.Controllers
             return result.Sucesso ? Ok(result) : UnprocessableEntity(result);
         }
 
+        [AbacAuthorize("Importacao", "Consultar")]
         [HttpGet("importacoes")]
         public async Task<IActionResult> ListarImportacoes([FromQuery] string? tipoImportacao, [FromQuery] EUplStatusImportacao? status, [FromQuery] int pagina = 1, [FromQuery] int tamanhoPagina = 20)
             => Ok(await _mediator.Send(new ListarExecucoesImportacaoQuery(tipoImportacao, status, pagina, tamanhoPagina)));
 
+        [AbacAuthorize("Importacao", "Consultar")]
         [HttpGet("importacoes/{id:guid}")]
         public async Task<IActionResult> ObterImportacao([FromRoute] Guid id)
         {
@@ -99,6 +102,7 @@ namespace Epros.API.Controllers
             return result == null ? NotFound() : Ok(result);
         }
 
+        [AbacAuthorize("Importacao", "Consultar")]
         [HttpGet("importacoes/erros/{referenciaErro}")]
         public async Task<IActionResult> ListarErros([FromRoute] string referenciaErro)
             => Ok(await _mediator.Send(new ListarErrosImportacaoQuery(referenciaErro)));

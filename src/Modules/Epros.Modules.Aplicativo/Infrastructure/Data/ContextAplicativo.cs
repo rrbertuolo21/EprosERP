@@ -25,7 +25,6 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
         public DbSet<AcessoUsuarioTenant> AcessosUsuarioTenant => Set<AcessoUsuarioTenant>();
         public DbSet<IdentidadeExterna> IdentidadesExternas => Set<IdentidadeExterna>();
         public DbSet<SessaoUsuario> SessoesUsuarios => Set<SessaoUsuario>();
-        public DbSet<PersonalAccessToken> PersonalAccessTokens => Set<PersonalAccessToken>();
         public DbSet<HistoricoLogin> HistoricosLogin => Set<HistoricoLogin>();
         public DbSet<BannedIp> BannedIps => Set<BannedIp>();
         public DbSet<ConfiguracaoEmpresa> ConfiguracoesEmpresas => Set<ConfiguracaoEmpresa>();
@@ -250,12 +249,6 @@ namespace Epros.Modules.Aplicativo.Infrastructure.Data
                 entity.HasKey(s => s.Id);
                 entity.HasIndex(s => s.TokenSessao).IsUnique().HasDatabaseName("ix_sessoes_token");
                 entity.HasIndex(s => s.Jti).HasDatabaseName("ix_sessoes_jti");
-            });
-
-            modelBuilder.Entity<PersonalAccessToken>(entity =>
-            {
-                entity.HasKey(p => p.Id);
-                entity.HasIndex(p => p.TokenHash).IsUnique().HasDatabaseName("ix_tokens_hash");
             });
 
             modelBuilder.Entity<HistoricoLogin>(entity =>

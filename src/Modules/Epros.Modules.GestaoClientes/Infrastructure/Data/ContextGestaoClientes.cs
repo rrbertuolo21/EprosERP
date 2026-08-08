@@ -122,7 +122,6 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
         // Parâmetros Operacionais
         public DbSet<FusoHorario> FusosHorarios => Set<FusoHorario>();
         public DbSet<Moeda> Moedas => Set<Moeda>();
-        public DbSet<UpgradePlano> UpgradesPlanos => Set<UpgradePlano>();
 
         // 1.06 — Idempotência do webhook de pagamento (dedupe por id de evento/pagamento).
         public DbSet<WebhookEventoProcessado> WebhookEventosProcessados => Set<WebhookEventoProcessado>();
@@ -964,16 +963,6 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Data
             {
                 entity.HasKey(m => m.Id);
                 entity.HasIndex(m => m.CodigoISO).IsUnique().HasDatabaseName("ix_moedas_codigo_iso");
-            });
-
-            modelBuilder.Entity<UpgradePlano>(entity =>
-            {
-                entity.HasKey(u => u.Id);
-                entity.HasIndex(u => u.OrderNo).IsUnique().HasDatabaseName("ix_upgrades_planos_order_no");
-                entity.HasOne<Plano>()
-                      .WithMany()
-                      .HasForeignKey(u => u.PlanoId)
-                      .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<ExercicioFinanceiro>(entity =>

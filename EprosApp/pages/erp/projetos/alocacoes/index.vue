@@ -5,7 +5,7 @@
  * O contrato só expõe POST para criar (sem GET/{id} nem PUT) — criação via diálogo.
  */
 import { ref, reactive, onMounted } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import DataTable, { type DataTableColumn } from '~/components/shared/DataTable.vue'
@@ -46,7 +46,7 @@ async function listar() {
   carregando.value = true
   try {
     const r = await useApi(`/projetos/recursos/alocacoes/projeto/${projetoId.value}`)
-    const d = extrairDados<Alocacao[]>(r)
+    const d = extrairLista<Alocacao>(r)
     itens.value = Array.isArray(d) ? d : []
   } catch (e) { toast.error(obterMensagemErro(e)); itens.value = [] } finally { carregando.value = false }
 }

@@ -8,7 +8,7 @@
  *   POST leads/{id}/converter          (ConverterCrmLeadCommand)
  * `CriadoPorUsuarioId` é injetado com o usuário logado. Apresentação — sem regra nova.
  */
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import DataTable, { type DataTableColumn } from '~/components/shared/DataTable.vue'
 import PageToolbar from '~/components/shared/PageToolbar.vue'
 import FilterBar, { type FilterField } from '~/components/shared/FilterBar.vue'
@@ -18,7 +18,7 @@ import TextField from '~/components/shared/fields/TextField.vue'
 import SelectField from '~/components/shared/fields/SelectField.vue'
 import MoneyInput from '~/components/shared/fields/MoneyInput.vue'
 import { useApiList, obterMensagemErro } from '~/composables/useApiList'
-import { useApi } from '~/composables/useApi'
+import { useApi, extrairDados } from '~/composables/useApi'
 import { useToast } from '~/composables/useToast'
 import { useAuth } from '~/composables/useAuth'
 import { formatMoeda } from '~/components/concessionarias-shared/formatadores'
@@ -51,7 +51,7 @@ interface LeadFiltros {
 }
 
 const toast = useToast()
-const { getUser } = useAuth()
+const { getUserId } = useAuth()
 const confirmRef = ref<InstanceType<typeof ConfirmDialog>>()
 
 const lista = useApiList<Lead, LeadFiltros>('/vendas/crm/leads', {
@@ -73,15 +73,50 @@ const camposFiltro: FilterField[] = [
   { key: 'status', label: 'Status', type: 'select', options: STATUS }
 ]
 
+// ---- Pipelines/etapas (para o cadastro poder gerar oportunidade na conversão)
+interface Etapa { id: string; nome: string; ordem: number; tipoEtapa: number }
+interface Pipeline { id: string; nome: string; etapas: Etapa[] }
+const pipelines = ref<Pipeline[]>([])
+const opcoesPipeline = computed(() => pipelines.value.map((p) => ({ value: p.id, label: p.nome })))
+const opcoesEtapa = computed(() => {
+  const p = pipelines.value.find((x) => x.id === form.pipelineId)
+  return (p?.etapas ?? []).map((e) => ({ value: e.id, label: e.nome }))
+})
+
+async function carregarPipelines() {
+  try {
+    const resp = await useApi('/vendas/crm/pipelines')
+    pipelines.value = extrairDados<{ itens: Pipeline[] }>(resp)?.itens ?? []
+  } catch {
+    pipelines.value = []
+  }
+}
+
+/** Default: primeiro pipeline + sua primeira etapa. Sem isto o lead nasce sem pipeline e não pode
+ * gerar oportunidade na conversão (regra de domínio ConverterCrmLead). */
+function aplicarPipelinePadrao() {
+  const p = pipelines.value[0]
+  form.pipelineId = p?.id ?? null
+  form.etapaId = p?.etapas?.[0]?.id ?? null
+}
+function aoTrocarPipeline() {
+  const p = pipelines.value.find((x) => x.id === form.pipelineId)
+  form.etapaId = p?.etapas?.[0]?.id ?? null
+}
+
 // ---- Criar lead
 const dlgNovo = ref(false)
 const salvando = ref(false)
-const form = reactive({ nome: '', email: '', telefone: '', assunto: '', valorEstimado: 0 as number | null, notas: '' })
+const form = reactive({
+  nome: '', email: '', telefone: '', assunto: '', valorEstimado: 0 as number | null, notas: '',
+  pipelineId: null as string | null, etapaId: null as string | null
+})
 const erros = reactive<Record<string, string>>({})
 
 function abrirNovo() {
-  Object.assign(form, { nome: '', email: '', telefone: '', assunto: '', valorEstimado: 0, notas: '' })
+  Object.assign(form, { nome: '', email: '', telefone: '', assunto: '', valorEstimado: 0, notas: '', pipelineId: null, etapaId: null })
   for (const k of Object.keys(erros)) delete erros[k]
+  aplicarPipelinePadrao()
   dlgNovo.value = true
 }
 
@@ -100,8 +135,10 @@ async function salvar() {
         assunto: form.assunto || null,
         valorEstimado: form.valorEstimado ?? null,
         notas: form.notas || null,
+        pipelineId: form.pipelineId,
+        etapaId: form.etapaId,
         status: 0,
-        criadoPorUsuarioId: String(getUser()?.id ?? '')
+        criadoPorUsuarioId: getUserId()
       }
     })
     toast.success('Lead criado.')
@@ -164,7 +201,10 @@ async function confirmarConverter() {
   }
 }
 
-onMounted(() => void lista.buscar())
+onMounted(() => {
+  void lista.buscar()
+  void carregarPipelines()
+})
 </script>
 
 <template>
@@ -211,7 +251,23 @@ onMounted(() => void lista.buscar())
         <TextField v-model="form.assunto" label="Assunto" />
         <MoneyInput v-model="form.valorEstimado" label="Valor estimado" />
         <TextField v-model="form.notas" label="Notas" />
+        <SelectField
+          v-model="form.pipelineId"
+          label="Pipeline"
+          :options="opcoesPipeline"
+          placeholder="Sem pipeline"
+          @change="aoTrocarPipeline"
+        />
+        <SelectField
+          v-model="form.etapaId"
+          label="Etapa"
+          :options="opcoesEtapa"
+          placeholder="Sem etapa"
+        />
       </div>
+      <p v-if="!opcoesPipeline.length" class="dica-pipeline">
+        Nenhum pipeline configurado. Um lead sem pipeline não poderá gerar oportunidade na conversão.
+      </p>
       <template #footer>
         <button type="button" class="btn btn-secondary" :disabled="salvando" @click="dlgNovo = false">Cancelar</button>
         <button type="button" class="btn btn-primary" :disabled="salvando" @click="salvar">

@@ -106,7 +106,7 @@ function buscarProdutos(texto: string) {
     buscandoProduto.value = true
     try {
       const resp = await useApi('/estoque-produtos', { query: { tamanhoPagina: 50, descricao: texto } })
-      const itens = extrairDados<Array<{ id: number; produtoId?: number; descricao?: string; codigo?: string }>>(resp) ?? []
+      const itens = extrairLista<{ id: number; produtoId?: number; descricao?: string; codigo?: string }>(resp) ?? []
       produtosEncontrados.value = itens.map((i) => ({
         id: i.produtoId ?? i.id,
         descricao: i.descricao ?? `Produto #${i.produtoId ?? i.id}`,

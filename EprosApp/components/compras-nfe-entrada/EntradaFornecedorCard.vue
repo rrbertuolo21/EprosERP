@@ -10,7 +10,7 @@
  * e o usuário tenta trocar o fornecedor (a página confirma antes de limpar os itens).
  */
 import { ref } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { useMask } from '~/composables/useMask'
 import TextField from '~/components/shared/fields/TextField.vue'
 import type { EntradaForm } from './tipos'
@@ -60,7 +60,7 @@ async function buscar() {
     const resp = await useApi('/cadastros/pessoas', {
       query: { localizar: q, pagina: 1, tamanhoPagina: 20 }
     })
-    resultados.value = extrairDados<PessoaResumo[]>(resp) ?? []
+    resultados.value = extrairLista<PessoaResumo>(resp) ?? []
     mostrarResultados.value = true
   } catch (e) {
     console.error('[EntradaFornecedorCard] falha ao buscar fornecedor', e)

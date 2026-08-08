@@ -9,7 +9,7 @@
  */
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import TextField from '~/components/shared/fields/TextField.vue'
@@ -127,7 +127,7 @@ async function carregarCfops() {
   carregandoCfops.value = true
   try {
     const resposta = await useApi('/cfops', { query: { tamanhoPagina: 500 } })
-    cfops.value = extrairDados<CfopOpcao[]>(resposta) ?? []
+    cfops.value = extrairLista<CfopOpcao>(resposta) ?? []
   } catch (e) {
     console.error('[tipo-operacao-fiscal/[id]] cfops', e)
     cfops.value = []

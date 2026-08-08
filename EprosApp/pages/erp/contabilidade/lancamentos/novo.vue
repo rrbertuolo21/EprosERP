@@ -10,7 +10,7 @@
  */
 import { computed, reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useHelper } from '~/composables/useHelper'
@@ -102,7 +102,7 @@ async function carregarDados() {
     ])
     const dConta = extrairDados<{ itens?: ContaOpcao[] } | ContaOpcao[]>(rConta)
     contas.value = Array.isArray(dConta) ? dConta : dConta?.itens ?? []
-    periodos.value = extrairDados<PeriodoOpcao[]>(rPer) ?? []
+    periodos.value = extrairLista<PeriodoOpcao>(rPer) ?? []
   } catch (e) {
     console.error('[contabilidade/lancamentos/novo] carregarDados', e)
   }

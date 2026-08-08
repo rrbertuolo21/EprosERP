@@ -123,6 +123,19 @@ export function useAuth() {
   const isAdmin = () => getUser()?.status === 'Admin' || getUser()?.isAdmin === true
 
   /**
+   * GUID do usuário logado, lido do claim `nameidentifier` do JWT (fonte confiável —
+   * `getUser().id` pode não existir na sessão persistida). Retorna null se não houver token.
+   */
+  function getUserId(): string | null {
+    const p = decodeJWT(getToken())
+    const id =
+      p?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ??
+      p?.nameid ??
+      p?.sub
+    return id ? String(id) : null
+  }
+
+  /**
    * Efetua login. Persiste token + usuário e devolve o usuário de sessão.
    * @param rota rota de login da API (default `/account/login`).
    */
@@ -187,6 +200,7 @@ export function useAuth() {
     clearSession,
     isAuthenticated,
     isAdmin,
+    getUserId,
     decodeJWT,
     login,
     me,

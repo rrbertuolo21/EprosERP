@@ -20,7 +20,7 @@
  */
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import TextField from '~/components/shared/fields/TextField.vue'
@@ -245,7 +245,7 @@ function validar(): boolean {
 async function carregarCfops() {
   try {
     const resposta = await useApi('/cfops', { query: { tamanhoPagina: 500 } })
-    cfops.value = extrairDados<CfopOpcao[]>(resposta) ?? []
+    cfops.value = extrairLista<CfopOpcao>(resposta) ?? []
   } catch (e) {
     console.error('[ncm-tributacao/[id]] cfops', e)
   }
@@ -254,7 +254,7 @@ async function carregarCfops() {
 async function carregarCests() {
   try {
     const resposta = await useApi('/fiscal/cests', { query: { tamanhoPagina: 500 } })
-    cests.value = extrairDados<CestOpcao[]>(resposta) ?? []
+    cests.value = extrairLista<CestOpcao>(resposta) ?? []
   } catch (e) {
     console.error('[ncm-tributacao/[id]] cests', e)
   }
@@ -263,7 +263,7 @@ async function carregarCests() {
 async function carregarCstsIbsCbs() {
   try {
     const resposta = await useApi('/fiscal/csts-ibs-cbs', { query: { tamanhoPagina: 200 } })
-    cstsIbsCbs.value = extrairDados<CstIbsCbsOpcao[]>(resposta) ?? []
+    cstsIbsCbs.value = extrairLista<CstIbsCbsOpcao>(resposta) ?? []
   } catch (e) {
     console.error('[ncm-tributacao/[id]] csts-ibs-cbs', e)
   }
@@ -339,7 +339,7 @@ async function executarBuscaNcm(valor: string) {
   buscandoNcm.value = true
   try {
     const resposta = await useApi('/fiscal/ncms', { query: { localizar: valor.trim(), tamanhoPagina: 50 } })
-    ncmResultados.value = extrairDados<NcmOpcao[]>(resposta) ?? []
+    ncmResultados.value = extrairLista<NcmOpcao>(resposta) ?? []
   } catch (e) {
     console.error('[ncm-tributacao/[id]] busca ncm', e)
   } finally {

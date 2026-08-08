@@ -53,7 +53,18 @@ namespace Epros.Modules.GestaoClientes.Infrastructure.Jobs
             CatalogoEventosIntegracao.Assinatura.AssinaturaReativada,
             CatalogoEventosIntegracao.Assinatura.ComissaoApurada,
             CatalogoEventosIntegracao.Fiscal.DocumentoFiscalAutorizado,
-            CatalogoEventosIntegracao.Fiscal.DocumentoFiscalCancelado
+            CatalogoEventosIntegracao.Fiscal.DocumentoFiscalCancelado,
+            // Auditoria APP A1 — estes eventos eram PUBLICADOS mas NÃO estavam no allow-list → o WHERE nunca os
+            // selecionava, ProcessadoEm ficava null eterno e a tabela plataforma.outbox_messages crescia sem fim.
+            // Agora entram como FALLBACK (drenados/marcados processado; loga a pendência). O EFEITO downstream
+            // (provisionamento reativo de RBAC/menu no onboarding, sync de pessoa) segue como consumidor a escrever
+            // — mas a fila para de vazar imediatamente.
+            "empresa.criada",
+            "pessoa.criada",
+            "pessoa.atualizada",
+            "pessoa.inativada",
+            "pessoa.mesclada",
+            "pessoa.anonimizada"
         };
 
         private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };

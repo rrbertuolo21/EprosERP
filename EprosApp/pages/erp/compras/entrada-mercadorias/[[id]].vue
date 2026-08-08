@@ -15,7 +15,7 @@
  * Endpoints: compras (lancar, {id}, {id}/cancelar), estoque-produtos, cadastros/pessoas.
  */
 import { computed, onMounted, ref } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useHelper } from '~/composables/useHelper'
@@ -129,7 +129,7 @@ async function localizarFornecedorPorCnpj(cnpj: string) {
     const resposta = await useApi('/cadastros/pessoas', {
       query: { localizar: cnpj, pagina: 1, tamanhoPagina: 10 }
     })
-    const pessoas = extrairDados<PessoaBusca[]>(resposta) ?? []
+    const pessoas = extrairLista<PessoaBusca>(resposta) ?? []
     const exato = pessoas.find((p) => somenteDigitos(documentoDaPessoa(p)) === cnpj)
     const escolhida = exato ?? pessoas[0]
     if (escolhida) selecionarFornecedor(escolhida)
@@ -184,7 +184,7 @@ async function buscarFornecedores(termo: string) {
     const resposta = await useApi('/cadastros/pessoas', {
       query: { localizar: termo, pagina: 1, tamanhoPagina: 20 }
     })
-    resultadosFornecedor.value = extrairDados<PessoaBusca[]>(resposta) ?? []
+    resultadosFornecedor.value = extrairLista<PessoaBusca>(resposta) ?? []
   } catch (e) {
     resultadosFornecedor.value = []
     console.error('[entrada-mercadorias] busca fornecedor', e)

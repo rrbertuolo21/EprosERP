@@ -256,7 +256,34 @@ namespace Epros.Modules.GestaoClientes.Application.Handlers
                 pessoa.VincularPrestadorServico(prestador);
             }
 
-            pessoa.DefinirFornecedor(request.EhFornecedor);
+            if (request.EhFornecedor)
+            {
+                var fornecedor = new PessoaFornecedor(
+                    pessoa.Id,
+                    request.FornecedorCompradorId,
+                    request.FornecedorGrupoId,
+                    request.FornecedorOptanteSimplesNacional,
+                    request.FornecedorLocalizacao,
+                    request.FornecedorSofreRetencao,
+                    request.FornecedorChequeNominalA,
+                    request.FornecedorObservacao,
+                    request.FornecedorContaRemetente,
+                    request.FornecedorPrazoMedioEntrega,
+                    request.FornecedorGeraFaturamento,
+                    request.FornecedorNumDiasPrimeiroVencimento,
+                    request.FornecedorNumDiasIntervalo,
+                    request.FornecedorQuantidadeParcelas,
+                    request.FornecedorPayTermNumber,
+                    request.FornecedorPayTermType,
+                    tenantId,
+                    criadoPor
+                );
+                pessoa.VincularFornecedor(fornecedor);
+            }
+            else
+            {
+                pessoa.DefinirFornecedor(false);
+            }
             pessoa.DefinirProdutorRural(request.EhProdutorRural);
 
             // Coleções: Endereços

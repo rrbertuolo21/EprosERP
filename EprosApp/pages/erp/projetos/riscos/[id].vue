@@ -5,7 +5,7 @@
  */
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import TextField from '~/components/shared/fields/TextField.vue'
@@ -54,7 +54,7 @@ function validar(): boolean {
 async function carregarEstagios() {
   try {
     const r = await useApi('/projetos/riscos/estagios')
-    const d = extrairDados<EstagioRisco[]>(r) ?? []
+    const d = extrairLista<EstagioRisco>(r) ?? []
     estagios.value = d.map((e) => ({ label: e.nome ?? e.id, value: e.id }))
   } catch (e) { console.error('[riscos/[id]] estagios', e); estagios.value = [] }
 }

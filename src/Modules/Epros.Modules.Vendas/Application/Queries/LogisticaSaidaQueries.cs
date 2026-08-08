@@ -40,7 +40,7 @@ namespace Epros.Modules.Vendas.Application.Queries
                 .OrderByDescending(e => e.CriadoEm)
                 .Skip((request.Pagina - 1) * request.TamanhoPagina)
                 .Take(request.TamanhoPagina)
-                .Select(e => new { e.Id, e.PedidoId, e.DocumentoFiscalId, Status = e.Status.ToString(), e.DataExpedicao, e.DataConfirmacao })
+                .Select(e => new { e.Id, e.PedidoId, e.DocumentoFiscalId, Status = (int)e.Status, e.DataExpedicao, e.DataConfirmacao })
                 .ToListAsync(cancellationToken);
             return CommandResult.Ok("Expedições listadas.", new { total, request.Pagina, request.TamanhoPagina, itens });
         }
@@ -67,7 +67,7 @@ namespace Epros.Modules.Vendas.Application.Queries
                 .Select(l => new { l.CpfCnpj, l.Logradouro, l.Numero, l.Bairro, l.NomeMunicipio, l.Uf }).FirstOrDefaultAsync(cancellationToken);
             var itens = await _context.ExpedicaoItensEntrega.AsNoTracking().Where(i => i.TenantId == tenantId && i.ExpedicaoId == request.Id)
                 .Select(i => new { i.Id, i.PedidoItemId, i.ProdutoId, i.QuantidadeVendida, i.QuantidadeEntregue, i.SaldoEntrega }).ToListAsync(cancellationToken);
-            return CommandResult.Ok("Expedição encontrada.", new { expedicao.Id, expedicao.PedidoId, Status = expedicao.Status.ToString(), local, itens });
+            return CommandResult.Ok("Expedição encontrada.", new { expedicao.Id, expedicao.PedidoId, Status = (int)expedicao.Status, local, itens });
         }
     }
 }

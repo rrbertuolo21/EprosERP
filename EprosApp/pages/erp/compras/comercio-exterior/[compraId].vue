@@ -13,7 +13,7 @@
  *   .../declaracoes/{id} (DELETE), .../declaracoes/{id}/adicoes (POST), .../adicoes/{id} (DELETE).
  */
 import { computed, onMounted, ref, watch } from 'vue'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { obterMensagemErro } from '~/composables/useApiList'
 import { useToast } from '~/composables/useToast'
 import { useHelper } from '~/composables/useHelper'
@@ -141,7 +141,7 @@ async function carregarDeclaracoes() {
   carregandoDi.value = true
   try {
     const resposta = await useApi('/compras-comercio-exterior/itens/{compraItemId}/declaracoes', { params: { compraItemId: itemSelecionado.value } })
-    declaracoes.value = extrairDados<Declaracao[]>(resposta) ?? []
+    declaracoes.value = extrairLista<Declaracao>(resposta) ?? []
   } catch (e) {
     declaracoes.value = []
     toast.error(obterMensagemErro(e))

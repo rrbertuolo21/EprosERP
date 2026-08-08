@@ -20,7 +20,7 @@
  * SEFAZ (chave/protocolo) chega por tempo real (SignalR) — ver `usePagina`/TransmissionOverlay.
  */
 import { ref } from 'vue'
-import { useApi, extrairDados, type CommandResult } from '~/composables/useApi'
+import { useApi, extrairDados, type CommandResult, extrairLista} from '~/composables/useApi'
 import { useTenant } from '~/composables/useTenant'
 import { obterMensagemErro } from '~/composables/useApiList'
 import type { BalancaPdv, DestinatarioPdv, ItemPdv, ModeloFiscal, PagamentoPdv, ProdutoPdv } from './tipos'
@@ -64,7 +64,7 @@ export function usePdvNfce() {
           tamanhoPagina: 20
         }
       })
-      return extrairDados<ProdutoPdv[]>(resposta) ?? []
+      return extrairLista<ProdutoPdv>(resposta) ?? []
     } catch (e) {
       console.error('[usePdvNfce.buscarProdutos]', e)
       return []
@@ -77,7 +77,7 @@ export function usePdvNfce() {
       const resposta = await useApi<CommandResult<BalancaPdv[]>>('/balancas', {
         query: { pagina: 1, tamanhoPagina: 100 }
       })
-      return extrairDados<BalancaPdv[]>(resposta) ?? []
+      return extrairLista<BalancaPdv>(resposta) ?? []
     } catch (e) {
       console.error('[usePdvNfce.carregarBalancas]', e)
       return []

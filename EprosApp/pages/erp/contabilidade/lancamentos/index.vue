@@ -13,7 +13,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useApiList, obterMensagemErro } from '~/composables/useApiList'
-import { useApi, extrairDados } from '~/composables/useApi'
+import { useApi, extrairDados, extrairLista} from '~/composables/useApi'
 import { useToast } from '~/composables/useToast'
 import { useHelper } from '~/composables/useHelper'
 import DataTable, { type DataTableColumn } from '~/components/shared/DataTable.vue'
@@ -71,7 +71,7 @@ const confirmRef = ref<InstanceType<typeof ConfirmDialog>>()
 async function carregarPeriodos() {
   try {
     const resposta = await useApi('/contabilidade-geral/periodos')
-    periodos.value = extrairDados<PeriodoOpcao[]>(resposta) ?? []
+    periodos.value = extrairLista<PeriodoOpcao>(resposta) ?? []
     opcoesPeriodo.value = periodos.value.map((p) => ({ label: `Ano ${p.anoFiscal}`, value: p.id }))
     camposFiltro.value = [
       { key: 'periodoContabilId', label: 'Período contábil', type: 'select', options: opcoesPeriodo.value, grow: true }
