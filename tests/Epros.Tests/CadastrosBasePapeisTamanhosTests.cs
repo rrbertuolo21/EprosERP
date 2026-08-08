@@ -1,11 +1,14 @@
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Microsoft.EntityFrameworkCore;
 using Epros.Modules.GestaoClientes.Domain.Entities;
 using Epros.Modules.GestaoClientes.Domain.ValueObjects;
 using Epros.Modules.GestaoClientes.Infrastructure.Data;
+using Epros.Modules.GestaoClientes.Application.Commands;
+using Epros.Modules.GestaoClientes.Application.Handlers;
 using Epros.Shared.Application.Contracts;
 
 namespace Epros.Tests
@@ -96,6 +99,62 @@ namespace Epros.Tests
             }
         }
 
+        // ===================== Regressão: handler persiste o papel Fornecedor =====================
+
+        [Fact]
+        public async Task Handler_CriarPessoa_Com_EhFornecedor_Persiste_PessoaFornecedor()
+        {
+            // Bug real (auditoria 2026-08-07): CriarPessoaCommandHandler setava só o booleano
+            // EhFornecedor e NUNCA instanciava/persistia PessoaFornecedor → pessoas_fornecedores
+            // ficava com 0 linhas mesmo marcando o papel. Este teste roda o HANDLER (não o domínio),
+            // onde os testes antigos não olhavam. FALHARIA antes do fix.
+            var options = new DbContextOptionsBuilder<ContextGestaoClientes>()
+                .UseInMemoryDatabase("db_handler_fornecedor_" + Guid.NewGuid())
+                .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
+                .Options;
+            var tenant = new CadTestTenantProvider();
+            var user = new CadTestCurrentUser();
+
+            using (var ctx = new ContextGestaoClientes(options, tenant, user))
+            {
+                var handler = new CriarPessoaCommandHandler(ctx, tenant, user, new CadTestValidadorLimites());
+                var cmd = new CriarPessoaCommand(
+                    TipoPessoa: ETipoPessoa.PessoaJuridica,
+                    TipoIndicadorIe: ETipoIndicadorIe.NaoContribuinte,
+                    PessoaGrupoId: null, InscricaoSuframa: null,
+                    TitularContaBancaria: null, AgenciaContaBancaria: null, NumeroContaBancaria: null,
+                    TipoPix: null, ChavePix: null, Observacoes: null,
+                    FisicaCpf: null, FisicaNome: null, FisicaSobrenome: null, RgNumero: null, RgOrgaoEmissor: null, TipoGenero: null, DataNascimento: null,
+                    JuridicaCnpj: "11222333000181", RazaoSocial: "Fornecedor Teste Ltda", NomeFantasia: null, InscricaoEstadual: null, InscricaoMunicipal: null, Cnae: null,
+                    EstrangeiroNome: null, IdentificacaoEstrangeiro: null,
+                    EhCliente: false, EhFornecedor: true, EhTransportadora: false, EhMotorista: false, EhPrestadorServico: false, EhFuncionario: false, EhProdutorRural: false,
+                    ClienteEhConsumidorFinal: null, ClienteTipoContribuinte: null,
+                    FuncionarioTipoCargo: null, FuncionarioComissao: null,
+                    MotoristaTipoVinculo: null, MotoristaCategoriaCnh: null, MotoristaDataEmissaoCnh: null, MotoristaDataVencimentoCnh: null, MotoristaRntrc: null,
+                    TransportadoraCiot: null, TransportadoraRntrc: null, PrestadorCei: null,
+                    Enderecos: null, Contatos: null, Veiculos: null,
+                    FornecedorOptanteSimplesNacional: true,
+                    FornecedorLocalizacao: "SP",
+                    FornecedorPrazoMedioEntrega: 15);
+
+                var result = await handler.Handle(cmd, CancellationToken.None);
+                Assert.True(result.Sucesso, "Handler falhou: " + string.Join(" | ", result.Erros));
+            }
+
+            using (var ctx = new ContextGestaoClientes(options, tenant, user))
+            {
+                var fornecedor = await ctx.PessoasFornecedores.FirstOrDefaultAsync();
+                Assert.NotNull(fornecedor); // <-- linha que quebraria antes do fix (0 linhas)
+                Assert.Equal("SP", fornecedor!.Localizacao);
+                Assert.Equal(15, fornecedor.PrazoMedioEntrega);
+                Assert.True(fornecedor.OptanteSimplesNacional);
+
+                var pessoa = await ctx.Pessoas.Include(p => p.PessoaFornecedor).FirstAsync();
+                Assert.True(pessoa.EhFornecedor);
+                Assert.NotNull(pessoa.PessoaFornecedor);
+            }
+        }
+
         // ===================== E-01: razão social/fantasia 250 =====================
 
         [Fact]
@@ -148,6 +207,16 @@ namespace Epros.Tests
             public string? GetUserId() => Usuario;
             public string? GetUserName() => Usuario;
             public string? GetUserEmail() => "user-cad-test@epros.local";
+        }
+
+        private sealed class CadTestValidadorLimites : IValidadorLimitesSaaS
+        {
+            public Task<bool> PossuiFolgaUsuariosAsync(string tenantId, CancellationToken ct = default) => Task.FromResult(true);
+            public Task<bool> PossuiFolgaEmpresasAsync(string tenantId, CancellationToken ct = default) => Task.FromResult(true);
+            public Task<(bool Excedido, string Mensagem)> ValidarLimiteUsuariosAsync(string tenantId, CancellationToken ct = default) => Task.FromResult((false, ""));
+            public Task<(bool Excedido, string Mensagem)> ValidarLimiteEmpresasAsync(string tenantId, CancellationToken ct = default) => Task.FromResult((false, ""));
+            public Task<(bool Excedido, string Mensagem)> ValidarLimiteClientesAsync(string tenantId, CancellationToken ct = default) => Task.FromResult((false, ""));
+            public Task<(bool Excedido, string Mensagem)> ValidarLimitePermissoesAsync(string tenantId, CancellationToken ct = default) => Task.FromResult((false, ""));
         }
     }
 }

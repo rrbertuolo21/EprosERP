@@ -101,6 +101,24 @@ namespace Epros.Modules.GestaoClientes.Application.Commands
         // Collections
         List<EnderecoDto>? Enderecos,
         List<ContatoDto>? Contatos,
-        List<VeiculoDto>? Veiculos
+        List<VeiculoDto>? Veiculos,
+
+        // Fornecedor (papel — persistido em PessoaFornecedor quando EhFornecedor).
+        // No fim + com default para não quebrar callers posicionais (ex.: importação em lote).
+        Guid? FornecedorCompradorId = null,
+        Guid? FornecedorGrupoId = null,
+        bool? FornecedorOptanteSimplesNacional = null,
+        string? FornecedorLocalizacao = null,
+        bool? FornecedorSofreRetencao = null,
+        string? FornecedorChequeNominalA = null,
+        string? FornecedorObservacao = null,
+        string? FornecedorContaRemetente = null,
+        int? FornecedorPrazoMedioEntrega = null,
+        bool? FornecedorGeraFaturamento = null,
+        int? FornecedorNumDiasPrimeiroVencimento = null,
+        int? FornecedorNumDiasIntervalo = null,
+        int? FornecedorQuantidadeParcelas = null,
+        int? FornecedorPayTermNumber = null,
+        ETipoPeriodoPagamento? FornecedorPayTermType = null
     ) : ICommand;
 }

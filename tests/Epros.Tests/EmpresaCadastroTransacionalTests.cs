@@ -81,10 +81,9 @@ namespace Epros.Tests
             Assert.NotNull(empresa);
             Assert.Equal("Empresa Transacional S/A", empresa.RazaoSocial);
 
-            var upgradePlano = await context.UpgradesPlanos.FirstOrDefaultAsync(u => u.TenantId == TenantId);
-            Assert.NotNull(upgradePlano);
-            Assert.True(upgradePlano.IsActive);
-            Assert.Equal(planoMaster.Id, upgradePlano.PlanoId);
+            // NOTA (2026-08-07): a entidade UpgradePlano foi removida como órfã no commit 035c48b
+            // ("refactor(aplicativo): remove orfaos UpgradePlano..."), mas este teste não foi atualizado —
+            // o que deixou TODO o projeto de testes SEM COMPILAR (nenhum teste rodava). Assertions mortas removidas.
 
             var exercicio = await context.ExerciciosFinanceiros.FirstOrDefaultAsync(ex => ex.TenantId == TenantId);
             Assert.NotNull(exercicio);
